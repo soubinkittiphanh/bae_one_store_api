@@ -9393,3 +9393,232 @@
 {"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-03T12:41:51.758Z"}
 {"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-03T12:50:37.579Z"}
 {"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-03T12:50:37.588Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-07-03T13:22:24.052Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-07-03T13:22:24.054Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-07-03T13:22:24.055Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-07-03T13:22:24.055Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-07-03T13:22:24.057Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-07-03T13:22:24.884Z"}
+{"level":"info","message":"app is runing: 8080","timestamp":"2023-07-03T13:22:24.885Z"}
+{"level":"warn","message":"env: dcommerce_dev_1","timestamp":"2023-07-03T13:22:24.886Z"}
+{"level":"info","message":"DB Connection established","timestamp":"2023-07-03T13:22:30.056Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-03T13:22:57.215Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-03T13:22:57.223Z"}
+{"level":"info","message":"Datatase is synchronize","timestamp":"2023-07-03T13:24:48.736Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-07-03T13:26:01.227Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-07-03T13:26:01.230Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-07-03T13:26:01.231Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-07-03T13:26:01.232Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-07-03T13:26:01.234Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-07-03T13:26:01.908Z"}
+{"level":"info","message":"app is runing: 8080","timestamp":"2023-07-03T13:26:01.909Z"}
+{"level":"warn","message":"env: dcommerce_dev_1","timestamp":"2023-07-03T13:26:01.909Z"}
+{"level":"info","message":"DB Connection established","timestamp":"2023-07-03T13:26:07.052Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-07-04T13:05:54.684Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-07-04T13:05:54.686Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-07-04T13:05:54.686Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-07-04T13:05:54.687Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-07-04T13:05:54.688Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-07-04T13:05:55.389Z"}
+{"level":"info","message":"app is runing: 8080","timestamp":"2023-07-04T13:05:55.389Z"}
+{"level":"warn","message":"env: dcommerce_dev_1","timestamp":"2023-07-04T13:05:55.390Z"}
+{"level":"info","message":"DB Connection established","timestamp":"2023-07-04T13:06:00.129Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-07-04T13:08:57.177Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-07-04T13:08:57.179Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-07-04T13:08:57.180Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-07-04T13:08:57.181Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-07-04T13:08:57.182Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-07-04T13:08:57.894Z"}
+{"level":"info","message":"app is runing: 8080","timestamp":"2023-07-04T13:08:57.895Z"}
+{"level":"warn","message":"env: dcommerce_dev_1","timestamp":"2023-07-04T13:08:57.895Z"}
+{"level":"info","message":"DB Connection established","timestamp":"2023-07-04T13:09:02.294Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-07-05T04:35:16.641Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-07-05T04:35:16.643Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-07-05T04:35:16.644Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-07-05T04:35:16.645Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-07-05T04:35:16.647Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-07-05T04:35:17.411Z"}
+{"level":"info","message":"app is runing: 8080","timestamp":"2023-07-05T04:35:17.411Z"}
+{"level":"warn","message":"env: dcommerce_dev_1","timestamp":"2023-07-05T04:35:17.412Z"}
+{"level":"info","message":"DB Connection established","timestamp":"2023-07-05T04:35:20.322Z"}
+{"level":"info","message":"Datatase is synchronize","timestamp":"2023-07-05T04:36:57.709Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-05T07:22:56.429Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-05T07:22:56.506Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-05T07:22:57.640Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-05T07:22:57.642Z"}
+{"level":"info","message":"SELECT SUM(o.product_amount) AS sale_count,\n    SUM(o.order_price_total) as total_sale,\n    o.txn_date,\n    SUBSTR(o.txn_date, 1, 10) AS txn_date_short\n    FROM user_order o \n    WHERE  o.txn_date BETWEEN '2023-07-01 00:00:00' AND '2023-07-30 23:59:59' \n    AND o.record_status = 1\n    GROUP BY txn_date_short","timestamp":"2023-07-05T07:23:21.256Z"}
+{"level":"info","message":"SELECT o.product_id,SUM(o.product_amount) AS sale_count,\n    o.product_price,SUM(o.order_price_total) as total_sale,\n    o.txn_date,o.record_status, \n    p.outlet,p.pro_name ,p.name \n    FROM user_order o \n    LEFT JOIN (SELECT p.pro_id,p.outlet,p.pro_name,u.name FROM product p LEFT JOIN outlet u ON u.id = p.outlet) p \n    ON p.pro_id = o.product_id \n    WHERE  o.txn_date BETWEEN '2023-07-01 00:00:00' AND '2023-07-30 23:59:59'\n    AND o.record_status = 1\n    GROUP BY o.product_id LIMIT 5 ","timestamp":"2023-07-05T07:23:21.303Z"}
+{"level":"info","message":"SELECT d.*,SUM(o.order_price_total) AS cart_total,\n    d.payment_code,\n    p.payment_status,\n    o.order_id,\n    d.record_status\n    FROM dynamic_customer d\n    LEFT JOIN user_order o ON o.locking_session_id = d.locking_session_id\n    LEFT JOIN order_payment p ON p.locking_session_id = d.locking_session_id\n    WHERE d.txn_date BETWEEN '2023-07-01 00:00:00' AND '2023-07-30 23:59:59' \n    \n    GROUP BY d.locking_session_id\n    ","timestamp":"2023-07-05T07:23:22.590Z"}
+{"level":"info","message":"Record count => 0","timestamp":"2023-07-05T07:23:22.862Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-07-05T07:23:22.864Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-05T08:17:17.260Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-05T08:17:17.267Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-05T09:29:45.421Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-05T09:29:45.451Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-05T09:29:55.176Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-05T09:29:55.178Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-05T09:39:48.885Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-05T09:39:48.889Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-05T09:40:31.627Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-05T09:40:31.630Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-05T09:41:05.235Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-05T09:41:05.238Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-05T09:41:28.511Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-05T09:41:28.517Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-05T09:44:37.236Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-05T09:44:37.271Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-05T09:45:02.351Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-05T09:45:02.353Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-05T09:47:29.082Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-05T09:47:29.085Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-05T14:04:46.060Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-05T14:04:46.091Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-06T09:53:16.661Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-06T09:53:16.702Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-06T10:50:41.740Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-06T10:50:41.771Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-06T11:04:00.339Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-06T11:04:00.372Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-06T11:05:07.235Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-06T11:05:07.248Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-06T11:06:27.667Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-06T11:06:27.683Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-06T11:07:38.164Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-06T11:07:38.168Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-06T11:08:06.806Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-06T11:08:06.809Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-06T11:09:14.783Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-06T11:09:14.791Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-06T11:13:01.543Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-06T11:13:01.617Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-06T11:13:44.625Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-06T11:13:44.629Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-06T11:14:23.236Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-06T11:14:23.245Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-06T11:19:31.113Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-06T11:19:31.130Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-06T11:20:50.594Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-06T11:20:50.610Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-06T11:21:58.440Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-06T11:21:58.454Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-06T11:22:34.095Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-06T11:22:34.103Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-06T11:23:26.685Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-06T11:23:26.688Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-06T11:23:32.640Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-06T11:23:32.641Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-06T11:24:32.941Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-06T11:24:32.944Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-06T11:27:10.279Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-06T11:27:10.309Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-06T11:28:19.289Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-06T11:28:19.291Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-06T11:29:50.388Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-06T11:29:50.413Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-06T11:30:05.842Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-06T11:30:05.844Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-06T11:31:03.604Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-06T11:31:03.621Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-06T11:32:24.411Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-06T11:32:24.432Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-06T11:33:38.911Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-06T11:33:38.950Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-06T11:34:46.883Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-06T11:34:46.900Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-06T11:34:48.015Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-06T11:34:48.016Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-06T11:34:52.882Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-06T11:34:52.890Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-06T11:36:41.629Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-06T11:36:41.637Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-06T11:38:11.815Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-06T11:38:11.821Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-06T11:46:13.649Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-06T11:46:13.682Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-06T11:55:31.453Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-06T11:55:31.489Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-06T11:55:58.566Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-06T11:55:58.573Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-06T12:11:57.046Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-06T12:11:57.090Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-06T12:12:43.348Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-06T12:12:43.376Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-06T12:13:16.704Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-06T12:13:16.708Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-06T12:13:58.561Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-06T12:13:58.563Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-06T12:26:22.459Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-06T12:26:22.504Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-06T12:30:05.805Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-06T12:30:05.824Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-06T12:30:37.057Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-06T12:30:37.061Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-06T12:34:57.904Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-06T12:34:57.930Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-06T12:35:10.158Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-06T12:35:10.160Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-06T12:35:49.358Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-06T12:35:49.367Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-06T12:36:51.444Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-06T12:36:51.449Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-06T12:40:57.699Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-06T12:40:57.734Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-06T12:43:06.354Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-06T12:43:06.368Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-06T14:30:19.622Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-06T14:30:19.634Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-06T14:32:38.893Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-06T14:32:38.938Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-06T14:46:34.046Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-06T14:46:34.051Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-06T14:46:39.941Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-06T14:46:39.943Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-06T14:49:12.232Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-06T14:49:12.244Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-06T14:49:46.791Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-06T14:49:46.794Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-06T14:50:40.257Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-06T14:50:40.260Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-06T14:54:51.688Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-06T14:54:51.728Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-07T07:19:30.517Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-07T07:19:30.562Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-07T07:19:31.455Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-07T07:19:31.455Z"}
+{"level":"info","message":"SELECT o.product_id,SUM(o.product_amount) AS sale_count,\n    o.product_price,SUM(o.order_price_total) as total_sale,\n    o.txn_date,o.record_status, \n    p.outlet,p.pro_name ,p.name \n    FROM user_order o \n    LEFT JOIN (SELECT p.pro_id,p.outlet,p.pro_name,u.name FROM product p LEFT JOIN outlet u ON u.id = p.outlet) p \n    ON p.pro_id = o.product_id \n    WHERE  o.txn_date BETWEEN '2023-07-01 00:00:00' AND '2023-07-30 23:59:59'\n    AND o.record_status = 1\n    GROUP BY o.product_id LIMIT 5 ","timestamp":"2023-07-07T07:21:16.855Z"}
+{"level":"info","message":"SELECT SUM(o.product_amount) AS sale_count,\n    SUM(o.order_price_total) as total_sale,\n    o.txn_date,\n    SUBSTR(o.txn_date, 1, 10) AS txn_date_short\n    FROM user_order o \n    WHERE  o.txn_date BETWEEN '2023-07-01 00:00:00' AND '2023-07-30 23:59:59' \n    AND o.record_status = 1\n    GROUP BY txn_date_short","timestamp":"2023-07-07T07:21:16.936Z"}
+{"level":"info","message":"SELECT d.*,SUM(o.order_price_total) AS cart_total,\n    d.payment_code,\n    p.payment_status,\n    o.order_id,\n    d.record_status\n    FROM dynamic_customer d\n    LEFT JOIN user_order o ON o.locking_session_id = d.locking_session_id\n    LEFT JOIN order_payment p ON p.locking_session_id = d.locking_session_id\n    WHERE d.txn_date BETWEEN '2023-07-01 00:00:00' AND '2023-07-30 23:59:59' \n    \n    GROUP BY d.locking_session_id\n    ","timestamp":"2023-07-07T07:21:18.518Z"}
+{"level":"info","message":"Record count => 0","timestamp":"2023-07-07T07:21:19.530Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-07-07T07:21:19.530Z"}
+{"level":"info","message":"SELECT SUM(o.product_amount) AS sale_count,\n    SUM(o.order_price_total) as total_sale,\n    o.txn_date,\n    SUBSTR(o.txn_date, 1, 10) AS txn_date_short\n    FROM user_order o \n    WHERE  o.txn_date BETWEEN '2023-07-01 00:00:00' AND '2023-07-30 23:59:59' \n    AND o.record_status = 1\n    GROUP BY txn_date_short","timestamp":"2023-07-07T07:21:31.107Z"}
+{"level":"info","message":"SELECT o.product_id,SUM(o.product_amount) AS sale_count,\n    o.product_price,SUM(o.order_price_total) as total_sale,\n    o.txn_date,o.record_status, \n    p.outlet,p.pro_name ,p.name \n    FROM user_order o \n    LEFT JOIN (SELECT p.pro_id,p.outlet,p.pro_name,u.name FROM product p LEFT JOIN outlet u ON u.id = p.outlet) p \n    ON p.pro_id = o.product_id \n    WHERE  o.txn_date BETWEEN '2023-07-01 00:00:00' AND '2023-07-30 23:59:59'\n    AND o.record_status = 1\n    GROUP BY o.product_id LIMIT 5 ","timestamp":"2023-07-07T07:21:31.133Z"}
+{"level":"info","message":"SELECT d.*,SUM(o.order_price_total) AS cart_total,\n    d.payment_code,\n    p.payment_status,\n    o.order_id,\n    d.record_status\n    FROM dynamic_customer d\n    LEFT JOIN user_order o ON o.locking_session_id = d.locking_session_id\n    LEFT JOIN order_payment p ON p.locking_session_id = d.locking_session_id\n    WHERE d.txn_date BETWEEN '2023-07-01 00:00:00' AND '2023-07-30 23:59:59' \n    \n    GROUP BY d.locking_session_id\n    ","timestamp":"2023-07-07T07:21:31.510Z"}
+{"level":"info","message":"Record count => 0","timestamp":"2023-07-07T07:21:31.859Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-07-07T07:21:31.860Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-07T07:21:34.289Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-07T07:21:34.297Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-07T07:21:56.669Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-07T07:21:56.674Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-07T07:24:13.806Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-07T07:24:13.813Z"}
+{"level":"info","message":"SELECT SUM(o.product_amount) AS sale_count,\n    SUM(o.order_price_total) as total_sale,\n    o.txn_date,\n    SUBSTR(o.txn_date, 1, 10) AS txn_date_short\n    FROM user_order o \n    WHERE  o.txn_date BETWEEN '2023-07-01 00:00:00' AND '2023-07-30 23:59:59' \n    AND o.record_status = 1\n    GROUP BY txn_date_short","timestamp":"2023-07-07T07:24:40.047Z"}
+{"level":"info","message":"SELECT o.product_id,SUM(o.product_amount) AS sale_count,\n    o.product_price,SUM(o.order_price_total) as total_sale,\n    o.txn_date,o.record_status, \n    p.outlet,p.pro_name ,p.name \n    FROM user_order o \n    LEFT JOIN (SELECT p.pro_id,p.outlet,p.pro_name,u.name FROM product p LEFT JOIN outlet u ON u.id = p.outlet) p \n    ON p.pro_id = o.product_id \n    WHERE  o.txn_date BETWEEN '2023-07-01 00:00:00' AND '2023-07-30 23:59:59'\n    AND o.record_status = 1\n    GROUP BY o.product_id LIMIT 5 ","timestamp":"2023-07-07T07:24:40.126Z"}
+{"level":"info","message":"SELECT d.*,SUM(o.order_price_total) AS cart_total,\n    d.payment_code,\n    p.payment_status,\n    o.order_id,\n    d.record_status\n    FROM dynamic_customer d\n    LEFT JOIN user_order o ON o.locking_session_id = d.locking_session_id\n    LEFT JOIN order_payment p ON p.locking_session_id = d.locking_session_id\n    WHERE d.txn_date BETWEEN '2023-07-01 00:00:00' AND '2023-07-30 23:59:59' \n    \n    GROUP BY d.locking_session_id\n    ","timestamp":"2023-07-07T07:24:40.472Z"}
+{"level":"info","message":"Record count => 0","timestamp":"2023-07-07T07:24:40.949Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-07-07T07:24:40.951Z"}
+{"level":"info","message":"====>1,000","timestamp":"2023-07-07T07:26:11.085Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-07T07:27:39.874Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-07T07:27:39.877Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-07T07:27:55.751Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-07T07:27:55.751Z"}
+{"level":"info","message":"*************** FETCH PRODUCT BY ID  ***************","timestamp":"2023-07-07T07:28:14.973Z"}
+{"level":"info","message":"*************Payload: *****************","timestamp":"2023-07-07T07:28:14.974Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-07-07T09:22:10.813Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-07-07T09:22:10.815Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-07-07T09:22:10.815Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-07-07T09:22:10.816Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-07-07T09:22:10.818Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-07-07T09:22:11.476Z"}
+{"level":"info","message":"app is runing: 8080","timestamp":"2023-07-07T09:22:11.476Z"}
+{"level":"warn","message":"env: dcommerce_uat_1","timestamp":"2023-07-07T09:22:11.477Z"}
+{"level":"info","message":"DB Connection established","timestamp":"2023-07-07T09:22:16.602Z"}

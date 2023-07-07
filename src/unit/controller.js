@@ -1,0 +1,89 @@
+
+const UnitModel = require('../models').unitModel;
+const { body, validationResult } = require('express-validator');
+const logger = require('../api/logger');
+
+const { UnitModel } = require('../models');
+
+exports.createUnitModel = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  try {
+    // Create a new UnitModel with the data from the request body
+    const newUnitModel = await UnitModel.create(req.body);
+    res.status(201).json(newUnitModel);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+}
+
+exports.getUnitModels = async (req, res) => {
+  try {
+    // Find all UnitModels in the database
+    const unitModels = await UnitModel.findAll();
+    res.status(200).json(unitModels);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+exports.getUnitModelById = async (req, res) => {
+  const { id } = req.params;
+  try {
+    // Find the UnitModel with the specified id
+    const unitModel = await UnitModel.findByPk(id);
+    if (unitModel) {
+      res.status(200).json(unitModel);
+    } else {
+      res.status(404).json({ message: 'Unit model not found' });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+exports.updateUnitModel = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  const { id } = req.params;
+  try {
+    // Find the UnitModel with the specified id and update its data
+    const [rowsAffected, [updatedUnitModel]] = await UnitModel.update(req.body, {
+      where: { id },
+      returning: true
+    });
+    if (rowsAffected === 1) {
+      res.status(200).json(updatedUnitModel);
+    } else {
+      res.status(404).json({ message: 'Unit model not found' });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+exports.deleteUnitModel = async (req, res) => {
+  const { id } = req.params;
+  try {
+    // Delete the UnitModel with the specified id
+    const rowsAffected = await UnitModel.destroy({ where: { id } });
+    if (rowsAffected === 1) {
+      res.status(204).end();
+    } else {
+      res.status(404).json({ message: 'Unit model not found' });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};

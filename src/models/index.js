@@ -44,6 +44,11 @@ db.poLine = require("../PO/line/model")(sequelize,DataTypes);
 db.currency = require("../currency/model")(sequelize,DataTypes);
 db.geography = require("../geography/model")(sequelize,DataTypes);
 db.customer = require("../dynamicCustomer/model")(sequelize,DataTypes);
+db.client = require("../client/model")(sequelize,DataTypes);
+db.saleHeader = require("../sales/model")(sequelize,DataTypes);
+db.saleLine = require("../sales/line/model")(sequelize,DataTypes);
+db.unit = require("../unit/model")(sequelize,DataTypes);
+db.payment = require("../paymentMethod/model")(sequelize,DataTypes);
 
 db.sequelize.sync({force:false,alter: true}).then(()=>{
     logger.info("Datatase is synchronize")
@@ -112,6 +117,37 @@ db.customer.belongsTo(db.geography,{
     foreignKey:'geoId',
     as:'geography'
 })
+// Sale mapping //
+db.saleHeader.belongsTo(db.payment,{
+    foreignKey:'paymentId',
+    as:'payment'
+})
+db.saleHeader.belongsTo(db.client,{
+    foreignKey:'clientId',
+    as:'client'
+})
+db.saleHeader.belongsTo(db.currency,{
+    foreignKey:'currencyId',
+    as:'currency'
+})
+db.saleHeader.hasMany(db.saleLine,{
+    as:'lines'
+})
+db.saleLine.belongsTo(db.saleHeader,{
+    foreignKey:'headerId',
+    as:'header'
+})
+db.saleLine.belongsTo(db.product,{
+    foreignKey:'productId',
+    as:'product'
+})
+db.saleLine.belongsTo(db.unit,{
+    foreignKey:'unitId',
+    as: 'unit'
+})
+
+
+
 // User.hasMany(Post, { onUpdate: 'CASCADE' });
 // User.hasMany(Post, { onDelete: 'CASCADE' });
 
