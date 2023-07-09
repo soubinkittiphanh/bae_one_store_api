@@ -43,6 +43,10 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.INTEGER,
             defaultValue: 0
         },
+        minStock: {
+            type: DataTypes.INTEGER,
+            defaultValue: 0
+        },
         locking_session_id: {
             type: DataTypes.STRING,
             allowNull: false,

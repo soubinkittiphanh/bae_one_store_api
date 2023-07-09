@@ -11,13 +11,16 @@ const topSaleByMonth = async (req, res) => {
     const sql = `SELECT o.product_id,SUM(o.product_amount) AS sale_count,
     o.product_price,SUM(o.order_price_total) as total_sale,
     o.txn_date,o.record_status, 
-    p.outlet,p.pro_name ,p.name 
+    p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name
     FROM user_order o 
-    LEFT JOIN (SELECT p.pro_id,p.outlet,p.pro_name,u.name FROM product p LEFT JOIN outlet u ON u.id = p.outlet) p 
+    LEFT JOIN (SELECT p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p 
+        LEFT JOIN outlet u ON u.id = p.outlet
+        LEFT JOIN category c on c.categ_id=p.pro_category
+        ) p 
     ON p.pro_id = o.product_id 
     WHERE  o.txn_date BETWEEN '${beginningOfMonthString} 00:00:00' AND '${lastDayOfMonthString} 23:59:59'
     AND o.record_status = 1
-    GROUP BY o.product_id LIMIT ${top} `
+    GROUP BY p.pro_category LIMIT ${top} `
     logger.info(sql)
     try {
         const [rows, fields] = await dbAsync.query(sql);
