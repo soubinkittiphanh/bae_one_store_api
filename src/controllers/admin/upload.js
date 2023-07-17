@@ -15,7 +15,7 @@ const singleMasterUpdate = async (req, res) => {
     var target_path = 'uploads/' + rndName + req.file.originalname;
 
 
-    let sqlCom = `SELECT login_id from customer WHERE cus_id='${cusId}'`
+    let sqlCom = `SELECT login_id from user WHERE cus_id='${cusId}'`
      Db.query(sqlCom, (er, re) => {
         if (er) return res.send("Error: " + er)
         if (re.length < 1) return res.send("Error: user id not found")

@@ -98,11 +98,11 @@ const txnHis = async (app) => {
     app.get('/txn_his_f', TxnHis.fetchTxnHis)
 }
 const authenticate = async (app) => {
-    app.post('/mem_auth', Auth.Authmember)
+    app.post('/userLogin', Auth.authenticate)
     app.post('/cus_auth', Auth.Authcustomer)
 }
 const login = async (app) => {
-    app.get('/login', Login.login),
+    // app.get('/login', Login.login),
     app.get('/logout', jwtUtil.deleteToken),
     app.get('/me',jwtUtil.getUserFromToken)
 

@@ -1,7 +1,7 @@
 const express = require("express")
 const router = express.Router()
 const orderController = require("../controllers/client/userOrder")
-const validateToken = require('../api').jwtApi
+const {validateToken} = require('../api').jwtApi
 router.use(validateToken)
 // router.use((req,res,next)=>{
 //     const isAuthen = true;

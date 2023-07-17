@@ -1,6 +1,6 @@
 
 
-const validateToken = require("../api/jwtApi")
+const {validateToken} = require("../api/jwtApi")
 const controller = require("./controller")
 const service = require("./service")
 const express = require("express")
@@ -13,6 +13,7 @@ router
 .put("/update/:id",validator.updateSaleHeaderValidator, controller.updateSaleHeader)
 .delete("/find/:id", controller.deleteSaleHeader)
 .get("/find", controller.getSaleHeaders)
-.get("/find/id", controller.getSaleHeaderById)
+.get("/findByDate", controller.getSaleHeadersByDate)
+.get("/find/:id", controller.getSaleHeaderById)
 // .post("/bulkCreate",service.createHulkStockCard)
 module.exports = router

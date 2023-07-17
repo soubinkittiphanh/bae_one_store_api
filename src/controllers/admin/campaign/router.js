@@ -1,7 +1,7 @@
 const campaignController = require("./controller")
 const express = require("express")
 const router = express.Router()
-const validateToken = require('../../../api').jwtApi
+const {validateToken} = require('../../../api').jwtApi
 const { body } = require('express-validator');
 
 router.use(validateToken);

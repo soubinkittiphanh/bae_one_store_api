@@ -1,51 +1,57 @@
 
 
 module.exports = (sequelize, DataTypes) => {
-    const Client = sequelize.define('client', {
-        name: {
-            type: DataTypes.STRING(50),
-            allowNull: false,
-            // primaryKey: true,
-            // autoIncrement: true, //ine the column as unique
-        },
-        company: {
-            type: DataTypes.STRING(50),
-            // allowNull: false,
-        },
-        email: {
-            type: DataTypes.STRING(100),
-            // allowNull: false,
-        },
-        address: {
-            type: DataTypes.STRING(100),
-            // allowNull: false,
-        },
 
-        telephone: {
-            type: DataTypes.STRING(15),
-            // defaultValue: 0
-            // allowNull: false,
-        },
-        credit: {
+    const User = sequelize.define('user', {
+        cus_id: {
             type: DataTypes.INTEGER,
-            defaultValue: 30
-            // allowNull: false,
+            allowNull: false,
+            // primaryKey: true
         },
-        lateChargePercent: {
-            type: DataTypes.DOUBLE,
-            defaultValue: 0
-            // allowNull: false,
+        cus_pass: {
+            type: DataTypes.STRING,
+            allowNull: false
         },
-        grade: {
-            // type: DataTypes.INTEGER,
-            type: DataTypes.ENUM('A', 'B', 'C', 'D', 'E', 'F'),
-            defaultValue: 'A'
-            // allowNull: false,
+        cus_name: {
+            type: DataTypes.STRING,
+            allowNull: false
         },
-        isActive: {
+        cus_tel: {
+            type: DataTypes.STRING,
+            // allowNull: false
+        },
+        cus_email: {
+            type: DataTypes.STRING,
+            // allowNull: false
+        },
+        cus_active: {
             type: DataTypes.BOOLEAN,
             allowNull: false,
-            defaultValue: true,
+            defaultValue: true
+        },
+        login_id: {
+            type: DataTypes.INTEGER,
+            allowNull: false
+        },
+        user_id: {
+            type: DataTypes.INTEGER,
+            // allowNull: false
+        },
+        village: {
+            type: DataTypes.STRING,
+            // allowNull: false
+        },
+        district: {
+            type: DataTypes.STRING,
+            // allowNull: false
+        },
+        province: {
+            type: DataTypes.STRING,
+            // allowNull: false
+        },
+        remark: {
+            type: DataTypes.STRING,
+            // allowNull: false
         },
     }, {
         sequelize,
@@ -61,7 +67,7 @@ module.exports = (sequelize, DataTypes) => {
         freezeTableName: true,
     })
 
-    return Client;
+    return User;
 };
 
 // 1. STRING: A variable length string.

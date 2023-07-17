@@ -16,6 +16,12 @@ const currency = require("../currency").router
 const geography = require("../geography").router
 const customer = require("../dynamicCustomer").router
 const category = require("../category").router
+const client = require("../client").router
+const unit = require("../unit").router
+const paymentMethod = require("../paymentMethod").router
+const sale = require("../sales").router
+const product = require("../product").router
+const saleLine = require("../sales/line").router
 
 module.exports={
     orderRouter,
@@ -35,5 +41,11 @@ module.exports={
     poLine,
     geography,
     customer,
-    category
+    category,
+    client,
+    unit,
+    paymentMethod,
+    sale,
+    saleLine,
+    product
 }

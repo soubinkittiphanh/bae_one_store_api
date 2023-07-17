@@ -1,5 +1,5 @@
 
-const Client = require('../models').clent;
+const Client = require('../models').client;
 const { body, validationResult } = require('express-validator');
 const logger = require('../api/logger');
 
@@ -21,13 +21,14 @@ exports.create = (req, res) => {
     credit: req.body.credit,
     lateChargePercent: req.body.lateChargePercent,
     grade: req.body.grade,
+    email: req.body.email,
     isActive: req.body.isActive ? req.body.isActive : true
   };
 
   // Save Client in the database
   Client.create(client)
     .then(data => {
-      res.status(200).send(data);
+      res.status(201).send(data);
     })
     .catch(err => {
       res.status(500).send({

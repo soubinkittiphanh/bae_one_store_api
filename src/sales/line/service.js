@@ -1,13 +1,13 @@
 const logger = require("../../api/logger");
 
-const SaleLine = require("../model").saleLine
+const SaleLine = require("../../models").saleLine
 
 
 const createBulkSaleLine = async (res, line) => {
-    Card.bulkCreate(line)
+    SaleLine.bulkCreate(line)
         .then(() => {
             logger.info('Rows inserted successfully')
-            return res.status(200).send("Transction completed")
+            return res.status(200).send("Transction completed -"+line[0].headerId)
         })
         .catch((error) => {
             logger.error('Error inserting rows:', error)

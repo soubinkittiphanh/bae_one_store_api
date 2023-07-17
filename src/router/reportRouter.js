@@ -2,7 +2,7 @@ const express = require('express')
 const router = express.Router();
 const controllers = require("../controllers/client/saleReport");
 const logger = require('../api/logger');
-const validateToken = require('../api').jwtApi
+const {validateToken} = require('../api').jwtApi
 router.use(validateToken)
 
 router.get("/topsale",controllers.topSaleByMonth)

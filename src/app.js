@@ -30,6 +30,12 @@ const buildApp = async () => {
     app.use("/api/category",myRouter.category)
     app.use("/api/customer",myRouter.dymCustomerRouter)
     app.use("/api/geography",myRouter.geography)
+    app.use("/api/client",myRouter.client)
+    app.use("/api/paymentMethod",myRouter.paymentMethod)
+    app.use("/api/unit",myRouter.unit)
+    app.use("/api/sale",myRouter.sale)
+    app.use("/api/saleLine",myRouter.saleLine)
+    app.use("/api/product",myRouter.product)
 
     Router.category(app);
     Router.product(app);

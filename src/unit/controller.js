@@ -1,9 +1,8 @@
 
-const UnitModel = require('../models').unitModel;
+const UnitModel = require('../models').unit;
 const { body, validationResult } = require('express-validator');
 const logger = require('../api/logger');
 
-const { UnitModel } = require('../models');
 
 exports.createUnitModel = async (req, res) => {
   const errors = validationResult(req);

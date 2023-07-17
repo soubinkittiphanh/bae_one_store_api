@@ -1,6 +1,6 @@
 
 
-const validateToken = require("../../../api/jwtApi")
+const {validateToken} = require("../../../api/jwtApi")
 const controller = require("./controller")
 const service = require("./service")
 const express = require("express")

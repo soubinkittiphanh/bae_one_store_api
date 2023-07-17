@@ -28,6 +28,8 @@ sequelize.authenticate().then(()=>{
 const db={}
 db.sequelize = sequelize;
 db.Sequelize = Sequelize
+db.user = require("../user/model")(sequelize,DataTypes);
+db.product = require("../product/model")(sequelize,DataTypes);
 db.chartAccount =  require("../account/model")(sequelize,DataTypes);
 db.gl = require("../GL/model")(sequelize,DataTypes);
 db.apPaymentHeader = require("../AP/payment/header/model")(sequelize,DataTypes);
@@ -36,7 +38,6 @@ db.campaign = require("../controllers/admin/campaign/model")(sequelize,DataTypes
 db.campaignEntry = require("../controllers/admin/campaign/entry/model")(sequelize,DataTypes);
 db.rider = require("../rider/model")(sequelize,DataTypes);
 db.card = require("../card/model")(sequelize,DataTypes);
-db.product = require("../product/model")(sequelize,DataTypes);
 db.category = require("../category/model")(sequelize,DataTypes);
 db.outlet = require("../outlet/model")(sequelize,DataTypes);
 db.poHeader = require("../PO/model")(sequelize,DataTypes);
@@ -54,7 +55,14 @@ db.sequelize.sync({force:false,alter: true}).then(()=>{
     logger.info("Datatase is synchronize")
 })
 
-
+db.product.belongsTo(db.unit,{
+    foreignKey:'stockUnitId',
+    as:'stockUnit'
+})
+db.product.belongsTo(db.unit,{
+    foreignKey:'receiveUnitId',
+    as:'receiveUnit'
+})
 //Campaign relation
 db.campaign.hasMany(db.campaignEntry,{
     as: 'entries'
@@ -146,6 +154,10 @@ db.saleLine.belongsTo(db.unit,{
     as: 'unit'
 })
 
+db.saleHeader.belongsTo(db.user,{
+    foreignKey:'userId',
+    as:'user'
+})
 
 
 // User.hasMany(Post, { onUpdate: 'CASCADE' });

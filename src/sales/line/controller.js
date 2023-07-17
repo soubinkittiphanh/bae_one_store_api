@@ -3,11 +3,10 @@ const SaleLine = require('../../models').saleLine;
 const { body, validationResult } = require('express-validator');
 const logger = require('../../api/logger');
 
-const { SaleLine } = require('../models');
 
 exports.createSaleLine = async (req, res) => {
   try {
-    const { quantity, unitRate, price, discount, total, isActive } = req.body;
+    const { quantity, unitRate, price, discount, total, isActive, unitId, productId } = req.body;
 
     const newSaleLine = await SaleLine.create({
       quantity,
@@ -16,6 +15,8 @@ exports.createSaleLine = async (req, res) => {
       discount,
       total,
       isActive,
+      unitId,
+      productId
     });
 
     res.status(200).json(newSaleLine);
@@ -27,7 +28,7 @@ exports.createSaleLine = async (req, res) => {
 
 exports.getSaleLines = async (req, res) => {
   try {
-    const saleLines = await SaleLine.findAll();
+    const saleLines = await SaleLine.findAll({ include: ['product'] });
 
     res.status(200).json(saleLines);
   } catch (error) {

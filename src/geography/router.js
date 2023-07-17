@@ -3,7 +3,7 @@ const controller = require("./controller")
 const service = require("./service")
 const express = require("express")
 const router = express.Router()
-const validateToken = require('../api').jwtApi
+const {validateToken} = require('../api').jwtApi
 router.use(validateToken)
 // No auth 
 // router.use((req,res,next)=>{

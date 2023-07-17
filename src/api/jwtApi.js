@@ -1,5 +1,6 @@
 
 const jwt = require('jsonwebtoken');
+const logger = require('./logger');
 const secretKey = require('../config').actksecret;
 function validateToken(req, res, next) {
     const dateTime = new Date(Date.now()).toLocaleString()
@@ -17,4 +18,12 @@ function validateToken(req, res, next) {
     })
 }
 
-module.exports = validateToken
+const generateToken  = (user) => {
+    // const user = { name: u_name,tel:u_phone,id:u_id };
+    const accessToken = jwt.sign(user, secretKey, { expiresIn: '5h' });
+    logger.warn("Token ===> "+accessToken)
+    return { accessToken,user }
+}
+
+
+module.exports = {validateToken,generateToken}

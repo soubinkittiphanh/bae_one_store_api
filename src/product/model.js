@@ -7,11 +7,6 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: false,
             unique: true // Define the column as unique
         },
-        // outlet: {
-        //     type: DataTypes.INTEGER,
-        //     allowNull: false,
-        //     defaultValue: 1,
-        // },
         pro_name: {
             type: DataTypes.STRING,
             allowNull: false,
@@ -19,7 +14,6 @@ module.exports = (sequelize, DataTypes) => {
         pro_price: {
             type: DataTypes.DOUBLE,
             defaultValue: 0
-            // allowNull: false,
         },
         pro_desc: {
             type: DataTypes.STRING,
@@ -50,6 +44,10 @@ module.exports = (sequelize, DataTypes) => {
         locking_session_id: {
             type: DataTypes.STRING,
             allowNull: false,
+        },
+        barCode: {
+            type: DataTypes.STRING(40),
+            // allowNull: false,
         },
         isActive: {
             type: DataTypes.BOOLEAN,

@@ -3,7 +3,7 @@ const controller = require("../controllers/financial").chartAccount
 const service = require("../account/service")
 const express = require("express")
 const router = express.Router()
-const validateToken = require('../api').jwtApi
+const {validateToken} = require('../api').jwtApi
 router.use(validateToken)
 
 router.post("/chartAccount",controller.createAccount)

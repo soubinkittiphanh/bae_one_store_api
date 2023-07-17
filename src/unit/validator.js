@@ -1,6 +1,5 @@
 
 const { body, validationResult } = require("express-validator");
-const { body } = require('express-validator');
 
 exports.validateUnitModel = [
   body('name').notEmpty().withMessage('Name is required'),
