@@ -124,6 +124,24 @@ exports.updateSaleHeader = async (req, res) => {
     res.status(500).send(error);
   }
 };
+exports.updateSaleHeaderPostToInvoice = async (req, res) => {
+  try {
+    const { id } = req.params;
+    // const { bookingDate, remark, discount, total, exchangeRate, isActive } = req.body;
+    const isActive = true;
+    const saleHeader = await SaleHeader.findByPk(id);
+
+    if (!saleHeader) {
+      return res.status(404).json({ success: false, message: 'Sale header not found' });
+    }
+
+    await saleHeader.update({isActive });
+
+    res.status(200).json({ success: true, data: saleHeader });
+  } catch (error) {
+    res.status(500).send(error);
+  }
+};
 
 exports.deleteSaleHeader = async (req, res) => {
   try {

@@ -3,7 +3,7 @@
 module.exports = (sequelize, DataTypes) => {
     const SaleHeader = sequelize.define('saleHeader', {
         bookingDate: {
-            type: DataTypes.DATE,
+            type: DataTypes.DATEONLY,
             allowNull: false,
         },
         remark: {
