@@ -2,10 +2,14 @@
 const SaleHeader = require('../models').saleHeader;
 const Line = require('../models').saleLine;
 const Product = require('../models').product;
+const Card = require('../models').card;
 const { body, validationResult } = require('express-validator');
 const logger = require('../api/logger');
 const lineService = require("./line/service");
+const headerService = require("./service");
+const common = require('../common')
 const { Op } = require('sequelize');
+
 
 // 1. 200 OK - The request has succeeded and the server has returned the requested data.
 
@@ -30,21 +34,75 @@ exports.createSaleHeader = async (req, res) => {
     const saleHeader = await SaleHeader.create({ bookingDate, remark, discount, total, exchangeRate, isActive, clientId, paymentId, currencyId, userId });
     logger.info('Sale header ' + saleHeader.id)
     logger.info("===== Create Sale Header =====" + req.body)
-    lineService.createBulkSaleLine(res, assignHeaderId(line, saleHeader.id))
-    // res.status(201).json({ success: true, data: saleHeader });
+    // **********************
+    //  Line with headerId
+    // **********************
+    const lockingSessionId = common.generateLockingSessionId()
+    try {
+      const linesWithHeaderId = await assignHeaderId(line, saleHeader.id, lockingSessionId)
+      lineService.createBulkSaleLine(res, linesWithHeaderId, lockingSessionId)
+    } catch (error) {
+      // ********************************************
+      //  Reverse SaleHeader just created
+      // ********************************************
+      logger.error("Something wrong need to reverse header "+error)
+      await headerService.saleHeaderReversal(saleHeader.id)
+      res.status(500).send("Unfortunately " + error)
+    }
   } catch (error) {
-
     res.status(500).send(error)
   }
 };
-const assignHeaderId = (line, id) => {
+const assignHeaderId = async (line, id, lockingSessionId) => {
 
   for (const iterator of line) {
     iterator.headerId = id
     iterator.saleHeaderId = id
     logger.warn("header id ===> " + iterator.headerId)
+    try {
+      await reserveCard(iterator, lockingSessionId)
+
+    } catch (error) {
+      throw new Error(error)
+    }
   }
   return line;
+}
+
+const reserveCard = async (line, lockingSessionId) => {
+  //  *********************************
+  //  Assign Card for cost calculation
+  //  *********************************
+  const qty = line.unitRate * line.quantity
+  const cards = await Card.findAll({
+    limit: qty, // limit to n records
+    order: [['createdAt', 'DESC']], // order by createdAt column in descending order
+    where: {
+      productId: line.productKey,
+      saleLineId: null,
+      card_isused: 0,
+    }
+
+  })
+  logger.info("Product Id ===>: " + line.productKey)
+  logger.info("Cards available len ===>: " + cards.length + " sale qty needed " + qty)
+  if (!cards || cards.length < qty) {
+    throw new Error('Stock not enought');
+  }
+  for (const iterator of cards) {
+    try {
+
+      const updatedCard = await iterator.update({
+        locking_session_id: lockingSessionId,
+        card_isused: true,
+        productId: line.productKey,
+      });
+      logger.info("Reserved card " + updatedCard.id + " succesfully")
+    } catch (error) {
+      logger.error("Reserved card " + updatedCard.id + " false with error " + error)
+      throw new Error("Card reservation error")
+    }
+  }
 }
 
 
@@ -95,7 +153,7 @@ exports.getSaleHeadersByDate = async (req, res) => {
 exports.getSaleHeaderById = async (req, res) => {
   try {
     const { id } = req.params;
-    const saleHeader = await SaleHeader.findByPk();
+    const saleHeader = await SaleHeader.findByPk(id);
 
     if (!saleHeader) {
       return res.status(404).json({ success: false, message: 'Sale header not found' });
@@ -135,7 +193,7 @@ exports.updateSaleHeaderPostToInvoice = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Sale header not found' });
     }
 
-    await saleHeader.update({isActive });
+    await saleHeader.update({ isActive });
 
     res.status(200).json({ success: true, data: saleHeader });
   } catch (error) {

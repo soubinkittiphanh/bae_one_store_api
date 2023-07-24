@@ -1,6 +1,7 @@
 const logger = require('../api/logger');
 const dbAsync = require('../config/dbconAsync');
 const Card = require('../models').card
+const common = require('../common')
 function generateRandomString(length) {
     let result = '';
     const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -15,19 +16,21 @@ function generateRandomString(length) {
 
 const createHulkStockCard = (req, res) => {
 
-    const { inputter, product_id, totalCost, stocCardkQty } = req.body;
+    const { inputter, product_id, totalCost, stocCardkQty,productId } = req.body;
     const costPerUnit = totalCost ;
     const lockingSessionId = Date.now();
+    logger.info("Product ID ===> "+productId)
     const rowsToInsert = [
 
     ]
     for (let index = 0; index < stocCardkQty; index++) {
-        const cardSequenceNumber = Date.now().toString().concat(generateRandomString(10))
+        const cardSequenceNumber = common.generateLockingSessionId(10)
         logger.warn(cardSequenceNumber)
         rowsToInsert.push({
             //Card object
             card_type_code: 10010,// FIX Value and No meaning
             product_id: product_id,
+            productId: productId,
             cost: costPerUnit, // 50.99,
             card_number: cardSequenceNumber, //'1234-5678-9012-3456',
             card_isused: 0,
@@ -39,6 +42,7 @@ const createHulkStockCard = (req, res) => {
             update_time_new: new Date(),
             isActive: true,
         })
+        logger.warn("Row insert productId ===> "+rowsToInsert[0]['productId'])
     }
     Card.bulkCreate(rowsToInsert)
         .then(() => {

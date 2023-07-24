@@ -28,8 +28,9 @@ sequelize.authenticate().then(()=>{
 const db={}
 db.sequelize = sequelize;
 db.Sequelize = Sequelize
-db.user = require("../user/model")(sequelize,DataTypes);
 db.product = require("../product/model")(sequelize,DataTypes);
+db.card = require("../card/model")(sequelize,DataTypes);
+db.user = require("../user/model")(sequelize,DataTypes);
 db.chartAccount =  require("../account/model")(sequelize,DataTypes);
 db.gl = require("../GL/model")(sequelize,DataTypes);
 db.apPaymentHeader = require("../AP/payment/header/model")(sequelize,DataTypes);
@@ -37,7 +38,6 @@ db.arReceiveHeader = require("../AR/receive/header/model")(sequelize,DataTypes);
 db.campaign = require("../controllers/admin/campaign/model")(sequelize,DataTypes);
 db.campaignEntry = require("../controllers/admin/campaign/entry/model")(sequelize,DataTypes);
 db.rider = require("../rider/model")(sequelize,DataTypes);
-db.card = require("../card/model")(sequelize,DataTypes);
 db.category = require("../category/model")(sequelize,DataTypes);
 db.outlet = require("../outlet/model")(sequelize,DataTypes);
 db.poHeader = require("../PO/model")(sequelize,DataTypes);
@@ -153,12 +153,23 @@ db.saleLine.belongsTo(db.unit,{
     foreignKey:'unitId',
     as: 'unit'
 })
+db.saleLine.hasMany(db.card,{
+    as:'cards'
+})
+db.card.belongsTo(db.saleLine,{
+    foreignKey:'saleLineId',
+    as:'saleLine'
 
+})
 db.saleHeader.belongsTo(db.user,{
     foreignKey:'userId',
     as:'user'
 })
+db.card.belongsTo(db.product,{
+    foreignKey:'productId',
+    as:'product'
 
+})
 
 // User.hasMany(Post, { onUpdate: 'CASCADE' });
 // User.hasMany(Post, { onDelete: 'CASCADE' });

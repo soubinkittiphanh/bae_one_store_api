@@ -1,5 +1,71 @@
-// const logger = require('../../../api/logger');
-// const Card = require('../models').card
+
+const logger = require('../api/logger');
+const SaleHeader = require('../models').saleHeader
+const SaleLine = require('../models').saleLine
+const Card = require('../models').card
+
+const saleHeaderReversal = async (headerId)=>{
+    logger.info("Reversal sale header "+headerId)
+    try {
+        const header = await SaleHeader.findByPk(headerId)
+        logger.info("before set isActive")
+        const reversedSaleHeader = await header.update({
+            isActive:false
+        })
+        logger.info("after set isActive")
+        logger.info("SaleHeader id "+headerId +" has been reserved "+reversedSaleHeader.isActive)
+        
+    } catch (error) {
+        logger.error("SaleHeader id "+headerId +" cannot be reserved "+error)
+        throw new Error("SaleHeader id "+headerId +" cannot be reserved "+error)
+    }
+}
+const saleLineReversal = async (lineId)=>{
+    const line = SaleLine.findByPk(lineId)
+
+    if (!line) {
+        logger.error("Cannot find saleLine id "+lineId)
+        throw new Error("Cannot find saleLine id "+lineId)
+    }
+    try {
+        const updatedLine = await line.update({isActive:false})
+        logger.warn("Transaction saleLine id "+lineId +" has been reversed status: " +updatedLine.isActive)
+        
+    } catch (error) {
+        logger.error("Cannot reverse saleLine id "+ lineId +" with error "+error)
+        throw new Error("Can not revesse saleLine id "+error)
+    }
+}
+
+const cardReversal = async(productId,saleLineId)=>{
+    const cards = await Card.findAll({
+        where:{
+            saleLineId,
+            productId,
+            card_isused:1,
+            }
+        })
+    for (const iterator of cards) {
+        try {
+            const updatedCard = await Card.update({
+                card_isused: 0,
+                saleLineId: null,
+                isActive: true,
+            })
+            logger.info("Card id "+updatedCard.id+" has been reverse and it is now available in stock")
+        } catch (error) {
+            logger.error("Cannot reverse card id "+updatedCard.id +" with error "+error)
+            throw new Error("Cannot reverse card id "+updatedCard.id +" with error "+error)
+        }
+    }
+}
+
+module.exports = {
+    cardReversal,
+    saleHeaderReversal,
+    saleLineReversal
+}
+
 // function generateRandomString(length) {
 //     let result = '';
 //     const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
