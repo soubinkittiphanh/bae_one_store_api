@@ -38,6 +38,7 @@ const saleLineReversal = async (lineId)=>{
 }
 
 const cardReversal = async(productId,saleLineId)=>{
+    logger.warn("Reversal cards "+productId+' ID '+saleLineId)
     const cards = await Card.findAll({
         where:{
             saleLineId,
@@ -45,14 +46,39 @@ const cardReversal = async(productId,saleLineId)=>{
             card_isused:1,
             }
         })
+        logger.info('All card found for this saleLine '+cards.length)
     for (const iterator of cards) {
         try {
-            const updatedCard = await Card.update({
+            const updatedCard = await iterator.update({
                 card_isused: 0,
                 saleLineId: null,
                 isActive: true,
             })
-            logger.info("Card id "+updatedCard.id+" has been reverse and it is now available in stock")
+            logger.info(`===> ****REV**** Card id +${updatedCard.id}+ has been reverse and it is now available in stock card_isused: ${updatedCard['card_isused']}`)
+        } catch (error) {
+            logger.error("Cannot reverse card id "+updatedCard.id +" with error "+error)
+            throw new Error("Cannot reverse card id "+updatedCard.id +" with error "+error)
+        }
+    }
+}
+
+const cardReversalByLockingSessionId = async(lockingSessionId)=>{
+    logger.warn(`Reversal cards by lockingSessionId ${lockingSessionId}`)
+    const cards = await Card.findAll({
+        where:{
+            locking_session_id:lockingSessionId,
+            card_isused:1,
+            }
+        })
+        logger.info('All card found for this saleLine '+cards.length)
+    for (const iterator of cards) {
+        try {
+            const updatedCard = await iterator.update({
+                card_isused: 0,
+                saleLineId: null,
+                isActive: true,
+            })
+            logger.info(`===> ****REV**** Card id +${updatedCard.id}+ has been reverse and it is now available in stock card_isused: ${updatedCard['card_isused']}`)
         } catch (error) {
             logger.error("Cannot reverse card id "+updatedCard.id +" with error "+error)
             throw new Error("Cannot reverse card id "+updatedCard.id +" with error "+error)
@@ -63,7 +89,8 @@ const cardReversal = async(productId,saleLineId)=>{
 module.exports = {
     cardReversal,
     saleHeaderReversal,
-    saleLineReversal
+    saleLineReversal,
+    cardReversalByLockingSessionId
 }
 
 // function generateRandomString(length) {

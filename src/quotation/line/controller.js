@@ -1,15 +1,15 @@
 
-const SaleLine = require('../../models').saleLine;
+const QuotationLine = require('../../models').quotationLine;
 const headerService = require('../service');
 const { body, validationResult } = require('express-validator');
 const logger = require('../../api/logger');
 
 
-exports.createSaleLine = async (req, res) => {
+exports.createQuotationLine = async (req, res) => {
   try {
     const { quantity, unitRate, price, discount, total, isActive, unitId, productId } = req.body;
 
-    const newSaleLine = await SaleLine.create({
+    const newQuotationLine = await QuotationLine.create({
       quantity,
       unitRate,
       price,
@@ -20,82 +20,80 @@ exports.createSaleLine = async (req, res) => {
       productId
     });
 
-    res.status(200).json(newSaleLine);
+    res.status(200).json(newQuotationLine);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server Error' });
   }
 };
 
-exports.getSaleLines = async (req, res) => {
+exports.getQuotationLines = async (req, res) => {
   try {
-    const saleLines = await SaleLine.findAll({ include: ['product'] });
+    const quotationLines = await QuotationLine.findAll({ include: ['product'] });
 
-    res.status(200).json(saleLines);
+    res.status(200).json(quotationLines);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server Error' });
   }
 };
 
-exports.getSaleLineById = async (req, res) => {
+exports.getQuotationLineById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const saleLine = await SaleLine.findByPk(id);
+    const quotationLines = await QuotationLine.findByPk(id);
 
-    if (!saleLine) {
+    if (!quotationLines) {
       return res.status(404).json({ message: 'Sale line not found' });
     }
 
-    res.status(200).json(saleLine);
+    res.status(200).json(quotationLines);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server Error' });
   }
 };
 
-exports.updateSaleLine = async (req, res) => {
+exports.updateQuotationLine = async (req, res) => {
   try {
     const { id } = req.params;
     const { quantity, unitRate, price, discount, total, isActive } = req.body;
 
-    const saleLine = await SaleLine.findByPk(id);
+    const quotationLines = await QuotationLine.findByPk(id);
 
-    if (!saleLine) {
+    if (!quotationLines) {
       return res.status(404).json({ message: 'Sale line not found' });
     }
 
-    await saleLine.update({
-      quantity: quantity || saleLine.quantity,
-      unitRate: unitRate || saleLine.unitRate,
-      price: price || saleLine.price,
-      discount: discount || saleLine.discount,
-      total: total || saleLine.total,
-      isActive: isActive || saleLine.isActive,
+    await quotationLines.update({
+      quantity: quantity || quotationLines.quantity,
+      unitRate: unitRate || quotationLines.unitRate,
+      price: price || quotationLines.price,
+      discount: discount || quotationLines.discount,
+      total: total || quotationLines.total,
+      isActive: isActive || quotationLines.isActive,
     });
 
-    res.status(200).json(saleLine);
+    res.status(200).json(quotationLines);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server Error' });
   }
 };
 
-exports.deleteSaleLine = async (req, res) => {
+exports.deleteQuotationLine = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const saleLine = await SaleLine.findByPk(id,{include: ['product'],});
+    const quotationLines = await QuotationLine.findByPk(id);
 
-    if (!saleLine) {
+    if (!quotationLines) {
       return res.status(404).json({ message: 'Sale line not found' });
     }
-    logger.info("Sale line detail "+saleLine)
-    // ************* Reverse card ************* //
-    await headerService.cardReversal(saleLine.productId,id)
-    // ************* Delete saleLine ************* //
-    await saleLine.destroy();
+    logger.info("Sale line detail "+quotationLines)
+    // ************* Delete QuotationLine ************* //
+    await quotationLines.destroy();
 
     res.status(200).json();
   } catch (error) {

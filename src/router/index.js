@@ -22,6 +22,8 @@ const paymentMethod = require("../paymentMethod").router
 const sale = require("../sales").router
 const product = require("../product").router
 const saleLine = require("../sales/line").router
+const quotation = require("../quotation").router
+const quotationLine = require("../quotation/line").router
 
 module.exports={
     orderRouter,
@@ -47,5 +49,7 @@ module.exports={
     paymentMethod,
     sale,
     saleLine,
-    product
+    product,
+    quotation,
+    quotationLine
 }

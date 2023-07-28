@@ -28,6 +28,8 @@ sequelize.authenticate().then(()=>{
 const db={}
 db.sequelize = sequelize;
 db.Sequelize = Sequelize
+db.quotationHeader = require("../quotation/model")(sequelize,DataTypes);
+db.quotationLine = require("../quotation/line/model")(sequelize,DataTypes);
 db.product = require("../product/model")(sequelize,DataTypes);
 db.card = require("../card/model")(sequelize,DataTypes);
 db.user = require("../user/model")(sequelize,DataTypes);
@@ -141,6 +143,11 @@ db.saleHeader.belongsTo(db.currency,{
 db.saleHeader.hasMany(db.saleLine,{
     as:'lines'
 })
+db.saleHeader.belongsTo(db.user,{
+    foreignKey:'userId',
+    as:'user'
+})
+
 db.saleLine.belongsTo(db.saleHeader,{
     foreignKey:'headerId',
     as:'header'
@@ -161,10 +168,42 @@ db.card.belongsTo(db.saleLine,{
     as:'saleLine'
 
 })
-db.saleHeader.belongsTo(db.user,{
+
+// Quotation mapping //
+db.quotationHeader.belongsTo(db.payment,{
+    foreignKey:'paymentId',
+    as:'payment'
+})
+db.quotationHeader.belongsTo(db.client,{
+    foreignKey:'clientId',
+    as:'client'
+})
+db.quotationHeader.belongsTo(db.currency,{
+    foreignKey:'currencyId',
+    as:'currency'
+})
+db.quotationHeader.hasMany(db.quotationLine,{
+    as:'lines'
+})
+db.quotationHeader.belongsTo(db.user,{
     foreignKey:'userId',
     as:'user'
 })
+
+db.quotationLine.belongsTo(db.quotationHeader,{
+    foreignKey:'headerId',
+    as:'header'
+})
+db.quotationLine.belongsTo(db.product,{
+    foreignKey:'productId',
+    as:'product'
+})
+db.quotationLine.belongsTo(db.unit,{
+    foreignKey:'unitId',
+    as: 'unit'
+})
+// Quotation mapping //
+
 db.card.belongsTo(db.product,{
     foreignKey:'productId',
     as:'product'
