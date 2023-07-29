@@ -21,19 +21,21 @@ const createBulkSaleLine = async (res, lines, lockingSessionId) => {
                     }
                 })
                 logger.info("Update card saleLineId successfully " + cardUpdated.id)
-                // Copy the original array to a new structure array
-                const productIdList = linesCreated.map((item) => {
-                    return item.productId
-                });
-                productService.updateProductCountGroup(productIdList)
-                res.status(200).send("Transaction completed - " + lines[0].headerId)
+
             } catch (error) {
                 logger.error("Update card saleLineId fail " + error)
                 await fullReversal(linesCreated[0]['id'])
                 throw new Error("Card is not updated correctly and inventory amount will not be correctly")
             }
 
+
         }
+        // Copy the original array to a new structure array
+        const productIdList = linesCreated.map((item) => {
+            return item.productId
+        });
+        await productService.updateProductCountGroup(productIdList)
+        res.status(200).send("Transaction completed - " + lines[0].headerId)
     } catch (error) {
         // ********************************************
         //  Reverse SaleHeader just created before
