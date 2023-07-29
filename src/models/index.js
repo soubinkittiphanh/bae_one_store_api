@@ -28,6 +28,7 @@ sequelize.authenticate().then(()=>{
 const db={}
 db.sequelize = sequelize;
 db.Sequelize = Sequelize
+db.location = require("../location/model")(sequelize,DataTypes);
 db.quotationHeader = require("../quotation/model")(sequelize,DataTypes);
 db.quotationLine = require("../quotation/line/model")(sequelize,DataTypes);
 db.product = require("../product/model")(sequelize,DataTypes);
@@ -53,10 +54,19 @@ db.saleLine = require("../sales/line/model")(sequelize,DataTypes);
 db.unit = require("../unit/model")(sequelize,DataTypes);
 db.payment = require("../paymentMethod/model")(sequelize,DataTypes);
 
+
 db.sequelize.sync({force:false,alter: true}).then(()=>{
     logger.info("Datatase is synchronize")
 })
 
+db.card.belongsTo(db.location,{
+    foreignKey:'locationId',
+    as:'location'
+})
+db.saleHeader.belongsTo(db.location,{
+    foreignKey:'locationId',
+    as:'location',
+})
 db.product.belongsTo(db.unit,{
     foreignKey:'stockUnitId',
     as:'stockUnit'

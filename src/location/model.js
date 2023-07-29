@@ -1,31 +1,14 @@
 
 
 module.exports = (sequelize, DataTypes) => {
-    const SaleHeader = sequelize.define('saleHeader', {
-        bookingDate: {
-            type: DataTypes.DATEONLY,
+    const Location = sequelize.define('location', {
+        name: {
+            type: DataTypes.STRING,
             allowNull: false,
+            defaultValue: 0
         },
-        referenceNo: {
-            type: DataTypes.STRING(100),
-            defaultValue: '',
-        },
-        remark: {
-            type: DataTypes.STRING(100),
-            allowNull: false,
-            defaultValue: 1,
-        },
-        discount: {
-            type: DataTypes.DOUBLE,
-            defaultValue: 0,
-        },
-        total: {
-            type: DataTypes.DOUBLE,
-            defaultValue: 0,
-        },
-        exchangeRate: {
-            type: DataTypes.DOUBLE,
-            defaultValue: 1,
+        description: {
+            type: DataTypes.STRING,
         },
         isActive: {
             type: DataTypes.BOOLEAN,
@@ -46,7 +29,7 @@ module.exports = (sequelize, DataTypes) => {
         freezeTableName: true,
     })
 
-    return SaleHeader;
+    return Location;
 };
 
 // 1. STRING: A variable length string.

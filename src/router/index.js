@@ -5,6 +5,7 @@ const generalLedger = require("./generalLedger")
 const chartAccount = require("./chartOfAccount")
 const upgrade = require("./upgrade")
 const rider = require("../rider").router
+const location = require("../location").router
 const campaign = require("../controllers/admin/campaign").router
 const campaignEntry = require("../controllers/admin/campaign/entry").router
 const card = require("../card").router
@@ -51,5 +52,6 @@ module.exports={
     saleLine,
     product,
     quotation,
-    quotationLine
+    quotationLine,
+    location,
 }

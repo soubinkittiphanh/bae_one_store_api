@@ -23828,3 +23828,91 @@
 {"level":"info","message":"===> Updating card saleLineId in card model","timestamp":"2023-07-28T09:23:22.806Z"}
 {"level":"info","message":"Update card saleLineId successfully undefined","timestamp":"2023-07-28T09:23:23.094Z"}
 {"level":"warn","message":"Date 2023-07-28 2023-07-28","timestamp":"2023-07-28T09:23:23.177Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-07-28T16:10:25.637Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-07-28T16:10:25.643Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-07-28T16:10:25.645Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-07-28T16:10:25.646Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-07-28T16:10:25.651Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-07-28T16:10:27.303Z"}
+{"level":"info","message":"app is runing: 8080","timestamp":"2023-07-28T16:10:27.305Z"}
+{"level":"warn","message":"env: dcommerce_uat_1","timestamp":"2023-07-28T16:10:27.306Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-07-28T17:21:14.340Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-07-28T17:21:14.343Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-07-28T17:21:14.344Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-07-28T17:21:14.345Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-07-28T17:21:14.347Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-07-28T17:21:15.374Z"}
+{"level":"info","message":"app is runing: 8080","timestamp":"2023-07-28T17:21:15.374Z"}
+{"level":"warn","message":"env: dcommerce_uat_1","timestamp":"2023-07-28T17:21:15.375Z"}
+{"level":"info","message":"DB Connection established","timestamp":"2023-07-28T17:21:20.576Z"}
+{"level":"info","message":"SQL COMMAND SELECT * FROM user WHERE cus_id='1000' AND cus_pass='1111'","timestamp":"2023-07-28T17:22:29.471Z"}
+{"level":"warn","message":"Token ===> eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiY3VzX2lkIjoxMDAwLCJjdXNfbmFtZSI6InNvdWJpbiIsImN1c190ZWwiOiIwMjA3NzE1MDAwOCIsImlhdCI6MTY5MDU2NDk1MSwiZXhwIjoxNjkwNTgyOTUxfQ.IdCKcw56LYpBdIQ8jRloxE40oVkQ8netfArRYLGp2Ns","timestamp":"2023-07-28T17:22:31.235Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-07-28T17:25:30.100Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-07-28T17:25:30.102Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-07-28T17:25:30.103Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-07-28T17:25:30.104Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-07-28T17:25:30.106Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-07-28T17:25:30.958Z"}
+{"level":"info","message":"app is runing: 8080","timestamp":"2023-07-28T17:25:30.959Z"}
+{"level":"warn","message":"env: dcommerce_uat_1","timestamp":"2023-07-28T17:25:30.960Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-07-29T01:29:26.931Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-07-29T01:29:26.934Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-07-29T01:29:26.935Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-07-29T01:29:26.936Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-07-29T01:29:26.937Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-07-29T01:29:27.952Z"}
+{"level":"info","message":"app is runing: 8080","timestamp":"2023-07-29T01:29:27.953Z"}
+{"level":"warn","message":"env: dcommerce_uat_1","timestamp":"2023-07-29T01:29:27.955Z"}
+{"level":"info","message":"DB Connection established","timestamp":"2023-07-29T01:29:31.277Z"}
+{"level":"info","message":"Datatase is synchronize","timestamp":"2023-07-29T01:34:42.161Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-07-29T01:50:47.319Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-07-29T01:50:47.321Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-07-29T01:50:47.322Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-07-29T01:50:47.323Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-07-29T01:50:47.325Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-07-29T01:50:48.208Z"}
+{"level":"info","message":"app is runing: 8080","timestamp":"2023-07-29T01:50:48.209Z"}
+{"level":"warn","message":"env: dcommerce_uat_1","timestamp":"2023-07-29T01:50:48.210Z"}
+{"level":"info","message":"DB Connection established","timestamp":"2023-07-29T01:50:52.117Z"}
+{"level":"info","message":"Datatase is synchronize","timestamp":"2023-07-29T01:56:22.548Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-29T02:05:25.132Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-29T02:05:25.154Z"}
+{"level":"info","message":"SQL COMMAND SELECT * FROM user WHERE cus_id='1000' AND cus_pass='1111'","timestamp":"2023-07-29T02:05:41.151Z"}
+{"level":"warn","message":"Token ===> eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiY3VzX2lkIjoxMDAwLCJjdXNfbmFtZSI6InNvdWJpbiIsImN1c190ZWwiOiIwMjA3NzE1MDAwOCIsImlhdCI6MTY5MDU5NjM0MSwiZXhwIjoxNjkwNjE0MzQxfQ.Ple1fMjeCC71JHLrObl7C2ApqrOYePs_bMrBNbad2_E","timestamp":"2023-07-29T02:05:41.893Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-29T02:05:41.930Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-29T02:05:41.931Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-29T02:05:46.034Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-29T02:05:46.042Z"}
+{"level":"info","message":"SELECT SUM(o.product_amount) AS sale_count,\n    SUM(o.order_price_total) as total_sale,\n    o.txn_date,\n    SUBSTR(o.txn_date, 1, 10) AS txn_date_short\n    FROM user_order o \n    WHERE  o.txn_date BETWEEN '2023-07-01 00:00:00' AND '2023-07-30 23:59:59' \n    AND o.record_status = 1\n    GROUP BY txn_date_short","timestamp":"2023-07-29T02:05:46.082Z"}
+{"level":"info","message":"SELECT o.product_id,SUM(o.product_amount) AS sale_count,\n    o.product_price,SUM(o.order_price_total) as total_sale,\n    o.txn_date,o.record_status, \n    p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name\n    FROM user_order o \n    LEFT JOIN (SELECT p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN outlet u ON u.id = p.outlet\n        LEFT JOIN category c on c.categ_id=p.pro_category\n        ) p \n    ON p.pro_id = o.product_id \n    WHERE  o.txn_date BETWEEN '2023-07-01 00:00:00' AND '2023-07-30 23:59:59'\n    AND o.record_status = 1\n    GROUP BY p.pro_category LIMIT 5 ","timestamp":"2023-07-29T02:05:46.101Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-29T02:05:47.886Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-29T02:05:47.889Z"}
+{"level":"info","message":"SELECT d.*,SUM(o.order_price_total) AS cart_total,\n    d.payment_code,\n    p.payment_status,\n    o.order_id,\n    d.record_status\n    FROM dynamic_customer d\n    LEFT JOIN user_order o ON o.locking_session_id = d.locking_session_id\n    LEFT JOIN order_payment p ON p.locking_session_id = d.locking_session_id\n    WHERE d.txn_date BETWEEN '2023-07-01 00:00:00' AND '2023-07-30 23:59:59' \n    \n    GROUP BY d.locking_session_id\n    ","timestamp":"2023-07-29T02:05:47.959Z"}
+{"level":"info","message":"Record count => 41","timestamp":"2023-07-29T02:05:48.350Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-07-29T02:05:48.350Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-29T02:05:50.605Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-29T02:05:50.605Z"}
+{"level":"info","message":"*************** FETCH PRODUCT BY ID  ***************","timestamp":"2023-07-29T02:05:52.616Z"}
+{"level":"info","message":"*************Payload: *****************","timestamp":"2023-07-29T02:05:52.616Z"}
+{"level":"info","message":"*************** UPDATE PRODUCT  ***************","timestamp":"2023-07-29T02:06:03.808Z"}
+{"level":"info","message":"*************Payload: *****************","timestamp":"2023-07-29T02:06:03.810Z"}
+{"level":"info","message":"{\"pro_category\":1002,\"pro_id\":1010,\"pro_name\":\"ກະເປົາເດີນທາງ Happy BC ກາກີ\",\"pro_price\":169000,\"pro_desc\":\"ກະເປົ່າ\",\"pro_status\":false,\"pro_retail_price\":0,\"pro_cost_price\":87000,\"outlet\":1,\"minStock\":10,\"barCode\":\"barcode\",\"receiveUnitId\":1,\"stockUnitId\":1,\"pro_image\":[{\"name\":\"1687429504857O1CN01TLLghJ206S3oXj4wi_!!2214358726800-0-cib.jpg\",\"path\":\"uploads/1687429504857O1CN01TLLghJ206S3oXj4wi_!!2214358726800-0-cib.jpg\"}]}","timestamp":"2023-07-29T02:06:03.810Z"}
+{"level":"info","message":"cost 87000","timestamp":"2023-07-29T02:06:03.811Z"}
+{"level":"info","message":"outlet 1","timestamp":"2023-07-29T02:06:03.812Z"}
+{"level":"info","message":"************* UPDATE PRODUCT *****************","timestamp":"2023-07-29T02:06:03.812Z"}
+{"level":"info","message":"*************Payload:  *****************","timestamp":"2023-07-29T02:06:03.812Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-29T02:06:04.814Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-29T02:06:04.815Z"}
+{"level":"info","message":"*************** FETCH PRODUCT BY ID  ***************","timestamp":"2023-07-29T02:07:01.294Z"}
+{"level":"info","message":"*************Payload: *****************","timestamp":"2023-07-29T02:07:01.296Z"}
+{"level":"info","message":"*************** UPDATE PRODUCT  ***************","timestamp":"2023-07-29T02:07:09.777Z"}
+{"level":"info","message":"*************Payload: *****************","timestamp":"2023-07-29T02:07:09.778Z"}
+{"level":"info","message":"{\"pro_category\":1002,\"pro_id\":1010,\"pro_name\":\"ກະເປົາເດີນທາງ Happy BC ກາກີ\",\"pro_price\":169000,\"pro_desc\":\"ກະເປົ່າ\",\"pro_status\":false,\"pro_retail_price\":0,\"pro_cost_price\":87000,\"outlet\":1,\"minStock\":10,\"barCode\":\"barcode\",\"receiveUnitId\":4,\"stockUnitId\":1,\"pro_image\":[{\"name\":\"1687429504857O1CN01TLLghJ206S3oXj4wi_!!2214358726800-0-cib.jpg\",\"path\":\"uploads/1687429504857O1CN01TLLghJ206S3oXj4wi_!!2214358726800-0-cib.jpg\"}]}","timestamp":"2023-07-29T02:07:09.778Z"}
+{"level":"info","message":"cost 87000","timestamp":"2023-07-29T02:07:09.778Z"}
+{"level":"info","message":"outlet 1","timestamp":"2023-07-29T02:07:09.778Z"}
+{"level":"info","message":"************* UPDATE PRODUCT *****************","timestamp":"2023-07-29T02:07:09.778Z"}
+{"level":"info","message":"*************Payload:  *****************","timestamp":"2023-07-29T02:07:09.778Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-29T02:07:10.623Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-29T02:07:10.624Z"}
+{"level":"info","message":"*************** FETCH PRODUCT BY ID  ***************","timestamp":"2023-07-29T02:07:13.157Z"}
+{"level":"info","message":"*************Payload: *****************","timestamp":"2023-07-29T02:07:13.157Z"}
