@@ -1,5 +1,5 @@
 const logger = require("../../api/logger");
-
+const productService = require('../../product/service')
 const SaleLine = require("../../models").saleLine
 const Card = require('../../models').card;
 const saleHeaderService = require("../service")
@@ -21,6 +21,11 @@ const createBulkSaleLine = async (res, lines, lockingSessionId) => {
                     }
                 })
                 logger.info("Update card saleLineId successfully " + cardUpdated.id)
+                // Copy the original array to a new structure array
+                const productIdList = linesCreated.map((item) => {
+                    return item.productId
+                });
+                productService.updateProductCountGroup(productIdList)
                 res.status(200).send("Transaction completed - " + lines[0].headerId)
             } catch (error) {
                 logger.error("Update card saleLineId fail " + error)

@@ -21,7 +21,7 @@ const saleHeaderReversal = async (headerId)=>{
     }
 }
 const saleLineReversal = async (lineId)=>{
-    const line = SaleLine.findByPk(lineId)
+    const line = await SaleLine.findByPk(lineId)
 
     if (!line) {
         logger.error("Cannot find saleLine id "+lineId)

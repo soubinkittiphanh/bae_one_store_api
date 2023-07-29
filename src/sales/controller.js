@@ -9,7 +9,7 @@ const lineService = require("./line/service");
 const headerService = require("./service");
 const common = require('../common')
 const { Op } = require('sequelize');
-
+const productService = require('../product/service')
 
 // 1. 200 OK - The request has succeeded and the server has returned the requested data.
 
@@ -196,7 +196,7 @@ const reserveCard = async (line, lockingSessionId, qty) => {
         card_isused: true,
         // saleLineId: iterator.id
       }
-      if (iterator.id) {
+      if (line.id) {
         entryOption.saleLineId = line.id
         logger.warn(`=====> ${JSON.stringify(entryOption)}`)
         updatedCard = await iterator.update(entryOption);

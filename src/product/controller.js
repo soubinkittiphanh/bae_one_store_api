@@ -2,6 +2,7 @@
 const Product = require('../models').product;
 const { body, validationResult } = require('express-validator');
 const logger = require('../api/logger');
+const { literal, Op } = require('sequelize');
 
 
 // Get all products
@@ -29,6 +30,42 @@ const getProductById = async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 };
+const updateProductCountById = async (req, res) => {
+  const { id } = req.params;
+  Product.update({
+    stock_count: literal(`(
+      SELECT COUNT(card.card_number)
+      FROM card
+      WHERE card.productId =${id} AND card.saleLineId IS NULL
+    )`)
+  }).then(() => {
+    logger.info('Product count updated successfully');
+    res.status(200).send(`Operation completed`)
+  }).catch((error) => {
+    logger.error('Error updating product count:'+ error);
+    res.status(501).send(`Server error ${error}`)
+  });
+};
+
+const updateProductCountAll = async (req, res) => {
+  try {
+    const products = await Product.findAll()
+    logger.info(`All product count ${products.length} to be update stock count`)
+    for (const iterator of products) {
+      iterator.update({
+        stock_count: literal(`(
+          SELECT COUNT(card.card_number)
+          FROM card
+          WHERE card.productId =${iterator.id} AND card.saleLineId IS NULL
+        )`)
+      })
+    }
+    res.status(200).send(`Operation completed`)
+  } catch (error) {
+    logger.error(`Cannot find all product with error ${error}`)
+    res.status(501).send(`Server error ${error}`)
+  }
+};
 
 // Create a new product
 const createProduct = async (req, res) => {
@@ -36,10 +73,10 @@ const createProduct = async (req, res) => {
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
   }
-  let { pro_id, pro_name, pro_price, pro_desc, pro_status, 
-    pro_image_path, retail_cost_percent, cost_price, 
-    stock_count, locking_session_id, isActive,minStock,barCode } = req.body;
-    locking_session_id = Date.now()
+  let { pro_id, pro_name, pro_price, pro_desc, pro_status,
+    pro_image_path, retail_cost_percent, cost_price,
+    stock_count, locking_session_id, isActive, minStock, barCode } = req.body;
+  locking_session_id = Date.now()
   try {
     const newProduct = await Product.create({
       pro_id,
@@ -70,9 +107,9 @@ const updateProductById = async (req, res) => {
     return res.status(400).json({ errors: errors.array() });
   }
   const { id } = req.params;
-  const { pro_id, pro_name, pro_price, pro_desc, pro_status, 
-    pro_image_path, retail_cost_percent, cost_price, stock_count, 
-    isActive,minStock,barCode } = req.body;
+  const { pro_id, pro_name, pro_price, pro_desc, pro_status,
+    pro_image_path, retail_cost_percent, cost_price, stock_count,
+    isActive, minStock, barCode } = req.body;
   try {
     const product = await Product.findOne({ where: { id } });
     if (!product) {
@@ -125,6 +162,8 @@ module.exports = {
   createProduct,
   updateProductById,
   deleteProductById,
+  updateProductCountById,
+  updateProductCountAll
 };
 
- 
+

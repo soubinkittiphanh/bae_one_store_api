@@ -127,7 +127,8 @@ const fetchProd = async (req, res) => {
     logger.info("*************** FETCH PRODUCT ***************");
     logger.info(`*************Payload: *****************ss`);
 
-    const sqlCom = `SELECT DISTINCT p.id,p.pro_id,p.minStock,p.barCode,p.receiveUnitId,p.stockUnitId,p.pro_name,p.pro_category,
+    const sqlCom = `
+    SELECT DISTINCT p.id,p.pro_id,p.minStock,p.barCode,p.receiveUnitId,p.stockUnitId,p.pro_name,p.pro_category,
     p.pro_price,p.pro_status,p.cost_price,c.categ_name,IFNULL(i.img_name,'No image') AS img_name,i.img_path,
     p.stock_count AS card_count ,IFNULL(s.cnt,0) AS sale_count, o.name AS outlet_name
     FROM product p 
