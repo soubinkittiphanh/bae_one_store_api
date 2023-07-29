@@ -25388,3 +25388,970 @@
 {"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:31.741Z"}
 {"level":"info","message":"Reserved card 92 succesfully","timestamp":"2023-07-29T05:34:32.256Z"}
 {"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:32.256Z"}
+{"level":"info","message":"Reserved card 348 succesfully","timestamp":"2023-07-29T05:34:32.927Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:32.927Z"}
+{"level":"info","message":"Reserved card 604 succesfully","timestamp":"2023-07-29T05:34:33.379Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:33.379Z"}
+{"level":"info","message":"Reserved card 860 succesfully","timestamp":"2023-07-29T05:34:33.891Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:33.891Z"}
+{"level":"info","message":"Reserved card 1116 succesfully","timestamp":"2023-07-29T05:34:34.257Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:34.258Z"}
+{"level":"info","message":"Reserved card 1372 succesfully","timestamp":"2023-07-29T05:34:34.613Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:34.613Z"}
+{"level":"info","message":"Reserved card 1628 succesfully","timestamp":"2023-07-29T05:34:35.021Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:35.022Z"}
+{"level":"info","message":"Reserved card 1884 succesfully","timestamp":"2023-07-29T05:34:35.430Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:35.430Z"}
+{"level":"info","message":"Reserved card 2140 succesfully","timestamp":"2023-07-29T05:34:35.942Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:35.942Z"}
+{"level":"info","message":"Reserved card 2396 succesfully","timestamp":"2023-07-29T05:34:36.454Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:36.455Z"}
+{"level":"info","message":"Reserved card 2652 succesfully","timestamp":"2023-07-29T05:34:36.863Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:36.863Z"}
+{"level":"info","message":"Reserved card 2908 succesfully","timestamp":"2023-07-29T05:34:37.377Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:37.377Z"}
+{"level":"info","message":"Reserved card 3164 succesfully","timestamp":"2023-07-29T05:34:37.883Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:37.883Z"}
+{"level":"info","message":"Reserved card 3420 succesfully","timestamp":"2023-07-29T05:34:38.297Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:38.297Z"}
+{"level":"info","message":"Reserved card 3676 succesfully","timestamp":"2023-07-29T05:34:38.706Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:38.706Z"}
+{"level":"info","message":"Reserved card 3932 succesfully","timestamp":"2023-07-29T05:34:38.997Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:38.998Z"}
+{"level":"info","message":"Reserved card 4188 succesfully","timestamp":"2023-07-29T05:34:39.276Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:39.276Z"}
+{"level":"info","message":"Reserved card 4444 succesfully","timestamp":"2023-07-29T05:34:39.549Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:39.549Z"}
+{"level":"info","message":"Reserved card 4700 succesfully","timestamp":"2023-07-29T05:34:39.858Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:39.859Z"}
+{"level":"info","message":"Reserved card 4956 succesfully","timestamp":"2023-07-29T05:34:40.144Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:40.145Z"}
+{"level":"info","message":"Reserved card 5212 succesfully","timestamp":"2023-07-29T05:34:40.550Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:40.551Z"}
+{"level":"info","message":"Reserved card 5468 succesfully","timestamp":"2023-07-29T05:34:40.862Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:40.862Z"}
+{"level":"info","message":"Reserved card 5724 succesfully","timestamp":"2023-07-29T05:34:41.166Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:41.167Z"}
+{"level":"info","message":"Reserved card 5980 succesfully","timestamp":"2023-07-29T05:34:41.461Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:41.461Z"}
+{"level":"info","message":"Reserved card 6236 succesfully","timestamp":"2023-07-29T05:34:41.747Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:41.747Z"}
+{"level":"info","message":"Reserved card 6492 succesfully","timestamp":"2023-07-29T05:34:42.038Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:42.038Z"}
+{"level":"info","message":"Reserved card 6748 succesfully","timestamp":"2023-07-29T05:34:42.319Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:42.319Z"}
+{"level":"info","message":"Reserved card 7004 succesfully","timestamp":"2023-07-29T05:34:42.625Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:42.625Z"}
+{"level":"info","message":"Reserved card 7260 succesfully","timestamp":"2023-07-29T05:34:43.107Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:43.108Z"}
+{"level":"info","message":"Reserved card 7516 succesfully","timestamp":"2023-07-29T05:34:43.623Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:43.624Z"}
+{"level":"info","message":"Reserved card 7772 succesfully","timestamp":"2023-07-29T05:34:44.133Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:44.133Z"}
+{"level":"info","message":"Reserved card 8028 succesfully","timestamp":"2023-07-29T05:34:44.549Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:44.549Z"}
+{"level":"info","message":"Reserved card 8284 succesfully","timestamp":"2023-07-29T05:34:45.020Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:45.020Z"}
+{"level":"info","message":"Reserved card 8540 succesfully","timestamp":"2023-07-29T05:34:45.511Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:45.511Z"}
+{"level":"info","message":"Reserved card 8796 succesfully","timestamp":"2023-07-29T05:34:45.980Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:45.980Z"}
+{"level":"info","message":"Reserved card 9052 succesfully","timestamp":"2023-07-29T05:34:46.329Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:46.329Z"}
+{"level":"info","message":"Reserved card 9308 succesfully","timestamp":"2023-07-29T05:34:46.618Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:46.619Z"}
+{"level":"info","message":"Reserved card 9564 succesfully","timestamp":"2023-07-29T05:34:46.894Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:46.894Z"}
+{"level":"info","message":"Reserved card 9820 succesfully","timestamp":"2023-07-29T05:34:47.184Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:47.185Z"}
+{"level":"info","message":"Reserved card 93 succesfully","timestamp":"2023-07-29T05:34:47.616Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:47.617Z"}
+{"level":"info","message":"Reserved card 349 succesfully","timestamp":"2023-07-29T05:34:47.908Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:47.908Z"}
+{"level":"info","message":"Reserved card 605 succesfully","timestamp":"2023-07-29T05:34:48.230Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:48.231Z"}
+{"level":"info","message":"Reserved card 861 succesfully","timestamp":"2023-07-29T05:34:48.744Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:48.744Z"}
+{"level":"info","message":"Reserved card 1117 succesfully","timestamp":"2023-07-29T05:34:49.037Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:49.037Z"}
+{"level":"info","message":"Reserved card 1373 succesfully","timestamp":"2023-07-29T05:34:49.664Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:49.664Z"}
+{"level":"info","message":"Reserved card 1629 succesfully","timestamp":"2023-07-29T05:34:49.957Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:49.958Z"}
+{"level":"info","message":"Reserved card 1885 succesfully","timestamp":"2023-07-29T05:34:50.277Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:50.278Z"}
+{"level":"info","message":"Reserved card 2141 succesfully","timestamp":"2023-07-29T05:34:50.687Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:50.687Z"}
+{"level":"info","message":"Reserved card 2397 succesfully","timestamp":"2023-07-29T05:34:51.098Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:51.098Z"}
+{"level":"info","message":"Reserved card 2653 succesfully","timestamp":"2023-07-29T05:34:51.609Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:51.609Z"}
+{"level":"info","message":"Reserved card 2909 succesfully","timestamp":"2023-07-29T05:34:52.120Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:52.121Z"}
+{"level":"info","message":"Reserved card 3165 succesfully","timestamp":"2023-07-29T05:34:52.632Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:52.633Z"}
+{"level":"info","message":"Reserved card 3421 succesfully","timestamp":"2023-07-29T05:34:53.042Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:53.042Z"}
+{"level":"info","message":"Reserved card 3677 succesfully","timestamp":"2023-07-29T05:34:53.452Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:53.452Z"}
+{"level":"info","message":"Reserved card 3933 succesfully","timestamp":"2023-07-29T05:34:53.746Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:53.746Z"}
+{"level":"info","message":"Datatase is synchronize","timestamp":"2023-07-29T05:34:53.893Z"}
+{"level":"info","message":"Reserved card 4189 succesfully","timestamp":"2023-07-29T05:34:54.085Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:54.086Z"}
+{"level":"info","message":"Reserved card 4445 succesfully","timestamp":"2023-07-29T05:34:54.475Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:54.476Z"}
+{"level":"info","message":"Reserved card 4701 succesfully","timestamp":"2023-07-29T05:34:54.885Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:54.885Z"}
+{"level":"info","message":"Reserved card 4957 succesfully","timestamp":"2023-07-29T05:34:55.293Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:55.293Z"}
+{"level":"info","message":"Reserved card 5213 succesfully","timestamp":"2023-07-29T05:34:55.805Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:55.805Z"}
+{"level":"info","message":"Reserved card 5469 succesfully","timestamp":"2023-07-29T05:34:56.214Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:56.215Z"}
+{"level":"info","message":"Reserved card 5725 succesfully","timestamp":"2023-07-29T05:34:56.728Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:56.728Z"}
+{"level":"info","message":"Reserved card 5981 succesfully","timestamp":"2023-07-29T05:34:57.060Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:57.060Z"}
+{"level":"info","message":"Reserved card 6237 succesfully","timestamp":"2023-07-29T05:34:57.353Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:57.353Z"}
+{"level":"info","message":"Reserved card 6493 succesfully","timestamp":"2023-07-29T05:34:57.758Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:57.758Z"}
+{"level":"info","message":"Reserved card 6749 succesfully","timestamp":"2023-07-29T05:34:58.049Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:58.050Z"}
+{"level":"info","message":"Reserved card 7005 succesfully","timestamp":"2023-07-29T05:34:58.469Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:58.470Z"}
+{"level":"info","message":"Reserved card 7261 succesfully","timestamp":"2023-07-29T05:34:58.985Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:58.985Z"}
+{"level":"info","message":"Reserved card 7517 succesfully","timestamp":"2023-07-29T05:34:59.493Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:59.493Z"}
+{"level":"info","message":"Reserved card 7773 succesfully","timestamp":"2023-07-29T05:34:59.903Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:34:59.904Z"}
+{"level":"info","message":"Reserved card 8029 succesfully","timestamp":"2023-07-29T05:35:00.186Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:00.186Z"}
+{"level":"info","message":"Reserved card 8285 succesfully","timestamp":"2023-07-29T05:35:00.470Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:00.470Z"}
+{"level":"info","message":"Reserved card 8541 succesfully","timestamp":"2023-07-29T05:35:00.927Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:00.927Z"}
+{"level":"info","message":"Reserved card 8797 succesfully","timestamp":"2023-07-29T05:35:01.234Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:01.234Z"}
+{"level":"info","message":"Reserved card 9053 succesfully","timestamp":"2023-07-29T05:35:01.631Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:01.631Z"}
+{"level":"info","message":"Reserved card 9309 succesfully","timestamp":"2023-07-29T05:35:01.937Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:01.939Z"}
+{"level":"info","message":"Reserved card 9565 succesfully","timestamp":"2023-07-29T05:35:02.362Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:02.364Z"}
+{"level":"info","message":"Reserved card 9821 succesfully","timestamp":"2023-07-29T05:35:02.692Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:02.692Z"}
+{"level":"info","message":"Reserved card 94 succesfully","timestamp":"2023-07-29T05:35:02.986Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:02.986Z"}
+{"level":"info","message":"Reserved card 350 succesfully","timestamp":"2023-07-29T05:35:03.262Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:03.262Z"}
+{"level":"info","message":"Reserved card 606 succesfully","timestamp":"2023-07-29T05:35:03.557Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:03.557Z"}
+{"level":"info","message":"Reserved card 862 succesfully","timestamp":"2023-07-29T05:35:03.849Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:03.851Z"}
+{"level":"info","message":"Reserved card 1118 succesfully","timestamp":"2023-07-29T05:35:04.204Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:04.204Z"}
+{"level":"info","message":"Reserved card 1374 succesfully","timestamp":"2023-07-29T05:35:04.614Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:04.616Z"}
+{"level":"info","message":"Reserved card 1630 succesfully","timestamp":"2023-07-29T05:35:05.021Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:05.021Z"}
+{"level":"info","message":"Reserved card 1886 succesfully","timestamp":"2023-07-29T05:35:05.843Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:05.843Z"}
+{"level":"info","message":"Reserved card 2142 succesfully","timestamp":"2023-07-29T05:35:06.354Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:06.354Z"}
+{"level":"info","message":"Reserved card 2398 succesfully","timestamp":"2023-07-29T05:35:06.762Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:06.762Z"}
+{"level":"info","message":"Reserved card 2654 succesfully","timestamp":"2023-07-29T05:35:07.173Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:07.173Z"}
+{"level":"info","message":"Reserved card 2910 succesfully","timestamp":"2023-07-29T05:35:07.582Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:07.583Z"}
+{"level":"info","message":"Reserved card 3166 succesfully","timestamp":"2023-07-29T05:35:07.874Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:07.874Z"}
+{"level":"info","message":"Reserved card 3422 succesfully","timestamp":"2023-07-29T05:35:08.166Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:08.166Z"}
+{"level":"info","message":"Reserved card 3678 succesfully","timestamp":"2023-07-29T05:35:08.606Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:08.606Z"}
+{"level":"info","message":"Reserved card 3934 succesfully","timestamp":"2023-07-29T05:35:09.007Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:09.007Z"}
+{"level":"info","message":"Reserved card 4190 succesfully","timestamp":"2023-07-29T05:35:09.297Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:09.297Z"}
+{"level":"info","message":"Reserved card 4446 succesfully","timestamp":"2023-07-29T05:35:09.618Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:09.619Z"}
+{"level":"info","message":"Reserved card 4702 succesfully","timestamp":"2023-07-29T05:35:09.960Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:09.961Z"}
+{"level":"info","message":"Reserved card 4958 succesfully","timestamp":"2023-07-29T05:35:10.257Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:10.257Z"}
+{"level":"info","message":"Reserved card 5214 succesfully","timestamp":"2023-07-29T05:35:10.548Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:10.548Z"}
+{"level":"info","message":"Reserved card 5470 succesfully","timestamp":"2023-07-29T05:35:10.824Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:10.824Z"}
+{"level":"info","message":"Reserved card 5726 succesfully","timestamp":"2023-07-29T05:35:11.242Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:11.242Z"}
+{"level":"info","message":"Reserved card 5982 succesfully","timestamp":"2023-07-29T05:35:11.577Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:11.577Z"}
+{"level":"info","message":"Reserved card 6238 succesfully","timestamp":"2023-07-29T05:35:12.090Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:12.090Z"}
+{"level":"info","message":"Reserved card 6494 succesfully","timestamp":"2023-07-29T05:35:12.392Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:12.392Z"}
+{"level":"info","message":"Reserved card 6750 succesfully","timestamp":"2023-07-29T05:35:12.677Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:12.677Z"}
+{"level":"info","message":"Reserved card 7006 succesfully","timestamp":"2023-07-29T05:35:12.967Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:12.969Z"}
+{"level":"info","message":"Reserved card 7262 succesfully","timestamp":"2023-07-29T05:35:13.345Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:13.345Z"}
+{"level":"info","message":"Reserved card 7518 succesfully","timestamp":"2023-07-29T05:35:13.798Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:13.798Z"}
+{"level":"info","message":"Reserved card 7774 succesfully","timestamp":"2023-07-29T05:35:14.138Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:14.140Z"}
+{"level":"info","message":"Reserved card 8030 succesfully","timestamp":"2023-07-29T05:35:14.548Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:14.548Z"}
+{"level":"info","message":"Reserved card 8286 succesfully","timestamp":"2023-07-29T05:35:14.956Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:14.956Z"}
+{"level":"info","message":"Reserved card 8542 succesfully","timestamp":"2023-07-29T05:35:15.246Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:15.246Z"}
+{"level":"info","message":"Reserved card 8798 succesfully","timestamp":"2023-07-29T05:35:15.525Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:15.527Z"}
+{"level":"info","message":"Reserved card 9054 succesfully","timestamp":"2023-07-29T05:35:15.980Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:15.980Z"}
+{"level":"info","message":"Reserved card 9310 succesfully","timestamp":"2023-07-29T05:35:16.391Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:16.391Z"}
+{"level":"info","message":"Reserved card 9566 succesfully","timestamp":"2023-07-29T05:35:16.901Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:16.901Z"}
+{"level":"info","message":"Reserved card 9822 succesfully","timestamp":"2023-07-29T05:35:17.415Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:17.415Z"}
+{"level":"info","message":"Reserved card 95 succesfully","timestamp":"2023-07-29T05:35:17.712Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:17.712Z"}
+{"level":"info","message":"Reserved card 351 succesfully","timestamp":"2023-07-29T05:35:18.130Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:18.130Z"}
+{"level":"info","message":"Reserved card 607 succesfully","timestamp":"2023-07-29T05:35:18.437Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:18.437Z"}
+{"level":"info","message":"Reserved card 863 succesfully","timestamp":"2023-07-29T05:35:18.737Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:18.737Z"}
+{"level":"info","message":"Reserved card 1119 succesfully","timestamp":"2023-07-29T05:35:19.015Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:19.017Z"}
+{"level":"info","message":"Reserved card 1375 succesfully","timestamp":"2023-07-29T05:35:19.322Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:19.324Z"}
+{"level":"info","message":"Reserved card 1631 succesfully","timestamp":"2023-07-29T05:35:19.605Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:19.605Z"}
+{"level":"info","message":"Reserved card 1887 succesfully","timestamp":"2023-07-29T05:35:19.899Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:19.900Z"}
+{"level":"info","message":"Reserved card 2143 succesfully","timestamp":"2023-07-29T05:35:20.226Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:20.226Z"}
+{"level":"info","message":"Reserved card 2399 succesfully","timestamp":"2023-07-29T05:35:20.538Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:20.538Z"}
+{"level":"info","message":"Reserved card 2655 succesfully","timestamp":"2023-07-29T05:35:20.814Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:20.815Z"}
+{"level":"info","message":"Reserved card 2911 succesfully","timestamp":"2023-07-29T05:35:21.144Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:21.144Z"}
+{"level":"info","message":"Reserved card 3167 succesfully","timestamp":"2023-07-29T05:35:21.508Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:21.510Z"}
+{"level":"info","message":"Reserved card 3423 succesfully","timestamp":"2023-07-29T05:35:22.020Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:22.020Z"}
+{"level":"info","message":"Reserved card 3679 succesfully","timestamp":"2023-07-29T05:35:22.379Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:22.381Z"}
+{"level":"info","message":"Reserved card 3935 succesfully","timestamp":"2023-07-29T05:35:22.841Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:22.841Z"}
+{"level":"info","message":"Reserved card 4191 succesfully","timestamp":"2023-07-29T05:35:23.250Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:23.250Z"}
+{"level":"info","message":"Reserved card 4447 succesfully","timestamp":"2023-07-29T05:35:23.661Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:23.661Z"}
+{"level":"info","message":"Reserved card 4703 succesfully","timestamp":"2023-07-29T05:35:24.047Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:24.047Z"}
+{"level":"info","message":"Reserved card 4959 succesfully","timestamp":"2023-07-29T05:35:24.337Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:24.337Z"}
+{"level":"info","message":"Reserved card 5215 succesfully","timestamp":"2023-07-29T05:35:24.626Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:24.626Z"}
+{"level":"info","message":"Reserved card 5471 succesfully","timestamp":"2023-07-29T05:35:24.909Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:24.909Z"}
+{"level":"info","message":"Reserved card 5727 succesfully","timestamp":"2023-07-29T05:35:25.196Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:25.196Z"}
+{"level":"info","message":"Reserved card 5983 succesfully","timestamp":"2023-07-29T05:35:25.473Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:25.473Z"}
+{"level":"info","message":"Reserved card 6239 succesfully","timestamp":"2023-07-29T05:35:25.752Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:25.753Z"}
+{"level":"info","message":"Reserved card 6495 succesfully","timestamp":"2023-07-29T05:35:26.057Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:26.058Z"}
+{"level":"info","message":"Reserved card 6751 succesfully","timestamp":"2023-07-29T05:35:26.417Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:26.417Z"}
+{"level":"info","message":"Reserved card 7007 succesfully","timestamp":"2023-07-29T05:35:26.694Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:26.694Z"}
+{"level":"info","message":"Reserved card 7263 succesfully","timestamp":"2023-07-29T05:35:26.996Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:26.996Z"}
+{"level":"info","message":"Reserved card 7519 succesfully","timestamp":"2023-07-29T05:35:27.279Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:27.279Z"}
+{"level":"info","message":"Reserved card 7775 succesfully","timestamp":"2023-07-29T05:35:27.554Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:27.554Z"}
+{"level":"info","message":"Reserved card 8031 succesfully","timestamp":"2023-07-29T05:35:27.844Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:27.844Z"}
+{"level":"info","message":"Reserved card 8287 succesfully","timestamp":"2023-07-29T05:35:28.177Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:28.177Z"}
+{"level":"info","message":"Reserved card 8543 succesfully","timestamp":"2023-07-29T05:35:28.575Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:28.575Z"}
+{"level":"info","message":"Reserved card 8799 succesfully","timestamp":"2023-07-29T05:35:29.088Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:29.089Z"}
+{"level":"info","message":"Reserved card 9055 succesfully","timestamp":"2023-07-29T05:35:29.376Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:29.376Z"}
+{"level":"info","message":"Reserved card 9311 succesfully","timestamp":"2023-07-29T05:35:29.675Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:29.676Z"}
+{"level":"info","message":"Reserved card 9567 succesfully","timestamp":"2023-07-29T05:35:30.014Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:30.014Z"}
+{"level":"info","message":"Reserved card 9823 succesfully","timestamp":"2023-07-29T05:35:30.306Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:30.307Z"}
+{"level":"info","message":"Reserved card 96 succesfully","timestamp":"2023-07-29T05:35:30.651Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:30.652Z"}
+{"level":"info","message":"Reserved card 352 succesfully","timestamp":"2023-07-29T05:35:30.961Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:30.961Z"}
+{"level":"info","message":"Reserved card 608 succesfully","timestamp":"2023-07-29T05:35:31.452Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:31.453Z"}
+{"level":"info","message":"Reserved card 864 succesfully","timestamp":"2023-07-29T05:35:31.750Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:31.752Z"}
+{"level":"info","message":"Reserved card 1120 succesfully","timestamp":"2023-07-29T05:35:32.056Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:32.057Z"}
+{"level":"info","message":"Reserved card 1376 succesfully","timestamp":"2023-07-29T05:35:32.333Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:32.333Z"}
+{"level":"info","message":"Reserved card 1632 succesfully","timestamp":"2023-07-29T05:35:32.626Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:32.626Z"}
+{"level":"info","message":"Reserved card 1888 succesfully","timestamp":"2023-07-29T05:35:32.932Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:32.933Z"}
+{"level":"info","message":"Reserved card 2144 succesfully","timestamp":"2023-07-29T05:35:33.228Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:33.228Z"}
+{"level":"info","message":"Reserved card 2400 succesfully","timestamp":"2023-07-29T05:35:33.503Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:33.503Z"}
+{"level":"info","message":"Reserved card 2656 succesfully","timestamp":"2023-07-29T05:35:33.782Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:33.782Z"}
+{"level":"info","message":"Reserved card 2912 succesfully","timestamp":"2023-07-29T05:35:34.092Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:34.092Z"}
+{"level":"info","message":"Reserved card 3168 succesfully","timestamp":"2023-07-29T05:35:34.617Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:34.619Z"}
+{"level":"info","message":"Reserved card 3424 succesfully","timestamp":"2023-07-29T05:35:34.972Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:34.972Z"}
+{"level":"info","message":"Reserved card 3680 succesfully","timestamp":"2023-07-29T05:35:35.272Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:35.272Z"}
+{"level":"info","message":"Reserved card 3936 succesfully","timestamp":"2023-07-29T05:35:35.576Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:35.576Z"}
+{"level":"info","message":"Reserved card 4192 succesfully","timestamp":"2023-07-29T05:35:35.866Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:35.866Z"}
+{"level":"info","message":"Reserved card 4448 succesfully","timestamp":"2023-07-29T05:35:36.156Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:36.156Z"}
+{"level":"info","message":"Reserved card 4704 succesfully","timestamp":"2023-07-29T05:35:36.434Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:36.434Z"}
+{"level":"info","message":"Reserved card 4960 succesfully","timestamp":"2023-07-29T05:35:36.737Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:36.737Z"}
+{"level":"info","message":"Reserved card 5216 succesfully","timestamp":"2023-07-29T05:35:37.073Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:37.073Z"}
+{"level":"info","message":"Reserved card 5472 succesfully","timestamp":"2023-07-29T05:35:37.366Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:37.366Z"}
+{"level":"info","message":"Reserved card 5728 succesfully","timestamp":"2023-07-29T05:35:37.667Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:37.668Z"}
+{"level":"info","message":"Reserved card 5984 succesfully","timestamp":"2023-07-29T05:35:37.954Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:37.957Z"}
+{"level":"info","message":"Reserved card 6240 succesfully","timestamp":"2023-07-29T05:35:38.257Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:38.257Z"}
+{"level":"info","message":"Reserved card 6496 succesfully","timestamp":"2023-07-29T05:35:39.432Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:39.434Z"}
+{"level":"info","message":"Reserved card 6752 succesfully","timestamp":"2023-07-29T05:35:40.248Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:40.249Z"}
+{"level":"info","message":"Reserved card 7008 succesfully","timestamp":"2023-07-29T05:35:40.544Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:40.544Z"}
+{"level":"info","message":"Reserved card 7264 succesfully","timestamp":"2023-07-29T05:35:40.833Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:40.833Z"}
+{"level":"info","message":"Reserved card 7520 succesfully","timestamp":"2023-07-29T05:35:41.135Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:41.135Z"}
+{"level":"info","message":"Reserved card 7776 succesfully","timestamp":"2023-07-29T05:35:41.442Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:41.442Z"}
+{"level":"info","message":"Reserved card 8032 succesfully","timestamp":"2023-07-29T05:35:41.735Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:41.736Z"}
+{"level":"info","message":"Reserved card 8288 succesfully","timestamp":"2023-07-29T05:35:42.196Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:42.196Z"}
+{"level":"info","message":"Reserved card 8544 succesfully","timestamp":"2023-07-29T05:35:42.603Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:42.604Z"}
+{"level":"info","message":"Reserved card 8800 succesfully","timestamp":"2023-07-29T05:35:43.013Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:43.015Z"}
+{"level":"info","message":"Reserved card 9056 succesfully","timestamp":"2023-07-29T05:35:43.453Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:43.453Z"}
+{"level":"info","message":"Reserved card 9312 succesfully","timestamp":"2023-07-29T05:35:43.857Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:43.857Z"}
+{"level":"info","message":"Reserved card 9568 succesfully","timestamp":"2023-07-29T05:35:44.143Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:44.143Z"}
+{"level":"info","message":"Reserved card 9824 succesfully","timestamp":"2023-07-29T05:35:44.443Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:44.443Z"}
+{"level":"info","message":"Reserved card 97 succesfully","timestamp":"2023-07-29T05:35:44.762Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:44.764Z"}
+{"level":"info","message":"Reserved card 353 succesfully","timestamp":"2023-07-29T05:35:45.133Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:45.133Z"}
+{"level":"info","message":"Reserved card 609 succesfully","timestamp":"2023-07-29T05:35:45.452Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:45.452Z"}
+{"level":"info","message":"Reserved card 865 succesfully","timestamp":"2023-07-29T05:35:45.756Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:45.756Z"}
+{"level":"info","message":"Reserved card 1121 succesfully","timestamp":"2023-07-29T05:35:46.036Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:46.036Z"}
+{"level":"info","message":"Reserved card 1377 succesfully","timestamp":"2023-07-29T05:35:46.317Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:46.318Z"}
+{"level":"info","message":"Reserved card 1633 succesfully","timestamp":"2023-07-29T05:35:46.612Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:46.612Z"}
+{"level":"info","message":"Reserved card 1889 succesfully","timestamp":"2023-07-29T05:35:46.892Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:46.892Z"}
+{"level":"info","message":"Reserved card 2145 succesfully","timestamp":"2023-07-29T05:35:47.172Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:47.172Z"}
+{"level":"info","message":"Reserved card 2401 succesfully","timestamp":"2023-07-29T05:35:47.536Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:47.537Z"}
+{"level":"info","message":"Reserved card 2657 succesfully","timestamp":"2023-07-29T05:35:47.929Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:47.929Z"}
+{"level":"info","message":"Reserved card 2913 succesfully","timestamp":"2023-07-29T05:35:48.217Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:48.217Z"}
+{"level":"info","message":"Reserved card 3169 succesfully","timestamp":"2023-07-29T05:35:48.503Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:48.504Z"}
+{"level":"info","message":"Reserved card 3425 succesfully","timestamp":"2023-07-29T05:35:48.874Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:48.874Z"}
+{"level":"info","message":"Reserved card 3681 succesfully","timestamp":"2023-07-29T05:35:49.166Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:49.167Z"}
+{"level":"info","message":"Reserved card 3937 succesfully","timestamp":"2023-07-29T05:35:49.668Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:49.668Z"}
+{"level":"info","message":"Reserved card 4193 succesfully","timestamp":"2023-07-29T05:35:49.952Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:49.953Z"}
+{"level":"info","message":"Reserved card 4449 succesfully","timestamp":"2023-07-29T05:35:50.258Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:50.260Z"}
+{"level":"info","message":"Reserved card 4705 succesfully","timestamp":"2023-07-29T05:35:50.693Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:50.693Z"}
+{"level":"info","message":"Reserved card 4961 succesfully","timestamp":"2023-07-29T05:35:50.986Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:50.986Z"}
+{"level":"info","message":"Reserved card 5217 succesfully","timestamp":"2023-07-29T05:35:51.332Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:51.334Z"}
+{"level":"info","message":"Reserved card 5473 succesfully","timestamp":"2023-07-29T05:35:51.627Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:51.627Z"}
+{"level":"info","message":"Reserved card 5729 succesfully","timestamp":"2023-07-29T05:35:51.916Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:51.916Z"}
+{"level":"info","message":"Reserved card 5985 succesfully","timestamp":"2023-07-29T05:35:52.196Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:52.196Z"}
+{"level":"info","message":"Reserved card 6241 succesfully","timestamp":"2023-07-29T05:35:52.496Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:52.497Z"}
+{"level":"info","message":"Reserved card 6497 succesfully","timestamp":"2023-07-29T05:35:52.846Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:52.848Z"}
+{"level":"info","message":"Reserved card 6753 succesfully","timestamp":"2023-07-29T05:35:53.254Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:53.255Z"}
+{"level":"info","message":"Reserved card 7009 succesfully","timestamp":"2023-07-29T05:35:53.595Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:53.597Z"}
+{"level":"info","message":"Reserved card 7265 succesfully","timestamp":"2023-07-29T05:35:53.887Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:53.887Z"}
+{"level":"info","message":"Reserved card 7521 succesfully","timestamp":"2023-07-29T05:35:54.171Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:54.171Z"}
+{"level":"info","message":"Reserved card 7777 succesfully","timestamp":"2023-07-29T05:35:54.453Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:54.456Z"}
+{"level":"info","message":"Reserved card 8033 succesfully","timestamp":"2023-07-29T05:35:54.844Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:54.848Z"}
+{"level":"info","message":"Reserved card 8289 succesfully","timestamp":"2023-07-29T05:35:55.149Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:55.149Z"}
+{"level":"info","message":"Reserved card 8545 succesfully","timestamp":"2023-07-29T05:35:55.449Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:55.449Z"}
+{"level":"info","message":"Reserved card 8801 succesfully","timestamp":"2023-07-29T05:35:55.813Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:55.813Z"}
+{"level":"info","message":"Reserved card 9057 succesfully","timestamp":"2023-07-29T05:35:56.103Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:56.103Z"}
+{"level":"info","message":"Reserved card 9313 succesfully","timestamp":"2023-07-29T05:35:56.380Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:56.381Z"}
+{"level":"info","message":"Reserved card 9569 succesfully","timestamp":"2023-07-29T05:35:56.703Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:56.704Z"}
+{"level":"info","message":"Reserved card 9825 succesfully","timestamp":"2023-07-29T05:35:56.996Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:56.996Z"}
+{"level":"info","message":"Reserved card 98 succesfully","timestamp":"2023-07-29T05:35:57.298Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:57.300Z"}
+{"level":"info","message":"Reserved card 354 succesfully","timestamp":"2023-07-29T05:35:57.854Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:57.855Z"}
+{"level":"info","message":"Reserved card 610 succesfully","timestamp":"2023-07-29T05:35:58.375Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:58.375Z"}
+{"level":"info","message":"Reserved card 866 succesfully","timestamp":"2023-07-29T05:35:58.678Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:58.681Z"}
+{"level":"info","message":"Reserved card 1122 succesfully","timestamp":"2023-07-29T05:35:58.984Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:58.984Z"}
+{"level":"info","message":"Reserved card 1378 succesfully","timestamp":"2023-07-29T05:35:59.503Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:59.503Z"}
+{"level":"info","message":"Reserved card 1634 succesfully","timestamp":"2023-07-29T05:35:59.799Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:35:59.802Z"}
+{"level":"info","message":"Reserved card 1890 succesfully","timestamp":"2023-07-29T05:36:00.933Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:36:00.933Z"}
+{"level":"info","message":"Reserved card 2146 succesfully","timestamp":"2023-07-29T05:36:01.845Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:36:01.845Z"}
+{"level":"info","message":"Reserved card 2402 succesfully","timestamp":"2023-07-29T05:36:02.161Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:36:02.162Z"}
+{"level":"info","message":"Reserved card 2658 succesfully","timestamp":"2023-07-29T05:36:04.313Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:36:04.313Z"}
+{"level":"info","message":"Reserved card 2914 succesfully","timestamp":"2023-07-29T05:36:05.336Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:36:05.337Z"}
+{"level":"info","message":"Reserved card 3170 succesfully","timestamp":"2023-07-29T05:36:05.626Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:36:05.626Z"}
+{"level":"info","message":"Reserved card 3426 succesfully","timestamp":"2023-07-29T05:36:06.768Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:36:06.768Z"}
+{"level":"info","message":"Reserved card 3682 succesfully","timestamp":"2023-07-29T05:36:07.894Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:36:07.895Z"}
+{"level":"info","message":"Reserved card 3938 succesfully","timestamp":"2023-07-29T05:36:08.183Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:36:08.183Z"}
+{"level":"info","message":"Reserved card 4194 succesfully","timestamp":"2023-07-29T05:36:08.528Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:36:08.528Z"}
+{"level":"info","message":"Reserved card 4450 succesfully","timestamp":"2023-07-29T05:36:09.602Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:36:09.603Z"}
+{"level":"info","message":"Reserved card 4706 succesfully","timestamp":"2023-07-29T05:36:09.936Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:36:09.937Z"}
+{"level":"info","message":"Reserved card 4962 succesfully","timestamp":"2023-07-29T05:36:10.416Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:36:10.417Z"}
+{"level":"info","message":"Reserved card 5218 succesfully","timestamp":"2023-07-29T05:36:10.696Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:36:10.697Z"}
+{"level":"info","message":"Reserved card 5474 succesfully","timestamp":"2023-07-29T05:36:11.075Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:36:11.075Z"}
+{"level":"info","message":"Reserved card 5730 succesfully","timestamp":"2023-07-29T05:36:11.473Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:36:11.473Z"}
+{"level":"info","message":"Reserved card 5986 succesfully","timestamp":"2023-07-29T05:36:11.831Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:36:11.832Z"}
+{"level":"info","message":"Reserved card 6242 succesfully","timestamp":"2023-07-29T05:36:12.147Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:36:12.147Z"}
+{"level":"info","message":"Reserved card 6498 succesfully","timestamp":"2023-07-29T05:36:12.487Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:36:12.488Z"}
+{"level":"info","message":"Reserved card 6754 succesfully","timestamp":"2023-07-29T05:36:12.765Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:36:12.765Z"}
+{"level":"info","message":"Reserved card 7010 succesfully","timestamp":"2023-07-29T05:36:13.040Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:36:13.041Z"}
+{"level":"info","message":"Reserved card 7266 succesfully","timestamp":"2023-07-29T05:36:13.324Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:36:13.324Z"}
+{"level":"info","message":"Reserved card 7522 succesfully","timestamp":"2023-07-29T05:36:13.734Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:36:13.735Z"}
+{"level":"info","message":"Reserved card 7778 succesfully","timestamp":"2023-07-29T05:36:14.071Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:36:14.072Z"}
+{"level":"info","message":"Reserved card 8034 succesfully","timestamp":"2023-07-29T05:36:14.368Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:36:14.368Z"}
+{"level":"info","message":"Reserved card 8290 succesfully","timestamp":"2023-07-29T05:36:14.861Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:36:14.861Z"}
+{"level":"info","message":"Reserved card 8546 succesfully","timestamp":"2023-07-29T05:36:15.146Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:36:15.147Z"}
+{"level":"info","message":"Reserved card 8802 succesfully","timestamp":"2023-07-29T05:36:15.436Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:36:15.437Z"}
+{"level":"info","message":"Reserved card 9058 succesfully","timestamp":"2023-07-29T05:36:58.177Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:36:58.182Z"}
+{"level":"info","message":"Reserved card 9314 succesfully","timestamp":"2023-07-29T05:37:49.845Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:37:49.845Z"}
+{"level":"info","message":"Reserved card 9570 succesfully","timestamp":"2023-07-29T05:38:40.400Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:38:40.403Z"}
+{"level":"info","message":"Reserved card 9826 succesfully","timestamp":"2023-07-29T05:38:40.691Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:38:40.691Z"}
+{"level":"info","message":"Reserved card 99 succesfully","timestamp":"2023-07-29T05:38:41.523Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:38:41.523Z"}
+{"level":"info","message":"Reserved card 355 succesfully","timestamp":"2023-07-29T05:38:42.241Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:38:42.242Z"}
+{"level":"info","message":"Reserved card 611 succesfully","timestamp":"2023-07-29T05:38:42.530Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:38:42.530Z"}
+{"level":"info","message":"Reserved card 867 succesfully","timestamp":"2023-07-29T05:38:42.957Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:38:42.957Z"}
+{"level":"info","message":"Reserved card 1123 succesfully","timestamp":"2023-07-29T05:38:43.367Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:38:43.367Z"}
+{"level":"info","message":"Reserved card 1379 succesfully","timestamp":"2023-07-29T05:38:43.652Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:38:43.652Z"}
+{"level":"info","message":"Reserved card 1635 succesfully","timestamp":"2023-07-29T05:38:43.939Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:38:43.939Z"}
+{"level":"info","message":"Reserved card 1891 succesfully","timestamp":"2023-07-29T05:38:44.232Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:38:44.235Z"}
+{"level":"info","message":"Reserved card 2147 succesfully","timestamp":"2023-07-29T05:38:44.536Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:38:44.537Z"}
+{"level":"info","message":"Reserved card 2403 succesfully","timestamp":"2023-07-29T05:38:44.819Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:38:44.819Z"}
+{"level":"info","message":"Reserved card 2659 succesfully","timestamp":"2023-07-29T05:38:45.109Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:38:45.109Z"}
+{"level":"info","message":"Reserved card 2915 succesfully","timestamp":"2023-07-29T05:38:45.411Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:38:45.411Z"}
+{"level":"info","message":"Reserved card 3171 succesfully","timestamp":"2023-07-29T05:38:45.824Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:38:45.825Z"}
+{"level":"info","message":"Reserved card 3427 succesfully","timestamp":"2023-07-29T05:38:46.234Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:38:46.234Z"}
+{"level":"info","message":"Reserved card 3683 succesfully","timestamp":"2023-07-29T05:38:46.509Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:38:46.509Z"}
+{"level":"info","message":"Reserved card 3939 succesfully","timestamp":"2023-07-29T05:38:46.778Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:38:46.779Z"}
+{"level":"info","message":"Reserved card 4195 succesfully","timestamp":"2023-07-29T05:38:47.055Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:38:47.056Z"}
+{"level":"info","message":"Reserved card 4451 succesfully","timestamp":"2023-07-29T05:38:47.463Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:38:47.463Z"}
+{"level":"info","message":"Reserved card 4707 succesfully","timestamp":"2023-07-29T05:38:47.974Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:38:47.974Z"}
+{"level":"info","message":"Reserved card 4963 succesfully","timestamp":"2023-07-29T05:38:48.485Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:38:48.485Z"}
+{"level":"info","message":"Reserved card 5219 succesfully","timestamp":"2023-07-29T05:38:48.853Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:38:48.853Z"}
+{"level":"info","message":"Reserved card 5475 succesfully","timestamp":"2023-07-29T05:38:49.162Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:38:49.162Z"}
+{"level":"info","message":"Reserved card 5731 succesfully","timestamp":"2023-07-29T05:38:49.455Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:38:49.455Z"}
+{"level":"info","message":"Reserved card 5987 succesfully","timestamp":"2023-07-29T05:38:49.729Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:38:49.730Z"}
+{"level":"info","message":"Reserved card 6243 succesfully","timestamp":"2023-07-29T05:38:50.027Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:38:50.027Z"}
+{"level":"info","message":"Reserved card 6499 succesfully","timestamp":"2023-07-29T05:38:50.362Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:38:50.366Z"}
+{"level":"info","message":"Reserved card 6755 succesfully","timestamp":"2023-07-29T05:38:50.844Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:38:50.844Z"}
+{"level":"info","message":"Reserved card 7011 succesfully","timestamp":"2023-07-29T05:38:51.129Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:38:51.129Z"}
+{"level":"info","message":"Reserved card 7267 succesfully","timestamp":"2023-07-29T05:38:51.457Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:38:51.457Z"}
+{"level":"info","message":"Reserved card 7523 succesfully","timestamp":"2023-07-29T05:38:51.969Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:38:51.969Z"}
+{"level":"info","message":"Reserved card 7779 succesfully","timestamp":"2023-07-29T05:38:52.252Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:38:52.253Z"}
+{"level":"info","message":"Reserved card 8035 succesfully","timestamp":"2023-07-29T05:38:52.537Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:38:52.538Z"}
+{"level":"info","message":"Reserved card 8291 succesfully","timestamp":"2023-07-29T05:38:52.835Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:38:52.836Z"}
+{"level":"info","message":"Reserved card 8547 succesfully","timestamp":"2023-07-29T05:38:53.129Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:38:53.130Z"}
+{"level":"info","message":"Reserved card 8803 succesfully","timestamp":"2023-07-29T05:38:53.437Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:38:53.437Z"}
+{"level":"info","message":"Reserved card 9059 succesfully","timestamp":"2023-07-29T05:38:53.734Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:38:53.734Z"}
+{"level":"info","message":"Reserved card 9315 succesfully","timestamp":"2023-07-29T05:38:54.027Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:38:54.027Z"}
+{"level":"info","message":"Reserved card 9571 succesfully","timestamp":"2023-07-29T05:38:54.320Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:38:54.320Z"}
+{"level":"info","message":"Reserved card 9827 succesfully","timestamp":"2023-07-29T05:38:54.838Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:38:54.838Z"}
+{"level":"info","message":"Reserved card 100 succesfully","timestamp":"2023-07-29T05:38:55.349Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:38:55.349Z"}
+{"level":"info","message":"Reserved card 356 succesfully","timestamp":"2023-07-29T05:38:55.629Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:38:55.629Z"}
+{"level":"info","message":"Reserved card 612 succesfully","timestamp":"2023-07-29T05:38:55.981Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:38:55.984Z"}
+{"level":"info","message":"Reserved card 868 succesfully","timestamp":"2023-07-29T05:38:56.374Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:38:56.374Z"}
+{"level":"info","message":"Reserved card 1124 succesfully","timestamp":"2023-07-29T05:38:56.890Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:38:56.890Z"}
+{"level":"info","message":"Reserved card 1380 succesfully","timestamp":"2023-07-29T05:38:57.296Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:38:57.296Z"}
+{"level":"info","message":"Reserved card 1636 succesfully","timestamp":"2023-07-29T05:38:57.706Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:38:57.706Z"}
+{"level":"info","message":"Reserved card 1892 succesfully","timestamp":"2023-07-29T05:38:58.220Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:38:58.223Z"}
+{"level":"info","message":"Reserved card 2148 succesfully","timestamp":"2023-07-29T05:38:58.515Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:38:58.515Z"}
+{"level":"info","message":"Reserved card 2404 succesfully","timestamp":"2023-07-29T05:38:58.936Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:38:58.936Z"}
+{"level":"info","message":"Reserved card 2660 succesfully","timestamp":"2023-07-29T05:38:59.343Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:38:59.343Z"}
+{"level":"info","message":"Reserved card 2916 succesfully","timestamp":"2023-07-29T05:38:59.855Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:38:59.857Z"}
+{"level":"info","message":"Reserved card 3172 succesfully","timestamp":"2023-07-29T05:39:00.267Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:00.270Z"}
+{"level":"info","message":"Reserved card 3428 succesfully","timestamp":"2023-07-29T05:39:00.567Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:00.567Z"}
+{"level":"info","message":"Reserved card 3684 succesfully","timestamp":"2023-07-29T05:39:00.882Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:00.882Z"}
+{"level":"info","message":"Reserved card 3940 succesfully","timestamp":"2023-07-29T05:39:01.192Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:01.193Z"}
+{"level":"info","message":"Reserved card 4196 succesfully","timestamp":"2023-07-29T05:39:01.599Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:01.599Z"}
+{"level":"info","message":"Reserved card 4452 succesfully","timestamp":"2023-07-29T05:39:02.008Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:02.009Z"}
+{"level":"info","message":"Reserved card 4708 succesfully","timestamp":"2023-07-29T05:39:02.419Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:02.419Z"}
+{"level":"info","message":"Reserved card 4964 succesfully","timestamp":"2023-07-29T05:39:02.703Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:02.703Z"}
+{"level":"info","message":"Reserved card 5220 succesfully","timestamp":"2023-07-29T05:39:02.983Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:02.983Z"}
+{"level":"info","message":"Reserved card 5476 succesfully","timestamp":"2023-07-29T05:39:03.288Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:03.288Z"}
+{"level":"info","message":"Reserved card 5732 succesfully","timestamp":"2023-07-29T05:39:03.597Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:03.597Z"}
+{"level":"info","message":"Reserved card 5988 succesfully","timestamp":"2023-07-29T05:39:03.956Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:03.957Z"}
+{"level":"info","message":"Reserved card 6244 succesfully","timestamp":"2023-07-29T05:39:04.245Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:04.246Z"}
+{"level":"info","message":"Reserved card 6500 succesfully","timestamp":"2023-07-29T05:39:04.547Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:04.548Z"}
+{"level":"info","message":"Reserved card 6756 succesfully","timestamp":"2023-07-29T05:39:04.828Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:04.828Z"}
+{"level":"info","message":"Reserved card 7012 succesfully","timestamp":"2023-07-29T05:39:05.097Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:05.097Z"}
+{"level":"info","message":"Reserved card 7268 succesfully","timestamp":"2023-07-29T05:39:05.379Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:05.379Z"}
+{"level":"info","message":"Reserved card 7524 succesfully","timestamp":"2023-07-29T05:39:05.797Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:05.797Z"}
+{"level":"info","message":"Reserved card 7780 succesfully","timestamp":"2023-07-29T05:39:06.193Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:06.194Z"}
+{"level":"info","message":"Reserved card 8036 succesfully","timestamp":"2023-07-29T05:39:06.504Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:06.504Z"}
+{"level":"info","message":"Reserved card 8292 succesfully","timestamp":"2023-07-29T05:39:06.924Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:06.924Z"}
+{"level":"info","message":"Reserved card 8548 succesfully","timestamp":"2023-07-29T05:39:07.334Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:07.334Z"}
+{"level":"info","message":"Reserved card 8804 succesfully","timestamp":"2023-07-29T05:39:07.850Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:07.852Z"}
+{"level":"info","message":"Reserved card 9060 succesfully","timestamp":"2023-07-29T05:39:09.589Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:09.589Z"}
+{"level":"info","message":"Reserved card 9316 succesfully","timestamp":"2023-07-29T05:39:09.999Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:09.999Z"}
+{"level":"info","message":"Reserved card 9572 succesfully","timestamp":"2023-07-29T05:39:10.408Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:10.408Z"}
+{"level":"info","message":"Reserved card 9828 succesfully","timestamp":"2023-07-29T05:39:10.771Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:10.771Z"}
+{"level":"info","message":"Reserved card 101 succesfully","timestamp":"2023-07-29T05:39:11.126Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:11.126Z"}
+{"level":"info","message":"Reserved card 357 succesfully","timestamp":"2023-07-29T05:39:11.634Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:11.634Z"}
+{"level":"info","message":"Reserved card 613 succesfully","timestamp":"2023-07-29T05:39:11.925Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:11.925Z"}
+{"level":"info","message":"Reserved card 869 succesfully","timestamp":"2023-07-29T05:39:12.201Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:12.201Z"}
+{"level":"info","message":"Reserved card 1125 succesfully","timestamp":"2023-07-29T05:39:12.480Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:12.480Z"}
+{"level":"info","message":"Reserved card 1381 succesfully","timestamp":"2023-07-29T05:39:12.776Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:12.776Z"}
+{"level":"info","message":"Reserved card 1637 succesfully","timestamp":"2023-07-29T05:39:13.071Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:13.071Z"}
+{"level":"info","message":"Reserved card 1893 succesfully","timestamp":"2023-07-29T05:39:13.584Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:13.584Z"}
+{"level":"info","message":"Reserved card 2149 succesfully","timestamp":"2023-07-29T05:39:13.994Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:13.994Z"}
+{"level":"info","message":"Reserved card 2405 succesfully","timestamp":"2023-07-29T05:39:14.508Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:14.508Z"}
+{"level":"info","message":"Reserved card 2661 succesfully","timestamp":"2023-07-29T05:39:15.018Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:15.018Z"}
+{"level":"info","message":"Reserved card 2917 succesfully","timestamp":"2023-07-29T05:39:15.427Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:15.428Z"}
+{"level":"info","message":"Reserved card 3173 succesfully","timestamp":"2023-07-29T05:39:15.835Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:15.836Z"}
+{"level":"info","message":"Reserved card 3429 succesfully","timestamp":"2023-07-29T05:39:16.245Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:16.245Z"}
+{"level":"info","message":"Reserved card 3685 succesfully","timestamp":"2023-07-29T05:39:16.532Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:16.532Z"}
+{"level":"info","message":"Reserved card 3941 succesfully","timestamp":"2023-07-29T05:39:16.962Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:16.962Z"}
+{"level":"info","message":"Reserved card 4197 succesfully","timestamp":"2023-07-29T05:39:17.373Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:17.373Z"}
+{"level":"info","message":"Reserved card 4453 succesfully","timestamp":"2023-07-29T05:39:17.661Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:17.661Z"}
+{"level":"info","message":"Reserved card 4709 succesfully","timestamp":"2023-07-29T05:39:17.972Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:17.972Z"}
+{"level":"info","message":"Reserved card 4965 succesfully","timestamp":"2023-07-29T05:39:18.397Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:18.397Z"}
+{"level":"info","message":"Reserved card 5221 succesfully","timestamp":"2023-07-29T05:39:18.701Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:18.701Z"}
+{"level":"info","message":"Reserved card 5477 succesfully","timestamp":"2023-07-29T05:39:19.217Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:19.217Z"}
+{"level":"info","message":"Reserved card 5733 succesfully","timestamp":"2023-07-29T05:39:19.626Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:19.627Z"}
+{"level":"info","message":"Reserved card 5989 succesfully","timestamp":"2023-07-29T05:39:20.139Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:20.139Z"}
+{"level":"info","message":"Reserved card 6245 succesfully","timestamp":"2023-07-29T05:39:20.651Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:20.651Z"}
+{"level":"info","message":"Reserved card 6501 succesfully","timestamp":"2023-07-29T05:39:21.060Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:21.061Z"}
+{"level":"info","message":"Reserved card 6757 succesfully","timestamp":"2023-07-29T05:39:21.573Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:21.573Z"}
+{"level":"info","message":"Reserved card 7013 succesfully","timestamp":"2023-07-29T05:39:22.085Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:22.085Z"}
+{"level":"info","message":"Reserved card 7269 succesfully","timestamp":"2023-07-29T05:39:22.496Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:22.496Z"}
+{"level":"info","message":"Reserved card 7525 succesfully","timestamp":"2023-07-29T05:39:22.874Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:22.874Z"}
+{"level":"info","message":"Reserved card 7781 succesfully","timestamp":"2023-07-29T05:39:23.313Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:23.314Z"}
+{"level":"info","message":"Reserved card 8037 succesfully","timestamp":"2023-07-29T05:39:23.824Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:23.825Z"}
+{"level":"info","message":"Reserved card 8293 succesfully","timestamp":"2023-07-29T05:39:24.338Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:24.338Z"}
+{"level":"info","message":"Reserved card 8549 succesfully","timestamp":"2023-07-29T05:39:24.747Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:24.747Z"}
+{"level":"info","message":"Reserved card 8805 succesfully","timestamp":"2023-07-29T05:39:25.259Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:25.259Z"}
+{"level":"info","message":"Reserved card 9061 succesfully","timestamp":"2023-07-29T05:39:25.669Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:25.669Z"}
+{"level":"info","message":"Reserved card 9317 succesfully","timestamp":"2023-07-29T05:39:26.181Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:26.181Z"}
+{"level":"info","message":"Reserved card 9573 succesfully","timestamp":"2023-07-29T05:39:26.592Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:26.592Z"}
+{"level":"info","message":"Reserved card 9829 succesfully","timestamp":"2023-07-29T05:39:27.000Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:27.001Z"}
+{"level":"info","message":"Reserved card 102 succesfully","timestamp":"2023-07-29T05:39:27.512Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:27.513Z"}
+{"level":"info","message":"Reserved card 358 succesfully","timestamp":"2023-07-29T05:39:27.806Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:27.806Z"}
+{"level":"info","message":"Reserved card 614 succesfully","timestamp":"2023-07-29T05:39:28.125Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:28.125Z"}
+{"level":"info","message":"Reserved card 870 succesfully","timestamp":"2023-07-29T05:39:28.638Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:28.639Z"}
+{"level":"info","message":"Reserved card 1126 succesfully","timestamp":"2023-07-29T05:39:29.047Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:29.047Z"}
+{"level":"info","message":"Reserved card 1382 succesfully","timestamp":"2023-07-29T05:39:29.458Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:29.458Z"}
+{"level":"info","message":"Reserved card 1638 succesfully","timestamp":"2023-07-29T05:39:29.870Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:29.870Z"}
+{"level":"info","message":"Reserved card 1894 succesfully","timestamp":"2023-07-29T05:39:30.380Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:30.380Z"}
+{"level":"info","message":"Reserved card 2150 succesfully","timestamp":"2023-07-29T05:39:30.892Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:30.892Z"}
+{"level":"info","message":"Reserved card 2406 succesfully","timestamp":"2023-07-29T05:39:31.302Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:31.302Z"}
+{"level":"info","message":"Reserved card 2662 succesfully","timestamp":"2023-07-29T05:39:31.813Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:31.814Z"}
+{"level":"info","message":"Reserved card 2918 succesfully","timestamp":"2023-07-29T05:39:32.326Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:32.326Z"}
+{"level":"info","message":"Reserved card 3174 succesfully","timestamp":"2023-07-29T05:39:32.694Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:32.694Z"}
+{"level":"info","message":"Reserved card 3430 succesfully","timestamp":"2023-07-29T05:39:32.984Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:32.984Z"}
+{"level":"info","message":"Reserved card 3686 succesfully","timestamp":"2023-07-29T05:39:33.452Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:33.452Z"}
+{"level":"info","message":"Reserved card 3942 succesfully","timestamp":"2023-07-29T05:39:33.862Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:33.862Z"}
+{"level":"info","message":"Reserved card 4198 succesfully","timestamp":"2023-07-29T05:39:34.374Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:34.374Z"}
+{"level":"info","message":"Reserved card 4454 succesfully","timestamp":"2023-07-29T05:39:34.739Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:34.739Z"}
+{"level":"info","message":"Reserved card 4710 succesfully","timestamp":"2023-07-29T05:39:35.193Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:35.193Z"}
+{"level":"info","message":"Reserved card 4966 succesfully","timestamp":"2023-07-29T05:39:35.728Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:35.728Z"}
+{"level":"info","message":"Reserved card 5222 succesfully","timestamp":"2023-07-29T05:39:36.216Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:36.217Z"}
+{"level":"info","message":"Reserved card 5478 succesfully","timestamp":"2023-07-29T05:39:36.534Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:36.534Z"}
+{"level":"info","message":"Reserved card 5734 succesfully","timestamp":"2023-07-29T05:39:36.932Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:36.932Z"}
+{"level":"info","message":"Reserved card 5990 succesfully","timestamp":"2023-07-29T05:39:37.444Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:37.444Z"}
+{"level":"info","message":"Reserved card 6246 succesfully","timestamp":"2023-07-29T05:39:37.855Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:37.855Z"}
+{"level":"info","message":"Reserved card 6502 succesfully","timestamp":"2023-07-29T05:39:38.368Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:38.368Z"}
+{"level":"info","message":"Reserved card 6758 succesfully","timestamp":"2023-07-29T05:39:38.653Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:38.653Z"}
+{"level":"info","message":"Reserved card 7014 succesfully","timestamp":"2023-07-29T05:39:38.943Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:38.943Z"}
+{"level":"info","message":"Reserved card 7270 succesfully","timestamp":"2023-07-29T05:39:39.254Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:39.254Z"}
+{"level":"info","message":"Reserved card 7526 succesfully","timestamp":"2023-07-29T05:39:39.543Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:39.543Z"}
+{"level":"info","message":"Reserved card 7782 succesfully","timestamp":"2023-07-29T05:39:40.006Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:40.006Z"}
+{"level":"info","message":"Reserved card 8038 succesfully","timestamp":"2023-07-29T05:39:40.416Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:40.416Z"}
+{"level":"info","message":"Reserved card 8294 succesfully","timestamp":"2023-07-29T05:39:40.929Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:40.930Z"}
+{"level":"info","message":"Reserved card 8550 succesfully","timestamp":"2023-07-29T05:39:41.440Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:41.440Z"}
+{"level":"info","message":"Reserved card 8806 succesfully","timestamp":"2023-07-29T05:39:41.779Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:41.779Z"}
+{"level":"info","message":"Reserved card 9062 succesfully","timestamp":"2023-07-29T05:39:42.074Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:42.074Z"}
+{"level":"info","message":"Reserved card 9318 succesfully","timestamp":"2023-07-29T05:39:42.357Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:42.357Z"}
+{"level":"info","message":"Reserved card 9574 succesfully","timestamp":"2023-07-29T05:39:42.873Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:42.874Z"}
+{"level":"info","message":"Reserved card 9830 succesfully","timestamp":"2023-07-29T05:39:43.163Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:43.164Z"}
+{"level":"info","message":"Reserved card 103 succesfully","timestamp":"2023-07-29T05:39:43.692Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:43.693Z"}
+{"level":"info","message":"Reserved card 359 succesfully","timestamp":"2023-07-29T05:39:44.103Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:44.103Z"}
+{"level":"info","message":"Reserved card 615 succesfully","timestamp":"2023-07-29T05:39:44.614Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:44.614Z"}
+{"level":"info","message":"Reserved card 871 succesfully","timestamp":"2023-07-29T05:39:45.125Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:45.125Z"}
+{"level":"info","message":"Reserved card 1127 succesfully","timestamp":"2023-07-29T05:39:45.536Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:45.536Z"}
+{"level":"info","message":"Reserved card 1383 succesfully","timestamp":"2023-07-29T05:39:45.945Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:45.945Z"}
+{"level":"info","message":"Reserved card 1639 succesfully","timestamp":"2023-07-29T05:39:46.253Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:46.253Z"}
+{"level":"info","message":"Reserved card 1895 succesfully","timestamp":"2023-07-29T05:39:46.661Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:46.662Z"}
+{"level":"info","message":"Reserved card 2151 succesfully","timestamp":"2023-07-29T05:39:46.968Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:46.969Z"}
+{"level":"info","message":"Reserved card 2407 succesfully","timestamp":"2023-07-29T05:39:47.377Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:47.377Z"}
+{"level":"info","message":"Reserved card 2663 succesfully","timestamp":"2023-07-29T05:39:47.659Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:47.659Z"}
+{"level":"info","message":"Reserved card 2919 succesfully","timestamp":"2023-07-29T05:39:47.969Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:47.969Z"}
+{"level":"info","message":"Reserved card 3175 succesfully","timestamp":"2023-07-29T05:39:48.401Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:48.401Z"}
+{"level":"info","message":"Reserved card 3431 succesfully","timestamp":"2023-07-29T05:39:48.811Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:48.811Z"}
+{"level":"info","message":"Reserved card 3687 succesfully","timestamp":"2023-07-29T05:39:49.221Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:49.222Z"}
+{"level":"info","message":"Reserved card 3943 succesfully","timestamp":"2023-07-29T05:39:49.529Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:49.530Z"}
+{"level":"info","message":"Reserved card 4199 succesfully","timestamp":"2023-07-29T05:39:49.939Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:49.940Z"}
+{"level":"info","message":"Reserved card 4455 succesfully","timestamp":"2023-07-29T05:39:50.238Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:50.238Z"}
+{"level":"info","message":"Reserved card 4711 succesfully","timestamp":"2023-07-29T05:39:50.517Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:50.518Z"}
+{"level":"info","message":"Reserved card 4967 succesfully","timestamp":"2023-07-29T05:39:50.814Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:50.814Z"}
+{"level":"info","message":"Reserved card 5223 succesfully","timestamp":"2023-07-29T05:39:51.120Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:51.121Z"}
+{"level":"info","message":"Reserved card 5479 succesfully","timestamp":"2023-07-29T05:39:51.473Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:51.473Z"}
+{"level":"info","message":"Reserved card 5735 succesfully","timestamp":"2023-07-29T05:39:51.885Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:51.885Z"}
+{"level":"info","message":"Reserved card 5991 succesfully","timestamp":"2023-07-29T05:39:52.295Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:52.295Z"}
+{"level":"info","message":"Reserved card 6247 succesfully","timestamp":"2023-07-29T05:39:52.807Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:52.807Z"}
+{"level":"info","message":"Reserved card 6503 succesfully","timestamp":"2023-07-29T05:39:53.136Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:53.136Z"}
+{"level":"info","message":"Reserved card 6759 succesfully","timestamp":"2023-07-29T05:39:53.425Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:53.426Z"}
+{"level":"info","message":"Reserved card 7015 succesfully","timestamp":"2023-07-29T05:39:53.728Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:53.728Z"}
+{"level":"info","message":"Reserved card 7271 succesfully","timestamp":"2023-07-29T05:39:54.138Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:54.138Z"}
+{"level":"info","message":"Reserved card 7527 succesfully","timestamp":"2023-07-29T05:39:54.547Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:54.547Z"}
+{"level":"info","message":"Reserved card 7783 succesfully","timestamp":"2023-07-29T05:39:55.059Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:55.060Z"}
+{"level":"info","message":"Reserved card 8039 succesfully","timestamp":"2023-07-29T05:39:55.467Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:55.467Z"}
+{"level":"info","message":"Reserved card 8295 succesfully","timestamp":"2023-07-29T05:39:55.753Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:55.754Z"}
+{"level":"info","message":"Reserved card 8551 succesfully","timestamp":"2023-07-29T05:39:56.084Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:56.084Z"}
+{"level":"info","message":"Reserved card 8807 succesfully","timestamp":"2023-07-29T05:39:56.391Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:56.391Z"}
+{"level":"info","message":"Reserved card 9063 succesfully","timestamp":"2023-07-29T05:39:56.698Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:56.698Z"}
+{"level":"info","message":"Reserved card 9319 succesfully","timestamp":"2023-07-29T05:39:57.108Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:57.108Z"}
+{"level":"info","message":"Reserved card 9575 succesfully","timestamp":"2023-07-29T05:39:57.406Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:57.406Z"}
+{"level":"info","message":"Reserved card 9831 succesfully","timestamp":"2023-07-29T05:39:57.722Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:57.722Z"}
+{"level":"info","message":"Reserved card 104 succesfully","timestamp":"2023-07-29T05:39:58.020Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:58.020Z"}
+{"level":"info","message":"Reserved card 360 succesfully","timestamp":"2023-07-29T05:39:58.418Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:58.418Z"}
+{"level":"info","message":"Reserved card 616 succesfully","timestamp":"2023-07-29T05:39:58.744Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:58.744Z"}
+{"level":"info","message":"Reserved card 872 succesfully","timestamp":"2023-07-29T05:39:59.154Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:59.154Z"}
+{"level":"info","message":"Reserved card 1128 succesfully","timestamp":"2023-07-29T05:39:59.665Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:59.666Z"}
+{"level":"info","message":"Reserved card 1384 succesfully","timestamp":"2023-07-29T05:39:59.960Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906086729925EpTu880\",\"card_isused\":true,\"saleLineId\":368}","timestamp":"2023-07-29T05:39:59.960Z"}
+{"level":"info","message":"Reserved card 1640 succesfully","timestamp":"2023-07-29T05:40:00.270Z"}
+{"level":"info","message":"********* Immediatly update saleLine after reserved cards *********","timestamp":"2023-07-29T05:40:00.270Z"}
+{"level":"warn","message":"This saleLineId 368 has previous card count 56","timestamp":"2023-07-29T05:40:00.271Z"}
+{"level":"info","message":"// ************** Update saleLine entry ************** //","timestamp":"2023-07-29T05:40:00.271Z"}
+{"level":"info","message":"Updated saleLineId 368 completed [object SequelizeInstance:saleLine]","timestamp":"2023-07-29T05:40:01.001Z"}
+{"level":"warn","message":"SaleLine for create count is 0","timestamp":"2023-07-29T05:40:01.003Z"}
+{"level":"info","message":"Update transaction completed [object SequelizeInstance:saleHeader]","timestamp":"2023-07-29T05:40:01.410Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-29T05:43:05.523Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-29T05:43:05.527Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-29T05:43:07.558Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-29T05:43:07.558Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-07-29T05:49:24.786Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-07-29T05:49:24.789Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-07-29T05:49:24.790Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-07-29T05:49:24.790Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-07-29T05:49:24.792Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-07-29T05:49:25.770Z"}
+{"level":"info","message":"app is runing: 8080","timestamp":"2023-07-29T05:49:25.771Z"}
+{"level":"warn","message":"env: dcommerce_uat_1","timestamp":"2023-07-29T05:49:25.772Z"}
+{"level":"info","message":"DB Connection established","timestamp":"2023-07-29T05:49:30.556Z"}

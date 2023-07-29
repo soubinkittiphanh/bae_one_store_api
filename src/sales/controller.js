@@ -73,6 +73,10 @@ exports.updateSaleHeader = async (req, res) => {
     if (saleLineForCreate.length > 0) await lineService.createBulkSaleLineWithoutRes(saleLineForCreate, lockingSessionId)
     await saleHeader.update({ bookingDate, remark, discount, total, exchangeRate, isActive, lines, clientId, paymentId, currencyId, userId });
     logger.info(`Update transaction completed ${saleHeader}`)
+    const productIdList = lines.map((item) => {
+      return item.productId
+    });
+    productService.updateProductCountGroup(productIdList)
     res.status(200).json(saleHeader);
   } catch (error) {
     logger.error("Cannot update data " + error)
