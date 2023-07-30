@@ -216,31 +216,34 @@ const reserveCard = async (line, lockingSessionId, qty) => {
     throw new Error(`Stock not enought #${line.productId}`);
   }
 
-  const thoseFreshLines = cards.map(el => el.id == null)
-  const thoseOldLines = cards.map(el => el.id != null)
+  const thoseFreshLines = cards.filter(el => el.id == null)
+  const thoseOldLines = cards.filter(el => el.id != null)
   let entryOption = {
     locking_session_id: lockingSessionId,
     card_isused: true,
   }
   // ################ card for Fresh line ################
-
-  Card.update(entryOption, {
+  logger.info(`Book the cards for Fresh line for ${thoseFreshLines.length} cards`)
+  const numRowsUpdatedCardFresh = await Card.update(entryOption, {
     where: {
       id: {
         [Op.in]: thoseFreshLines.map(el => el.id)
       }
     }
   })
+  logger.info(`$$$$$$ Update cards for fresh line completed ${numRowsUpdatedCardFresh} records $$$$$`)
   // ################ card for Old line ################
+  logger.info(`Book the cards for Old line for ${thoseOldLines.length} cards`)
   entryOption.saleLineId = line.id
-  Card.update(entryOption, {
+  const numRowsUpdatedCardOld = await Card.update(entryOption, {
     where: {
       id: {
         [Op.in]: thoseOldLines.map(el => el.id)
       }
     }
   })
-// $$$$$$$$$$$$$$$ old logic impact performance $$$$$$$$$$$$$$$ //
+  logger.info(`$$$$$$ Update cards for old line completed ${numRowsUpdatedCardOld} records $$$$$`)
+  // $$$$$$$$$$$$$$$ old logic impact performance $$$$$$$$$$$$$$$ //
   // for (const iterator of cards) {
   //   let updatedCard = null
   //   try {
