@@ -42,7 +42,7 @@ const updateProductCountById = async (req, res) => {
     logger.info('Product count updated successfully');
     res.status(200).send(`Operation completed`)
   }).catch((error) => {
-    logger.error('Error updating product count:'+ error);
+    logger.error('Error updating product count:' + error);
     res.status(501).send(`Server error ${error}`)
   });
 };

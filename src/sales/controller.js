@@ -8,7 +8,7 @@ const logger = require('../api/logger');
 const lineService = require("./line/service");
 const headerService = require("./service");
 const common = require('../common')
-const { Op, where } = require('sequelize');
+const { Op, where, literal } = require('sequelize');
 const productService = require('../product/service')
 
 // 1. 200 OK - The request has succeeded and the server has returned the requested data.
@@ -303,6 +303,8 @@ exports.getSaleHeaders = async (req, res) => {
     res.status(500).send(error);
   }
 };
+
+
 exports.getSaleHeadersByDate = async (req, res) => {
   const date = JSON.parse(req.query.date);
   logger.warn("Date " + date.startDate + " " + date.endDate)
@@ -385,5 +387,95 @@ exports.deleteSaleHeader = async (req, res) => {
     res.status(200).json({ success: true, message: 'Sale header deleted successfully' });
   } catch (error) {
     res.status(500).send(error);
+  }
+};
+
+
+// const products = await Product.findAll({
+//   where: {
+//     [Op.and]: Sequelize.literal('(price * quantity) > 100')
+//   }
+// });
+exports.sumSaleToday = async (req, res) => {
+  const date = JSON.parse(req.query.date);
+  logger.warn("Date " + date.startDate + " " + date.endDate)
+  const { startDate, endDate } = date // new Date('2022-01-01');
+  try {
+    const saleHeader = await SaleHeader.findAll({
+      attributes: ['total', 'discount'],
+      where: {
+        bookingDate: {
+          [Op.between]: [startDate, endDate]
+        }
+      }
+
+    })
+    res.send(saleHeader)
+  } catch (error) {
+    logger.error(`Something went wrong with error ${error}`)
+    res.send(`Something went wrong with error ${error}`)
+  }
+
+  // attributes: ['id', 'name'],
+  // SaleHeader.sum(literal('total - discount'), {
+  //   where: {
+  //     bookingDate: {
+  //       [Op.between]: [startDate, endDate]
+  //     }
+  //   }
+  // })
+  //   .then(total => {
+  //     console.log(`Total price after discounts between ${startDate} and ${endDate}: ${total}`);
+  //     res.send(total)
+  //   })
+  //   .catch(err => {
+  //     logger.error(`Error cannot retreive data ${err}`)
+  //     res.status(503).send(`error ${err}`)
+  //   });
+};
+
+exports.sumSaleCurrentMonth = async (req, res) => {
+  const date = JSON.parse(req.query.date);
+  logger.warn("Date " + date.startDate + " " + date.endDate)
+  //   const startDate = new Date('2023-07-01');
+  // const endDate = new Date('2023-12-31');
+  const { startDate, endDate } = date // new Date('2022-01-01');
+  try {
+    const saleHeader = await SaleHeader.findAll({
+      attributes: ['total', 'discount'],
+      where: {
+        bookingDate: {
+          [Op.between]: [startDate, endDate]
+        }
+      }
+
+    })
+    res.send(saleHeader)
+  } catch (error) {
+    logger.error(`Something went wrong with error ${error}`)
+    res.send(`Something went wrong with error ${error}`)
+  }
+};
+exports.sumSaleCurrentYear = async (req, res) => {
+  // Calculate the sum of total - discount for products between two dates
+  const date = JSON.parse(req.query.date);
+  logger.warn("Date " + date.startDate + " " + date.endDate)
+  //   const startDate = new Date('2023-07-01');
+  // const endDate = new Date('2023-12-31');
+  const { startDate, endDate } = date // new Date('2022-01-01');
+  try {
+    const saleHeader = await SaleHeader.findAll({
+      attributes: ['bookingDate','total', 'discount'],
+      where: {
+        bookingDate: {
+          [Op.between]: [startDate, endDate]
+        }
+      }
+
+    })
+    res.send(saleHeader)
+  } catch (error) {
+    logger.error(`Something went wrong with error ${error}`)
+    res.send(`Something went wrong with error ${error}`)
   }
 };

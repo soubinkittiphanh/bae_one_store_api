@@ -15,6 +15,9 @@ router
 .delete("/find/:id", controller.deleteSaleHeader)
 .get("/find", controller.getSaleHeaders)
 .get("/findByDate", controller.getSaleHeadersByDate)
+.get("/sumsaleDaily", controller.sumSaleToday)
+.get("/sumsaleMonthly", controller.sumSaleCurrentMonth)
+.get("/sumsaleYearly", controller.sumSaleCurrentYear)
 .get("/find/:id", controller.getSaleHeaderById)
 // .post("/bulkCreate",service.createHulkStockCard)
 module.exports = router
