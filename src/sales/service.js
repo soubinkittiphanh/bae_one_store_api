@@ -86,62 +86,102 @@ const cardReversalByLockingSessionId = async(lockingSessionId)=>{
     }
 }
 
+// const assignHeaderIdToLineByUpdate = async (line, id, lockingSessionId, isUpdate) => {
+//     for (const iterator of line) {
+//       logger.warn(`Check if lineId is null or undifine ${iterator.id}`)
+//       iterator.headerId = id
+//       iterator.saleHeaderId = id
+//       logger.warn("header id ===> " + iterator.headerId)
+//       try {
+//         // ********** If it header is fresh record then we directly reserve new card ************ //
+//         // ********** If not we will have condition ************ //
+//         if (!isUpdate || !iterator.id) {
+//           const qty = iterator.unitRate * iterator.quantity
+//           // productService.updateProductCountById(iterator.productId)
+//           await reserveCard(iterator, lockingSessionId, qty)
+//         } else {
+//           // ********** The logic part of update existing card ************ //
+//           // ********** Reverse all previous cards from this saleLineId and assign new one ************ //
+//           // await headerService.cardReversal(iterator.productId, iterator.id)
+//           const previousCards = await Card.findAll({
+//             order: [['createdAt', 'DESC']],
+//             where: {
+//               saleLineId: iterator.id
+//             }
+//           })
+//           const currentRequiredQty = iterator.unitRate * iterator.quantity
+//           const qty = currentRequiredQty - previousCards.length
+  
+//           if (previousCards[0]['productId'] == iterator['productId']) {
+//             logger.info(`*************Previous card productId is the same with current ProductId************`)
+  
+//             if (currentRequiredQty > previousCards.length) {
+//               //************ If current require greater than previous cards logic *************/
+//               await reserveCard(iterator, lockingSessionId, qty)
+//               logger.info(`********* Immediatly update saleLine after reserved cards *********`)
+  
+//             } else if (currentRequiredQty == previousCards.length) {
+//               //************ No need to do anything *************/
+//             } else {
+//               //************ Current card less than previous card logic *************/
+//               //************ and we have to remove some previous card *************/
+  
+//               try {
+//                 // ********** Update if already exist function ***********// 
+//                 const preCardCount = previousCards.length
+//                 const numberOfLastCardForPuttingBackToInventory = currentRequiredQty - preCardCount
+//                 const cardsForReversBack = previousCards.slice(numberOfLastCardForPuttingBackToInventory)
+//                 logger.warn(`Card previous count #${preCardCount} and cad now count #${currentRequiredQty}`)
+//                 logger.warn(`cardsForReversBack count #${cardsForReversBack.length}`)
+//                 for (const iterator of cardsForReversBack) {
+//                   const updatedCard = await iterator.update({
+//                     card_isused: 0,
+//                     saleLineId: null,
+//                     isActive: true
+//                   })
+//                   logger.info(`Reverse over cards succesfully ${updatedCard['card_isused']}`)
+//                 }
+//               } catch (error) {
+//                 logger.error(`Reverse over cards fail ${error}`)
+//                 throw new Error(`Reverse over cards fail ${error}`)
+//               }
+//             }
+//           } else {
+//             logger.info(`*************Previous card productId is not the same with current ProductId************`)
+//             await reserveCard(iterator, lockingSessionId, currentRequiredQty)
+//             for (const iterator of previousCards) {
+//               const updatedCard = await iterator.update({
+//                 card_isused: 0,
+//                 saleLineId: null,
+//                 isActive: true
+//               })
+//               logger.info(`Reverse over cards succesfully ${updatedCard['card_isused']}`)
+//             }
+//             //**************** Update previous card make it back available in inventory ****************/
+//             logger.info(`//**************** Update previous card make it back available in inventory ****************/`)
+//             productService.updateProductCountById(previousCards[0]['productId'])
+//           }
+//           logger.warn(`This saleLineId ${iterator.id} has previous card count ${previousCards.length}`)
+  
+//           // ************** Update saleLine entry ************** //
+//           logger.info(`// ************** Update saleLine entry ************** //`)
+//           await lineService.updateSaleLine(iterator)
+//         }
+  
+//       } catch (error) {
+//         logger.error(`Stock is not enought for productId ${iterator.productId}`)
+//         if (!isUpdate) await headerService.cardReversalByLockingSessionId(lockingSessionId)
+//         // await releaseTempCard(lockingSessionId)
+//         throw new Error(error)
+//       }
+//     }
+//     return line;
+//   }
+  
+
 module.exports = {
     cardReversal,
     saleHeaderReversal,
     saleLineReversal,
     cardReversalByLockingSessionId
 }
-
-// function generateRandomString(length) {
-//     let result = '';
-//     const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-//     const charactersLength = characters.length;
-//     for (let i = 0; i < length; i++) {
-//       result += characters.charAt(Math.floor(Math.random() * charactersLength));
-//     }
-    
-//     return result;
-//   }
-  
-// const createHulkStockCard = (req, res) => {
-
-//     const {inputter,product_id,totalCost,stocCardkQty} = req.body;
-//     const costPerUnit = totalCost/stocCardkQty;
-//     const lockingSessionId = Date.now();
-//     const rowsToInsert = [
-
-//     ]
-//     for (let index = 0; index < stocCardkQty; index++) {
-//         const cardSequenceNumber = Date.now().toString().concat(generateRandomString(10))
-//         logger.warn(cardSequenceNumber)
-//         rowsToInsert.push({
-//             //Card object
-//             card_type_code: 10010,// FIX Value and No meaning
-//             product_id: product_id,
-//             cost: costPerUnit, // 50.99,
-//             card_number: cardSequenceNumber, //'1234-5678-9012-3456',
-//             card_isused: 0,
-//             locking_session_id: lockingSessionId,
-//             card_input_date: new Date(),
-//             inputter: inputter,
-//             update_user: inputter,
-//             update_time: new Date(),
-//             update_time_new: new Date(),
-//             isActive: true,
-//         })
-//     }
-//     Card.bulkCreate(rowsToInsert)
-//         .then(()=>{ 
-//             logger.info('Rows inserted successfully')
-//             return res.status(200).send("Transction completed")
-//         })
-//         .catch((error)=>{
-//             logger.error('Error inserting rows:', error)
-//             return res.status(403).send("Server error "+error)
-//         });
-// }
-
-// module.exports = {
-//     createHulkStockCard,
-// }

@@ -8,7 +8,7 @@ const logger = require('../api/logger');
 const lineService = require("./line/service");
 const headerService = require("./service");
 const common = require('../common')
-const { Op } = require('sequelize');
+const { Op, where } = require('sequelize');
 const productService = require('../product/service')
 
 // 1. 200 OK - The request has succeeded and the server has returned the requested data.
@@ -70,13 +70,16 @@ exports.updateSaleHeader = async (req, res) => {
     // ********** Clasify new or old saleLine ********** //
     const saleLineForCreate = lines.filter(el => el['id'] == null)
     logger.warn(`SaleLine for create count is ${saleLineForCreate.length}`)
+
     if (saleLineForCreate.length > 0) await lineService.createBulkSaleLineWithoutRes(saleLineForCreate, lockingSessionId)
+
     await saleHeader.update({ bookingDate, remark, discount, total, exchangeRate, isActive, lines, clientId, paymentId, currencyId, userId });
     logger.info(`Update transaction completed ${saleHeader}`)
-    const productIdList = lines.map((item) => {
-      return item.productId
-    });
-    productService.updateProductCountGroup(productIdList)
+
+    // ************* TAKE THE PRODUC ID FOR UPDATE STOCK COUNT IN PRODUCT TABLE *************//
+    updateProductStockCount(lines)
+    // ************* TAKE THE PRODUC ID FOR UPDATE STOCK COUNT IN PRODUCT TABLE *************//
+
     res.status(200).json(saleHeader);
   } catch (error) {
     logger.error("Cannot update data " + error)
@@ -94,6 +97,7 @@ const assignHeaderId = async (line, id, lockingSessionId, isUpdate) => {
       // ********** If not we will have condition ************ //
       if (!isUpdate || !iterator.id) {
         const qty = iterator.unitRate * iterator.quantity
+        // productService.updateProductCountById(iterator.productId)
         await reserveCard(iterator, lockingSessionId, qty)
       } else {
         // ********** The logic part of update existing card ************ //
@@ -107,7 +111,7 @@ const assignHeaderId = async (line, id, lockingSessionId, isUpdate) => {
         })
         const currentRequiredQty = iterator.unitRate * iterator.quantity
         const qty = currentRequiredQty - previousCards.length
-
+        // ********** Check if the previous card productId is the same or not ********** //
         if (previousCards[0]['productId'] == iterator['productId']) {
           logger.info(`*************Previous card productId is the same with current ProductId************`)
 
@@ -125,34 +129,45 @@ const assignHeaderId = async (line, id, lockingSessionId, isUpdate) => {
             try {
               // ********** Update if already exist function ***********// 
               const preCardCount = previousCards.length
-              const n = currentRequiredQty - preCardCount
-              const cards = previousCards.slice(n)
+              const numberOfLastCardForPuttingBackToInventory = currentRequiredQty - preCardCount
+              const cardsForReversBack = previousCards.slice(numberOfLastCardForPuttingBackToInventory)
               logger.warn(`Card previous count #${preCardCount} and cad now count #${currentRequiredQty}`)
-              logger.warn(`Card1 count #${cards.length}`)
-              for (const iterator of cards) {
-                const updatedCard = await iterator.update({
-                  card_isused: 0,
-                  saleLineId: null,
-                  isActive: true
-                })
-                logger.info(`Reverse over cards succesfully ${updatedCard['card_isused']}`)
+              logger.warn(`cardsForReversBack count #${cardsForReversBack.length}`)
+              const updatedCard = await Card.update({
+                card_isused: 0,
+                saleLineId: null,
+                isActive: true
+              }, {
+                where: {
+                  id: {
+                    [Op.in]: cardsForReversBack.map(el => el.id)
+                  }
+                }
               }
+              )
             } catch (error) {
               logger.error(`Reverse over cards fail ${error}`)
               throw new Error(`Reverse over cards fail ${error}`)
             }
           }
         } else {
-          logger.info(`*************Previous card productId is not the same with current ProductId************`)
+          logger.warn(`*************Previous card productId is not the same with current ProductId************`)
           await reserveCard(iterator, lockingSessionId, currentRequiredQty)
-          for (const iterator of previousCards) {
-            const updatedCard = await iterator.update({
-              card_isused: 0,
-              saleLineId: null,
-              isActive: true
-            })
-            logger.info(`Reverse over cards succesfully ${updatedCard['card_isused']}`)
-          }
+          logger.info(`************* Send previous use cards back to inventory *************`)
+          const updatedCard = await Card.update({
+            card_isused: 0,
+            saleLineId: null,
+            isActive: true
+          }, {
+            where: {
+              id: {
+                [Op.in]: previousCards.map(el => el.id)
+              }
+            }
+          })
+          //**************** Update previous card make it back available in inventory ****************/
+          logger.info(`//**************** Update previous card make it back available in inventory ****************/`)
+          productService.updateProductCountById(previousCards[0]['productId'])
         }
         logger.warn(`This saleLineId ${iterator.id} has previous card count ${previousCards.length}`)
 
@@ -171,6 +186,14 @@ const assignHeaderId = async (line, id, lockingSessionId, isUpdate) => {
   return line;
 }
 
+const updateProductStockCount = async (lines) => {
+  // ************* TAKE THE PRODUC ID FOR UPDATE STOCK COUNT IN PRODUCT TABLE *************//
+  const productIdList = lines.map((item) => {
+    return item.productId
+  });
+  await productService.updateProductCountGroup(productIdList)
+  // ************* TAKE THE PRODUC ID FOR UPDATE STOCK COUNT IN PRODUCT TABLE *************//
+}
 
 const reserveCard = async (line, lockingSessionId, qty) => {
   //  *********************************

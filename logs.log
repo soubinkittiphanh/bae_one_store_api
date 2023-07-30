@@ -26609,3 +26609,838 @@
 {"level":"info","message":"app is runing: 8080","timestamp":"2023-07-29T06:47:07.439Z"}
 {"level":"warn","message":"env: dcommerce_uat_1","timestamp":"2023-07-29T06:47:07.440Z"}
 {"level":"info","message":"DB Connection established","timestamp":"2023-07-29T06:47:11.631Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-07-29T07:03:48.702Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-07-29T07:03:48.704Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-07-29T07:03:48.706Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-07-29T07:03:48.706Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-07-29T07:03:48.708Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-07-29T07:03:49.928Z"}
+{"level":"info","message":"app is runing: 8080","timestamp":"2023-07-29T07:03:49.929Z"}
+{"level":"warn","message":"env: dcommerce_uat_1","timestamp":"2023-07-29T07:03:49.929Z"}
+{"level":"info","message":"DB Connection established","timestamp":"2023-07-29T07:03:53.694Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-07-29T11:01:29.211Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-07-29T11:01:29.217Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-07-29T11:01:29.219Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-07-29T11:01:29.220Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-07-29T11:01:29.223Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-07-29T11:01:30.164Z"}
+{"level":"info","message":"app is runing: 8080","timestamp":"2023-07-29T11:01:30.164Z"}
+{"level":"warn","message":"env: dcommerce_uat_1","timestamp":"2023-07-29T11:01:30.165Z"}
+{"level":"info","message":"DB Connection established","timestamp":"2023-07-29T11:01:34.502Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-07-29T11:03:02.457Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-07-29T11:03:02.460Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-07-29T11:03:02.461Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-07-29T11:03:02.462Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-07-29T11:03:02.464Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-07-29T11:03:03.215Z"}
+{"level":"info","message":"app is runing: 8080","timestamp":"2023-07-29T11:03:03.216Z"}
+{"level":"warn","message":"env: dcommerce_uat_1","timestamp":"2023-07-29T11:03:03.217Z"}
+{"level":"info","message":"DB Connection established","timestamp":"2023-07-29T11:03:07.602Z"}
+{"level":"info","message":"SQL COMMAND SELECT * FROM user WHERE cus_id='1000' AND cus_pass='1111'","timestamp":"2023-07-29T11:04:11.681Z"}
+{"level":"warn","message":"Token ===> eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiY3VzX2lkIjoxMDAwLCJjdXNfbmFtZSI6InNvdWJpbiIsImN1c190ZWwiOiIwMjA3NzE1MDAwOCIsImlhdCI6MTY5MDYyODY1MiwiZXhwIjoxNjkwNjQ2NjUyfQ.6ZyV1uboqDKvEtbGe1h1VzkK87jiUhH7Hw_UDBo8gf4","timestamp":"2023-07-29T11:04:12.981Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-29T11:04:13.060Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-29T11:04:13.063Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-29T11:04:16.684Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-29T11:04:16.686Z"}
+{"level":"info","message":"SELECT SUM(o.product_amount) AS sale_count,\n    SUM(o.order_price_total) as total_sale,\n    o.txn_date,\n    SUBSTR(o.txn_date, 1, 10) AS txn_date_short\n    FROM user_order o \n    WHERE  o.txn_date BETWEEN '2023-07-01 00:00:00' AND '2023-07-30 23:59:59' \n    AND o.record_status = 1\n    GROUP BY txn_date_short","timestamp":"2023-07-29T11:04:16.703Z"}
+{"level":"info","message":"SELECT o.product_id,SUM(o.product_amount) AS sale_count,\n    o.product_price,SUM(o.order_price_total) as total_sale,\n    o.txn_date,o.record_status, \n    p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name\n    FROM user_order o \n    LEFT JOIN (SELECT p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN outlet u ON u.id = p.outlet\n        LEFT JOIN category c on c.categ_id=p.pro_category\n        ) p \n    ON p.pro_id = o.product_id \n    WHERE  o.txn_date BETWEEN '2023-07-01 00:00:00' AND '2023-07-30 23:59:59'\n    AND o.record_status = 1\n    GROUP BY p.pro_category LIMIT 5 ","timestamp":"2023-07-29T11:04:16.714Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-29T11:04:18.193Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-29T11:04:18.195Z"}
+{"level":"info","message":"SELECT d.*,SUM(o.order_price_total) AS cart_total,\n    d.payment_code,\n    p.payment_status,\n    o.order_id,\n    d.record_status\n    FROM dynamic_customer d\n    LEFT JOIN user_order o ON o.locking_session_id = d.locking_session_id\n    LEFT JOIN order_payment p ON p.locking_session_id = d.locking_session_id\n    WHERE d.txn_date BETWEEN '2023-07-01 00:00:00' AND '2023-07-30 23:59:59' \n    \n    GROUP BY d.locking_session_id\n    ","timestamp":"2023-07-29T11:04:18.253Z"}
+{"level":"info","message":"Record count => 41","timestamp":"2023-07-29T11:04:18.569Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-07-29T11:04:18.570Z"}
+{"level":"warn","message":"Date 2023-07-29 2023-07-29","timestamp":"2023-07-29T11:04:24.278Z"}
+{"level":"warn","message":"Date 2023-07-29 2023-07-29","timestamp":"2023-07-29T11:04:31.310Z"}
+{"level":"warn","message":"Date 2023-07-29 2023-07-29","timestamp":"2023-07-29T11:04:33.695Z"}
+{"level":"warn","message":"Date 2023-07-29 2023-07-29","timestamp":"2023-07-29T11:04:39.684Z"}
+{"level":"warn","message":"Date 2023-07-29 2023-07-29","timestamp":"2023-07-29T11:04:42.543Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-29T11:04:46.229Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-29T11:04:46.229Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-29T11:04:50.257Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-29T11:04:50.257Z"}
+{"level":"info","message":"All product count 23 to be update stock count","timestamp":"2023-07-29T11:04:54.003Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-29T11:04:54.080Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-29T11:04:54.081Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-29T11:04:58.899Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-29T11:04:58.900Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-29T11:05:00.394Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-29T11:05:00.395Z"}
+{"level":"warn","message":"Date 2023-07-29 2023-07-29","timestamp":"2023-07-29T11:05:05.822Z"}
+{"level":"warn","message":"Date 2023-07-29 2023-07-29","timestamp":"2023-07-29T11:05:08.083Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-07-29T11:12:32.588Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-07-29T11:12:32.590Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-07-29T11:12:32.591Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-07-29T11:12:32.592Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-07-29T11:12:32.594Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-07-29T11:12:33.567Z"}
+{"level":"info","message":"app is runing: 8080","timestamp":"2023-07-29T11:12:33.568Z"}
+{"level":"warn","message":"env: dcommerce_uat_1","timestamp":"2023-07-29T11:12:33.569Z"}
+{"level":"info","message":"DB Connection established","timestamp":"2023-07-29T11:12:38.397Z"}
+{"level":"warn","message":"Date 2023-07-29 2023-07-29","timestamp":"2023-07-29T11:12:49.765Z"}
+{"level":"info","message":"Updating header","timestamp":"2023-07-29T11:12:58.724Z"}
+{"level":"warn","message":"Check if lineId is null or undifine 399","timestamp":"2023-07-29T11:12:58.725Z"}
+{"level":"warn","message":"header id ===> 270","timestamp":"2023-07-29T11:12:58.725Z"}
+{"level":"info","message":"*************Previous card productId is not the same with current ProductId************","timestamp":"2023-07-29T11:12:59.083Z"}
+{"level":"info","message":"Product Id ===>: 23","timestamp":"2023-07-29T11:12:59.490Z"}
+{"level":"info","message":"Cards available len ===>: 1 sale qty needed 1","timestamp":"2023-07-29T11:12:59.491Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"1690629178725epxkJ102\",\"card_isused\":true,\"saleLineId\":399}","timestamp":"2023-07-29T11:12:59.491Z"}
+{"level":"info","message":"Reserved card 120025 succesfully","timestamp":"2023-07-29T11:12:59.899Z"}
+{"level":"info","message":"Reverse over cards succesfully 0","timestamp":"2023-07-29T11:13:00.242Z"}
+{"level":"warn","message":"This saleLineId 399 has previous card count 1","timestamp":"2023-07-29T11:13:00.243Z"}
+{"level":"info","message":"// ************** Update saleLine entry ************** //","timestamp":"2023-07-29T11:13:00.243Z"}
+{"level":"info","message":"Updated saleLineId 399 completed [object SequelizeInstance:saleLine]","timestamp":"2023-07-29T11:13:01.127Z"}
+{"level":"warn","message":"Check if lineId is null or undifine 400","timestamp":"2023-07-29T11:13:01.129Z"}
+{"level":"warn","message":"header id ===> 270","timestamp":"2023-07-29T11:13:01.129Z"}
+{"level":"info","message":"*************Previous card productId is the same with current ProductId************","timestamp":"2023-07-29T11:13:01.744Z"}
+{"level":"warn","message":"This saleLineId 400 has previous card count 2","timestamp":"2023-07-29T11:13:01.744Z"}
+{"level":"info","message":"// ************** Update saleLine entry ************** //","timestamp":"2023-07-29T11:13:01.744Z"}
+{"level":"info","message":"Updated saleLineId 400 completed [object SequelizeInstance:saleLine]","timestamp":"2023-07-29T11:13:02.474Z"}
+{"level":"warn","message":"Check if lineId is null or undifine 401","timestamp":"2023-07-29T11:13:02.475Z"}
+{"level":"warn","message":"header id ===> 270","timestamp":"2023-07-29T11:13:02.475Z"}
+{"level":"info","message":"*************Previous card productId is the same with current ProductId************","timestamp":"2023-07-29T11:13:02.811Z"}
+{"level":"warn","message":"This saleLineId 401 has previous card count 3","timestamp":"2023-07-29T11:13:02.813Z"}
+{"level":"info","message":"// ************** Update saleLine entry ************** //","timestamp":"2023-07-29T11:13:02.814Z"}
+{"level":"info","message":"Updated saleLineId 401 completed [object SequelizeInstance:saleLine]","timestamp":"2023-07-29T11:13:03.587Z"}
+{"level":"warn","message":"Check if lineId is null or undifine 402","timestamp":"2023-07-29T11:13:03.589Z"}
+{"level":"warn","message":"header id ===> 270","timestamp":"2023-07-29T11:13:03.589Z"}
+{"level":"info","message":"*************Previous card productId is the same with current ProductId************","timestamp":"2023-07-29T11:13:03.917Z"}
+{"level":"warn","message":"This saleLineId 402 has previous card count 4","timestamp":"2023-07-29T11:13:03.919Z"}
+{"level":"info","message":"// ************** Update saleLine entry ************** //","timestamp":"2023-07-29T11:13:03.919Z"}
+{"level":"info","message":"Updated saleLineId 402 completed [object SequelizeInstance:saleLine]","timestamp":"2023-07-29T11:13:04.608Z"}
+{"level":"warn","message":"SaleLine for create count is 0","timestamp":"2023-07-29T11:13:04.610Z"}
+{"level":"info","message":"Update transaction completed [object SequelizeInstance:saleHeader]","timestamp":"2023-07-29T11:13:05.193Z"}
+{"level":"info","message":"All product count 4 to be update stock count","timestamp":"2023-07-29T11:13:05.514Z"}
+{"level":"warn","message":"Date 2023-07-29 2023-07-29","timestamp":"2023-07-29T11:13:05.597Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-29T11:13:10.464Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-29T11:13:10.466Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-29T11:13:20.651Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-29T11:13:20.652Z"}
+{"level":"warn","message":"Date 2023-07-29 2023-07-29","timestamp":"2023-07-29T11:13:23.823Z"}
+{"level":"warn","message":"Date 2023-07-29 2023-07-29","timestamp":"2023-07-29T11:13:28.037Z"}
+{"level":"warn","message":"Date 2023-07-29 2023-07-29","timestamp":"2023-07-29T11:13:29.122Z"}
+{"level":"warn","message":"Date 2023-07-29 2023-07-29","timestamp":"2023-07-29T11:13:31.220Z"}
+{"level":"warn","message":"Date 2023-07-29 2023-07-29","timestamp":"2023-07-29T11:13:31.962Z"}
+{"level":"info","message":"Updating header","timestamp":"2023-07-29T11:13:42.793Z"}
+{"level":"warn","message":"Check if lineId is null or undifine 399","timestamp":"2023-07-29T11:13:42.793Z"}
+{"level":"warn","message":"header id ===> 270","timestamp":"2023-07-29T11:13:42.794Z"}
+{"level":"info","message":"*************Previous card productId is not the same with current ProductId************","timestamp":"2023-07-29T11:13:43.316Z"}
+{"level":"info","message":"Product Id ===>: 11","timestamp":"2023-07-29T11:13:44.152Z"}
+{"level":"info","message":"Cards available len ===>: 1 sale qty needed 1","timestamp":"2023-07-29T11:13:44.152Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"1690629222793etLWp766\",\"card_isused\":true,\"saleLineId\":399}","timestamp":"2023-07-29T11:13:44.153Z"}
+{"level":"info","message":"Reserved card 1639 succesfully","timestamp":"2023-07-29T11:13:44.543Z"}
+{"level":"info","message":"Reverse over cards succesfully 0","timestamp":"2023-07-29T11:13:45.434Z"}
+{"level":"warn","message":"This saleLineId 399 has previous card count 1","timestamp":"2023-07-29T11:13:45.435Z"}
+{"level":"info","message":"// ************** Update saleLine entry ************** //","timestamp":"2023-07-29T11:13:45.435Z"}
+{"level":"info","message":"Updated saleLineId 399 completed [object SequelizeInstance:saleLine]","timestamp":"2023-07-29T11:13:46.181Z"}
+{"level":"warn","message":"Check if lineId is null or undifine 400","timestamp":"2023-07-29T11:13:46.182Z"}
+{"level":"warn","message":"header id ===> 270","timestamp":"2023-07-29T11:13:46.182Z"}
+{"level":"info","message":"*************Previous card productId is the same with current ProductId************","timestamp":"2023-07-29T11:13:46.473Z"}
+{"level":"warn","message":"This saleLineId 400 has previous card count 2","timestamp":"2023-07-29T11:13:46.473Z"}
+{"level":"info","message":"// ************** Update saleLine entry ************** //","timestamp":"2023-07-29T11:13:46.473Z"}
+{"level":"info","message":"Updated saleLineId 400 completed [object SequelizeInstance:saleLine]","timestamp":"2023-07-29T11:13:47.468Z"}
+{"level":"warn","message":"Check if lineId is null or undifine 401","timestamp":"2023-07-29T11:13:47.468Z"}
+{"level":"warn","message":"header id ===> 270","timestamp":"2023-07-29T11:13:47.468Z"}
+{"level":"info","message":"*************Previous card productId is the same with current ProductId************","timestamp":"2023-07-29T11:13:47.818Z"}
+{"level":"warn","message":"This saleLineId 401 has previous card count 3","timestamp":"2023-07-29T11:13:47.819Z"}
+{"level":"info","message":"// ************** Update saleLine entry ************** //","timestamp":"2023-07-29T11:13:47.819Z"}
+{"level":"info","message":"Updated saleLineId 401 completed [object SequelizeInstance:saleLine]","timestamp":"2023-07-29T11:13:48.639Z"}
+{"level":"warn","message":"Check if lineId is null or undifine 402","timestamp":"2023-07-29T11:13:48.639Z"}
+{"level":"warn","message":"header id ===> 270","timestamp":"2023-07-29T11:13:48.639Z"}
+{"level":"info","message":"*************Previous card productId is the same with current ProductId************","timestamp":"2023-07-29T11:13:49.047Z"}
+{"level":"warn","message":"This saleLineId 402 has previous card count 4","timestamp":"2023-07-29T11:13:49.048Z"}
+{"level":"info","message":"// ************** Update saleLine entry ************** //","timestamp":"2023-07-29T11:13:49.048Z"}
+{"level":"info","message":"Updated saleLineId 402 completed [object SequelizeInstance:saleLine]","timestamp":"2023-07-29T11:13:50.072Z"}
+{"level":"warn","message":"SaleLine for create count is 0","timestamp":"2023-07-29T11:13:50.072Z"}
+{"level":"info","message":"Update transaction completed [object SequelizeInstance:saleHeader]","timestamp":"2023-07-29T11:13:50.483Z"}
+{"level":"info","message":"All product count 3 to be update stock count","timestamp":"2023-07-29T11:13:50.836Z"}
+{"level":"warn","message":"Date 2023-07-29 2023-07-29","timestamp":"2023-07-29T11:13:50.903Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-29T11:13:58.034Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-29T11:13:58.035Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-29T11:13:59.877Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-29T11:13:59.877Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-07-29T11:15:59.960Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-07-29T11:15:59.964Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-07-29T11:15:59.965Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-07-29T11:15:59.966Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-07-29T11:15:59.968Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-07-29T11:16:00.748Z"}
+{"level":"info","message":"app is runing: 8080","timestamp":"2023-07-29T11:16:00.749Z"}
+{"level":"warn","message":"env: dcommerce_uat_1","timestamp":"2023-07-29T11:16:00.749Z"}
+{"level":"info","message":"DB Connection established","timestamp":"2023-07-29T11:16:05.519Z"}
+{"level":"warn","message":"Date 2023-07-29 2023-07-29","timestamp":"2023-07-29T11:16:10.675Z"}
+{"level":"info","message":"Updating header","timestamp":"2023-07-29T11:16:20.520Z"}
+{"level":"warn","message":"Check if lineId is null or undifine 399","timestamp":"2023-07-29T11:16:20.521Z"}
+{"level":"warn","message":"header id ===> 270","timestamp":"2023-07-29T11:16:20.522Z"}
+{"level":"info","message":"*************Previous card productId is not the same with current ProductId************","timestamp":"2023-07-29T11:16:20.855Z"}
+{"level":"info","message":"Product Id ===>: 23","timestamp":"2023-07-29T11:16:21.265Z"}
+{"level":"info","message":"Cards available len ===>: 1 sale qty needed 1","timestamp":"2023-07-29T11:16:21.266Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906293805211BB98694\",\"card_isused\":true,\"saleLineId\":399}","timestamp":"2023-07-29T11:16:21.266Z"}
+{"level":"info","message":"Reserved card 120025 succesfully","timestamp":"2023-07-29T11:16:45.377Z"}
+{"level":"info","message":"Reverse over cards succesfully 0","timestamp":"2023-07-29T11:16:45.962Z"}
+{"level":"warn","message":"This saleLineId 399 has previous card count 1","timestamp":"2023-07-29T11:16:45.964Z"}
+{"level":"info","message":"// ************** Update saleLine entry ************** //","timestamp":"2023-07-29T11:16:45.964Z"}
+{"level":"info","message":"Updated saleLineId 399 completed [object SequelizeInstance:saleLine]","timestamp":"2023-07-29T11:16:46.808Z"}
+{"level":"warn","message":"Check if lineId is null or undifine 400","timestamp":"2023-07-29T11:16:46.808Z"}
+{"level":"warn","message":"header id ===> 270","timestamp":"2023-07-29T11:16:46.809Z"}
+{"level":"info","message":"*************Previous card productId is the same with current ProductId************","timestamp":"2023-07-29T11:16:47.218Z"}
+{"level":"warn","message":"This saleLineId 400 has previous card count 2","timestamp":"2023-07-29T11:16:47.218Z"}
+{"level":"info","message":"// ************** Update saleLine entry ************** //","timestamp":"2023-07-29T11:16:47.218Z"}
+{"level":"info","message":"Updated saleLineId 400 completed [object SequelizeInstance:saleLine]","timestamp":"2023-07-29T11:16:48.039Z"}
+{"level":"warn","message":"Check if lineId is null or undifine 401","timestamp":"2023-07-29T11:16:48.040Z"}
+{"level":"warn","message":"header id ===> 270","timestamp":"2023-07-29T11:16:48.040Z"}
+{"level":"info","message":"*************Previous card productId is the same with current ProductId************","timestamp":"2023-07-29T11:16:48.448Z"}
+{"level":"warn","message":"This saleLineId 401 has previous card count 3","timestamp":"2023-07-29T11:16:48.448Z"}
+{"level":"info","message":"// ************** Update saleLine entry ************** //","timestamp":"2023-07-29T11:16:48.448Z"}
+{"level":"info","message":"Updated saleLineId 401 completed [object SequelizeInstance:saleLine]","timestamp":"2023-07-29T11:16:49.266Z"}
+{"level":"warn","message":"Check if lineId is null or undifine 402","timestamp":"2023-07-29T11:16:49.266Z"}
+{"level":"warn","message":"header id ===> 270","timestamp":"2023-07-29T11:16:49.267Z"}
+{"level":"info","message":"*************Previous card productId is the same with current ProductId************","timestamp":"2023-07-29T11:16:49.679Z"}
+{"level":"warn","message":"This saleLineId 402 has previous card count 4","timestamp":"2023-07-29T11:16:49.680Z"}
+{"level":"info","message":"// ************** Update saleLine entry ************** //","timestamp":"2023-07-29T11:16:49.680Z"}
+{"level":"info","message":"Updated saleLineId 402 completed [object SequelizeInstance:saleLine]","timestamp":"2023-07-29T11:16:50.496Z"}
+{"level":"warn","message":"SaleLine for create count is 0","timestamp":"2023-07-29T11:16:50.497Z"}
+{"level":"info","message":"Update transaction completed [object SequelizeInstance:saleHeader]","timestamp":"2023-07-29T11:16:50.906Z"}
+{"level":"info","message":"All product count 4 to be update stock count","timestamp":"2023-07-29T11:16:51.313Z"}
+{"level":"warn","message":"Date 2023-07-29 2023-07-29","timestamp":"2023-07-29T11:16:51.409Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-29T11:17:03.549Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-29T11:17:03.550Z"}
+{"level":"info","message":"SELECT SUM(o.product_amount) AS sale_count,\n    SUM(o.order_price_total) as total_sale,\n    o.txn_date,\n    SUBSTR(o.txn_date, 1, 10) AS txn_date_short\n    FROM user_order o \n    WHERE  o.txn_date BETWEEN '2023-07-01 00:00:00' AND '2023-07-30 23:59:59' \n    AND o.record_status = 1\n    GROUP BY txn_date_short","timestamp":"2023-07-29T11:17:03.559Z"}
+{"level":"info","message":"SELECT o.product_id,SUM(o.product_amount) AS sale_count,\n    o.product_price,SUM(o.order_price_total) as total_sale,\n    o.txn_date,o.record_status, \n    p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name\n    FROM user_order o \n    LEFT JOIN (SELECT p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN outlet u ON u.id = p.outlet\n        LEFT JOIN category c on c.categ_id=p.pro_category\n        ) p \n    ON p.pro_id = o.product_id \n    WHERE  o.txn_date BETWEEN '2023-07-01 00:00:00' AND '2023-07-30 23:59:59'\n    AND o.record_status = 1\n    GROUP BY p.pro_category LIMIT 5 ","timestamp":"2023-07-29T11:17:03.571Z"}
+{"level":"info","message":"SELECT d.*,SUM(o.order_price_total) AS cart_total,\n    d.payment_code,\n    p.payment_status,\n    o.order_id,\n    d.record_status\n    FROM dynamic_customer d\n    LEFT JOIN user_order o ON o.locking_session_id = d.locking_session_id\n    LEFT JOIN order_payment p ON p.locking_session_id = d.locking_session_id\n    WHERE d.txn_date BETWEEN '2023-07-01 00:00:00' AND '2023-07-30 23:59:59' \n    \n    GROUP BY d.locking_session_id\n    ","timestamp":"2023-07-29T11:17:05.119Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-29T11:17:05.179Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-29T11:17:05.179Z"}
+{"level":"info","message":"Record count => 41","timestamp":"2023-07-29T11:17:05.450Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-07-29T11:17:05.450Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-29T11:17:06.532Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-29T11:17:06.532Z"}
+{"level":"warn","message":"Date 2023-07-29 2023-07-29","timestamp":"2023-07-29T11:17:12.726Z"}
+{"level":"info","message":"Updating header","timestamp":"2023-07-29T11:17:26.333Z"}
+{"level":"warn","message":"Check if lineId is null or undifine 399","timestamp":"2023-07-29T11:17:26.336Z"}
+{"level":"warn","message":"header id ===> 270","timestamp":"2023-07-29T11:17:26.336Z"}
+{"level":"info","message":"*************Previous card productId is not the same with current ProductId************","timestamp":"2023-07-29T11:17:26.747Z"}
+{"level":"info","message":"Product Id ===>: 11","timestamp":"2023-07-29T11:17:27.146Z"}
+{"level":"info","message":"Cards available len ===>: 1 sale qty needed 1","timestamp":"2023-07-29T11:17:27.146Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"1690629446336Boq27902\",\"card_isused\":true,\"saleLineId\":399}","timestamp":"2023-07-29T11:17:27.146Z"}
+{"level":"info","message":"Reserved card 1639 succesfully","timestamp":"2023-07-29T11:17:27.566Z"}
+{"level":"info","message":"Reverse over cards succesfully 0","timestamp":"2023-07-29T11:17:27.933Z"}
+{"level":"warn","message":"This saleLineId 399 has previous card count 1","timestamp":"2023-07-29T11:17:27.933Z"}
+{"level":"info","message":"// ************** Update saleLine entry ************** //","timestamp":"2023-07-29T11:17:27.933Z"}
+{"level":"info","message":"Updated saleLineId 399 completed [object SequelizeInstance:saleLine]","timestamp":"2023-07-29T11:17:28.791Z"}
+{"level":"warn","message":"Check if lineId is null or undifine 400","timestamp":"2023-07-29T11:17:28.792Z"}
+{"level":"warn","message":"header id ===> 270","timestamp":"2023-07-29T11:17:28.793Z"}
+{"level":"info","message":"*************Previous card productId is the same with current ProductId************","timestamp":"2023-07-29T11:17:29.203Z"}
+{"level":"warn","message":"This saleLineId 400 has previous card count 2","timestamp":"2023-07-29T11:17:29.203Z"}
+{"level":"info","message":"// ************** Update saleLine entry ************** //","timestamp":"2023-07-29T11:17:29.203Z"}
+{"level":"info","message":"Updated saleLineId 400 completed [object SequelizeInstance:saleLine]","timestamp":"2023-07-29T11:17:30.225Z"}
+{"level":"warn","message":"Check if lineId is null or undifine 401","timestamp":"2023-07-29T11:17:30.226Z"}
+{"level":"warn","message":"header id ===> 270","timestamp":"2023-07-29T11:17:30.226Z"}
+{"level":"info","message":"*************Previous card productId is the same with current ProductId************","timestamp":"2023-07-29T11:17:30.636Z"}
+{"level":"warn","message":"This saleLineId 401 has previous card count 3","timestamp":"2023-07-29T11:17:30.636Z"}
+{"level":"info","message":"// ************** Update saleLine entry ************** //","timestamp":"2023-07-29T11:17:30.636Z"}
+{"level":"info","message":"Updated saleLineId 401 completed [object SequelizeInstance:saleLine]","timestamp":"2023-07-29T11:17:31.657Z"}
+{"level":"warn","message":"Check if lineId is null or undifine 402","timestamp":"2023-07-29T11:17:31.658Z"}
+{"level":"warn","message":"header id ===> 270","timestamp":"2023-07-29T11:17:31.658Z"}
+{"level":"info","message":"*************Previous card productId is the same with current ProductId************","timestamp":"2023-07-29T11:17:31.993Z"}
+{"level":"warn","message":"This saleLineId 402 has previous card count 4","timestamp":"2023-07-29T11:17:31.993Z"}
+{"level":"info","message":"// ************** Update saleLine entry ************** //","timestamp":"2023-07-29T11:17:31.993Z"}
+{"level":"info","message":"Updated saleLineId 402 completed [object SequelizeInstance:saleLine]","timestamp":"2023-07-29T11:17:32.682Z"}
+{"level":"warn","message":"SaleLine for create count is 0","timestamp":"2023-07-29T11:17:32.683Z"}
+{"level":"info","message":"Update transaction completed [object SequelizeInstance:saleHeader]","timestamp":"2023-07-29T11:17:33.088Z"}
+{"level":"info","message":"All product count 3 to be update stock count","timestamp":"2023-07-29T11:17:33.501Z"}
+{"level":"warn","message":"Date 2023-07-29 2023-07-29","timestamp":"2023-07-29T11:17:33.686Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-29T11:17:36.035Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-29T11:17:36.036Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-29T11:17:40.428Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-29T11:17:40.430Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-29T11:17:47.926Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-29T11:17:47.926Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-29T11:17:53.312Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-29T11:17:53.312Z"}
+{"level":"info","message":"Datatase is synchronize","timestamp":"2023-07-29T11:24:00.766Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-07-29T11:31:57.768Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-07-29T11:31:57.771Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-07-29T11:31:57.772Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-07-29T11:31:57.773Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-07-29T11:31:57.774Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-07-29T11:31:58.609Z"}
+{"level":"info","message":"app is runing: 8080","timestamp":"2023-07-29T11:31:58.611Z"}
+{"level":"warn","message":"env: dcommerce_uat_1","timestamp":"2023-07-29T11:31:58.611Z"}
+{"level":"info","message":"DB Connection established","timestamp":"2023-07-29T11:32:03.661Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-07-29T11:32:59.662Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-07-29T11:32:59.664Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-07-29T11:32:59.665Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-07-29T11:32:59.666Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-07-29T11:32:59.667Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-07-29T11:33:00.403Z"}
+{"level":"info","message":"app is runing: 8080","timestamp":"2023-07-29T11:33:00.404Z"}
+{"level":"warn","message":"env: dcommerce_uat_1","timestamp":"2023-07-29T11:33:00.404Z"}
+{"level":"info","message":"DB Connection established","timestamp":"2023-07-29T11:33:04.081Z"}
+{"level":"warn","message":"Date 2023-07-29 2023-07-29","timestamp":"2023-07-29T11:33:25.275Z"}
+{"level":"info","message":"Updating header","timestamp":"2023-07-29T11:33:42.782Z"}
+{"level":"warn","message":"Check if lineId is null or undifine 399","timestamp":"2023-07-29T11:33:42.783Z"}
+{"level":"warn","message":"header id ===> 270","timestamp":"2023-07-29T11:33:42.784Z"}
+{"level":"info","message":"*************Previous card productId is not the same with current ProductId************","timestamp":"2023-07-29T11:33:43.186Z"}
+{"level":"info","message":"Product Id ===>: 23","timestamp":"2023-07-29T11:33:43.501Z"}
+{"level":"info","message":"Cards available len ===>: 1 sale qty needed 1","timestamp":"2023-07-29T11:33:43.502Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"1690630422783j55fZ899\",\"card_isused\":true,\"saleLineId\":399}","timestamp":"2023-07-29T11:33:43.502Z"}
+{"level":"info","message":"Reserved card 120025 succesfully","timestamp":"2023-07-29T11:33:44.004Z"}
+{"level":"info","message":"Reverse over cards succesfully 0","timestamp":"2023-07-29T11:33:44.357Z"}
+{"level":"info","message":"//**************** Update previous card make it back available in inventory ****************/","timestamp":"2023-07-29T11:33:44.357Z"}
+{"level":"warn","message":"This saleLineId 399 has previous card count 1","timestamp":"2023-07-29T11:33:44.362Z"}
+{"level":"info","message":"// ************** Update saleLine entry ************** //","timestamp":"2023-07-29T11:33:44.362Z"}
+{"level":"error","message":"Error updating product count:AssertionError [ERR_ASSERTION]: Missing where attribute in the options parameter","timestamp":"2023-07-29T11:33:44.364Z"}
+{"level":"info","message":"Updated saleLineId 399 completed [object SequelizeInstance:saleLine]","timestamp":"2023-07-29T11:33:45.028Z"}
+{"level":"warn","message":"Check if lineId is null or undifine 400","timestamp":"2023-07-29T11:33:45.029Z"}
+{"level":"warn","message":"header id ===> 270","timestamp":"2023-07-29T11:33:45.030Z"}
+{"level":"info","message":"*************Previous card productId is the same with current ProductId************","timestamp":"2023-07-29T11:33:45.438Z"}
+{"level":"warn","message":"This saleLineId 400 has previous card count 2","timestamp":"2023-07-29T11:33:45.438Z"}
+{"level":"info","message":"// ************** Update saleLine entry ************** //","timestamp":"2023-07-29T11:33:45.438Z"}
+{"level":"info","message":"Updated saleLineId 400 completed [object SequelizeInstance:saleLine]","timestamp":"2023-07-29T11:33:46.257Z"}
+{"level":"warn","message":"Check if lineId is null or undifine 401","timestamp":"2023-07-29T11:33:46.258Z"}
+{"level":"warn","message":"header id ===> 270","timestamp":"2023-07-29T11:33:46.259Z"}
+{"level":"info","message":"*************Previous card productId is the same with current ProductId************","timestamp":"2023-07-29T11:33:46.667Z"}
+{"level":"warn","message":"This saleLineId 401 has previous card count 3","timestamp":"2023-07-29T11:33:46.667Z"}
+{"level":"info","message":"// ************** Update saleLine entry ************** //","timestamp":"2023-07-29T11:33:46.668Z"}
+{"level":"info","message":"Updated saleLineId 401 completed [object SequelizeInstance:saleLine]","timestamp":"2023-07-29T11:33:47.493Z"}
+{"level":"warn","message":"Check if lineId is null or undifine 402","timestamp":"2023-07-29T11:33:47.494Z"}
+{"level":"warn","message":"header id ===> 270","timestamp":"2023-07-29T11:33:47.494Z"}
+{"level":"info","message":"*************Previous card productId is the same with current ProductId************","timestamp":"2023-07-29T11:33:48.102Z"}
+{"level":"warn","message":"This saleLineId 402 has previous card count 4","timestamp":"2023-07-29T11:33:48.103Z"}
+{"level":"info","message":"// ************** Update saleLine entry ************** //","timestamp":"2023-07-29T11:33:48.103Z"}
+{"level":"info","message":"Updated saleLineId 402 completed [object SequelizeInstance:saleLine]","timestamp":"2023-07-29T11:33:48.922Z"}
+{"level":"warn","message":"SaleLine for create count is 0","timestamp":"2023-07-29T11:33:48.923Z"}
+{"level":"info","message":"Update transaction completed [object SequelizeInstance:saleHeader]","timestamp":"2023-07-29T11:33:49.330Z"}
+{"level":"info","message":"All product count 4 to be update stock count","timestamp":"2023-07-29T11:33:49.738Z"}
+{"level":"warn","message":"Date 2023-07-29 2023-07-29","timestamp":"2023-07-29T11:33:49.821Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-29T11:33:55.001Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-29T11:33:55.003Z"}
+{"level":"warn","message":"Date 2023-07-29 2023-07-29","timestamp":"2023-07-29T11:33:59.538Z"}
+{"level":"info","message":"Updating header","timestamp":"2023-07-29T11:34:07.996Z"}
+{"level":"warn","message":"Check if lineId is null or undifine 399","timestamp":"2023-07-29T11:34:07.999Z"}
+{"level":"warn","message":"header id ===> 270","timestamp":"2023-07-29T11:34:07.999Z"}
+{"level":"info","message":"*************Previous card productId is not the same with current ProductId************","timestamp":"2023-07-29T11:34:08.340Z"}
+{"level":"info","message":"Product Id ===>: 11","timestamp":"2023-07-29T11:34:08.815Z"}
+{"level":"info","message":"Cards available len ===>: 1 sale qty needed 1","timestamp":"2023-07-29T11:34:08.815Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"1690630447999pusjG192\",\"card_isused\":true,\"saleLineId\":399}","timestamp":"2023-07-29T11:34:08.815Z"}
+{"level":"info","message":"Reserved card 1639 succesfully","timestamp":"2023-07-29T11:34:09.195Z"}
+{"level":"info","message":"Reverse over cards succesfully 0","timestamp":"2023-07-29T11:34:09.603Z"}
+{"level":"info","message":"//**************** Update previous card make it back available in inventory ****************/","timestamp":"2023-07-29T11:34:09.603Z"}
+{"level":"warn","message":"This saleLineId 399 has previous card count 1","timestamp":"2023-07-29T11:34:09.604Z"}
+{"level":"info","message":"// ************** Update saleLine entry ************** //","timestamp":"2023-07-29T11:34:09.604Z"}
+{"level":"error","message":"Error updating product count:AssertionError [ERR_ASSERTION]: Missing where attribute in the options parameter","timestamp":"2023-07-29T11:34:09.605Z"}
+{"level":"info","message":"Updated saleLineId 399 completed [object SequelizeInstance:saleLine]","timestamp":"2023-07-29T11:34:11.242Z"}
+{"level":"warn","message":"Check if lineId is null or undifine 400","timestamp":"2023-07-29T11:34:11.243Z"}
+{"level":"warn","message":"header id ===> 270","timestamp":"2023-07-29T11:34:11.243Z"}
+{"level":"info","message":"*************Previous card productId is the same with current ProductId************","timestamp":"2023-07-29T11:34:11.653Z"}
+{"level":"warn","message":"This saleLineId 400 has previous card count 2","timestamp":"2023-07-29T11:34:11.653Z"}
+{"level":"info","message":"// ************** Update saleLine entry ************** //","timestamp":"2023-07-29T11:34:11.653Z"}
+{"level":"info","message":"Updated saleLineId 400 completed [object SequelizeInstance:saleLine]","timestamp":"2023-07-29T11:34:12.879Z"}
+{"level":"warn","message":"Check if lineId is null or undifine 401","timestamp":"2023-07-29T11:34:12.880Z"}
+{"level":"warn","message":"header id ===> 270","timestamp":"2023-07-29T11:34:12.880Z"}
+{"level":"info","message":"*************Previous card productId is the same with current ProductId************","timestamp":"2023-07-29T11:34:13.293Z"}
+{"level":"warn","message":"This saleLineId 401 has previous card count 3","timestamp":"2023-07-29T11:34:13.294Z"}
+{"level":"info","message":"// ************** Update saleLine entry ************** //","timestamp":"2023-07-29T11:34:13.294Z"}
+{"level":"info","message":"Updated saleLineId 401 completed [object SequelizeInstance:saleLine]","timestamp":"2023-07-29T11:34:14.098Z"}
+{"level":"warn","message":"Check if lineId is null or undifine 402","timestamp":"2023-07-29T11:34:14.099Z"}
+{"level":"warn","message":"header id ===> 270","timestamp":"2023-07-29T11:34:14.099Z"}
+{"level":"info","message":"*************Previous card productId is the same with current ProductId************","timestamp":"2023-07-29T11:34:14.515Z"}
+{"level":"warn","message":"This saleLineId 402 has previous card count 4","timestamp":"2023-07-29T11:34:14.516Z"}
+{"level":"info","message":"// ************** Update saleLine entry ************** //","timestamp":"2023-07-29T11:34:14.516Z"}
+{"level":"info","message":"Updated saleLineId 402 completed [object SequelizeInstance:saleLine]","timestamp":"2023-07-29T11:34:15.335Z"}
+{"level":"warn","message":"SaleLine for create count is 0","timestamp":"2023-07-29T11:34:15.335Z"}
+{"level":"info","message":"Update transaction completed [object SequelizeInstance:saleHeader]","timestamp":"2023-07-29T11:34:16.182Z"}
+{"level":"info","message":"All product count 3 to be update stock count","timestamp":"2023-07-29T11:34:16.510Z"}
+{"level":"warn","message":"Date 2023-07-29 2023-07-29","timestamp":"2023-07-29T11:34:16.655Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-29T11:34:32.730Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-29T11:34:32.730Z"}
+{"level":"warn","message":"Date 2023-07-29 2023-07-29","timestamp":"2023-07-29T11:34:38.352Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-07-29T11:37:06.519Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-07-29T11:37:06.521Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-07-29T11:37:06.522Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-07-29T11:37:06.523Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-07-29T11:37:06.524Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-07-29T11:37:07.494Z"}
+{"level":"info","message":"app is runing: 8080","timestamp":"2023-07-29T11:37:07.495Z"}
+{"level":"warn","message":"env: dcommerce_uat_1","timestamp":"2023-07-29T11:37:07.496Z"}
+{"level":"info","message":"DB Connection established","timestamp":"2023-07-29T11:37:12.364Z"}
+{"level":"info","message":"Updating header","timestamp":"2023-07-29T11:37:19.131Z"}
+{"level":"warn","message":"Check if lineId is null or undifine 399","timestamp":"2023-07-29T11:37:19.134Z"}
+{"level":"warn","message":"header id ===> 270","timestamp":"2023-07-29T11:37:19.135Z"}
+{"level":"info","message":"*************Previous card productId is not the same with current ProductId************","timestamp":"2023-07-29T11:37:19.433Z"}
+{"level":"info","message":"Product Id ===>: 23","timestamp":"2023-07-29T11:37:19.729Z"}
+{"level":"info","message":"Cards available len ===>: 1 sale qty needed 1","timestamp":"2023-07-29T11:37:19.733Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"1690630639133BtDvT432\",\"card_isused\":true,\"saleLineId\":399}","timestamp":"2023-07-29T11:37:19.741Z"}
+{"level":"info","message":"Reserved card 120025 succesfully","timestamp":"2023-07-29T11:37:21.275Z"}
+{"level":"info","message":"Reverse over cards succesfully 0","timestamp":"2023-07-29T11:37:21.700Z"}
+{"level":"info","message":"//**************** Update previous card make it back available in inventory ****************/","timestamp":"2023-07-29T11:37:21.702Z"}
+{"level":"warn","message":"This saleLineId 399 has previous card count 1","timestamp":"2023-07-29T11:37:21.704Z"}
+{"level":"info","message":"// ************** Update saleLine entry ************** //","timestamp":"2023-07-29T11:37:21.704Z"}
+{"level":"error","message":"Error updating product count for productId: 11 AssertionError [ERR_ASSERTION]: Missing where attribute in the options parameter","timestamp":"2023-07-29T11:37:21.709Z"}
+{"level":"info","message":"Updated saleLineId 399 completed [object SequelizeInstance:saleLine]","timestamp":"2023-07-29T11:37:22.309Z"}
+{"level":"warn","message":"Check if lineId is null or undifine 400","timestamp":"2023-07-29T11:37:22.311Z"}
+{"level":"warn","message":"header id ===> 270","timestamp":"2023-07-29T11:37:22.311Z"}
+{"level":"info","message":"*************Previous card productId is the same with current ProductId************","timestamp":"2023-07-29T11:37:22.633Z"}
+{"level":"warn","message":"This saleLineId 400 has previous card count 2","timestamp":"2023-07-29T11:37:22.633Z"}
+{"level":"info","message":"// ************** Update saleLine entry ************** //","timestamp":"2023-07-29T11:37:22.633Z"}
+{"level":"info","message":"Updated saleLineId 400 completed [object SequelizeInstance:saleLine]","timestamp":"2023-07-29T11:37:23.337Z"}
+{"level":"warn","message":"Check if lineId is null or undifine 401","timestamp":"2023-07-29T11:37:23.337Z"}
+{"level":"warn","message":"header id ===> 270","timestamp":"2023-07-29T11:37:23.337Z"}
+{"level":"info","message":"*************Previous card productId is the same with current ProductId************","timestamp":"2023-07-29T11:37:23.694Z"}
+{"level":"warn","message":"This saleLineId 401 has previous card count 3","timestamp":"2023-07-29T11:37:23.694Z"}
+{"level":"info","message":"// ************** Update saleLine entry ************** //","timestamp":"2023-07-29T11:37:23.694Z"}
+{"level":"info","message":"Updated saleLineId 401 completed [object SequelizeInstance:saleLine]","timestamp":"2023-07-29T11:37:24.772Z"}
+{"level":"warn","message":"Check if lineId is null or undifine 402","timestamp":"2023-07-29T11:37:24.772Z"}
+{"level":"warn","message":"header id ===> 270","timestamp":"2023-07-29T11:37:24.772Z"}
+{"level":"info","message":"*************Previous card productId is the same with current ProductId************","timestamp":"2023-07-29T11:37:25.386Z"}
+{"level":"warn","message":"This saleLineId 402 has previous card count 4","timestamp":"2023-07-29T11:37:25.386Z"}
+{"level":"info","message":"// ************** Update saleLine entry ************** //","timestamp":"2023-07-29T11:37:25.387Z"}
+{"level":"info","message":"Updated saleLineId 402 completed [object SequelizeInstance:saleLine]","timestamp":"2023-07-29T11:37:26.189Z"}
+{"level":"warn","message":"SaleLine for create count is 0","timestamp":"2023-07-29T11:37:26.190Z"}
+{"level":"info","message":"Update transaction completed [object SequelizeInstance:saleHeader]","timestamp":"2023-07-29T11:37:26.505Z"}
+{"level":"info","message":"All product count 4 to be update stock count","timestamp":"2023-07-29T11:37:27.022Z"}
+{"level":"warn","message":"Date 2023-07-29 2023-07-29","timestamp":"2023-07-29T11:37:27.134Z"}
+{"level":"info","message":"Datatase is synchronize","timestamp":"2023-07-29T11:44:28.525Z"}
+{"level":"info","message":"SQL COMMAND SELECT * FROM user WHERE cus_id='1000' AND cus_pass='1111'","timestamp":"2023-07-30T04:14:54.722Z"}
+{"level":"warn","message":"Token ===> eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiY3VzX2lkIjoxMDAwLCJjdXNfbmFtZSI6InNvdWJpbiIsImN1c190ZWwiOiIwMjA3NzE1MDAwOCIsImlhdCI6MTY5MDY5MDQ5NiwiZXhwIjoxNjkwNzA4NDk2fQ.V8FYmAX0Lyaqz7u2WnXz1n9oT3hLcRRvb4p4vmSV9VQ","timestamp":"2023-07-30T04:14:56.211Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-30T04:14:56.295Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-30T04:14:56.295Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-30T04:41:02.903Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-30T04:41:02.909Z"}
+{"level":"info","message":"SELECT SUM(o.product_amount) AS sale_count,\n    SUM(o.order_price_total) as total_sale,\n    o.txn_date,\n    SUBSTR(o.txn_date, 1, 10) AS txn_date_short\n    FROM user_order o \n    WHERE  o.txn_date BETWEEN '2023-07-01 00:00:00' AND '2023-07-30 23:59:59' \n    AND o.record_status = 1\n    GROUP BY txn_date_short","timestamp":"2023-07-30T04:41:02.968Z"}
+{"level":"info","message":"SELECT o.product_id,SUM(o.product_amount) AS sale_count,\n    o.product_price,SUM(o.order_price_total) as total_sale,\n    o.txn_date,o.record_status, \n    p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name\n    FROM user_order o \n    LEFT JOIN (SELECT p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN outlet u ON u.id = p.outlet\n        LEFT JOIN category c on c.categ_id=p.pro_category\n        ) p \n    ON p.pro_id = o.product_id \n    WHERE  o.txn_date BETWEEN '2023-07-01 00:00:00' AND '2023-07-30 23:59:59'\n    AND o.record_status = 1\n    GROUP BY p.pro_category LIMIT 5 ","timestamp":"2023-07-30T04:41:02.980Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-30T04:41:04.227Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-30T04:41:04.227Z"}
+{"level":"info","message":"SELECT d.*,SUM(o.order_price_total) AS cart_total,\n    d.payment_code,\n    p.payment_status,\n    o.order_id,\n    d.record_status\n    FROM dynamic_customer d\n    LEFT JOIN user_order o ON o.locking_session_id = d.locking_session_id\n    LEFT JOIN order_payment p ON p.locking_session_id = d.locking_session_id\n    WHERE d.txn_date BETWEEN '2023-07-01 00:00:00' AND '2023-07-30 23:59:59' \n    \n    GROUP BY d.locking_session_id\n    ","timestamp":"2023-07-30T04:41:04.366Z"}
+{"level":"info","message":"Record count => 41","timestamp":"2023-07-30T04:41:04.644Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-07-30T04:41:04.644Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-07-30T04:55:52.285Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-07-30T04:55:52.288Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-07-30T04:55:52.289Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-07-30T04:55:52.290Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-07-30T04:55:52.293Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-07-30T04:55:53.150Z"}
+{"level":"info","message":"app is runing: 8080","timestamp":"2023-07-30T04:55:53.151Z"}
+{"level":"warn","message":"env: dcommerce_uat_1","timestamp":"2023-07-30T04:55:53.151Z"}
+{"level":"info","message":"DB Connection established","timestamp":"2023-07-30T04:55:56.391Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-07-30T04:56:15.792Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-07-30T04:56:15.795Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-07-30T04:56:15.795Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-07-30T04:56:15.796Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-07-30T04:56:15.798Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-07-30T04:56:16.518Z"}
+{"level":"info","message":"app is runing: 8080","timestamp":"2023-07-30T04:56:16.519Z"}
+{"level":"warn","message":"env: dcommerce_uat_1","timestamp":"2023-07-30T04:56:16.519Z"}
+{"level":"info","message":"DB Connection established","timestamp":"2023-07-30T04:56:19.873Z"}
+{"level":"info","message":"SQL COMMAND SELECT * FROM user WHERE cus_id='1000' AND cus_pass='1111'","timestamp":"2023-07-30T05:00:30.302Z"}
+{"level":"warn","message":"Token ===> eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiY3VzX2lkIjoxMDAwLCJjdXNfbmFtZSI6InNvdWJpbiIsImN1c190ZWwiOiIwMjA3NzE1MDAwOCIsImlhdCI6MTY5MDY5MzIzMSwiZXhwIjoxNjkwNzExMjMxfQ.D1YVosYsu2k0Mf90DZd5l1ei37HXtsKIfwLUKm2IDM8","timestamp":"2023-07-30T05:00:31.470Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-30T05:00:31.496Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-30T05:00:31.497Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-30T05:00:33.432Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-30T05:00:33.435Z"}
+{"level":"info","message":"SELECT SUM(o.product_amount) AS sale_count,\n    SUM(o.order_price_total) as total_sale,\n    o.txn_date,\n    SUBSTR(o.txn_date, 1, 10) AS txn_date_short\n    FROM user_order o \n    WHERE  o.txn_date BETWEEN '2023-07-01 00:00:00' AND '2023-07-30 23:59:59' \n    AND o.record_status = 1\n    GROUP BY txn_date_short","timestamp":"2023-07-30T05:00:33.449Z"}
+{"level":"info","message":"SELECT o.product_id,SUM(o.product_amount) AS sale_count,\n    o.product_price,SUM(o.order_price_total) as total_sale,\n    o.txn_date,o.record_status, \n    p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name\n    FROM user_order o \n    LEFT JOIN (SELECT p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN outlet u ON u.id = p.outlet\n        LEFT JOIN category c on c.categ_id=p.pro_category\n        ) p \n    ON p.pro_id = o.product_id \n    WHERE  o.txn_date BETWEEN '2023-07-01 00:00:00' AND '2023-07-30 23:59:59'\n    AND o.record_status = 1\n    GROUP BY p.pro_category LIMIT 5 ","timestamp":"2023-07-30T05:00:33.461Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-30T05:00:34.842Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-30T05:00:34.843Z"}
+{"level":"info","message":"SELECT d.*,SUM(o.order_price_total) AS cart_total,\n    d.payment_code,\n    p.payment_status,\n    o.order_id,\n    d.record_status\n    FROM dynamic_customer d\n    LEFT JOIN user_order o ON o.locking_session_id = d.locking_session_id\n    LEFT JOIN order_payment p ON p.locking_session_id = d.locking_session_id\n    WHERE d.txn_date BETWEEN '2023-07-01 00:00:00' AND '2023-07-30 23:59:59' \n    \n    GROUP BY d.locking_session_id\n    ","timestamp":"2023-07-30T05:00:34.937Z"}
+{"level":"info","message":"Record count => 41","timestamp":"2023-07-30T05:00:35.293Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-07-30T05:00:35.295Z"}
+{"level":"warn","message":"Date 2023-07-30 2023-07-30","timestamp":"2023-07-30T05:00:36.752Z"}
+{"level":"warn","message":"Date 2023-07-30 2023-07-30","timestamp":"2023-07-30T05:00:37.668Z"}
+{"level":"warn","message":"Date 2023-07-01 2023-07-30","timestamp":"2023-07-30T05:00:41.100Z"}
+{"level":"warn","message":"Date 2023-07-29 2023-07-30","timestamp":"2023-07-30T05:00:41.201Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-30T05:01:08.261Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-30T05:01:08.267Z"}
+{"level":"warn","message":"Date 2023-07-30 2023-07-30","timestamp":"2023-07-30T05:01:11.224Z"}
+{"level":"warn","message":"Date 2023-07-30 2023-07-30","timestamp":"2023-07-30T05:01:11.792Z"}
+{"level":"warn","message":"Date 2023-07-01 2023-07-30","timestamp":"2023-07-30T05:01:15.673Z"}
+{"level":"warn","message":"Date 2023-07-30 2023-07-30","timestamp":"2023-07-30T05:01:15.769Z"}
+{"level":"info","message":"Datatase is synchronize","timestamp":"2023-07-30T05:01:29.421Z"}
+{"level":"info","message":"Updating header","timestamp":"2023-07-30T05:01:33.365Z"}
+{"level":"warn","message":"Check if lineId is null or undifine 399","timestamp":"2023-07-30T05:01:33.366Z"}
+{"level":"warn","message":"header id ===> 270","timestamp":"2023-07-30T05:01:33.366Z"}
+{"level":"warn","message":"*************Previous card productId is not the same with current ProductId************","timestamp":"2023-07-30T05:01:33.632Z"}
+{"level":"info","message":"Product Id ===>: 11","timestamp":"2023-07-30T05:01:33.947Z"}
+{"level":"info","message":"Cards available len ===>: 1 sale qty needed 1","timestamp":"2023-07-30T05:01:33.947Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"169069329336688GqH390\",\"card_isused\":true,\"saleLineId\":399}","timestamp":"2023-07-30T05:01:33.948Z"}
+{"level":"info","message":"Reserved card 1639 succesfully","timestamp":"2023-07-30T05:01:34.428Z"}
+{"level":"info","message":"************* Send previous use cards back to inventory *************","timestamp":"2023-07-30T05:01:34.429Z"}
+{"level":"error","message":"Stock is not enought for productId 11","timestamp":"2023-07-30T05:01:34.430Z"}
+{"level":"error","message":"Cannot update data Error: TypeError: iterator.update is not a function","timestamp":"2023-07-30T05:01:34.430Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-07-30T05:03:59.068Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-07-30T05:03:59.071Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-07-30T05:03:59.073Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-07-30T05:03:59.074Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-07-30T05:03:59.075Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-07-30T05:03:59.907Z"}
+{"level":"info","message":"app is runing: 8080","timestamp":"2023-07-30T05:03:59.909Z"}
+{"level":"warn","message":"env: dcommerce_uat_1","timestamp":"2023-07-30T05:03:59.910Z"}
+{"level":"info","message":"DB Connection established","timestamp":"2023-07-30T05:04:03.274Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-30T05:04:21.061Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-30T05:04:21.065Z"}
+{"level":"info","message":"All product count 23 to be update stock count","timestamp":"2023-07-30T05:04:24.377Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-30T05:04:24.539Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-30T05:04:24.541Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-30T05:04:27.425Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-30T05:04:27.426Z"}
+{"level":"warn","message":"Date 2023-07-30 2023-07-30","timestamp":"2023-07-30T05:04:28.500Z"}
+{"level":"warn","message":"Date 2023-07-30 2023-07-30","timestamp":"2023-07-30T05:04:29.618Z"}
+{"level":"warn","message":"Date 2023-07-30 2023-07-30","timestamp":"2023-07-30T05:04:30.614Z"}
+{"level":"warn","message":"Date 2023-07-01 2023-07-30","timestamp":"2023-07-30T05:04:34.763Z"}
+{"level":"warn","message":"Date 2023-07-29 2023-07-30","timestamp":"2023-07-30T05:04:34.843Z"}
+{"level":"info","message":"Updating header","timestamp":"2023-07-30T05:04:48.332Z"}
+{"level":"warn","message":"Check if lineId is null or undifine 399","timestamp":"2023-07-30T05:04:48.335Z"}
+{"level":"warn","message":"header id ===> 270","timestamp":"2023-07-30T05:04:48.335Z"}
+{"level":"warn","message":"*************Previous card productId is not the same with current ProductId************","timestamp":"2023-07-30T05:04:48.637Z"}
+{"level":"info","message":"Product Id ===>: 11","timestamp":"2023-07-30T05:04:49.557Z"}
+{"level":"info","message":"Cards available len ===>: 1 sale qty needed 1","timestamp":"2023-07-30T05:04:49.558Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906934883355Cj3f497\",\"card_isused\":true,\"saleLineId\":399}","timestamp":"2023-07-30T05:04:49.558Z"}
+{"level":"info","message":"Reserved card 1895 succesfully","timestamp":"2023-07-30T05:04:49.864Z"}
+{"level":"info","message":"************* Send previous use cards back to inventory *************","timestamp":"2023-07-30T05:04:49.865Z"}
+{"level":"info","message":"//**************** Update previous card make it back available in inventory ****************/","timestamp":"2023-07-30T05:04:50.274Z"}
+{"level":"warn","message":"This saleLineId 399 has previous card count 2","timestamp":"2023-07-30T05:04:50.279Z"}
+{"level":"info","message":"// ************** Update saleLine entry ************** //","timestamp":"2023-07-30T05:04:50.279Z"}
+{"level":"error","message":"Error updating product count for productId: 23 AssertionError [ERR_ASSERTION]: Missing where attribute in the options parameter","timestamp":"2023-07-30T05:04:50.281Z"}
+{"level":"info","message":"Updated saleLineId 399 completed [object SequelizeInstance:saleLine]","timestamp":"2023-07-30T05:04:50.888Z"}
+{"level":"warn","message":"Check if lineId is null or undifine 400","timestamp":"2023-07-30T05:04:50.889Z"}
+{"level":"warn","message":"header id ===> 270","timestamp":"2023-07-30T05:04:50.889Z"}
+{"level":"info","message":"*************Previous card productId is the same with current ProductId************","timestamp":"2023-07-30T05:04:51.149Z"}
+{"level":"warn","message":"This saleLineId 400 has previous card count 2","timestamp":"2023-07-30T05:04:51.150Z"}
+{"level":"info","message":"// ************** Update saleLine entry ************** //","timestamp":"2023-07-30T05:04:51.151Z"}
+{"level":"info","message":"Updated saleLineId 400 completed [object SequelizeInstance:saleLine]","timestamp":"2023-07-30T05:04:52.354Z"}
+{"level":"warn","message":"Check if lineId is null or undifine 401","timestamp":"2023-07-30T05:04:52.354Z"}
+{"level":"warn","message":"header id ===> 270","timestamp":"2023-07-30T05:04:52.354Z"}
+{"level":"info","message":"*************Previous card productId is the same with current ProductId************","timestamp":"2023-07-30T05:04:53.446Z"}
+{"level":"warn","message":"This saleLineId 401 has previous card count 3","timestamp":"2023-07-30T05:04:53.446Z"}
+{"level":"info","message":"// ************** Update saleLine entry ************** //","timestamp":"2023-07-30T05:04:53.446Z"}
+{"level":"info","message":"Updated saleLineId 401 completed [object SequelizeInstance:saleLine]","timestamp":"2023-07-30T05:04:54.040Z"}
+{"level":"warn","message":"Check if lineId is null or undifine 402","timestamp":"2023-07-30T05:04:54.041Z"}
+{"level":"warn","message":"header id ===> 270","timestamp":"2023-07-30T05:04:54.041Z"}
+{"level":"info","message":"*************Previous card productId is the same with current ProductId************","timestamp":"2023-07-30T05:04:54.395Z"}
+{"level":"warn","message":"This saleLineId 402 has previous card count 4","timestamp":"2023-07-30T05:04:54.396Z"}
+{"level":"info","message":"// ************** Update saleLine entry ************** //","timestamp":"2023-07-30T05:04:54.396Z"}
+{"level":"info","message":"Updated saleLineId 402 completed [object SequelizeInstance:saleLine]","timestamp":"2023-07-30T05:04:55.076Z"}
+{"level":"warn","message":"SaleLine for create count is 0","timestamp":"2023-07-30T05:04:55.076Z"}
+{"level":"info","message":"Update transaction completed [object SequelizeInstance:saleHeader]","timestamp":"2023-07-30T05:04:55.427Z"}
+{"level":"info","message":"All product count 3 to be update stock count","timestamp":"2023-07-30T05:04:55.775Z"}
+{"level":"warn","message":"Date 2023-07-29 2023-07-30","timestamp":"2023-07-30T05:04:56.279Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-30T05:05:00.505Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-30T05:05:00.507Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-30T05:05:03.880Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-30T05:05:03.881Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-30T05:05:05.409Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-30T05:05:05.411Z"}
+{"level":"info","message":"Datatase is synchronize","timestamp":"2023-07-30T05:09:11.189Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-07-30T05:15:19.854Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-07-30T05:15:19.858Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-07-30T05:15:19.861Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-07-30T05:15:19.862Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-07-30T05:15:19.867Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-07-30T05:15:20.719Z"}
+{"level":"info","message":"app is runing: 8080","timestamp":"2023-07-30T05:15:20.721Z"}
+{"level":"warn","message":"env: dcommerce_uat_1","timestamp":"2023-07-30T05:15:20.721Z"}
+{"level":"error","message":"DB Connection error: SequelizeConnectionError: (conn=-1, no: 45012, SQLState: 08S01) Connection timeout: failed to create socket after 1001ms","timestamp":"2023-07-30T05:15:23.050Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-07-30T05:15:50.639Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-07-30T05:15:50.642Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-07-30T05:15:50.643Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-07-30T05:15:50.643Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-07-30T05:15:50.645Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-07-30T05:15:51.453Z"}
+{"level":"info","message":"app is runing: 8080","timestamp":"2023-07-30T05:15:51.454Z"}
+{"level":"warn","message":"env: dcommerce_uat_1","timestamp":"2023-07-30T05:15:51.454Z"}
+{"level":"info","message":"DB Connection established","timestamp":"2023-07-30T05:15:54.774Z"}
+{"level":"warn","message":"Date 2023-07-30 2023-07-30","timestamp":"2023-07-30T05:15:57.230Z"}
+{"level":"warn","message":"Date 2023-07-01 2023-07-30","timestamp":"2023-07-30T05:16:02.842Z"}
+{"level":"warn","message":"Date 2023-07-30 2023-07-30","timestamp":"2023-07-30T05:16:02.918Z"}
+{"level":"warn","message":"Date 2023-07-29 2023-07-30","timestamp":"2023-07-30T05:16:05.924Z"}
+{"level":"warn","message":"Date 2023-07-30 2023-07-30","timestamp":"2023-07-30T05:16:20.485Z"}
+{"level":"info","message":"Sale header 271","timestamp":"2023-07-30T05:16:39.265Z"}
+{"level":"info","message":"===== Create Sale Header =====[object Object]","timestamp":"2023-07-30T05:16:39.266Z"}
+{"level":"warn","message":"Check if lineId is null or undifine undefined","timestamp":"2023-07-30T05:16:39.267Z"}
+{"level":"warn","message":"header id ===> 271","timestamp":"2023-07-30T05:16:39.267Z"}
+{"level":"info","message":"Product Id ===>: 23","timestamp":"2023-07-30T05:16:39.531Z"}
+{"level":"info","message":"Cards available len ===>: 1 sale qty needed 1","timestamp":"2023-07-30T05:16:39.532Z"}
+{"level":"info","message":"Reserved card 120025 succesfully","timestamp":"2023-07-30T05:16:39.802Z"}
+{"level":"warn","message":"Check if lineId is null or undifine undefined","timestamp":"2023-07-30T05:16:39.803Z"}
+{"level":"warn","message":"header id ===> 271","timestamp":"2023-07-30T05:16:39.804Z"}
+{"level":"info","message":"Product Id ===>: 11","timestamp":"2023-07-30T05:16:41.223Z"}
+{"level":"info","message":"Cards available len ===>: 100 sale qty needed 100","timestamp":"2023-07-30T05:16:41.224Z"}
+{"level":"info","message":"Reserved card 1639 succesfully","timestamp":"2023-07-30T05:16:42.562Z"}
+{"level":"info","message":"Reserved card 2151 succesfully","timestamp":"2023-07-30T05:16:42.871Z"}
+{"level":"info","message":"Reserved card 2407 succesfully","timestamp":"2023-07-30T05:16:43.177Z"}
+{"level":"info","message":"Reserved card 2663 succesfully","timestamp":"2023-07-30T05:16:43.451Z"}
+{"level":"info","message":"Reserved card 2919 succesfully","timestamp":"2023-07-30T05:16:43.791Z"}
+{"level":"info","message":"Reserved card 3175 succesfully","timestamp":"2023-07-30T05:16:44.058Z"}
+{"level":"info","message":"Reserved card 3431 succesfully","timestamp":"2023-07-30T05:16:45.121Z"}
+{"level":"info","message":"Reserved card 3687 succesfully","timestamp":"2023-07-30T05:16:45.395Z"}
+{"level":"info","message":"Reserved card 3943 succesfully","timestamp":"2023-07-30T05:16:48.195Z"}
+{"level":"info","message":"Reserved card 4199 succesfully","timestamp":"2023-07-30T05:16:48.501Z"}
+{"level":"info","message":"Reserved card 4455 succesfully","timestamp":"2023-07-30T05:16:48.808Z"}
+{"level":"info","message":"Reserved card 4711 succesfully","timestamp":"2023-07-30T05:16:49.107Z"}
+{"level":"info","message":"Reserved card 4967 succesfully","timestamp":"2023-07-30T05:16:49.377Z"}
+{"level":"info","message":"Reserved card 5223 succesfully","timestamp":"2023-07-30T05:16:49.652Z"}
+{"level":"info","message":"Reserved card 5479 succesfully","timestamp":"2023-07-30T05:16:49.919Z"}
+{"level":"info","message":"Reserved card 5735 succesfully","timestamp":"2023-07-30T05:16:50.276Z"}
+{"level":"info","message":"Reserved card 5991 succesfully","timestamp":"2023-07-30T05:16:50.740Z"}
+{"level":"info","message":"Reserved card 6247 succesfully","timestamp":"2023-07-30T05:16:52.133Z"}
+{"level":"info","message":"Reserved card 6503 succesfully","timestamp":"2023-07-30T05:16:52.484Z"}
+{"level":"info","message":"Reserved card 6759 succesfully","timestamp":"2023-07-30T05:16:53.601Z"}
+{"level":"info","message":"Reserved card 7015 succesfully","timestamp":"2023-07-30T05:16:53.869Z"}
+{"level":"info","message":"Reserved card 7271 succesfully","timestamp":"2023-07-30T05:16:54.138Z"}
+{"level":"info","message":"Reserved card 7527 succesfully","timestamp":"2023-07-30T05:16:54.409Z"}
+{"level":"info","message":"Reserved card 7783 succesfully","timestamp":"2023-07-30T05:16:54.677Z"}
+{"level":"info","message":"Reserved card 8039 succesfully","timestamp":"2023-07-30T05:16:54.952Z"}
+{"level":"info","message":"Reserved card 8295 succesfully","timestamp":"2023-07-30T05:16:55.219Z"}
+{"level":"info","message":"Reserved card 8551 succesfully","timestamp":"2023-07-30T05:16:55.484Z"}
+{"level":"info","message":"Reserved card 8807 succesfully","timestamp":"2023-07-30T05:16:55.750Z"}
+{"level":"info","message":"Reserved card 9063 succesfully","timestamp":"2023-07-30T05:16:56.020Z"}
+{"level":"info","message":"Reserved card 9319 succesfully","timestamp":"2023-07-30T05:16:56.286Z"}
+{"level":"info","message":"Reserved card 9575 succesfully","timestamp":"2023-07-30T05:16:56.560Z"}
+{"level":"info","message":"Reserved card 9831 succesfully","timestamp":"2023-07-30T05:16:56.832Z"}
+{"level":"info","message":"Reserved card 104 succesfully","timestamp":"2023-07-30T05:16:57.100Z"}
+{"level":"info","message":"Reserved card 360 succesfully","timestamp":"2023-07-30T05:16:57.365Z"}
+{"level":"info","message":"Reserved card 616 succesfully","timestamp":"2023-07-30T05:16:57.630Z"}
+{"level":"info","message":"Reserved card 872 succesfully","timestamp":"2023-07-30T05:16:57.895Z"}
+{"level":"info","message":"Reserved card 1128 succesfully","timestamp":"2023-07-30T05:16:58.203Z"}
+{"level":"info","message":"Reserved card 1384 succesfully","timestamp":"2023-07-30T05:16:58.469Z"}
+{"level":"info","message":"Reserved card 1640 succesfully","timestamp":"2023-07-30T05:16:58.741Z"}
+{"level":"info","message":"Reserved card 1896 succesfully","timestamp":"2023-07-30T05:16:59.014Z"}
+{"level":"info","message":"Reserved card 2152 succesfully","timestamp":"2023-07-30T05:16:59.279Z"}
+{"level":"info","message":"Reserved card 2408 succesfully","timestamp":"2023-07-30T05:16:59.546Z"}
+{"level":"info","message":"Reserved card 2664 succesfully","timestamp":"2023-07-30T05:16:59.845Z"}
+{"level":"info","message":"Reserved card 2920 succesfully","timestamp":"2023-07-30T05:17:00.175Z"}
+{"level":"info","message":"Reserved card 3176 succesfully","timestamp":"2023-07-30T05:17:00.481Z"}
+{"level":"info","message":"Reserved card 3432 succesfully","timestamp":"2023-07-30T05:17:00.787Z"}
+{"level":"info","message":"Reserved card 3688 succesfully","timestamp":"2023-07-30T05:17:01.098Z"}
+{"level":"info","message":"Reserved card 3944 succesfully","timestamp":"2023-07-30T05:17:01.368Z"}
+{"level":"info","message":"Reserved card 4200 succesfully","timestamp":"2023-07-30T05:17:01.636Z"}
+{"level":"info","message":"Reserved card 4456 succesfully","timestamp":"2023-07-30T05:17:02.733Z"}
+{"level":"info","message":"Reserved card 4712 succesfully","timestamp":"2023-07-30T05:17:03.008Z"}
+{"level":"info","message":"Reserved card 4968 succesfully","timestamp":"2023-07-30T05:17:03.371Z"}
+{"level":"info","message":"Reserved card 5224 succesfully","timestamp":"2023-07-30T05:17:03.657Z"}
+{"level":"info","message":"Reserved card 5480 succesfully","timestamp":"2023-07-30T05:17:03.935Z"}
+{"level":"info","message":"Reserved card 5736 succesfully","timestamp":"2023-07-30T05:17:04.198Z"}
+{"level":"info","message":"Reserved card 5992 succesfully","timestamp":"2023-07-30T05:17:04.479Z"}
+{"level":"info","message":"Reserved card 6248 succesfully","timestamp":"2023-07-30T05:17:04.969Z"}
+{"level":"info","message":"Reserved card 6504 succesfully","timestamp":"2023-07-30T05:17:05.321Z"}
+{"level":"info","message":"Reserved card 6760 succesfully","timestamp":"2023-07-30T05:17:05.672Z"}
+{"level":"info","message":"Reserved card 7016 succesfully","timestamp":"2023-07-30T05:17:06.007Z"}
+{"level":"info","message":"Reserved card 7272 succesfully","timestamp":"2023-07-30T05:17:06.360Z"}
+{"level":"info","message":"Reserved card 7528 succesfully","timestamp":"2023-07-30T05:17:06.712Z"}
+{"level":"info","message":"Reserved card 7784 succesfully","timestamp":"2023-07-30T05:17:08.469Z"}
+{"level":"info","message":"Reserved card 8040 succesfully","timestamp":"2023-07-30T05:17:08.776Z"}
+{"level":"info","message":"Reserved card 8296 succesfully","timestamp":"2023-07-30T05:17:09.115Z"}
+{"level":"info","message":"Reserved card 8552 succesfully","timestamp":"2023-07-30T05:17:09.391Z"}
+{"level":"info","message":"Reserved card 8808 succesfully","timestamp":"2023-07-30T05:17:09.697Z"}
+{"level":"info","message":"Reserved card 9064 succesfully","timestamp":"2023-07-30T05:17:10.004Z"}
+{"level":"info","message":"Reserved card 9320 succesfully","timestamp":"2023-07-30T05:17:10.313Z"}
+{"level":"info","message":"Reserved card 9576 succesfully","timestamp":"2023-07-30T05:17:10.620Z"}
+{"level":"info","message":"Reserved card 9832 succesfully","timestamp":"2023-07-30T05:17:10.926Z"}
+{"level":"info","message":"Reserved card 105 succesfully","timestamp":"2023-07-30T05:17:11.193Z"}
+{"level":"info","message":"Reserved card 361 succesfully","timestamp":"2023-07-30T05:17:11.847Z"}
+{"level":"info","message":"Reserved card 617 succesfully","timestamp":"2023-07-30T05:17:12.155Z"}
+{"level":"info","message":"Reserved card 873 succesfully","timestamp":"2023-07-30T05:17:12.462Z"}
+{"level":"info","message":"Reserved card 1129 succesfully","timestamp":"2023-07-30T05:17:12.771Z"}
+{"level":"info","message":"Reserved card 1385 succesfully","timestamp":"2023-07-30T05:17:13.076Z"}
+{"level":"info","message":"Reserved card 1641 succesfully","timestamp":"2023-07-30T05:17:13.486Z"}
+{"level":"info","message":"Reserved card 1897 succesfully","timestamp":"2023-07-30T05:17:13.794Z"}
+{"level":"info","message":"Reserved card 2153 succesfully","timestamp":"2023-07-30T05:17:14.097Z"}
+{"level":"info","message":"Reserved card 2409 succesfully","timestamp":"2023-07-30T05:17:14.410Z"}
+{"level":"info","message":"Reserved card 2665 succesfully","timestamp":"2023-07-30T05:17:14.677Z"}
+{"level":"info","message":"Reserved card 2921 succesfully","timestamp":"2023-07-30T05:17:15.023Z"}
+{"level":"info","message":"Reserved card 3177 succesfully","timestamp":"2023-07-30T05:17:15.330Z"}
+{"level":"info","message":"Reserved card 3433 succesfully","timestamp":"2023-07-30T05:17:15.643Z"}
+{"level":"info","message":"Reserved card 3689 succesfully","timestamp":"2023-07-30T05:17:15.909Z"}
+{"level":"info","message":"Reserved card 3945 succesfully","timestamp":"2023-07-30T05:17:16.204Z"}
+{"level":"info","message":"Reserved card 4201 succesfully","timestamp":"2023-07-30T05:17:16.471Z"}
+{"level":"info","message":"Reserved card 4457 succesfully","timestamp":"2023-07-30T05:17:16.736Z"}
+{"level":"info","message":"Reserved card 4713 succesfully","timestamp":"2023-07-30T05:17:17.072Z"}
+{"level":"info","message":"Reserved card 4969 succesfully","timestamp":"2023-07-30T05:17:17.375Z"}
+{"level":"info","message":"Reserved card 5225 succesfully","timestamp":"2023-07-30T05:17:17.646Z"}
+{"level":"info","message":"Reserved card 5481 succesfully","timestamp":"2023-07-30T05:17:18.196Z"}
+{"level":"info","message":"Reserved card 5737 succesfully","timestamp":"2023-07-30T05:17:18.466Z"}
+{"level":"info","message":"Reserved card 5993 succesfully","timestamp":"2023-07-30T05:17:18.795Z"}
+{"level":"info","message":"Reserved card 6249 succesfully","timestamp":"2023-07-30T05:17:19.148Z"}
+{"level":"info","message":"Reserved card 6505 succesfully","timestamp":"2023-07-30T05:17:19.499Z"}
+{"level":"info","message":"Reserved card 6761 succesfully","timestamp":"2023-07-30T05:17:19.835Z"}
+{"level":"info","message":"Reserved card 7017 succesfully","timestamp":"2023-07-30T05:17:20.185Z"}
+{"level":"info","message":"Reserved card 7273 succesfully","timestamp":"2023-07-30T05:17:20.536Z"}
+{"level":"info","message":"==> Creating sale line bulk with locking id 1690694199266zdjSu133","timestamp":"2023-07-30T05:17:20.537Z"}
+{"level":"info","message":"===> Line created len: 2","timestamp":"2023-07-30T05:17:20.870Z"}
+{"level":"info","message":"===> Updating card saleLineId in card model","timestamp":"2023-07-30T05:17:20.871Z"}
+{"level":"info","message":"Update card saleLineId successfully undefined","timestamp":"2023-07-30T05:17:21.165Z"}
+{"level":"info","message":"===> Updating card saleLineId in card model","timestamp":"2023-07-30T05:17:21.166Z"}
+{"level":"info","message":"Update card saleLineId successfully undefined","timestamp":"2023-07-30T05:17:21.478Z"}
+{"level":"info","message":"All product count 2 to be update stock count","timestamp":"2023-07-30T05:17:21.741Z"}
+{"level":"warn","message":"Date 2023-07-30 2023-07-30","timestamp":"2023-07-30T05:17:21.899Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-30T05:17:31.742Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-30T05:17:31.744Z"}
+{"level":"warn","message":"Date 2023-07-30 2023-07-30","timestamp":"2023-07-30T05:17:35.403Z"}
+{"level":"info","message":"Updating header","timestamp":"2023-07-30T05:17:43.284Z"}
+{"level":"warn","message":"Check if lineId is null or undifine 403","timestamp":"2023-07-30T05:17:43.285Z"}
+{"level":"warn","message":"header id ===> 271","timestamp":"2023-07-30T05:17:43.285Z"}
+{"level":"info","message":"*************Previous card productId is the same with current ProductId************","timestamp":"2023-07-30T05:17:43.592Z"}
+{"level":"info","message":"Product Id ===>: 23","timestamp":"2023-07-30T05:17:43.902Z"}
+{"level":"info","message":"Cards available len ===>: 0 sale qty needed 1","timestamp":"2023-07-30T05:17:43.903Z"}
+{"level":"error","message":"Stock is not enought for productId 23","timestamp":"2023-07-30T05:17:43.904Z"}
+{"level":"error","message":"Cannot update data Error: Error: Stock not enought #23","timestamp":"2023-07-30T05:17:43.905Z"}
+{"level":"info","message":"Updating header","timestamp":"2023-07-30T05:17:51.784Z"}
+{"level":"warn","message":"Check if lineId is null or undifine 403","timestamp":"2023-07-30T05:17:51.786Z"}
+{"level":"warn","message":"header id ===> 271","timestamp":"2023-07-30T05:17:51.786Z"}
+{"level":"info","message":"*************Previous card productId is the same with current ProductId************","timestamp":"2023-07-30T05:17:52.090Z"}
+{"level":"warn","message":"This saleLineId 403 has previous card count 1","timestamp":"2023-07-30T05:17:52.090Z"}
+{"level":"info","message":"// ************** Update saleLine entry ************** //","timestamp":"2023-07-30T05:17:52.090Z"}
+{"level":"info","message":"Updated saleLineId 403 completed [object SequelizeInstance:saleLine]","timestamp":"2023-07-30T05:18:15.692Z"}
+{"level":"warn","message":"Check if lineId is null or undifine 404","timestamp":"2023-07-30T05:18:15.693Z"}
+{"level":"warn","message":"header id ===> 271","timestamp":"2023-07-30T05:18:15.693Z"}
+{"level":"info","message":"*************Previous card productId is the same with current ProductId************","timestamp":"2023-07-30T05:18:16.376Z"}
+{"level":"warn","message":"This saleLineId 404 has previous card count 100","timestamp":"2023-07-30T05:18:16.376Z"}
+{"level":"info","message":"// ************** Update saleLine entry ************** //","timestamp":"2023-07-30T05:18:16.377Z"}
+{"level":"info","message":"Updated saleLineId 404 completed [object SequelizeInstance:saleLine]","timestamp":"2023-07-30T05:19:06.435Z"}
+{"level":"warn","message":"SaleLine for create count is 0","timestamp":"2023-07-30T05:19:06.436Z"}
+{"level":"info","message":"Update transaction completed [object SequelizeInstance:saleHeader]","timestamp":"2023-07-30T05:19:06.440Z"}
+{"level":"warn","message":"Date 2023-07-30 2023-07-30","timestamp":"2023-07-30T05:19:06.570Z"}
+{"level":"info","message":"All product count 2 to be update stock count","timestamp":"2023-07-30T05:19:06.707Z"}
+{"level":"info","message":"Updating header","timestamp":"2023-07-30T05:19:14.707Z"}
+{"level":"warn","message":"Check if lineId is null or undifine 403","timestamp":"2023-07-30T05:19:14.707Z"}
+{"level":"warn","message":"header id ===> 271","timestamp":"2023-07-30T05:19:14.708Z"}
+{"level":"warn","message":"*************Previous card productId is not the same with current ProductId************","timestamp":"2023-07-30T05:19:15.032Z"}
+{"level":"info","message":"Product Id ===>: 11","timestamp":"2023-07-30T05:19:15.341Z"}
+{"level":"info","message":"Cards available len ===>: 1 sale qty needed 1","timestamp":"2023-07-30T05:19:15.341Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"1690694354707dmjao121\",\"card_isused\":true,\"saleLineId\":403}","timestamp":"2023-07-30T05:19:15.341Z"}
+{"level":"info","message":"Reserved card 7529 succesfully","timestamp":"2023-07-30T05:20:05.426Z"}
+{"level":"info","message":"************* Send previous use cards back to inventory *************","timestamp":"2023-07-30T05:20:05.427Z"}
+{"level":"info","message":"//**************** Update previous card make it back available in inventory ****************/","timestamp":"2023-07-30T05:20:06.306Z"}
+{"level":"info","message":"product found for update stock count {}","timestamp":"2023-07-30T05:20:06.308Z"}
+{"level":"error","message":"Error updating product count for productId: 23 TypeError: product.update is not a function","timestamp":"2023-07-30T05:20:06.311Z"}
+{"level":"warn","message":"This saleLineId 403 has previous card count 1","timestamp":"2023-07-30T05:20:06.311Z"}
+{"level":"info","message":"// ************** Update saleLine entry ************** //","timestamp":"2023-07-30T05:20:06.311Z"}
+{"level":"info","message":"Updated saleLineId 403 completed [object SequelizeInstance:saleLine]","timestamp":"2023-07-30T05:20:06.998Z"}
+{"level":"warn","message":"Check if lineId is null or undifine 404","timestamp":"2023-07-30T05:20:06.999Z"}
+{"level":"warn","message":"header id ===> 271","timestamp":"2023-07-30T05:20:06.999Z"}
+{"level":"info","message":"*************Previous card productId is the same with current ProductId************","timestamp":"2023-07-30T05:20:07.707Z"}
+{"level":"warn","message":"This saleLineId 404 has previous card count 100","timestamp":"2023-07-30T05:20:07.708Z"}
+{"level":"info","message":"// ************** Update saleLine entry ************** //","timestamp":"2023-07-30T05:20:07.708Z"}
+{"level":"info","message":"Updated saleLineId 404 completed [object SequelizeInstance:saleLine]","timestamp":"2023-07-30T05:20:08.232Z"}
+{"level":"warn","message":"SaleLine for create count is 0","timestamp":"2023-07-30T05:20:08.232Z"}
+{"level":"info","message":"Update transaction completed [object SequelizeInstance:saleHeader]","timestamp":"2023-07-30T05:20:08.497Z"}
+{"level":"warn","message":"Date 2023-07-30 2023-07-30","timestamp":"2023-07-30T05:20:08.658Z"}
+{"level":"info","message":"All product count 1 to be update stock count","timestamp":"2023-07-30T05:20:08.761Z"}
+{"level":"info","message":"Datatase is synchronize","timestamp":"2023-07-30T05:21:04.599Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-07-30T05:22:02.391Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-07-30T05:22:02.394Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-07-30T05:22:02.394Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-07-30T05:22:02.395Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-07-30T05:22:02.397Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-07-30T05:22:03.344Z"}
+{"level":"info","message":"app is runing: 8080","timestamp":"2023-07-30T05:22:03.346Z"}
+{"level":"warn","message":"env: dcommerce_uat_1","timestamp":"2023-07-30T05:22:03.346Z"}
+{"level":"info","message":"DB Connection established","timestamp":"2023-07-30T05:22:06.865Z"}
+{"level":"info","message":"Updating header","timestamp":"2023-07-30T05:22:18.943Z"}
+{"level":"warn","message":"Check if lineId is null or undifine 403","timestamp":"2023-07-30T05:22:18.945Z"}
+{"level":"warn","message":"header id ===> 271","timestamp":"2023-07-30T05:22:18.946Z"}
+{"level":"warn","message":"*************Previous card productId is not the same with current ProductId************","timestamp":"2023-07-30T05:22:19.248Z"}
+{"level":"info","message":"Product Id ===>: 23","timestamp":"2023-07-30T05:22:19.558Z"}
+{"level":"info","message":"Cards available len ===>: 1 sale qty needed 1","timestamp":"2023-07-30T05:22:19.561Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"1690694538945E2wqp372\",\"card_isused\":true,\"saleLineId\":403}","timestamp":"2023-07-30T05:22:19.562Z"}
+{"level":"info","message":"Reserved card 120025 succesfully","timestamp":"2023-07-30T05:22:19.866Z"}
+{"level":"info","message":"************* Send previous use cards back to inventory *************","timestamp":"2023-07-30T05:22:19.869Z"}
+{"level":"info","message":"//**************** Update previous card make it back available in inventory ****************/","timestamp":"2023-07-30T05:22:20.503Z"}
+{"level":"warn","message":"This saleLineId 403 has previous card count 1","timestamp":"2023-07-30T05:22:20.506Z"}
+{"level":"info","message":"// ************** Update saleLine entry ************** //","timestamp":"2023-07-30T05:22:20.506Z"}
+{"level":"info","message":"product found for update stock count {\"id\":11,\"pro_id\":1010,\"pro_name\":\"ກະເປົາເດີນທາງ Happy BC ກາກີ\",\"pro_price\":169000,\"pro_desc\":\"ກະເປົ່າ\",\"pro_status\":false,\"pro_image_path\":null,\"retail_cost_percent\":0,\"cost_price\":87000,\"stock_count\":5842,\"minStock\":10,\"locking_session_id\":\"\",\"barCode\":\"barcode\",\"isActive\":true,\"createdAt\":null,\"updateTimestamp\":\"2023-07-30T05:20:08.000Z\",\"stockUnitId\":1,\"receiveUnitId\":4,\"categoryCategId\":null,\"pro_category\":1002,\"outletId\":null,\"outlet\":1}","timestamp":"2023-07-30T05:22:20.767Z"}
+{"level":"info","message":"Updated saleLineId 403 completed [object SequelizeInstance:saleLine]","timestamp":"2023-07-30T05:22:21.303Z"}
+{"level":"warn","message":"Check if lineId is null or undifine 404","timestamp":"2023-07-30T05:22:21.307Z"}
+{"level":"warn","message":"header id ===> 271","timestamp":"2023-07-30T05:22:21.307Z"}
+{"level":"info","message":"*************Previous card productId is the same with current ProductId************","timestamp":"2023-07-30T05:22:21.848Z"}
+{"level":"warn","message":"This saleLineId 404 has previous card count 100","timestamp":"2023-07-30T05:22:21.858Z"}
+{"level":"info","message":"// ************** Update saleLine entry ************** //","timestamp":"2023-07-30T05:22:21.858Z"}
+{"level":"info","message":"Updated saleLineId 404 completed [object SequelizeInstance:saleLine]","timestamp":"2023-07-30T05:22:22.428Z"}
+{"level":"warn","message":"SaleLine for create count is 0","timestamp":"2023-07-30T05:22:22.428Z"}
+{"level":"info","message":"Update transaction completed [object SequelizeInstance:saleHeader]","timestamp":"2023-07-30T05:22:22.776Z"}
+{"level":"warn","message":"Date 2023-07-30 2023-07-30","timestamp":"2023-07-30T05:22:22.917Z"}
+{"level":"info","message":"All product count 2 to be update stock count","timestamp":"2023-07-30T05:22:23.130Z"}
+{"level":"info","message":"Updating header","timestamp":"2023-07-30T05:22:33.382Z"}
+{"level":"warn","message":"Check if lineId is null or undifine 403","timestamp":"2023-07-30T05:22:33.383Z"}
+{"level":"warn","message":"header id ===> 271","timestamp":"2023-07-30T05:22:33.383Z"}
+{"level":"warn","message":"*************Previous card productId is not the same with current ProductId************","timestamp":"2023-07-30T05:22:33.687Z"}
+{"level":"info","message":"Product Id ===>: 11","timestamp":"2023-07-30T05:22:34.097Z"}
+{"level":"info","message":"Cards available len ===>: 1 sale qty needed 1","timestamp":"2023-07-30T05:22:34.098Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"1690694553383iPQTK60\",\"card_isused\":true,\"saleLineId\":403}","timestamp":"2023-07-30T05:22:34.098Z"}
+{"level":"info","message":"Reserved card 7529 succesfully","timestamp":"2023-07-30T05:22:34.443Z"}
+{"level":"info","message":"************* Send previous use cards back to inventory *************","timestamp":"2023-07-30T05:22:34.443Z"}
+{"level":"info","message":"//**************** Update previous card make it back available in inventory ****************/","timestamp":"2023-07-30T05:22:34.773Z"}
+{"level":"warn","message":"This saleLineId 403 has previous card count 1","timestamp":"2023-07-30T05:22:34.774Z"}
+{"level":"info","message":"// ************** Update saleLine entry ************** //","timestamp":"2023-07-30T05:22:34.774Z"}
+{"level":"info","message":"product found for update stock count {\"id\":23,\"pro_id\":1022,\"pro_name\":\"PRODUCT A TESTING\",\"pro_price\":10000,\"pro_desc\":\"TESTING PRODUCT\",\"pro_status\":false,\"pro_image_path\":null,\"retail_cost_percent\":0,\"cost_price\":5000,\"stock_count\":0,\"minStock\":50,\"locking_session_id\":\"1690598949701\",\"barCode\":null,\"isActive\":true,\"createdAt\":\"2023-07-29T02:49:09.000Z\",\"updateTimestamp\":\"2023-07-30T05:22:23.000Z\",\"stockUnitId\":1,\"receiveUnitId\":1,\"categoryCategId\":null,\"pro_category\":1001,\"outletId\":null,\"outlet\":1}","timestamp":"2023-07-30T05:22:35.128Z"}
+{"level":"info","message":"Updated saleLineId 403 completed [object SequelizeInstance:saleLine]","timestamp":"2023-07-30T05:22:35.478Z"}
+{"level":"warn","message":"Check if lineId is null or undifine 404","timestamp":"2023-07-30T05:22:35.478Z"}
+{"level":"warn","message":"header id ===> 271","timestamp":"2023-07-30T05:22:35.478Z"}
+{"level":"info","message":"*************Previous card productId is the same with current ProductId************","timestamp":"2023-07-30T05:22:36.169Z"}
+{"level":"warn","message":"This saleLineId 404 has previous card count 100","timestamp":"2023-07-30T05:22:36.169Z"}
+{"level":"info","message":"// ************** Update saleLine entry ************** //","timestamp":"2023-07-30T05:22:36.170Z"}
+{"level":"info","message":"Updated saleLineId 404 completed [object SequelizeInstance:saleLine]","timestamp":"2023-07-30T05:22:37.025Z"}
+{"level":"warn","message":"SaleLine for create count is 0","timestamp":"2023-07-30T05:22:37.025Z"}
+{"level":"info","message":"Update transaction completed [object SequelizeInstance:saleHeader]","timestamp":"2023-07-30T05:22:37.295Z"}
+{"level":"warn","message":"Date 2023-07-30 2023-07-30","timestamp":"2023-07-30T05:22:37.423Z"}
+{"level":"info","message":"All product count 1 to be update stock count","timestamp":"2023-07-30T05:22:37.556Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-30T05:22:41.470Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-30T05:22:41.470Z"}
+{"level":"warn","message":"Date 2023-07-30 2023-07-30","timestamp":"2023-07-30T05:23:31.237Z"}
+{"level":"info","message":"Updating header","timestamp":"2023-07-30T05:23:39.831Z"}
+{"level":"warn","message":"Check if lineId is null or undifine 403","timestamp":"2023-07-30T05:23:39.832Z"}
+{"level":"warn","message":"header id ===> 271","timestamp":"2023-07-30T05:23:39.832Z"}
+{"level":"warn","message":"*************Previous card productId is not the same with current ProductId************","timestamp":"2023-07-30T05:23:40.145Z"}
+{"level":"info","message":"Product Id ===>: 23","timestamp":"2023-07-30T05:23:40.451Z"}
+{"level":"info","message":"Cards available len ===>: 1 sale qty needed 1","timestamp":"2023-07-30T05:23:40.452Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"16906946198317G6wD318\",\"card_isused\":true,\"saleLineId\":403}","timestamp":"2023-07-30T05:23:40.452Z"}
+{"level":"info","message":"Reserved card 120025 succesfully","timestamp":"2023-07-30T05:23:40.758Z"}
+{"level":"info","message":"************* Send previous use cards back to inventory *************","timestamp":"2023-07-30T05:23:40.758Z"}
+{"level":"info","message":"//**************** Update previous card make it back available in inventory ****************/","timestamp":"2023-07-30T05:23:41.020Z"}
+{"level":"warn","message":"This saleLineId 403 has previous card count 1","timestamp":"2023-07-30T05:23:41.021Z"}
+{"level":"info","message":"// ************** Update saleLine entry ************** //","timestamp":"2023-07-30T05:23:41.021Z"}
+{"level":"info","message":"product found for update stock count {\"id\":11,\"pro_id\":1010,\"pro_name\":\"ກະເປົາເດີນທາງ Happy BC ກາກີ\",\"pro_price\":169000,\"pro_desc\":\"ກະເປົ່າ\",\"pro_status\":false,\"pro_image_path\":null,\"retail_cost_percent\":0,\"cost_price\":87000,\"stock_count\":5842,\"minStock\":10,\"locking_session_id\":\"\",\"barCode\":\"barcode\",\"isActive\":true,\"createdAt\":null,\"updateTimestamp\":\"2023-07-30T05:22:37.000Z\",\"stockUnitId\":1,\"receiveUnitId\":4,\"categoryCategId\":null,\"pro_category\":1002,\"outletId\":null,\"outlet\":1}","timestamp":"2023-07-30T05:23:41.281Z"}
+{"level":"info","message":"Updated saleLineId 403 completed [object SequelizeInstance:saleLine]","timestamp":"2023-07-30T05:23:41.542Z"}
+{"level":"warn","message":"Check if lineId is null or undifine 404","timestamp":"2023-07-30T05:23:41.543Z"}
+{"level":"warn","message":"header id ===> 271","timestamp":"2023-07-30T05:23:41.543Z"}
+{"level":"info","message":"*************Previous card productId is the same with current ProductId************","timestamp":"2023-07-30T05:23:42.056Z"}
+{"level":"warn","message":"This saleLineId 404 has previous card count 100","timestamp":"2023-07-30T05:23:42.057Z"}
+{"level":"info","message":"// ************** Update saleLine entry ************** //","timestamp":"2023-07-30T05:23:42.057Z"}
+{"level":"info","message":"Updated saleLineId 404 completed [object SequelizeInstance:saleLine]","timestamp":"2023-07-30T05:23:42.572Z"}
+{"level":"warn","message":"SaleLine for create count is 0","timestamp":"2023-07-30T05:23:42.572Z"}
+{"level":"info","message":"Update transaction completed [object SequelizeInstance:saleHeader]","timestamp":"2023-07-30T05:23:42.909Z"}
+{"level":"warn","message":"Date 2023-07-30 2023-07-30","timestamp":"2023-07-30T05:23:42.998Z"}
+{"level":"info","message":"All product count 2 to be update stock count","timestamp":"2023-07-30T05:23:43.168Z"}
+{"level":"info","message":"SELECT SUM(o.product_amount) AS sale_count,\n    SUM(o.order_price_total) as total_sale,\n    o.txn_date,\n    SUBSTR(o.txn_date, 1, 10) AS txn_date_short\n    FROM user_order o \n    WHERE  o.txn_date BETWEEN '2023-07-01 00:00:00' AND '2023-07-30 23:59:59' \n    AND o.record_status = 1\n    GROUP BY txn_date_short","timestamp":"2023-07-30T05:23:45.842Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-30T05:23:45.855Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-30T05:23:45.855Z"}
+{"level":"info","message":"SELECT o.product_id,SUM(o.product_amount) AS sale_count,\n    o.product_price,SUM(o.order_price_total) as total_sale,\n    o.txn_date,o.record_status, \n    p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name\n    FROM user_order o \n    LEFT JOIN (SELECT p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN outlet u ON u.id = p.outlet\n        LEFT JOIN category c on c.categ_id=p.pro_category\n        ) p \n    ON p.pro_id = o.product_id \n    WHERE  o.txn_date BETWEEN '2023-07-01 00:00:00' AND '2023-07-30 23:59:59'\n    AND o.record_status = 1\n    GROUP BY p.pro_category LIMIT 5 ","timestamp":"2023-07-30T05:23:45.862Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-30T05:23:47.022Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-30T05:23:47.022Z"}
+{"level":"info","message":"SELECT d.*,SUM(o.order_price_total) AS cart_total,\n    d.payment_code,\n    p.payment_status,\n    o.order_id,\n    d.record_status\n    FROM dynamic_customer d\n    LEFT JOIN user_order o ON o.locking_session_id = d.locking_session_id\n    LEFT JOIN order_payment p ON p.locking_session_id = d.locking_session_id\n    WHERE d.txn_date BETWEEN '2023-07-01 00:00:00' AND '2023-07-30 23:59:59' \n    \n    GROUP BY d.locking_session_id\n    ","timestamp":"2023-07-30T05:23:47.030Z"}
+{"level":"info","message":"Record count => 41","timestamp":"2023-07-30T05:23:47.306Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-07-30T05:23:47.308Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-30T05:23:47.548Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-30T05:23:47.549Z"}
+{"level":"warn","message":"Date 2023-07-30 2023-07-30","timestamp":"2023-07-30T05:23:50.631Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2023-07-30T05:23:52.517Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2023-07-30T05:23:52.517Z"}
+{"level":"warn","message":"Date 2023-07-30 2023-07-30","timestamp":"2023-07-30T05:24:02.822Z"}
+{"level":"info","message":"Updating header","timestamp":"2023-07-30T05:24:19.496Z"}
+{"level":"warn","message":"Check if lineId is null or undifine 403","timestamp":"2023-07-30T05:24:19.496Z"}
+{"level":"warn","message":"header id ===> 271","timestamp":"2023-07-30T05:24:19.497Z"}
+{"level":"warn","message":"*************Previous card productId is not the same with current ProductId************","timestamp":"2023-07-30T05:24:19.955Z"}
+{"level":"info","message":"Product Id ===>: 11","timestamp":"2023-07-30T05:24:20.282Z"}
+{"level":"info","message":"Cards available len ===>: 1 sale qty needed 1","timestamp":"2023-07-30T05:24:20.283Z"}
+{"level":"warn","message":"=====> {\"locking_session_id\":\"1690694659496MxY18289\",\"card_isused\":true,\"saleLineId\":403}","timestamp":"2023-07-30T05:24:20.283Z"}
+{"level":"info","message":"Reserved card 7529 succesfully","timestamp":"2023-07-30T05:24:30.457Z"}
+{"level":"info","message":"************* Send previous use cards back to inventory *************","timestamp":"2023-07-30T05:24:30.457Z"}
+{"level":"info","message":"//**************** Update previous card make it back available in inventory ****************/","timestamp":"2023-07-30T05:24:30.785Z"}
+{"level":"warn","message":"This saleLineId 403 has previous card count 1","timestamp":"2023-07-30T05:24:30.786Z"}
+{"level":"info","message":"// ************** Update saleLine entry ************** //","timestamp":"2023-07-30T05:24:30.786Z"}
+{"level":"info","message":"product found for update stock count {\"id\":23,\"pro_id\":1022,\"pro_name\":\"PRODUCT A TESTING\",\"pro_price\":10000,\"pro_desc\":\"TESTING PRODUCT\",\"pro_status\":false,\"pro_image_path\":null,\"retail_cost_percent\":0,\"cost_price\":5000,\"stock_count\":0,\"minStock\":50,\"locking_session_id\":\"1690598949701\",\"barCode\":null,\"isActive\":true,\"createdAt\":\"2023-07-29T02:49:09.000Z\",\"updateTimestamp\":\"2023-07-30T05:23:43.000Z\",\"stockUnitId\":1,\"receiveUnitId\":1,\"categoryCategId\":null,\"pro_category\":1001,\"outletId\":null,\"outlet\":1}","timestamp":"2023-07-30T05:24:31.137Z"}
+{"level":"info","message":"Updated saleLineId 403 completed [object SequelizeInstance:saleLine]","timestamp":"2023-07-30T05:24:31.488Z"}
+{"level":"warn","message":"Check if lineId is null or undifine 404","timestamp":"2023-07-30T05:24:31.488Z"}
+{"level":"warn","message":"header id ===> 271","timestamp":"2023-07-30T05:24:31.488Z"}
+{"level":"info","message":"*************Previous card productId is the same with current ProductId************","timestamp":"2023-07-30T05:24:32.189Z"}
+{"level":"warn","message":"This saleLineId 404 has previous card count 100","timestamp":"2023-07-30T05:24:32.194Z"}
+{"level":"info","message":"// ************** Update saleLine entry ************** //","timestamp":"2023-07-30T05:24:32.194Z"}
