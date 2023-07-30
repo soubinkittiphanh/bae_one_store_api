@@ -27444,3 +27444,12 @@
 {"level":"info","message":"*************Previous card productId is the same with current ProductId************","timestamp":"2023-07-30T05:24:32.189Z"}
 {"level":"warn","message":"This saleLineId 404 has previous card count 100","timestamp":"2023-07-30T05:24:32.194Z"}
 {"level":"info","message":"// ************** Update saleLine entry ************** //","timestamp":"2023-07-30T05:24:32.194Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-07-30T05:49:59.869Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-07-30T05:49:59.872Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-07-30T05:49:59.873Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-07-30T05:49:59.874Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-07-30T05:49:59.877Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-07-30T05:50:00.873Z"}
+{"level":"info","message":"app is runing: 8080","timestamp":"2023-07-30T05:50:00.873Z"}
+{"level":"warn","message":"env: dcommerce_uat_1","timestamp":"2023-07-30T05:50:00.874Z"}
+{"level":"info","message":"DB Connection established","timestamp":"2023-07-30T05:50:03.863Z"}

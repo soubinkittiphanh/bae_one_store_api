@@ -215,27 +215,53 @@ const reserveCard = async (line, lockingSessionId, qty) => {
   if (!cards || cards.length < qty) {
     throw new Error(`Stock not enought #${line.productId}`);
   }
-  for (const iterator of cards) {
-    let updatedCard = null
-    try {
-      const entryOption = {
-        locking_session_id: lockingSessionId,
-        card_isused: true,
-        // saleLineId: iterator.id
-      }
-      if (line.id) {
-        entryOption.saleLineId = line.id
-        logger.warn(`=====> ${JSON.stringify(entryOption)}`)
-        updatedCard = await iterator.update(entryOption);
-      } else {
-        updatedCard = await iterator.update(entryOption);
-      }
-      logger.info("Reserved card " + updatedCard.id + " succesfully")
-    } catch (error) {
-      logger.error("Reserved card " + iterator.id + " false with error " + error)
-      throw new Error("Card reservation error")
-    }
+
+  const thoseFreshLines = cards.map(el => el.id == null)
+  const thoseOldLines = cards.map(el => el.id != null)
+  let entryOption = {
+    locking_session_id: lockingSessionId,
+    card_isused: true,
   }
+  // ################ card for Fresh line ################
+
+  Card.update(entryOption, {
+    where: {
+      id: {
+        [Op.in]: thoseFreshLines.map(el => el.id)
+      }
+    }
+  })
+  // ################ card for Old line ################
+  entryOption.saleLineId = line.id
+  Card.update(entryOption, {
+    where: {
+      id: {
+        [Op.in]: thoseOldLines.map(el => el.id)
+      }
+    }
+  })
+// $$$$$$$$$$$$$$$ old logic impact performance $$$$$$$$$$$$$$$ //
+  // for (const iterator of cards) {
+  //   let updatedCard = null
+  //   try {
+  //     const entryOption = {
+  //       locking_session_id: lockingSessionId,
+  //       card_isused: true,
+  //       // saleLineId: iterator.id
+  //     }
+  //     if (line.id) {
+  //       entryOption.saleLineId = line.id
+  //       logger.warn(`=====> ${JSON.stringify(entryOption)}`)
+  //       updatedCard = await iterator.update(entryOption);
+  //     } else {
+  //       updatedCard = await iterator.update(entryOption);
+  //     }
+  //     logger.info("Reserved card " + updatedCard.id + " succesfully")
+  //   } catch (error) {
+  //     logger.error("Reserved card " + iterator.id + " false with error " + error)
+  //     throw new Error("Card reservation error")
+  //   }
+  // }
 }
 
 //  ******************************************************************
