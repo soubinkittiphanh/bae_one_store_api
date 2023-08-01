@@ -3,6 +3,7 @@ const SaleHeader = require('../models').saleHeader;
 const Line = require('../models').saleLine;
 const Product = require('../models').product;
 const Card = require('../models').card;
+const Unit = require('../models').unit;
 const { body, validationResult } = require('express-validator');
 const logger = require('../api/logger');
 const lineService = require("./line/service");
@@ -267,32 +268,6 @@ const reserveCard = async (line, lockingSessionId, qty) => {
   // }
 }
 
-//  ******************************************************************
-//  TempCard is the card reserved before create the transaction 
-//  If any product is out of stock during reserve card
-//  We will release all reserve card just created earlier 
-//  ******************************************************************
-const releaseTempCard = async (lockingSessionId) => {
-  const cards = await Card.findAll({
-    where: {
-      locking_session_id: lockingSessionId,
-    }
-  })
-  logger.warn(`Cards to be released found ${cards.length}`)
-  for (const iterator of cards) {
-    try {
-      const releaseCard = await iterator.update({
-        locking_session_id: lockingSessionId,
-        card_isused: 0,
-        saleLineId: null,
-      });
-      logger.info("Release card " + releaseCard.id + " succesfully")
-    } catch (error) {
-      logger.error("Release card " + releaseCard.id + " false with error " + error)
-      throw new Error("Card release error")
-    }
-  }
-}
 
 exports.getSaleHeaders = async (req, res) => {
   try {
@@ -342,7 +317,20 @@ exports.getSaleHeadersByDate = async (req, res) => {
 exports.getSaleHeaderById = async (req, res) => {
   try {
     const { id } = req.params;
-    const saleHeader = await SaleHeader.findByPk(id, { include: ['lines', 'user', 'client', 'payment', 'currency'], });
+    const saleHeader = await SaleHeader.findByPk(id, { include: ['lines', 'user', 'client', 'payment', 'currency', {
+      model: Line,
+      as: "lines",
+      include: [
+        {
+          model: Product,
+          as: "product"
+        },
+        {
+          model: Unit,
+          as: "unit"
+        },
+      ]
+    }], });
 
     if (!saleHeader) {
       return res.status(404).json({ success: false, message: 'Sale header not found' });

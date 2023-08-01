@@ -2,6 +2,7 @@
 const QuotationHeader = require('../models').quotationHeader;
 const Line = require('../models').quotationLine;
 const Product = require('../models').product;
+const Unit = require('../models').unit;
 const Card = require('../models').card;
 const { body, validationResult } = require('express-validator');
 const logger = require('../api/logger');
@@ -147,7 +148,22 @@ exports.getQuotationHeadersByDate = async (req, res) => {
 exports.getQuotationHeaderById = async (req, res) => {
   try {
     const { id } = req.params;
-    const quotationHeader = await QuotationHeader.findByPk(id, { include: ['lines', 'user', 'client', 'payment', 'currency'], });
+    const quotationHeader = await QuotationHeader.findByPk(id, {
+      include: ['lines', 'user', 'client', 'payment', 'currency', {
+        model: Line,
+        as: "lines",
+        include: [
+          {
+            model: Product,
+            as: "product"
+          },
+          {
+            model: Unit,
+            as: "unit"
+          },
+        ]
+      }],
+    });
 
     if (!quotationHeader) {
       return res.status(404).json({ success: false, message: 'Sale header not found' });
