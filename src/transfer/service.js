@@ -1,13 +1,13 @@
 
 const logger = require('../api/logger');
-const SaleHeader = require('../models').saleHeader
-const SaleLine = require('../models').saleLine
+const TransferHeader = require('../models').transferHeader
+const TransferLine = require('../models').transferLine
 const Card = require('../models').card
 
-const saleHeaderReversal = async (headerId)=>{
+const transferHeaderReversal = async (headerId)=>{
     logger.info("Reversal sale header "+headerId)
     try {
-        const header = await SaleHeader.findByPk(headerId)
+        const header = await TransferHeader.findByPk(headerId)
         logger.info("before set isActive")
         const reversedSaleHeader = await header.update({
             isActive:false
@@ -20,38 +20,38 @@ const saleHeaderReversal = async (headerId)=>{
         throw new Error("SaleHeader id "+headerId +" cannot be reserved "+error)
     }
 }
-const saleLineReversal = async (lineId)=>{
-    const line = await SaleLine.findByPk(lineId)
+const transferLineReversal = async (lineId)=>{
+    const line = await TransferLine.findByPk(lineId)
 
     if (!line) {
-        logger.error("Cannot find saleLine id "+lineId)
-        throw new Error("Cannot find saleLine id "+lineId)
+        logger.error("Cannot find TransferLine id "+lineId)
+        throw new Error("Cannot find TransferLine id "+lineId)
     }
     try {
         const updatedLine = await line.update({isActive:false})
-        logger.warn("Transaction saleLine id "+lineId +" has been reversed status: " +updatedLine.isActive)
+        logger.warn("Transaction TransferLine id "+lineId +" has been reversed status: " +updatedLine.isActive)
         
     } catch (error) {
-        logger.error("Cannot reverse saleLine id "+ lineId +" with error "+error)
-        throw new Error("Can not revesse saleLine id "+error)
+        logger.error("Cannot reverse TransferLine id "+ lineId +" with error "+error)
+        throw new Error("Can not revesse TransferLine id "+error)
     }
 }
 
-const cardReversal = async(productId,saleLineId)=>{
-    logger.warn("Reversal cards "+productId+' ID '+saleLineId)
+const cardReversal = async(productId,transferLineId,srcLocationId)=>{
+    logger.warn("Reversal cards "+productId+' ID '+transferLineId)
     const cards = await Card.findAll({
         where:{
-            saleLineId,
+            transferLineId,
             productId,
-            card_isused:1,
             }
         })
-        logger.info('All card found for this saleLine '+cards.length)
+        logger.info('All card found for this TransferLine '+cards.length)
+        Card.update()
     for (const iterator of cards) {
         try {
             const updatedCard = await iterator.update({
-                card_isused: 0,
-                saleLineId: null,
+                transferLineId: null,
+                locationId: srcLocationId,
                 isActive: true,
             })
             logger.info(`===> ****REV**** Card id +${updatedCard.id}+ has been reverse and it is now available in stock card_isused: ${updatedCard['card_isused']}`)
@@ -67,15 +67,13 @@ const cardReversalByLockingSessionId = async(lockingSessionId)=>{
     const cards = await Card.findAll({
         where:{
             locking_session_id:lockingSessionId,
-            card_isused:1,
             }
         })
-        logger.info('All card found for this saleLine '+cards.length)
+        logger.info('All card found for this TransferLine '+cards.length)
     for (const iterator of cards) {
         try {
             const updatedCard = await iterator.update({
-                card_isused: 0,
-                saleLineId: null,
+                transferLineId: null,
                 isActive: true,
             })
             logger.info(`===> ****REV**** Card id +${updatedCard.id}+ has been reverse and it is now available in stock card_isused: ${updatedCard['card_isused']}`)
@@ -101,12 +99,12 @@ const cardReversalByLockingSessionId = async(lockingSessionId)=>{
 //           await reserveCard(iterator, lockingSessionId, qty)
 //         } else {
 //           // ********** The logic part of update existing card ************ //
-//           // ********** Reverse all previous cards from this saleLineId and assign new one ************ //
+//           // ********** Reverse all previous cards from this transferLineId and assign new one ************ //
 //           // await headerService.cardReversal(iterator.productId, iterator.id)
 //           const previousCards = await Card.findAll({
 //             order: [['createdAt', 'DESC']],
 //             where: {
-//               saleLineId: iterator.id
+//               transferLineId: iterator.id
 //             }
 //           })
 //           const currentRequiredQty = iterator.unitRate * iterator.quantity
@@ -118,7 +116,7 @@ const cardReversalByLockingSessionId = async(lockingSessionId)=>{
 //             if (currentRequiredQty > previousCards.length) {
 //               //************ If current require greater than previous cards logic *************/
 //               await reserveCard(iterator, lockingSessionId, qty)
-//               logger.info(`********* Immediatly update saleLine after reserved cards *********`)
+//               logger.info(`********* Immediatly update TransferLine after reserved cards *********`)
   
 //             } else if (currentRequiredQty == previousCards.length) {
 //               //************ No need to do anything *************/
@@ -136,7 +134,7 @@ const cardReversalByLockingSessionId = async(lockingSessionId)=>{
 //                 for (const iterator of cardsForReversBack) {
 //                   const updatedCard = await iterator.update({
 //                     card_isused: 0,
-//                     saleLineId: null,
+//                     transferLineId: null,
 //                     isActive: true
 //                   })
 //                   logger.info(`Reverse over cards succesfully ${updatedCard['card_isused']}`)
@@ -152,7 +150,7 @@ const cardReversalByLockingSessionId = async(lockingSessionId)=>{
 //             for (const iterator of previousCards) {
 //               const updatedCard = await iterator.update({
 //                 card_isused: 0,
-//                 saleLineId: null,
+//                 transferLineId: null,
 //                 isActive: true
 //               })
 //               logger.info(`Reverse over cards succesfully ${updatedCard['card_isused']}`)
@@ -161,11 +159,11 @@ const cardReversalByLockingSessionId = async(lockingSessionId)=>{
 //             logger.info(`//**************** Update previous card make it back available in inventory ****************/`)
 //             productService.updateProductCountById(previousCards[0]['productId'])
 //           }
-//           logger.warn(`This saleLineId ${iterator.id} has previous card count ${previousCards.length}`)
+//           logger.warn(`This transferLineId ${iterator.id} has previous card count ${previousCards.length}`)
   
-//           // ************** Update saleLine entry ************** //
-//           logger.info(`// ************** Update saleLine entry ************** //`)
-//           await lineService.updateSaleLine(iterator)
+//           // ************** Update TransferLine entry ************** //
+//           logger.info(`// ************** Update TransferLine entry ************** //`)
+//           await lineService.updateTransferLine(iterator)
 //         }
   
 //       } catch (error) {
@@ -181,7 +179,7 @@ const cardReversalByLockingSessionId = async(lockingSessionId)=>{
 
 module.exports = {
     cardReversal,
-    saleHeaderReversal,
-    saleLineReversal,
+    transferHeaderReversal,
+    transferLineReversal,
     cardReversalByLockingSessionId
 }

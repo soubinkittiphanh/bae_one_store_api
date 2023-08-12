@@ -1,7 +1,7 @@
 
 
 module.exports = (sequelize, DataTypes) => {
-    const SaleLine = sequelize.define('saleLine', {
+    const TransferLine = sequelize.define('transferLine', {
         quantity: {
             type: DataTypes.DOUBLE,
             allowNull: false,
@@ -45,7 +45,7 @@ module.exports = (sequelize, DataTypes) => {
         freezeTableName: true,
     })
 
-    return SaleLine;
+    return TransferLine;
 };
 
 // 1. STRING: A variable length string.

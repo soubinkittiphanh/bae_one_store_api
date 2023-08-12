@@ -29,6 +29,8 @@ const db={}
 db.sequelize = sequelize;
 db.Sequelize = Sequelize
 db.location = require("../location/model")(sequelize,DataTypes);
+db.transferHeader = require("../transfer/model")(sequelize,DataTypes);
+db.transferLine = require("../transfer/line/model")(sequelize,DataTypes);
 db.quotationHeader = require("../quotation/model")(sequelize,DataTypes);
 db.quotationLine = require("../quotation/line/model")(sequelize,DataTypes);
 db.product = require("../product/model")(sequelize,DataTypes);
@@ -58,6 +60,44 @@ db.payment = require("../paymentMethod/model")(sequelize,DataTypes);
 db.sequelize.sync({force:false,alter: true}).then(()=>{
     logger.info("Datatase is synchronize")
 })
+
+db.transferHeader.belongsTo(db.location,{
+    foreignKey:'srcLocationId',
+    as:'srcLocation'
+})
+db.transferHeader.belongsTo(db.location,{
+    foreignKey:'desLocationId',
+    as:'desLocation'
+})
+db.transferHeader.hasMany(db.transferLine,{
+    as:'lines'
+})
+db.transferHeader.belongsTo(db.user,{
+    foreignKey:'userId',
+    as:'user'
+})
+
+db.transferLine.belongsTo(db.transferHeader,{
+    foreignKey:'headerId',
+    as:'header'
+})
+db.transferLine.belongsTo(db.product,{
+    foreignKey:'productId',
+    as:'product'
+})
+db.transferLine.belongsTo(db.unit,{
+    foreignKey:'unitId',
+    as: 'unit'
+})
+db.transferLine.hasMany(db.card,{
+    as:'cards'
+})
+db.card.belongsTo(db.transferLine,{
+    foreignKey:'transferLineId',
+    as:'transferLine'
+
+})
+// ********** END TRANSFER MAPPING ***********//
 
 db.card.belongsTo(db.location,{
     foreignKey:'locationId',

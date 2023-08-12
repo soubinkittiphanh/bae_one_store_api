@@ -1,15 +1,15 @@
 
-const SaleLine = require('../../models').saleLine;
+const TransferLine = require('../../models').transferLine;
 const headerService = require('../service');
 const { body, validationResult } = require('express-validator');
 const logger = require('../../api/logger');
 
 
-exports.createSaleLine = async (req, res) => {
+exports.createtransferLine = async (req, res) => {
   try {
     const { quantity, unitRate, price, discount, total, isActive, unitId, productId } = req.body;
 
-    const newSaleLine = await SaleLine.create({
+    const transferLine = await TransferLine.create({
       quantity,
       unitRate,
       price,
@@ -20,82 +20,82 @@ exports.createSaleLine = async (req, res) => {
       productId
     });
 
-    res.status(200).json(newSaleLine);
+    res.status(200).json(transferLine);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server Error' });
   }
 };
 
-exports.getSaleLines = async (req, res) => {
+exports.getTransferLine = async (req, res) => {
   try {
-    const saleLines = await SaleLine.findAll({ include: ['product'] });
+    const transferLine = await TransferLine.findAll({ include: ['product'] });
 
-    res.status(200).json(saleLines);
+    res.status(200).json(transferLine);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server Error' });
   }
 };
 
-exports.getSaleLineById = async (req, res) => {
+exports.getTransferLineById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const saleLine = await SaleLine.findByPk(id);
+    const transferLine = await TransferLine.findByPk(id);
 
-    if (!saleLine) {
-      return res.status(404).json({ message: 'Sale line not found' });
+    if (!transferLine) {
+      return res.status(404).json({ message: 'Transfer line not found' });
     }
 
-    res.status(200).json(saleLine);
+    res.status(200).json(transferLine);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server Error' });
   }
 };
 
-exports.updateSaleLine = async (req, res) => {
+exports.updateTransferLine = async (req, res) => {
   try {
     const { id } = req.params;
     const { quantity, unitRate, price, discount, total, isActive } = req.body;
 
-    const saleLine = await SaleLine.findByPk(id);
+    const transferLine = await TransferLine.findByPk(id);
 
-    if (!saleLine) {
+    if (!transferLine) {
       return res.status(404).json({ message: 'Sale line not found' });
     }
 
-    await saleLine.update({
-      quantity: quantity || saleLine.quantity,
-      unitRate: unitRate || saleLine.unitRate,
-      price: price || saleLine.price,
-      discount: discount || saleLine.discount,
-      total: total || saleLine.total,
-      isActive: isActive || saleLine.isActive,
+    await TransferLine.update({
+      quantity: quantity || TransferLine.quantity,
+      unitRate: unitRate || TransferLine.unitRate,
+      price: price || TransferLine.price,
+      discount: discount || TransferLine.discount,
+      total: total || TransferLine.total,
+      isActive: isActive || TransferLine.isActive,
     });
 
-    res.status(200).json(saleLine);
+    res.status(200).json(transferLine);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server Error' });
   }
 };
 
-exports.deleteSaleLine = async (req, res) => {
+exports.deleteTransferLine = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const saleLine = await SaleLine.findByPk(id,{include: ['product'],});
+    const transferLine = await TransferLine.findByPk(id,{include: ['product'],});
 
-    if (!saleLine) {
+    if (!transferLine) {
       return res.status(404).json({ message: 'Sale line not found' });
     }
-    logger.info("Sale line detail "+saleLine)
+    logger.info("Sale line detail "+transferLine)
     // ************* Reverse card ************* //
-    await headerService.cardReversal(saleLine.productId,id)
-    // ************* Delete saleLine ************* //
-    await saleLine.destroy();
+    await headerService.cardReversal(TransferLine.productId,id)
+    // ************* Delete transferLine ************* //
+    await TransferLine.destroy();
 
     res.status(200).json();
   } catch (error) {

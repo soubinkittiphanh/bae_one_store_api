@@ -30,6 +30,27 @@ const topSaleByMonth = async (req, res) => {
     }
 
 }
+const topSaleMinimartByMonth = async (req, res) => {
+    let { month, top } = req.query;
+    if (!top) top = 10
+
+    const { beginningOfMonthString, lastDayOfMonthString } = common.getBetweenDateInCurrentMonth()
+    const sql = `SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, 
+    o.createdAt,o.isActive, p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name 
+    FROM saleLine o 
+    LEFT JOIN (SELECT p.id,p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p 
+        LEFT JOIN outlet u ON u.id = p.outlet LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId 
+        WHERE o.createdAt BETWEEN '${beginningOfMonthString} 00:00:00' AND '${lastDayOfMonthString} 23:59:59' AND o.isActive = 1 
+        GROUP BY p.pro_category LIMIT ${top} `
+    logger.info(sql)
+    try {
+        const [rows, fields] = await dbAsync.query(sql);
+        res.status(200).send(rows)
+    } catch (error) {
+        logger.error('Server error with mysql, ' + error)
+    }
+
+}
 const codAndCash = async (req, res) => {
     let { month, top } = req.query;
     if (!top) top = 10
@@ -62,22 +83,22 @@ const codAndCash = async (req, res) => {
 }
 
 const countCOD = (rows) => {
-    let series=[];
+    let series = [];
     let COD = 0;
     let cancel = 0;
     let allOrder = 0;
     let saleValue = 0;
-    let labels = ["All order","COD","Sale value","Cancel/return"]
-    rows.forEach(element=>{
-        if(+element['record_status']===1 && !element["payment_status"] && element["payment_code"].includes('COD')){
+    let labels = ["All order", "COD", "Sale value", "Cancel/return"]
+    rows.forEach(element => {
+        if (+element['record_status'] === 1 && !element["payment_status"] && element["payment_code"].includes('COD')) {
             COD++
             allOrder++
-            saleValue+=element["cart_total"]
-        }else if(+element['record_status']!==1){
+            saleValue += element["cart_total"]
+        } else if (+element['record_status'] !== 1) {
             cancel++
-        }else{
+        } else {
             allOrder++
-            saleValue+=element["cart_total"]
+            saleValue += element["cart_total"]
         }
     })
     // series.concat(allOrder,COD,saleValue,cancel)
@@ -85,7 +106,7 @@ const countCOD = (rows) => {
     series.push(COD)
     series.push(saleValue)
     series.push(cancel)
-    return {series,labels};
+    return { series, labels };
 }
 
 const dailySaleStatistic = async (req, res) => {
@@ -111,4 +132,5 @@ module.exports = {
     topSaleByMonth,
     dailySaleStatistic,
     codAndCash,
+    topSaleMinimartByMonth
 }

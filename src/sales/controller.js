@@ -31,8 +31,8 @@ const productService = require('../product/service')
 // 9. 502 Bad Gateway - The server received an invalid response from an upstream server while trying to fulfill the request.
 exports.createSaleHeader = async (req, res) => {
   try {
-    let { bookingDate, remark, discount, total, exchangeRate, isActive, lines, clientId, paymentId, currencyId, userId } = req.body;
-    const saleHeader = await SaleHeader.create({ bookingDate, remark, discount, total, exchangeRate, isActive, clientId, paymentId, currencyId, userId });
+    let { bookingDate, remark, discount, total, exchangeRate, isActive, lines, clientId, paymentId, currencyId, userId,referenceNo } = req.body;
+    const saleHeader = await SaleHeader.create({ bookingDate, remark, discount, total, exchangeRate, isActive, clientId, paymentId, currencyId, userId,referenceNo });
     logger.info('Sale header ' + saleHeader.id)
     logger.info("===== Create Sale Header =====" + req.body)
     // **********************

@@ -1,6 +1,6 @@
 
-const TransferHeader = require('../models').transfer;
-const Line = require('../models').saleLine;
+const TransferHeader = require('../models').transferHeader;
+const Line = require('../models').transferLine;
 const Product = require('../models').product;
 const Card = require('../models').card;
 const Unit = require('../models').unit;
@@ -31,8 +31,8 @@ const productService = require('../product/service')
 // 9. 502 Bad Gateway - The server received an invalid response from an upstream server while trying to fulfill the request.
 exports.createTransferHeader = async (req, res) => {
   try {
-    let { bookingDate, remark,isActive, lines, userId,srcLocationId,dstLocationId } = req.body;
-    const transfer = await TransferHeader.create({ bookingDate, remark, isActive, userId,srcLocationId,dstLocationId });
+    let { bookingDate, remark, isActive, lines, userId, srcLocationId, desLocationId } = req.body;
+    const transfer = await TransferHeader.create({ bookingDate, remark, isActive, userId,srcLocationId,desLocationId });
     logger.info('Sale header ' + transfer.id)
     logger.info("===== Create Tranfer Header =====" + req.body)
     // **********************
@@ -40,14 +40,14 @@ exports.createTransferHeader = async (req, res) => {
     // **********************
     const lockingSessionId = common.generateLockingSessionId()
     try {
-      const linesWithHeaderId = await assignHeaderId(lines, transfer.id, lockingSessionId, false)
-      lineService.createBulkSaleLine(res, linesWithHeaderId, lockingSessionId)
+      const linesWithHeaderId = await assignHeaderId(lines, transfer.id, lockingSessionId,srcLocationId,desLocationId, false)
+      lineService.createBulkTransferLine(res, linesWithHeaderId, lockingSessionId,srcLocationId,desLocationId)
     } catch (error) {
       // ********************************************
       //  Reverse TransferHeader just created
       // ********************************************
       logger.error("Something wrong need to reverse header " + error)
-      await headerService.transferReversal(transfer.id)
+      await headerService.transferHeaderReversal(transfer.id)
       res.status(500).send("Unfortunately " + error)
     }
   } catch (error) {
@@ -58,7 +58,7 @@ exports.createTransferHeader = async (req, res) => {
 exports.updatetransfer = async (req, res) => {
   try {
     const { id } = req.params;
-    const { bookingDate, remark, isActive, lines, clientId, paymentId, currencyId, userId } = req.body;
+    const { bookingDate, remark, isActive, lines, clientId, paymentId, currencyId, userId,srcLocationId,desLocationId } = req.body;
     const transfer = await TransferHeader.findByPk(id);
 
     if (!transfer) {
@@ -67,12 +67,12 @@ exports.updatetransfer = async (req, res) => {
     }
     logger.info("Updating header")
     const lockingSessionId = common.generateLockingSessionId()
-    await assignHeaderId(lines, id, lockingSessionId, true)
+    await assignHeaderId(lines, id, lockingSessionId,srcLocationId,desLocationId, true)
     // ********** Clasify new or old saleLine ********** //
     const saleLineForCreate = lines.filter(el => el['id'] == null)
     logger.warn(`SaleLine for create count is ${saleLineForCreate.length}`)
 
-    if (saleLineForCreate.length > 0) await lineService.createBulkSaleLineWithoutRes(saleLineForCreate, lockingSessionId)
+    if (saleLineForCreate.length > 0) await lineService.createBulkTransferLineWithoutRes(saleLineForCreate, lockingSessionId)
 
     await transfer.update({ bookingDate, remark, isActive, lines, clientId, paymentId, currencyId, userId });
     logger.info(`Update transaction completed ${transfer}`)
@@ -87,99 +87,20 @@ exports.updatetransfer = async (req, res) => {
     res.status(500).send(`Cannot update data with ${error}`);
   }
 };
-const assignHeaderId = async (line, id, lockingSessionId, isUpdate) => {
+const assignHeaderId = async (line, id, lockingSessionId,srcLocationId,desLocationId, isUpdate) => {
   for (const iterator of line) {
     logger.warn(`Check if lineId is null or undifine ${iterator.id}`)
     iterator.headerId = id
-    iterator.transferId = id
+    iterator.transferHeaderId = id
     logger.warn("header id ===> " + iterator.headerId)
     try {
       // ********** If it header is fresh record then we directly reserve new card ************ //
       // ********** If not we will have condition ************ //
-      if (!isUpdate || !iterator.id) {
         const qty = iterator.unitRate * iterator.quantity
         // productService.updateProductCountById(iterator.productId)
-        await reserveCard(iterator, lockingSessionId, qty)
-      } else {
-        // ********** The logic part of update existing card ************ //
-        // ********** Reverse all previous cards from this saleLineId and assign new one ************ //
-        // await headerService.cardReversal(iterator.productId, iterator.id)
-        const previousCards = await Card.findAll({
-          order: [['createdAt', 'DESC']],
-          where: {
-            saleLineId: iterator.id
-          }
-        })
-        const currentRequiredQty = iterator.unitRate * iterator.quantity
-        const qty = currentRequiredQty - previousCards.length
-        // ********** Check if the previous card productId is the same or not ********** //
-        if (previousCards[0]['productId'] == iterator['productId']) {
-          logger.info(`*************Previous card productId is the same with current ProductId************`)
-
-          if (currentRequiredQty > previousCards.length) {
-            //************ If current require greater than previous cards logic *************/
-            await reserveCard(iterator, lockingSessionId, qty)
-            logger.info(`********* Immediatly update saleLine after reserved cards *********`)
-
-          } else if (currentRequiredQty == previousCards.length) {
-            //************ No need to do anything *************/
-          } else {
-            //************ Current card less than previous card logic *************/
-            //************ and we have to remove some previous card *************/
-
-            try {
-              // ********** Update if already exist function ***********// 
-              const preCardCount = previousCards.length
-              const numberOfLastCardForPuttingBackToInventory = currentRequiredQty - preCardCount
-              const cardsForReversBack = previousCards.slice(numberOfLastCardForPuttingBackToInventory)
-              logger.warn(`Card previous count #${preCardCount} and cad now count #${currentRequiredQty}`)
-              logger.warn(`cardsForReversBack count #${cardsForReversBack.length}`)
-              const updatedCard = await Card.update({
-                card_isused: 0,
-                saleLineId: null,
-                isActive: true
-              }, {
-                where: {
-                  id: {
-                    [Op.in]: cardsForReversBack.map(el => el.id)
-                  }
-                }
-              }
-              )
-            } catch (error) {
-              logger.error(`Reverse over cards fail ${error}`)
-              throw new Error(`Reverse over cards fail ${error}`)
-            }
-          }
-        } else {
-          logger.warn(`*************Previous card productId is not the same with current ProductId************`)
-          await reserveCard(iterator, lockingSessionId, currentRequiredQty)
-          logger.info(`************* Send previous use cards back to inventory *************`)
-          const updatedCard = await Card.update({
-            card_isused: 0,
-            saleLineId: null,
-            isActive: true
-          }, {
-            where: {
-              id: {
-                [Op.in]: previousCards.map(el => el.id)
-              }
-            }
-          })
-          //**************** Update previous card make it back available in inventory ****************/
-          logger.info(`//**************** Update previous card make it back available in inventory ****************/`)
-          productService.updateProductCountById(previousCards[0]['productId'])
-        }
-        logger.warn(`This saleLineId ${iterator.id} has previous card count ${previousCards.length}`)
-
-        // ************** Update saleLine entry ************** //
-        logger.info(`// ************** Update saleLine entry ************** //`)
-        await lineService.updateSaleLine(iterator)
-      }
-
+        await reserveCard(iterator, lockingSessionId,srcLocationId,desLocationId, qty)
     } catch (error) {
       logger.error(`Stock is not enought for productId ${iterator.productId}`)
-      if (!isUpdate) await headerService.cardReversalByLockingSessionId(lockingSessionId)
       // await releaseTempCard(lockingSessionId)
       throw new Error(error)
     }
@@ -196,7 +117,7 @@ const updateProductStockCount = async (lines) => {
   // ************* TAKE THE PRODUC ID FOR UPDATE STOCK COUNT IN PRODUCT TABLE *************//
 }
 
-const reserveCard = async (line,lockingSessionId,srcLocationId,qty) => {
+const reserveCard = async (line,lockingSessionId,srcLocationId,desLocationId,qty) => {
   //  *********************************
   //  Assign Card for cost calculation
   //  *********************************
@@ -207,8 +128,9 @@ const reserveCard = async (line,lockingSessionId,srcLocationId,qty) => {
     where: {
       productId: line.productId,
       saleLineId: null,
-      srcLocationId: srcLocationId,
+      locationId: srcLocationId,
       card_isused: 0,
+      isActive: true,
     }
 
   })
@@ -218,40 +140,28 @@ const reserveCard = async (line,lockingSessionId,srcLocationId,qty) => {
     throw new Error(`Stock not enought #${line.productId}`);
   }
 
-  const thoseFreshLines = cards.filter(el => el.id == null)
-  const thoseOldLines = cards.filter(el => el.id != null)
+  // const thoseFreshLines = cards.filter(el => el.id == null)
+  // const thoseOldLines = cards.filter(el => el.id != null)
   let entryOption = {
     locking_session_id: lockingSessionId,
-    card_isused: true,
+    isActive: false
   }
   // ################ card for Fresh line ################
-  logger.info(`Book the cards for Fresh line for ${thoseFreshLines.length} cards`)
+  logger.info(`Book the cards for Fresh line for ${cards.length} cards`)
   const numRowsUpdatedCardFresh = await Card.update(entryOption, {
     where: {
       id: {
-        [Op.in]: thoseFreshLines.map(el => el.id)
+        [Op.in]: cards.map(el => el.id)
       }
     }
   })
   logger.info(`$$$$$$ Update cards for fresh line completed ${numRowsUpdatedCardFresh} records $$$$$`)
-  // ################ card for Old line ################
-  logger.info(`Book the cards for Old line for ${thoseOldLines.length} cards`)
-  entryOption.saleLineId = line.id
-  const numRowsUpdatedCardOld = await Card.update(entryOption, {
-    where: {
-      id: {
-        [Op.in]: thoseOldLines.map(el => el.id)
-      }
-    }
-  })
-  logger.info(`$$$$$$ Update cards for old line completed ${numRowsUpdatedCardOld} records $$$$$`)
-  
 }
 
 
-exports.gettransfers = async (req, res) => {
+exports.getTransfers = async (req, res) => {
   try {
-    const transfers = await TransferHeader.findAll({ include: ['lines', 'user', 'client', 'payment', 'currency'], });
+    const transfers = await TransferHeader.findAll({ include: ['lines', 'user'], });
 
     res.status(200).json({ success: true, data: transfers });
   } catch (error) {
@@ -260,14 +170,14 @@ exports.gettransfers = async (req, res) => {
 };
 
 
-exports.gettransfersByDate = async (req, res) => {
+exports.getTransfersByDate = async (req, res) => {
   const date = JSON.parse(req.query.date);
   logger.warn("Date " + date.startDate + " " + date.endDate)
   //   const startDate = new Date('2023-07-01');
   // const endDate = new Date('2023-12-31');
   try {
     const transfers = await TransferHeader.findAll({
-      include: ['user', 'client', 'payment', 'currency',
+      include: ['user', 'srcLocation', 'desLocation',
         {
           model: Line,
           as: "lines",
@@ -294,10 +204,10 @@ exports.gettransfersByDate = async (req, res) => {
   }
 };
 
-exports.gettransferById = async (req, res) => {
+exports.getTransferById = async (req, res) => {
   try {
     const { id } = req.params;
-    const transfer = await TransferHeader.findByPk(id, { include: ['lines', 'user', 'client', 'payment', 'currency', {
+    const transfer = await TransferHeader.findByPk(id, { include: ['lines', 'user', 'srcLocation','desLocation', {
       model: Line,
       as: "lines",
       include: [
@@ -322,7 +232,7 @@ exports.gettransferById = async (req, res) => {
   }
 };
 
-exports.updatetransferPostToInvoice = async (req, res) => {
+exports.updateTransferPostToInvoice = async (req, res) => {
   try {
     const { id } = req.params;
     // const { bookingDate, remark, isActive } = req.body;
@@ -341,7 +251,7 @@ exports.updatetransferPostToInvoice = async (req, res) => {
   }
 };
 
-exports.deletetransfer = async (req, res) => {
+exports.deleteTransfer = async (req, res) => {
   try {
     const { id } = req.params;
     const transfer = await TransferHeader.findByPk(id);

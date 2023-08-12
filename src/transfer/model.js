@@ -1,7 +1,7 @@
 
 
 module.exports = (sequelize, DataTypes) => {
-    const Transfer = sequelize.define('transfer', {
+    const TransferHeader = sequelize.define('transferHeader', {
         bookingDate: {
             type: DataTypes.DATEONLY,
             allowNull: false,
@@ -34,7 +34,7 @@ module.exports = (sequelize, DataTypes) => {
         freezeTableName: true,
     })
 
-    return Transfer;
+    return TransferHeader;
 };
 
 // 1. STRING: A variable length string.

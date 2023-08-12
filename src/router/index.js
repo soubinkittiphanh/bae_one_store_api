@@ -25,6 +25,7 @@ const product = require("../product").router
 const saleLine = require("../sales/line").router
 const quotation = require("../quotation").router
 const quotationLine = require("../quotation/line").router
+const transfer = require("../transfer").router
 
 module.exports={
     orderRouter,
@@ -54,4 +55,5 @@ module.exports={
     quotation,
     quotationLine,
     location,
+    transfer
 }

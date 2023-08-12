@@ -1,30 +1,30 @@
 const logger = require("../../api/logger");
 const productService = require('../../product/service')
-const SaleLine = require("../../models").saleLine
+const TransferLine = require("../../models").transferLine
 const Card = require('../../models').card;
-const saleHeaderService = require("../service")
-const createBulkSaleLine = async (res, lines, lockingSessionId) => {
+const transferHeaderService = require("../service")
+const createBulkTransferLine = async (res, lines, lockingSessionId, srcLocationId, desLocationId) => {
     logger.info("==> Creating sale line bulk with locking id " + lockingSessionId)
     try {
-
-        const linesCreated = await SaleLine.bulkCreate(lines)
+        const linesCreated = await TransferLine.bulkCreate(lines)
         logger.info("===> Line created len: " + linesCreated.length)
         for (const iterator of linesCreated) {
-            logger.info("===> Updating card saleLineId in card model")
+            logger.info("===> Updating card transferLineId in card model")
             try {
                 const cardUpdated = await Card.update({
-                    saleLineId: iterator.id
+                    transferLineId: iterator.id,
+                    locationId: desLocationId,
+                    isActive: true
                 }, {
                     where: {
                         locking_session_id: lockingSessionId,
                         productId: iterator.productId
                     }
                 })
-                logger.info("Update card saleLineId successfully " + cardUpdated.id)
-
+                logger.info("Update card transferLineId successfully " + cardUpdated.id)
             } catch (error) {
-                logger.error("Update card saleLineId fail " + error)
-                await fullReversal(linesCreated[0]['id'])
+                logger.error("Update card transferLineId fail " + error)
+                await fullReversal(iterator['id'], srcLocationId)
                 throw new Error("Card is not updated correctly and inventory amount will not be correctly")
             }
 
@@ -40,23 +40,23 @@ const createBulkSaleLine = async (res, lines, lockingSessionId) => {
         // ********************************************
         //  Reverse SaleHeader just created before
         // ********************************************
-        await saleHeaderService.saleHeaderReversal(lines[0]['headerId'])
+        await transferHeaderService.transferHeaderReversal(lines[0]['headerId'])
         logger.error('Error inserting rows:', error)
         return res.status(403).send("Server error " + error)
     }
 
 }
 
-const createBulkSaleLineWithoutRes = async (lines, lockingSessionId) => {
+const createBulkTransferLineWithoutRes = async (lines, lockingSessionId) => {
     logger.info("==> Creating sale line bulk with locking id " + lockingSessionId)
     try {
-        const linesCreated = await SaleLine.bulkCreate(lines)
+        const linesCreated = await TransferLine.bulkCreate(lines)
         logger.info("===> Line created len: " + linesCreated.length)
         for (const iterator of linesCreated) {
             logger.info("===> Updating card saleLineId in card model")
             try {
                 const cardUpdated = await Card.update({
-                    saleLineId: iterator.id
+                    transferLineId: iterator.id
                 }, {
                     where: {
                         locking_session_id: lockingSessionId,
@@ -75,13 +75,13 @@ const createBulkSaleLineWithoutRes = async (lines, lockingSessionId) => {
         // ********************************************
         //  Reverse SaleHeader just created before
         // ********************************************
-        await saleHeaderService.saleHeaderReversal(lines[0]['headerId'])
+        await transferHeaderService.transferHeaderReversal(lines[0]['headerId'])
         logger.error('Error inserting rows:', error)
         // return res.status(403).send("Server error " + error)
     }
 
 }
-const updateBulkSaleLine = async (lines, lockingSessionId) => {
+const updateBulkTransferLine = async (lines, lockingSessionId) => {
     logger.info("==> Updating saleLine bulk with locking id " + lockingSessionId)
     try {
         for (const iterator of lines) {
@@ -94,7 +94,7 @@ const updateBulkSaleLine = async (lines, lockingSessionId) => {
             }
             try {
                 const cardUpdated = await Card.update({
-                    saleLineId: iterator.id
+                    transferLineId: iterator.id
                 }, {
                     where: {
                         locking_session_id: lockingSessionId,
@@ -113,49 +113,58 @@ const updateBulkSaleLine = async (lines, lockingSessionId) => {
         // ********************************************
         //  Reverse SaleHeader just created before
         // ********************************************
-        await saleHeaderService.saleHeaderReversal(lines[0]['headerId'])
+        await transferHeaderService.transferHeaderReversal(lines[0]['headerId'])
         logger.error('Error inserting rows:', error)
     }
 
 }
-const updateSaleLine = async (line) => {
+const updateTransferLine = async (line) => {
     try {
-        const saleLine = await SaleLine.findByPk(line.id);
-        if (!saleLine) {
+        const transferLine = await TransferLine.findByPk(line.id);
+        if (!transferLine) {
             throw new Error(`SaleLineId ${line.id} is not found`)
         }
-        await saleLine.update(line);
-        logger.info(`Updated saleLineId ${line.id} completed ${saleLine}`)
+        await TransferLine.update(line);
+        logger.info(`Updated saleLineId ${line.id} completed ${transferLine}`)
     } catch (error) {
         logger.error(`Cannot update saleLine id ${line.id} with error ${error}`);
         throw new Error(`Cannot update saleLine id ${line.id} with error ${error}`)
     }
 };
 
-const fullReversal = async (saleLineId) => {
+const fullReversal = async (id, srcLocationId) => {
     // ********************************************
     //  Find all card  just created with saleLine id
     // ********************************************
-    const allCardsInSaleLineId = await Card.findAll({
+    const allCardsInTransferLineId = await Card.findAll({
         where: {
-            saleLineId: saleLineId
+            transferLineId: id
         }
     })
     // ********************************************
     //  Reverse all card  just created with saleLine id
     // ********************************************
-    for (const iterator of allCardsInSaleLineId) {
-        await saleHeaderService.cardReversal(iterator['productId'], saleLineId)
-    }
+    const updatedCard = await Card.update({
+        transferLineId: null,
+        locationId: srcLocationId,
+        isActive: true,
+    }, {
+        where: {
+            id: {
+                [Op.in]: allCardsInTransferLineId.map(el => el.id)
+            }
+        }
+    })
+    logger.info(`Update card back 'REV' ${updatedCard.length} cards`)
     // ********************************************
     //  Reverse saleLine just created 
     // ********************************************
-    await saleHeaderService.saleLineReversal(saleLineId)
+    await transferHeaderService.transferLineReversal(id)
 }
 
 module.exports = {
-    createBulkSaleLine,
-    updateBulkSaleLine,
-    createBulkSaleLineWithoutRes,
-    updateSaleLine,
+    createBulkTransferLine,
+    updateBulkTransferLine,
+    createBulkTransferLineWithoutRes,
+    updateTransferLine,
 }
