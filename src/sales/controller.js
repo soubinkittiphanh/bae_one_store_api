@@ -303,7 +303,8 @@ exports.getSaleHeadersByDate = async (req, res) => {
       where: {
         bookingDate: {
           [Op.between]: [date.startDate, date.endDate]
-        }
+        },
+        // isActive:false
       }
     });
 
@@ -457,7 +458,8 @@ exports.sumSaleCurrentYear = async (req, res) => {
       where: {
         bookingDate: {
           [Op.between]: [startDate, endDate]
-        }
+        },
+        isActive:true,
       }
 
     })

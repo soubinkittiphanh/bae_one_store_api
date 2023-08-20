@@ -16,7 +16,7 @@ function generateRandomString(length) {
 
 const createHulkStockCard = (req, res) => {
 
-    const { inputter, product_id, totalCost, stocCardkQty,productId } = req.body;
+    const { inputter, product_id, totalCost, stocCardkQty,productId,srcLocationId } = req.body;
     const costPerUnit = totalCost ;
     const lockingSessionId = Date.now();
     logger.info("Product ID ===> "+productId)
@@ -41,6 +41,7 @@ const createHulkStockCard = (req, res) => {
             update_time: new Date(),
             update_time_new: new Date(),
             isActive: true,
+            locationId: srcLocationId,
         })
         logger.warn("Row insert productId ===> "+rowsToInsert[0]['productId'])
     }
