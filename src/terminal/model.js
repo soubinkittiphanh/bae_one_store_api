@@ -8,11 +8,11 @@ module.exports = (sequelize, DataTypes) => {
             unique: true
         },
         name: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.STRING,
             allowNull: false,
         },
         description: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.STRING,
         },
         saleRate: {
             type: DataTypes.DOUBLE,

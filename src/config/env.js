@@ -14,8 +14,8 @@ const config={
         // password:'sdat@3480',
         // database:'dcommerce_pro_peeair4',
         // database:'dcommerce_pro_jack42',
-        database:'dcommerce_uat_1',
         // database:'dcommerce_pro_chithanh',
+        database:'dcommerce_uat_1',
         port: 34248,
     }
 }

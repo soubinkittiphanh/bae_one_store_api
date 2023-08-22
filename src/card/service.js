@@ -2,28 +2,17 @@ const logger = require('../api/logger');
 const dbAsync = require('../config/dbconAsync');
 const Card = require('../models').card
 const common = require('../common')
-function generateRandomString(length) {
-    let result = '';
-    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    const charactersLength = characters.length;
-
-    for (let i = 0; i < length; i++) {
-        result += characters.charAt(Math.floor(Math.random() * charactersLength));
-    }
-
-    return result;
-}
 
 const createHulkStockCard = (req, res) => {
 
-    const { inputter, product_id, totalCost, stocCardkQty,productId,srcLocationId } = req.body;
+    const { inputter, product_id, totalCost, stockCardQty,productId,srcLocationId } = req.body;
     const costPerUnit = totalCost ;
     const lockingSessionId = Date.now();
     logger.info("Product ID ===> "+productId)
     const rowsToInsert = [
 
     ]
-    for (let index = 0; index < stocCardkQty; index++) {
+    for (let index = 0; index < stockCardQty; index++) {
         const cardSequenceNumber = common.generateLockingSessionId(10)
         logger.warn(cardSequenceNumber)
         rowsToInsert.push({

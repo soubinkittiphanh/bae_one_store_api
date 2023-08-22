@@ -29,6 +29,7 @@ const db={}
 db.sequelize = sequelize;
 db.Sequelize = Sequelize
 db.location = require("../location/model")(sequelize,DataTypes);
+db.terminal = require("../terminal/model")(sequelize,DataTypes);
 db.transferHeader = require("../transfer/model")(sequelize,DataTypes);
 db.transferLine = require("../transfer/line/model")(sequelize,DataTypes);
 db.quotationHeader = require("../quotation/model")(sequelize,DataTypes);
@@ -55,10 +56,18 @@ db.saleHeader = require("../sales/model")(sequelize,DataTypes);
 db.saleLine = require("../sales/line/model")(sequelize,DataTypes);
 db.unit = require("../unit/model")(sequelize,DataTypes);
 db.payment = require("../paymentMethod/model")(sequelize,DataTypes);
-
+// const UserTerminals = sequelize.define('user_terminals', {});
 
 db.sequelize.sync({force:false,alter: true}).then(()=>{
     logger.info("Datatase is synchronize")
+})
+
+// db.user.belongsToMany(db.terminal,{ through: 'UserTerminals' })
+// db.terminal.belongsToMany(db.user,{ through: 'UserTerminals' })
+
+db.terminal.belongsTo(db.location,{
+    foreignKey:'locationId',
+    as:'location'
 })
 
 db.transferHeader.belongsTo(db.location,{
