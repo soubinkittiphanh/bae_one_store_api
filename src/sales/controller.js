@@ -31,8 +31,8 @@ const productService = require('../product/service')
 // 9. 502 Bad Gateway - The server received an invalid response from an upstream server while trying to fulfill the request.
 exports.createSaleHeader = async (req, res) => {
   try {
-    let { bookingDate, remark, discount, total, exchangeRate, isActive, lines, clientId, paymentId, currencyId, userId,referenceNo } = req.body;
-    const saleHeader = await SaleHeader.create({ bookingDate, remark, discount, total, exchangeRate, isActive, clientId, paymentId, currencyId, userId,referenceNo });
+    let { bookingDate, remark, discount, total, exchangeRate, isActive, lines, clientId, paymentId, currencyId, userId, referenceNo, locationId } = req.body;
+    const saleHeader = await SaleHeader.create({ bookingDate, remark, discount, total, exchangeRate, isActive, clientId, paymentId, currencyId, userId, referenceNo,locationId });
     logger.info('Sale header ' + saleHeader.id)
     logger.info("===== Create Sale Header =====" + req.body)
     // **********************
@@ -40,7 +40,7 @@ exports.createSaleHeader = async (req, res) => {
     // **********************
     const lockingSessionId = common.generateLockingSessionId()
     try {
-      const linesWithHeaderId = await assignHeaderId(lines, saleHeader.id, lockingSessionId, false)
+      const linesWithHeaderId = await assignHeaderId(lines, saleHeader.id, lockingSessionId, false, locationId)
       lineService.createBulkSaleLine(res, linesWithHeaderId, lockingSessionId)
     } catch (error) {
       // ********************************************
@@ -58,7 +58,7 @@ exports.createSaleHeader = async (req, res) => {
 exports.updateSaleHeader = async (req, res) => {
   try {
     const { id } = req.params;
-    const { bookingDate, remark, discount, total, exchangeRate, isActive, lines, clientId, paymentId, currencyId, userId } = req.body;
+    const { bookingDate, remark, discount, total, exchangeRate, isActive, lines, clientId, paymentId, currencyId, userId,locationId } = req.body;
     const saleHeader = await SaleHeader.findByPk(id);
 
     if (!saleHeader) {
@@ -67,7 +67,7 @@ exports.updateSaleHeader = async (req, res) => {
     }
     logger.info("Updating header")
     const lockingSessionId = common.generateLockingSessionId()
-    await assignHeaderId(lines, id, lockingSessionId, true)
+    await assignHeaderId(lines, id, lockingSessionId, true,locationId)
     // ********** Clasify new or old saleLine ********** //
     const saleLineForCreate = lines.filter(el => el['id'] == null)
     logger.warn(`SaleLine for create count is ${saleLineForCreate.length}`)
@@ -87,7 +87,7 @@ exports.updateSaleHeader = async (req, res) => {
     res.status(500).send(`Cannot update data with ${error}`);
   }
 };
-const assignHeaderId = async (line, id, lockingSessionId, isUpdate) => {
+const assignHeaderId = async (line, id, lockingSessionId, isUpdate, locationId) => {
   for (const iterator of line) {
     logger.warn(`Check if lineId is null or undifine ${iterator.id}`)
     iterator.headerId = id
@@ -97,13 +97,12 @@ const assignHeaderId = async (line, id, lockingSessionId, isUpdate) => {
       // ********** If it header is fresh record then we directly reserve new card ************ //
       // ********** If not we will have condition ************ //
       if (!isUpdate || !iterator.id) {
+        // ********** Sale Create Handler ************ //
         const qty = iterator.unitRate * iterator.quantity
-        // productService.updateProductCountById(iterator.productId)
-        await reserveCard(iterator, lockingSessionId, qty)
+        await reserveCard(iterator, lockingSessionId, qty, locationId)
       } else {
+        // ********** Sale Update Handler ************ //
         // ********** The logic part of update existing card ************ //
-        // ********** Reverse all previous cards from this saleLineId and assign new one ************ //
-        // await headerService.cardReversal(iterator.productId, iterator.id)
         const previousCards = await Card.findAll({
           order: [['createdAt', 'DESC']],
           where: {
@@ -112,28 +111,27 @@ const assignHeaderId = async (line, id, lockingSessionId, isUpdate) => {
         })
         const currentRequiredQty = iterator.unitRate * iterator.quantity
         const qty = currentRequiredQty - previousCards.length
-        // ********** Check if the previous card productId is the same or not ********** //
+        // ********** Check if product has changed ********** //
         if (previousCards[0]['productId'] == iterator['productId']) {
+          // ********** Same product handler ************ //
           logger.info(`*************Previous card productId is the same with current ProductId************`)
-
           if (currentRequiredQty > previousCards.length) {
-            //************ If current require greater than previous cards logic *************/
-            await reserveCard(iterator, lockingSessionId, qty)
+            //************ More product card qty need handler *************/
+            await reserveCard(iterator, lockingSessionId, qty,locationId)
             logger.info(`********* Immediatly update saleLine after reserved cards *********`)
-
           } else if (currentRequiredQty == previousCards.length) {
             //************ No need to do anything *************/
           } else {
-            //************ Current card less than previous card logic *************/
+            //************ Product card reduce handler *************/
             //************ and we have to remove some previous card *************/
-
             try {
-              // ********** Update if already exist function ***********// 
               const preCardCount = previousCards.length
               const numberOfLastCardForPuttingBackToInventory = currentRequiredQty - preCardCount
               const cardsForReversBack = previousCards.slice(numberOfLastCardForPuttingBackToInventory)
               logger.warn(`Card previous count #${preCardCount} and cad now count #${currentRequiredQty}`)
               logger.warn(`cardsForReversBack count #${cardsForReversBack.length}`)
+              
+              // ********** reduce previous cards ***********// 
               const updatedCard = await Card.update({
                 card_isused: 0,
                 saleLineId: null,
@@ -152,8 +150,11 @@ const assignHeaderId = async (line, id, lockingSessionId, isUpdate) => {
             }
           }
         } else {
+          // ********** Different product handler ***********// 
           logger.warn(`*************Previous card productId is not the same with current ProductId************`)
-          await reserveCard(iterator, lockingSessionId, currentRequiredQty)
+          await reserveCard(iterator, lockingSessionId, currentRequiredQty,locationId)
+
+          // ********** Reverse all previous cards from this sale line ***********// 
           logger.info(`************* Send previous use cards back to inventory *************`)
           const updatedCard = await Card.update({
             card_isused: 0,
@@ -166,6 +167,7 @@ const assignHeaderId = async (line, id, lockingSessionId, isUpdate) => {
               }
             }
           })
+
           //**************** Update previous card make it back available in inventory ****************/
           logger.info(`//**************** Update previous card make it back available in inventory ****************/`)
           productService.updateProductCountById(previousCards[0]['productId'])
@@ -196,7 +198,7 @@ const updateProductStockCount = async (lines) => {
   // ************* TAKE THE PRODUC ID FOR UPDATE STOCK COUNT IN PRODUCT TABLE *************//
 }
 
-const reserveCard = async (line, lockingSessionId, qty) => {
+const reserveCard = async (line, lockingSessionId, qty, locationId) => {
   //  *********************************
   //  Assign Card for cost calculation
   //  *********************************
@@ -208,6 +210,7 @@ const reserveCard = async (line, lockingSessionId, qty) => {
       productId: line.productId,
       saleLineId: null,
       card_isused: 0,
+      locationId
     }
 
   })
@@ -216,62 +219,30 @@ const reserveCard = async (line, lockingSessionId, qty) => {
   if (!cards || cards.length < qty) {
     throw new Error(`Stock not enought #${line.productId}`);
   }
-
-  const thoseFreshLines = cards.filter(el => el.id == null)
-  const thoseOldLines = cards.filter(el => el.id != null)
   let entryOption = {
     locking_session_id: lockingSessionId,
     card_isused: true,
   }
-  // ################ card for Fresh line ################
-  logger.info(`Book the cards for Fresh line for ${thoseFreshLines.length} cards`)
-  const numRowsUpdatedCardFresh = await Card.update(entryOption, {
+
+  if(line.id){
+    // ************ Line already has id (Old line) ************
+    entryOption.saleLineId = line.id
+  }
+
+  const cardreserved = await Card.update(entryOption, {
     where: {
       id: {
-        [Op.in]: thoseFreshLines.map(el => el.id)
+        [Op.in]: cards.map(el => el.id)
       }
     }
   })
-  logger.info(`$$$$$$ Update cards for fresh line completed ${numRowsUpdatedCardFresh} records $$$$$`)
-  // ################ card for Old line ################
-  logger.info(`Book the cards for Old line for ${thoseOldLines.length} cards`)
-  entryOption.saleLineId = line.id
-  const numRowsUpdatedCardOld = await Card.update(entryOption, {
-    where: {
-      id: {
-        [Op.in]: thoseOldLines.map(el => el.id)
-      }
-    }
-  })
-  logger.info(`$$$$$$ Update cards for old line completed ${numRowsUpdatedCardOld} records $$$$$`)
-  // $$$$$$$$$$$$$$$ old logic impact performance $$$$$$$$$$$$$$$ //
-  // for (const iterator of cards) {
-  //   let updatedCard = null
-  //   try {
-  //     const entryOption = {
-  //       locking_session_id: lockingSessionId,
-  //       card_isused: true,
-  //       // saleLineId: iterator.id
-  //     }
-  //     if (line.id) {
-  //       entryOption.saleLineId = line.id
-  //       logger.warn(`=====> ${JSON.stringify(entryOption)}`)
-  //       updatedCard = await iterator.update(entryOption);
-  //     } else {
-  //       updatedCard = await iterator.update(entryOption);
-  //     }
-  //     logger.info("Reserved card " + updatedCard.id + " succesfully")
-  //   } catch (error) {
-  //     logger.error("Reserved card " + iterator.id + " false with error " + error)
-  //     throw new Error("Card reservation error")
-  //   }
-  // }
+  logger.info(`$$$$$$ Reserve cards completed ${cardreserved} records $$$$$`)
 }
 
 
 exports.getSaleHeaders = async (req, res) => {
   try {
-    const saleHeaders = await SaleHeader.findAll({ include: ['lines', 'user', 'client', 'payment', 'currency'], });
+    const saleHeaders = await SaleHeader.findAll({ include: ['lines', 'user', 'client', 'payment', 'currency','location'], });
 
     res.status(200).json({ success: true, data: saleHeaders });
   } catch (error) {
@@ -287,7 +258,7 @@ exports.getSaleHeadersByDate = async (req, res) => {
   // const endDate = new Date('2023-12-31');
   try {
     const saleHeaders = await SaleHeader.findAll({
-      include: ['user', 'client', 'payment', 'currency',
+      include: ['user', 'client', 'payment', 'currency','location',
         {
           model: Line,
           as: "lines",
@@ -318,20 +289,22 @@ exports.getSaleHeadersByDate = async (req, res) => {
 exports.getSaleHeaderById = async (req, res) => {
   try {
     const { id } = req.params;
-    const saleHeader = await SaleHeader.findByPk(id, { include: ['lines', 'user', 'client', 'payment', 'currency', {
-      model: Line,
-      as: "lines",
-      include: [
-        {
-          model: Product,
-          as: "product"
-        },
-        {
-          model: Unit,
-          as: "unit"
-        },
-      ]
-    }], });
+    const saleHeader = await SaleHeader.findByPk(id, {
+      include: ['lines', 'user','location', 'client', 'payment', 'currency','location', {
+        model: Line,
+        as: "lines",
+        include: [
+          {
+            model: Product,
+            as: "product"
+          },
+          {
+            model: Unit,
+            as: "unit"
+          },
+        ]
+      }],
+    });
 
     if (!saleHeader) {
       return res.status(404).json({ success: false, message: 'Sale header not found' });
@@ -454,12 +427,12 @@ exports.sumSaleCurrentYear = async (req, res) => {
   const { startDate, endDate } = date // new Date('2022-01-01');
   try {
     const saleHeader = await SaleHeader.findAll({
-      attributes: ['bookingDate','total', 'discount'],
+      attributes: ['bookingDate', 'total', 'discount'],
       where: {
         bookingDate: {
           [Op.between]: [startDate, endDate]
         },
-        isActive:true,
+        isActive: true,
       }
 
     })

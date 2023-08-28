@@ -28,6 +28,7 @@ sequelize.authenticate().then(()=>{
 const db={}
 db.sequelize = sequelize;
 db.Sequelize = Sequelize
+db.user = require("../user/model")(sequelize,DataTypes);
 db.location = require("../location/model")(sequelize,DataTypes);
 db.terminal = require("../terminal/model")(sequelize,DataTypes);
 db.transferHeader = require("../transfer/model")(sequelize,DataTypes);
@@ -36,7 +37,6 @@ db.quotationHeader = require("../quotation/model")(sequelize,DataTypes);
 db.quotationLine = require("../quotation/line/model")(sequelize,DataTypes);
 db.product = require("../product/model")(sequelize,DataTypes);
 db.card = require("../card/model")(sequelize,DataTypes);
-db.user = require("../user/model")(sequelize,DataTypes);
 db.chartAccount =  require("../account/model")(sequelize,DataTypes);
 db.gl = require("../GL/model")(sequelize,DataTypes);
 db.apPaymentHeader = require("../AP/payment/header/model")(sequelize,DataTypes);
@@ -62,8 +62,8 @@ db.sequelize.sync({force:false,alter: true}).then(()=>{
     logger.info("Datatase is synchronize")
 })
 
-// db.user.belongsToMany(db.terminal,{ through: 'UserTerminals' })
-// db.terminal.belongsToMany(db.user,{ through: 'UserTerminals' })
+db.user.belongsToMany(db.terminal,{ through: 'UserTerminals'})
+db.terminal.belongsToMany(db.user,{ through: 'UserTerminals'})
 
 db.terminal.belongsTo(db.location,{
     foreignKey:'locationId',
@@ -112,10 +112,7 @@ db.card.belongsTo(db.location,{
     foreignKey:'locationId',
     as:'location'
 })
-db.saleHeader.belongsTo(db.location,{
-    foreignKey:'locationId',
-    as:'location',
-})
+
 db.product.belongsTo(db.unit,{
     foreignKey:'stockUnitId',
     as:'stockUnit'
@@ -206,6 +203,14 @@ db.saleHeader.belongsTo(db.user,{
     foreignKey:'userId',
     as:'user'
 })
+db.saleHeader.belongsTo(db.location,{
+    foreignKey:'locationId',
+    as:'location'
+})
+// ,{
+//     foreignKey:'locationId',
+//     as:'location',
+// }
 
 db.saleLine.belongsTo(db.saleHeader,{
     foreignKey:'headerId',

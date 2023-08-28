@@ -29,14 +29,6 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: false,
             defaultValue: true
         },
-        login_id: {
-            type: DataTypes.INTEGER,
-            allowNull: false
-        },
-        user_id: {
-            type: DataTypes.INTEGER,
-            // allowNull: false
-        },
         village: {
             type: DataTypes.STRING,
             // allowNull: false
