@@ -6,15 +6,15 @@ const createProd = async (req, res) => {
 
     // Get the current date and time
     let date = new Date();
-    
+
     // Convert the date and time to format
     let mysqlDateTime = date.getFullYear() + '-' +
-    ('00' + (date.getMonth() + 1)).slice(-2) + '-' +
-    ('00' + date.getDate()).slice(-2) + ' ' +
-    ('00' + date.getHours()).slice(-2) + ':' +
-    ('00' + date.getMinutes()).slice(-2) + ':' +
-    ('00' + date.getSeconds()).slice(-2);
-    logger.info("===> sql time "+mysqlDateTime); // Outputs: YYYY-MM-DD HH:MM:SS
+        ('00' + (date.getMonth() + 1)).slice(-2) + '-' +
+        ('00' + date.getDate()).slice(-2) + ' ' +
+        ('00' + date.getHours()).slice(-2) + ':' +
+        ('00' + date.getMinutes()).slice(-2) + ':' +
+        ('00' + date.getSeconds()).slice(-2);
+    logger.info("===> sql time " + mysqlDateTime); // Outputs: YYYY-MM-DD HH:MM:SS
     logger.info("*************** CREATE PRODUCT  ***************");
     logger.info(`*************Payload: *****************`);
     logger.info(req.body.FORM);
@@ -59,7 +59,7 @@ const createProd = async (req, res) => {
             locking_session_id,createdAt,updateTimestamp,minStock,barCode,receiveUnitId,stockUnitId)
         VALUES('${pro_cat}','${pro_id}','${pro_name}','${pro_price}','${pro_desc}','${pro_status}','${retail_percent}','${outlet}','${costPrice}',${locking_session_id},'${mysqlDateTime}','${mysqlDateTime}',${minStock},'${barCode}',${receiveUnitId},${stockUnitId});`
         //*****************  INSERT PRODUCT SQL  *****************//
-        logger.info("SQL CREATE PRODUCT: "+ sqlCom);
+        logger.info("SQL CREATE PRODUCT: " + sqlCom);
         Db.query(sqlCom, (er, re) => {
             logger.info("Execute:=>");
             if (er) {
@@ -145,10 +145,60 @@ const fetchProd = async (req, res) => {
     // LEFT JOIN outlet o ON o.id = p.outlet
     // LEFT JOIN image_path i ON i.pro_id=p.pro_id
     // LEFT JOIN  (SELECT IFNULL(COUNT(pro_id),0) AS cnt,pro_id FROM card_sale GROUP BY pro_id ) s ON s.pro_id=p.pro_id ORDER BY p.pro_price;`
-     Db.query(sqlCom, (er, re) => {
+    Db.query(sqlCom, (er, re) => {
         if (er) return res.send('SQL ' + er)
         res.send(re)
     })
+}
+const fetchProductFromLocation = async (req, res) => {
+    const {locationId} = req.params
+    const sqlCom = `SELECT DISTINCT
+    p.id,
+    p.pro_id,
+    p.minStock,
+    p.barCode,
+    p.receiveUnitId,
+    p.stockUnitId,
+    p.pro_name,
+    p.pro_category,
+    p.pro_price,
+    p.pro_status,
+    p.cost_price,
+    c.categ_name,
+    IFNULL(i.img_name, 'No image') AS img_name,
+    i.img_path,
+    IFNULL(c.stock, 0) AS card_count,
+    o.name AS outlet_name
+FROM
+    product p
+LEFT JOIN(
+    SELECT
+        COUNT(c.card_number) AS stock,
+        c.productId
+    FROM
+        card c
+    WHERE
+        c.card_isused = 0 AND c.locationId = ${locationId}
+    GROUP BY
+        c.productId
+) c
+ON
+    c.productId = p.id
+LEFT JOIN category c ON
+    c.categ_id = p.pro_category
+LEFT JOIN outlet o ON
+    o.id = p.outlet
+LEFT JOIN image_path i ON
+    i.pro_id = p.pro_id
+GROUP BY
+    p.pro_id
+ORDER BY
+    p.pro_price;`
+    Db.query(sqlCom,(er,re)=>{
+        if(er) return res.send('SQL '+er)
+        res.send(re)
+    })
+
 }
 const fetchProdMobile = async (req, res) => {
     logger.info("*************** FETCH PRODUCT ***************");
@@ -186,4 +236,5 @@ module.exports = {
     fetchProd,
     fetchProdId,
     fetchProdMobile,
+    fetchProductFromLocation,
 }

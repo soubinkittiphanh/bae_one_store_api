@@ -63,7 +63,8 @@ const category = async (app) => {
 const product = async (app) => {
     app.post('/product_i', ProdCtr.createProd);
     app.put('/product_e', ProdCtr.updateProd);
-    app.get('/product_f', ProdCtr.fetchProd);
+    // app.get('/product_f', ProdCtr.fetchProd);
+    app.get('/product_f/:locationId', ProdCtr.fetchProductFromLocation);
     app.get('/product_mobile_f', ProdCtr.fetchProdMobile);
     app.post('/product_f_id', ProdCtr.fetchProdId);
 }

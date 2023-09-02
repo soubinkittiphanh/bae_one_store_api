@@ -19,5 +19,7 @@ router
 .get("/sumsaleMonthly", controller.sumSaleCurrentMonth)
 .get("/sumsaleYearly", controller.sumSaleCurrentYear)
 .get("/find/:id", controller.getSaleHeaderById)
+.post("/report/summary", controller.getSaleHeaderByPaymentType)
+.post("/report/detail", controller.getSaleHeaderById)
 // .post("/bulkCreate",service.createHulkStockCard)
 module.exports = router

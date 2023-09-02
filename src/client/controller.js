@@ -130,3 +130,10 @@ exports.findAllActive = (req, res) => {
       });
     });
 };
+
+exports.findAllWithCreditPayment = async(req,res)=>{
+  // { include: ['lines', 'user'], }
+  const clients = await Client.findAll({include:['header']})
+  return res.send(clients)
+
+}

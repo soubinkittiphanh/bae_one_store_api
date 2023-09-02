@@ -10,6 +10,18 @@ ALTER TABLE `product` DROP INDEX `pro_id_9`;
 ALTER TABLE `product` DROP INDEX `pro_id_10`;
 ALTER TABLE `product` DROP INDEX `pro_id_11`;
 
+ALTER TABLE `terminal` DROP INDEX `code_2`;
+ALTER TABLE `terminal` DROP INDEX `code_3`;
+ALTER TABLE `terminal` DROP INDEX `code_4`;
+ALTER TABLE `terminal` DROP INDEX `code_5`;
+ALTER TABLE `terminal` DROP INDEX `code_6`;
+ALTER TABLE `terminal` DROP INDEX `code_7`;
+ALTER TABLE `terminal` DROP INDEX `code_8`;
+ALTER TABLE `terminal` DROP INDEX `code_9`;
+ALTER TABLE `terminal` DROP INDEX `code_10`;
+ALTER TABLE `terminal` DROP INDEX `code_11`;
+ALTER TABLE `terminal` DROP INDEX `code_12`;
+
 
 ALTER TABLE `chart_of_account` DROP INDEX `accountNumber_2`;
 ALTER TABLE `chart_of_account` DROP INDEX `accountNumber_3`;

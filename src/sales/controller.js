@@ -32,7 +32,7 @@ const productService = require('../product/service')
 exports.createSaleHeader = async (req, res) => {
   try {
     let { bookingDate, remark, discount, total, exchangeRate, isActive, lines, clientId, paymentId, currencyId, userId, referenceNo, locationId } = req.body;
-    const saleHeader = await SaleHeader.create({ bookingDate, remark, discount, total, exchangeRate, isActive, clientId, paymentId, currencyId, userId, referenceNo,locationId });
+    const saleHeader = await SaleHeader.create({ bookingDate, remark, discount, total, exchangeRate, isActive, clientId, paymentId, currencyId, userId, referenceNo, locationId });
     logger.info('Sale header ' + saleHeader.id)
     logger.info("===== Create Sale Header =====" + req.body)
     // **********************
@@ -58,7 +58,7 @@ exports.createSaleHeader = async (req, res) => {
 exports.updateSaleHeader = async (req, res) => {
   try {
     const { id } = req.params;
-    const { bookingDate, remark, discount, total, exchangeRate, isActive, lines, clientId, paymentId, currencyId, userId,locationId } = req.body;
+    const { bookingDate, remark, discount, total, exchangeRate, isActive, lines, clientId, paymentId, currencyId, userId, locationId } = req.body;
     const saleHeader = await SaleHeader.findByPk(id);
 
     if (!saleHeader) {
@@ -67,7 +67,7 @@ exports.updateSaleHeader = async (req, res) => {
     }
     logger.info("Updating header")
     const lockingSessionId = common.generateLockingSessionId()
-    await assignHeaderId(lines, id, lockingSessionId, true,locationId)
+    await assignHeaderId(lines, id, lockingSessionId, true, locationId)
     // ********** Clasify new or old saleLine ********** //
     const saleLineForCreate = lines.filter(el => el['id'] == null)
     logger.warn(`SaleLine for create count is ${saleLineForCreate.length}`)
@@ -117,7 +117,7 @@ const assignHeaderId = async (line, id, lockingSessionId, isUpdate, locationId) 
           logger.info(`*************Previous card productId is the same with current ProductId************`)
           if (currentRequiredQty > previousCards.length) {
             //************ More product card qty need handler *************/
-            await reserveCard(iterator, lockingSessionId, qty,locationId)
+            await reserveCard(iterator, lockingSessionId, qty, locationId)
             logger.info(`********* Immediatly update saleLine after reserved cards *********`)
           } else if (currentRequiredQty == previousCards.length) {
             //************ No need to do anything *************/
@@ -130,7 +130,7 @@ const assignHeaderId = async (line, id, lockingSessionId, isUpdate, locationId) 
               const cardsForReversBack = previousCards.slice(numberOfLastCardForPuttingBackToInventory)
               logger.warn(`Card previous count #${preCardCount} and cad now count #${currentRequiredQty}`)
               logger.warn(`cardsForReversBack count #${cardsForReversBack.length}`)
-              
+
               // ********** reduce previous cards ***********// 
               const updatedCard = await Card.update({
                 card_isused: 0,
@@ -152,7 +152,7 @@ const assignHeaderId = async (line, id, lockingSessionId, isUpdate, locationId) 
         } else {
           // ********** Different product handler ***********// 
           logger.warn(`*************Previous card productId is not the same with current ProductId************`)
-          await reserveCard(iterator, lockingSessionId, currentRequiredQty,locationId)
+          await reserveCard(iterator, lockingSessionId, currentRequiredQty, locationId)
 
           // ********** Reverse all previous cards from this sale line ***********// 
           logger.info(`************* Send previous use cards back to inventory *************`)
@@ -224,7 +224,7 @@ const reserveCard = async (line, lockingSessionId, qty, locationId) => {
     card_isused: true,
   }
 
-  if(line.id){
+  if (line.id) {
     // ************ Line already has id (Old line) ************
     entryOption.saleLineId = line.id
   }
@@ -242,7 +242,7 @@ const reserveCard = async (line, lockingSessionId, qty, locationId) => {
 
 exports.getSaleHeaders = async (req, res) => {
   try {
-    const saleHeaders = await SaleHeader.findAll({ include: ['lines', 'user', 'client', 'payment', 'currency','location'], });
+    const saleHeaders = await SaleHeader.findAll({ include: ['lines', 'user', 'client', 'payment', 'currency', 'location'], });
 
     res.status(200).json({ success: true, data: saleHeaders });
   } catch (error) {
@@ -258,7 +258,7 @@ exports.getSaleHeadersByDate = async (req, res) => {
   // const endDate = new Date('2023-12-31');
   try {
     const saleHeaders = await SaleHeader.findAll({
-      include: ['user', 'client', 'payment', 'currency','location',
+      include: ['user', 'client', 'payment', 'currency', 'location',
         {
           model: Line,
           as: "lines",
@@ -290,7 +290,7 @@ exports.getSaleHeaderById = async (req, res) => {
   try {
     const { id } = req.params;
     const saleHeader = await SaleHeader.findByPk(id, {
-      include: ['lines', 'user','location', 'client', 'payment', 'currency','location', {
+      include: ['lines', 'user', 'location', 'client', 'payment', 'currency', 'location', {
         model: Line,
         as: "lines",
         include: [
@@ -311,6 +311,47 @@ exports.getSaleHeaderById = async (req, res) => {
     }
 
     res.status(200).json(saleHeader);
+  } catch (error) {
+    res.status(500).send(error);
+  }
+};
+
+exports.getSaleHeaderByPaymentType = async (req, res) => {
+
+  try {
+    const { clientId, paymentId, date } = req.body;
+    const saleHeaders = await SaleHeader.findAll({
+      include: ['lines', 'user', 'location', 'client', 'payment', 'currency', 'location', {
+        model: Line,
+        as: "lines",
+        include: [
+          {
+            model: Product,
+            as: "product"
+          },
+          {
+            model: Unit,
+            as: "unit"
+          },
+        ]
+      }],
+      where: {
+        paymentId,
+        clientId,
+        isActive: true,
+        bookingDate: {
+          [Op.between]: [date.startDate, date.endDate]
+        },
+      }
+    },
+
+    );
+
+    if (!saleHeaders) {
+      return res.status(404).json({ success: false, message: 'Sale header not found' });
+    }
+
+    res.status(200).json(saleHeaders);
   } catch (error) {
     res.status(500).send(error);
   }
