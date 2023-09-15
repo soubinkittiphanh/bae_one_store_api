@@ -274,6 +274,11 @@ db.card.belongsTo(db.product,{
 
 })
 
+db.saleHeader.belongsTo(db.customer,{
+    foreignKey:'customerId',
+    as:'customer'
+})
+
 // User.hasMany(Post, { onUpdate: 'CASCADE' });
 // User.hasMany(Post, { onDelete: 'CASCADE' });
 

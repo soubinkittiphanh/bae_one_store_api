@@ -1,11 +1,18 @@
 const clientDB = {
     "chithanh": {
-        "host": "209.209.40.80",
-        "user": "chithanh",
-        "password": "dcommerce@2023!",
+        "host": "150.95.31.23",
+        "user": "root",
+        "password": "sdat@3480",
         "database": "dcommerce_pro_chithanh",
-        "port": 34248,
+        "port": 3306,
     },
+    // "chithanh": {
+    //     "host": "209.209.40.80",
+    //     "user": "chithanh",
+    //     "password": "dcommerce@2023!",
+    //     "database": "dcommerce_pro_chithanh",
+    //     "port": 34248,
+    // },
     "jack42": {
         "host": "209.209.40.80",
         "user": "soubin",
