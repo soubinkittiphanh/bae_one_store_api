@@ -33,6 +33,8 @@ const createProd = async (req, res) => {
     const receiveUnitId = body.receiveUnitId;
     const stockUnitId = body.stockUnitId;
     const minStock = body.minStock;
+    const costCurrencyId = body.costCurrencyId;
+    const saleCurrencyId = body.saleCurrencyId;
     const retail_percent = body.pro_retail_price || 0.0;
     const locking_session_id = Date.now()
     logger.info(" outlet: ", outlet);
@@ -56,8 +58,8 @@ const createProd = async (req, res) => {
 
         });
         const sqlCom = `INSERT INTO product(pro_category, pro_id, pro_name, pro_price, pro_desc, pro_status,retail_cost_percent,outlet,cost_price,
-            locking_session_id,createdAt,updateTimestamp,minStock,barCode,receiveUnitId,stockUnitId)
-        VALUES('${pro_cat}','${pro_id}','${pro_name}','${pro_price}','${pro_desc}','${pro_status}','${retail_percent}','${outlet}','${costPrice}',${locking_session_id},'${mysqlDateTime}','${mysqlDateTime}',${minStock},'${barCode}',${receiveUnitId},${stockUnitId});`
+            locking_session_id,createdAt,updateTimestamp,minStock,barCode,receiveUnitId,stockUnitId,costCurrencyId,saleCurrencyId)
+        VALUES('${pro_cat}','${pro_id}','${pro_name}','${pro_price}','${pro_desc}','${pro_status}','${retail_percent}','${outlet}','${costPrice}',${locking_session_id},'${mysqlDateTime}','${mysqlDateTime}',${minStock},'${barCode}',${receiveUnitId},${stockUnitId},${costCurrencyId},${saleCurrencyId});`
         //*****************  INSERT PRODUCT SQL  *****************//
         logger.info("SQL CREATE PRODUCT: " + sqlCom);
         Db.query(sqlCom, (er, re) => {
@@ -94,11 +96,17 @@ const updateProd = async (req, res) => {
     const barCode = body.barCode;
     const receiveUnitId = body.receiveUnitId;
     const stockUnitId = body.stockUnitId;
+    const costCurrencyId = body.costCurrencyId;
+    const saleCurrencyId = body.saleCurrencyId;
     logger.info('cost ' + cost_price);
     logger.info('outlet ' + outlet);
     const retail_percent = body.pro_retail_price || 0.0;
     let sqlComImages = 'INSERT INTO image_path(pro_id, img_name, img_path)VALUES';
-    const sqlCom = `UPDATE product SET pro_category='${pro_cat}', pro_name='${pro_name}', pro_price='${pro_price}', pro_desc='${pro_desc}', pro_status='${pro_status}',retail_cost_percent='${retail_percent}',cost_price='${cost_price}',outlet='${outlet}',minStock=${minStock},barCode='${barCode}',receiveUnitId=${receiveUnitId},stockUnitId=${stockUnitId} WHERE pro_id='${pro_id}'`
+    const sqlCom = `UPDATE product SET pro_category='${pro_cat}', pro_name='${pro_name}', pro_price='${pro_price}', 
+    pro_desc='${pro_desc}', pro_status='${pro_status}',retail_cost_percent='${retail_percent}',
+    cost_price='${cost_price}',outlet='${outlet}',minStock=${minStock},barCode='${barCode}',
+    receiveUnitId=${receiveUnitId},stockUnitId=${stockUnitId},saleCurrencyId=${saleCurrencyId},costCurrencyId=${costCurrencyId}
+     WHERE pro_id='${pro_id}'`
     logger.info("************* UPDATE PRODUCT *****************");
     logger.info(`*************Payload: ${req.body.imagesObj} *****************`);
     Db.query(sqlCom, (er, re) => {
@@ -164,6 +172,8 @@ const fetchProductFromLocation = async (req, res) => {
     p.pro_price,
     p.pro_status,
     p.cost_price,
+    p.saleCurrencyId,
+    p.costCurrencyId,
     c.categ_name,
     IFNULL(i.img_name, 'No image') AS img_name,
     i.img_path,

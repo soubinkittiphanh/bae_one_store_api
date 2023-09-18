@@ -61,7 +61,18 @@ db.payment = require("../paymentMethod/model")(sequelize,DataTypes);
 db.sequelize.sync({force:false,alter: true}).then(()=>{
     logger.info("Datatase is synchronize")
 })
-
+db.product.belongsTo(db.currency,{
+    foreignKey:'costCurrencyId',
+    as:'costCurrency'
+})
+db.product.belongsTo(db.currency,{
+    foreignKey:'saleCurrencyId',
+    as:'saleCurrency'
+})
+db.card.belongsTo(db.currency,{
+    foreignKey:'currencyId',
+    as:'currency'
+})
 db.user.belongsToMany(db.terminal,{ through: 'UserTerminals'})
 db.terminal.belongsToMany(db.user,{ through: 'UserTerminals'})
 

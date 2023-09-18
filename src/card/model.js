@@ -14,6 +14,11 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.DOUBLE,
             allowNull: false,
         },
+        exchangeRate: {
+            type: DataTypes.DOUBLE,
+            allowNull: false,
+            defaultValue: 1
+        },
         card_number: {
             type: DataTypes.STRING,
             allowNull: false,

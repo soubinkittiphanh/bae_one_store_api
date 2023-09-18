@@ -41,6 +41,13 @@ const clientDB = {
         "database": "test",
         "port": 3306,
     },
+    "uat3": {
+        "host": "150.95.31.23",
+        "user": "root",
+        "password": "sdat@3480",
+        "database": "dcommerce_uat_1",
+        "port": 3306,
+    },
 }
 
 module.exports = {
