@@ -1,0 +1,2 @@
+update product set saleCurrencyId=1, costCurrencyId=1;
+update card set currencyId=1;
