@@ -1218,3 +1218,4 @@
 {"level":"info","message":"app is runing: 8888","timestamp":"2023-10-02T03:31:18.248Z"}
 {"level":"warn","message":"env: dcommerce_uat_1","timestamp":"2023-10-02T03:31:18.249Z"}
 {"level":"info","message":"DB Connection established","timestamp":"2023-10-02T03:31:18.798Z"}
+{"level":"info","message":"Datatase is synchronize","timestamp":"2023-10-02T03:32:19.313Z"}
