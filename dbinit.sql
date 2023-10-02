@@ -10,3 +10,4 @@ delete from product where id !=628;
    delete from transferHeader; 
     delete from transferLine; 
     delete from category;
+    delete from shipping where id !=1;

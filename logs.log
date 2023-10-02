@@ -1219,3 +1219,63 @@
 {"level":"warn","message":"env: dcommerce_uat_1","timestamp":"2023-10-02T03:31:18.249Z"}
 {"level":"info","message":"DB Connection established","timestamp":"2023-10-02T03:31:18.798Z"}
 {"level":"info","message":"Datatase is synchronize","timestamp":"2023-10-02T03:32:19.313Z"}
+{"level":"info","message":"SQL COMMAND SELECT * FROM user WHERE cus_id='1000' AND cus_pass='1111'","timestamp":"2023-10-02T03:49:20.924Z"}
+{"level":"warn","message":"Token ===> eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiY3VzX2lkIjoxMDAwLCJjdXNfbmFtZSI6InN1cHBvcnQiLCJjdXNfdGVsIjoiMDIwNzcxNTAwMDgiLCJpYXQiOjE2OTYyMTg1NjEsImV4cCI6MTY5NjIzNjU2MX0.hU1MOelTUttaPv5KoBQg0sjmoPZTUWFqcpzWWM8mPnA","timestamp":"2023-10-02T03:49:21.057Z"}
+{"level":"warn","message":"Date 2023-01-01 2023-12-31","timestamp":"2023-10-02T03:49:23.422Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN outlet u ON u.id = p.outlet LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2023-10-02T03:49:23.449Z"}
+{"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' \n    ","timestamp":"2023-10-02T03:49:23.737Z"}
+{"level":"info","message":"Record count => 6","timestamp":"2023-10-02T03:49:23.808Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-10-02T03:49:23.810Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-10-02T05:30:43.324Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-10-02T05:30:43.326Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-10-02T05:30:43.327Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-10-02T05:30:43.327Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-10-02T05:30:43.328Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-10-02T05:30:44.100Z"}
+{"level":"info","message":"app is runing: 8888","timestamp":"2023-10-02T05:30:44.101Z"}
+{"level":"warn","message":"env: dcommerce_uat_1","timestamp":"2023-10-02T05:30:44.101Z"}
+{"level":"info","message":"DB Connection established","timestamp":"2023-10-02T05:30:55.059Z"}
+{"level":"info","message":"Datatase is synchronize","timestamp":"2023-10-02T05:32:20.167Z"}
+{"level":"warn","message":"Date 2023-01-01 2023-12-31","timestamp":"2023-10-02T05:36:54.479Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN outlet u ON u.id = p.outlet LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2023-10-02T05:36:54.514Z"}
+{"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' \n    ","timestamp":"2023-10-02T05:36:54.884Z"}
+{"level":"info","message":"Record count => 6","timestamp":"2023-10-02T05:36:54.965Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-10-02T05:36:54.967Z"}
+{"level":"warn","message":"Date 2023-01-01 2023-12-31","timestamp":"2023-10-02T05:36:55.330Z"}
+{"level":"warn","message":"Date 2023-01-01 2023-12-31","timestamp":"2023-10-02T05:36:56.221Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN outlet u ON u.id = p.outlet LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2023-10-02T05:36:56.239Z"}
+{"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' \n    ","timestamp":"2023-10-02T05:36:56.412Z"}
+{"level":"info","message":"Record count => 6","timestamp":"2023-10-02T05:36:56.489Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-10-02T05:36:56.492Z"}
+{"level":"warn","message":"Date 2023-01-01 2023-12-31","timestamp":"2023-10-02T05:36:58.458Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN outlet u ON u.id = p.outlet LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2023-10-02T05:36:58.473Z"}
+{"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' \n    ","timestamp":"2023-10-02T05:36:58.574Z"}
+{"level":"info","message":"Record count => 6","timestamp":"2023-10-02T05:36:58.648Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-10-02T05:36:58.650Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-10-02T05:45:39.181Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-10-02T05:45:39.183Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-10-02T05:45:39.183Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-10-02T05:45:39.184Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-10-02T05:45:39.185Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-10-02T05:45:39.893Z"}
+{"level":"info","message":"app is runing: 8888","timestamp":"2023-10-02T05:45:39.893Z"}
+{"level":"warn","message":"env: dcommerce_uat_1","timestamp":"2023-10-02T05:45:39.894Z"}
+{"level":"info","message":"DB Connection established","timestamp":"2023-10-02T05:45:50.613Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-10-02T05:45:51.161Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-10-02T05:45:51.163Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-10-02T05:45:51.164Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-10-02T05:45:51.164Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-10-02T05:45:51.166Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-10-02T05:45:51.827Z"}
+{"level":"info","message":"app is runing: 8888","timestamp":"2023-10-02T05:45:51.828Z"}
+{"level":"warn","message":"env: dcommerce_uat_1","timestamp":"2023-10-02T05:45:51.828Z"}
+{"level":"info","message":"DB Connection established","timestamp":"2023-10-02T05:45:52.569Z"}
+{"level":"info","message":"Datatase is synchronize","timestamp":"2023-10-02T05:47:10.368Z"}
+{"level":"warn","message":"Date 2023-01-01 2023-12-31","timestamp":"2023-10-02T05:47:38.193Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN outlet u ON u.id = p.outlet LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2023-10-02T05:47:38.216Z"}
+{"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' \n    ","timestamp":"2023-10-02T05:47:39.176Z"}
+{"level":"info","message":"Record count => 6","timestamp":"2023-10-02T05:47:39.419Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-10-02T05:47:39.424Z"}
+{"level":"warn","message":"Date 2023-10-01 2023-10-02","timestamp":"2023-10-02T05:47:42.422Z"}
+{"level":"warn","message":"Date 2023-10-01 2023-10-02","timestamp":"2023-10-02T05:47:43.025Z"}
+{"level":"warn","message":"Date 2023-10-01 2023-10-02","timestamp":"2023-10-02T05:47:46.197Z"}
