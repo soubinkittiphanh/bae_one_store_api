@@ -11,59 +11,64 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING(15),
             allowNull: false,
         },
-        source_delivery_branch: {
+        address: {
             type: DataTypes.STRING(100),
-            allowNull: false,
         },
-        dest_delivery_branch: {
-            type: DataTypes.STRING(100),
-            allowNull: false,
+        cod_fee: {
+            type: DataTypes.DOUBLE,
+            defaultValue: 0,
         },
-        payment_code: {
-            type: DataTypes.TEXT,
-            allowNull: false,
+        rider_fee: {
+            type: DataTypes.DOUBLE,
+            defaultValue: 0,
         },
-        txn_date: {
-            type: DataTypes.DATEONLY,
-            allowNull: false,
-        },
-        shop_name: {
-            type: DataTypes.STRING(150),
-            // allowNull: false,
-        },
-        locking_session_id: {
-            type: DataTypes.STRING(50),
-            allowNull: false,
-        },
+
         shipping_fee_by: {
             type: DataTypes.STRING(50),
             // allowNull: false,
         },
-        discount: {
-            type: DataTypes.DOUBLE,
-            // allowNull: false,
-            defaultValue:0
-        },
-        cod_fee: {
-            type: DataTypes.DOUBLE,
-            // allowNull: false,
-            defaultValue:0
-        },
-        rider_fee: {
-            type: DataTypes.DOUBLE,
-            // allowNull: false,
-            defaultValue:0
-        },
-        record_status: {
-            type: DataTypes.INTEGER,
+        txn_date: {
+            type: DataTypes.DATEONLY,
             allowNull: false,
-            defaultValue:1
         },
         isActive: {
             type: DataTypes.BOOLEAN,
             allowNull: false,
             defaultValue: true,
         },
+        // payment_code: {
+        //     type: DataTypes.TEXT,
+        // },
+        // shop_name: {
+        //     type: DataTypes.STRING(150),
+        //     // allowNull: false,
+        // },
+        // locking_session_id: {
+        //     type: DataTypes.STRING(50),
+        //     allowNull: false,
+        // },
+
+        // discount: {
+        //     type: DataTypes.DOUBLE,
+        //     // allowNull: false,
+        //     defaultValue:0
+        // },
+        // cod_fee: {
+        //     type: DataTypes.DOUBLE,
+        //     // allowNull: false,
+        //     defaultValue:0
+        // },
+        // rider_fee: {
+        //     type: DataTypes.DOUBLE,
+        //     // allowNull: false,
+        //     defaultValue:0
+        // },
+        // record_status: {
+        //     type: DataTypes.INTEGER,
+        //     allowNull: false,
+        //     defaultValue:1
+        // },
+
     }, {
         sequelize,
         // don't forget to enable timestamps!

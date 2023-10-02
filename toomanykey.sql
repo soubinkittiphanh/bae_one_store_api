@@ -54,3 +54,14 @@ ALTER TABLE `geography` DROP INDEX `abbr_8`;
 ALTER TABLE `geography` DROP INDEX `abbr_9`;
 ALTER TABLE `geography` DROP INDEX `abbr_10`;
 ALTER TABLE `geography` DROP INDEX `abbr_11`;
+
+ALTER TABLE `shipping` DROP INDEX `code_2`;
+ALTER TABLE `shipping` DROP INDEX `code_3`;
+ALTER TABLE `shipping` DROP INDEX `code_4`;
+ALTER TABLE `shipping` DROP INDEX `code_5`;
+ALTER TABLE `shipping` DROP INDEX `code_6`;
+ALTER TABLE `shipping` DROP INDEX `code_7`;
+ALTER TABLE `shipping` DROP INDEX `code_8`;
+ALTER TABLE `shipping` DROP INDEX `code_9`;
+ALTER TABLE `shipping` DROP INDEX `code_10`;
+ALTER TABLE `shipping` DROP INDEX `code_11`;

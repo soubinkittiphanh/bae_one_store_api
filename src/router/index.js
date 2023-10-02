@@ -28,6 +28,7 @@ const quotationLine = require("../quotation/line").router
 const transfer = require("../transfer").router
 const terminal = require("../terminal").router
 const user = require("../user").router
+const shipping = require("../shipping").router
 
 module.exports={
     orderRouter,
@@ -59,5 +60,6 @@ module.exports={
     location,
     transfer,
     terminal,
-    user
+    user,
+    shipping
 }

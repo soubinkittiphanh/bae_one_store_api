@@ -1,5 +1,6 @@
 
 const SaleHeader = require('../models').saleHeader;
+const Customer = require('../models').customer;
 const Line = require('../models').saleLine;
 const Product = require('../models').product;
 const Card = require('../models').card;
@@ -10,7 +11,8 @@ const lineService = require("./line/service");
 const headerService = require("./service");
 const common = require('../common')
 const { Op, where, literal } = require('sequelize');
-const productService = require('../product/service')
+const productService = require('../product/service');
+const { sequelize } = require('../models');
 
 // 1. 200 OK - The request has succeeded and the server has returned the requested data.
 
@@ -31,26 +33,59 @@ const productService = require('../product/service')
 // 9. 502 Bad Gateway - The server received an invalid response from an upstream server while trying to fulfill the request.
 exports.createSaleHeader = async (req, res) => {
   try {
-    let { bookingDate, remark, discount, total, exchangeRate, isActive, lines, clientId, paymentId, currencyId, userId, referenceNo, locationId } = req.body;
-    const saleHeader = await SaleHeader.create({ bookingDate, remark, discount, total, exchangeRate, isActive, clientId, paymentId, currencyId, userId, referenceNo, locationId });
-    logger.info('Sale header ' + saleHeader.id)
+    // try {
+    //   const { customerData, orderData } = req.body;
+
+    //   const result = await sequelize.transaction(async (t) => {
+    //     const customer = await Customer.create(customerData, { transaction: t });
+    //     const order = await Order.create(
+    //       { ...orderData, customerId: customer.id },
+    //       { transaction: t }
+    //     );
+
+    //     return { customer, order };
+    //   });
+
+    //   return res.status(201).json(result);
+    // } catch (error) {
+    //   console.error(error);
+    //   return res.status(500).json({ message: 'Internal server error' });
+    // }
+    let { bookingDate, remark, discount, total, exchangeRate, isActive, lines, clientId, paymentId, currencyId, userId, referenceNo, locationId, customerForm } = req.body;
     logger.info("===== Create Sale Header =====" + req.body)
-    // **********************
-    //  Line with headerId
-    // **********************
-    const lockingSessionId = common.generateLockingSessionId()
-    try {
-      const linesWithHeaderId = await assignHeaderId(lines, saleHeader.id, lockingSessionId, false, locationId)
-      lineService.createBulkSaleLine(res, linesWithHeaderId, lockingSessionId)
-    } catch (error) {
-      // ********************************************
-      //  Reverse SaleHeader just created
-      // ********************************************
-      logger.error("Something wrong need to reverse header " + error)
-      await headerService.saleHeaderReversal(saleHeader.id)
-      res.status(500).send("Unfortunately " + error)
-    }
+    const result = await sequelize.transaction(async (t) => {
+      const saleHeader = await SaleHeader.create({ bookingDate, remark, discount, total, exchangeRate, isActive, clientId, paymentId, currencyId, userId, referenceNo, locationId }, { transaction: t });
+      let customer = null
+
+      if (customerForm) {
+        logger.info(`********** Customer form ${customerForm}***********`)
+        logger.info(`********** Customer form ${customerForm.name}***********`)
+        delete customerForm.discount
+        customerForm.saleHeaderId = saleHeader.id
+        customer = await Customer.create(customerForm, { transaction: t })
+
+      }
+      logger.info(`*************Sale header ${saleHeader.id} *************`)
+      // **********************
+      //  Line with headerId
+      // **********************
+      const lockingSessionId = common.generateLockingSessionId()
+      try {
+        const linesWithHeaderId = await assignHeaderId(lines, saleHeader.id, lockingSessionId, false, locationId)
+        lineService.createBulkSaleLine(res, linesWithHeaderId, lockingSessionId)
+      } catch (error) {
+        // ********************************************
+        //  Reverse SaleHeader just created
+        // ********************************************
+        logger.error("Something wrong need to reverse header " + error)
+        await headerService.saleHeaderReversal(saleHeader.id)
+        res.status(500).send("Unfortunately " + error)
+      }
+      return { customer, saleHeader };
+    })
+    logger.info(`Transaction compleate ${result}`)
   } catch (error) {
+    logger.error(`Error occurs ${error}`)
     res.status(500).send(error)
   }
 };
@@ -242,7 +277,7 @@ const reserveCard = async (line, lockingSessionId, qty, locationId) => {
 
 exports.getSaleHeaders = async (req, res) => {
   try {
-    const saleHeaders = await SaleHeader.findAll({ include: ['lines', 'user', 'client', 'payment', 'currency', 'location'], });
+    const saleHeaders = await SaleHeader.findAll({ include: ['lines', 'user', 'client', 'payment', 'currency', 'location',Customer], });
 
     res.status(200).json({ success: true, data: saleHeaders });
   } catch (error) {
@@ -254,11 +289,9 @@ exports.getSaleHeaders = async (req, res) => {
 exports.getSaleHeadersByDate = async (req, res) => {
   const date = JSON.parse(req.query.date);
   logger.warn("Date " + date.startDate + " " + date.endDate)
-  //   const startDate = new Date('2023-07-01');
-  // const endDate = new Date('2023-12-31');
   try {
     const saleHeaders = await SaleHeader.findAll({
-      include: ['user', 'client', 'payment', 'currency', 'location',
+      include: ['user', 'client', 'payment', 'currency', 'location',Customer,
         {
           model: Line,
           as: "lines",
@@ -290,7 +323,7 @@ exports.getSaleHeaderById = async (req, res) => {
   try {
     const { id } = req.params;
     const saleHeader = await SaleHeader.findByPk(id, {
-      include: ['lines', 'user', 'location', 'client', 'payment', 'currency', 'location', {
+      include: ['lines', 'user', 'location', 'client', 'payment', 'currency', 'location', Customer, {
         model: Line,
         as: "lines",
         include: [

@@ -33,6 +33,9 @@ sequelize.authenticate().then(() => {
 const db = {}
 db.sequelize = sequelize;
 db.Sequelize = Sequelize
+db.saleHeader = require("../sales/model")(sequelize, DataTypes);
+db.customer = require("../dynamicCustomer/model")(sequelize, DataTypes);
+db.shipping = require("../shipping/model")(sequelize, DataTypes);
 db.user = require("../user/model")(sequelize, DataTypes);
 db.location = require("../location/model")(sequelize, DataTypes);
 db.terminal = require("../terminal/model")(sequelize, DataTypes);
@@ -55,13 +58,18 @@ db.poHeader = require("../PO/model")(sequelize, DataTypes);
 db.poLine = require("../PO/line/model")(sequelize, DataTypes);
 db.currency = require("../currency/model")(sequelize, DataTypes);
 db.geography = require("../geography/model")(sequelize, DataTypes);
-db.customer = require("../dynamicCustomer/model")(sequelize, DataTypes);
 db.client = require("../client/model")(sequelize, DataTypes);
-db.saleHeader = require("../sales/model")(sequelize, DataTypes);
 db.saleLine = require("../sales/line/model")(sequelize, DataTypes);
 db.unit = require("../unit/model")(sequelize, DataTypes);
 db.payment = require("../paymentMethod/model")(sequelize, DataTypes);
 // const UserTerminals = sequelize.define('user_terminals', {});
+
+//***************Map order to delivery customer**************/
+db.customer.belongsTo(db.saleHeader,{
+    foreignKey: 'saleHeaderId',
+    as: 'saleHeader'
+})
+db.saleHeader.hasOne(db.customer)
 
 db.sequelize.sync({ force: false, alter: true }).then(() => {
     logger.info("Datatase is synchronize")
@@ -198,6 +206,10 @@ db.customer.belongsTo(db.rider, {
 db.customer.belongsTo(db.geography, {
     foreignKey: 'geoId',
     as: 'geography'
+})
+db.customer.belongsTo(db.shipping,{
+    foreignKey:'shippingId',
+    as: 'shipping'
 })
 // Sale mapping //
 db.saleHeader.belongsTo(db.payment, {

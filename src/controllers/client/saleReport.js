@@ -55,20 +55,10 @@ const codAndCash = async (req, res) => {
     let { month, top } = req.query;
     if (!top) top = 10
     const { beginningOfMonthString, lastDayOfMonthString } = common.getBetweenDateInCurrentMonth()
-    const sqlCmd = `SELECT d.*,SUM(o.order_price_total) AS cart_total,
-    d.payment_code,
-    p.payment_status,
-    o.order_id,
-    d.record_status
+    const sqlCmd = `SELECT d.*,0 AS cart_total
     FROM dynamic_customer d
-    LEFT JOIN user_order o ON o.locking_session_id = d.locking_session_id
-    LEFT JOIN order_payment p ON p.locking_session_id = d.locking_session_id
     WHERE d.txn_date BETWEEN '${beginningOfMonthString} 00:00:00' AND '${lastDayOfMonthString} 23:59:59' 
-    
-    GROUP BY d.locking_session_id
     `
-    // AND d.record_status = 1
-
     logger.info(sqlCmd)
     try {
         const [rows, fields] = await dbAsync.query(sqlCmd);

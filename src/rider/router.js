@@ -18,6 +18,7 @@ router.use(validateToken);
 router.post("/create", controller.createRider)
     .put("/update/:id", controller.updateRider)
     .delete("/find/:id", controller.deleteRider)
-    .get("/find", controller.getAllRiders)
+    .get("/find", controller.getAllActiveRiders)
+    .get("/findAll", controller.getAllRiders)
     .get("/find/:id", controller.getRiderById)
 module.exports = router

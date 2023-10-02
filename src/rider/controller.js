@@ -6,7 +6,21 @@ const riderController = {
   getAllRiders: async (req, res) => {
     try {
       const riders = await Rider.findAll();
-      logger.info("rider"+riders)
+      logger.info("rider" + riders)
+      res.status(200).send(riders);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  },
+  getAllActiveRiders: async (req, res) => {
+    try {
+      const riders = await Rider.findAll({
+        where: {
+          isActive: true
+        }
+      });
+      logger.info("rider" + riders)
       res.status(200).send(riders);
     } catch (error) {
       console.error(error);
@@ -30,7 +44,7 @@ const riderController = {
 
   createRider: async (req, res) => {
     const { name, tel, rating, isActive } = req.body;
-    logger.info(name+" "+tel+" "+rating)
+    logger.info(name + " " + tel + " " + rating)
     try {
       const rider = await Rider.create({ name, tel, rating, isActive });
       res.status(200).json(rider);
