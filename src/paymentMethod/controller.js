@@ -23,7 +23,11 @@ exports.createPayment = async (req, res) => {
 
 exports.getPayments = async (req, res) => {
   try {
-    const payments = await Payment.findAll();
+    const payments = await Payment.findAll({
+      where: {
+        isActive: true
+      }
+    });
 
     res.json(payments);
   } catch (error) {
@@ -33,9 +37,7 @@ exports.getPayments = async (req, res) => {
 };
 exports.getActivePayments = async (req, res) => {
   try {
-    const payments = await Payment.findAll({where:{
-      isActive:true
-    }});
+    const payments = await Payment.findAll();
 
     res.json(payments);
   } catch (error) {
