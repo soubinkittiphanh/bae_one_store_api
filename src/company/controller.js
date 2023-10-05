@@ -7,6 +7,20 @@ const { Op } = require('sequelize');
 // Get all companies
 exports.getAllCompanies = async (req, res) => {
   try {
+    const companies = await Company.findAll({
+      where: {
+        isActive: true
+      }
+    });
+    res.json(companies);
+  } catch (err) {
+    logger.error(err);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+// Get all acticve companies
+exports.getAllActiveCompanies = async (req, res) => {
+  try {
     const companies = await Company.findAll();
     res.json(companies);
   } catch (err) {

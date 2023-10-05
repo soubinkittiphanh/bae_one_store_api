@@ -27,25 +27,18 @@ const clientDB = {
         "database": "dcommerce_pro_peeair4",
         "port": 34248,
     },
-    "uat1": {
-        "host": "209.209.40.80",
-        "user": "soubin",
-        "password": "SDAT@3480",
-        "database": "dcommerce_uat_1",
-        "port": 34248,
-    },
-    "uat2": {
-        "host": "163.44.196.126",
-        "user": "root",
-        "password": "sdat@3480",
-        "database": "test",
-        "port": 3306,
-    },
-    "uat3": {
+    "uat": {
         "host": "150.95.31.23",
         "user": "root",
         "password": "sdat@3480",
         "database": "dcommerce_uat_1",
+        "port": 3306,
+    },
+    "dev": {
+        "host": "150.95.31.23",
+        "user": "root",
+        "password": "sdat@3480",
+        "database": "dcommerce_dev",
         "port": 3306,
     },
 }

@@ -29,6 +29,7 @@ const transfer = require("../transfer").router
 const terminal = require("../terminal").router
 const user = require("../user").router
 const shipping = require("../shipping").router
+const company = require("../company").router
 
 module.exports={
     orderRouter,
@@ -61,5 +62,6 @@ module.exports={
     transfer,
     terminal,
     user,
-    shipping
+    shipping,
+    company
 }

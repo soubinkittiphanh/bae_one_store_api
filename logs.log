@@ -1279,3 +1279,470 @@
 {"level":"warn","message":"Date 2023-10-01 2023-10-02","timestamp":"2023-10-02T05:47:42.422Z"}
 {"level":"warn","message":"Date 2023-10-01 2023-10-02","timestamp":"2023-10-02T05:47:43.025Z"}
 {"level":"warn","message":"Date 2023-10-01 2023-10-02","timestamp":"2023-10-02T05:47:46.197Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-10-04T02:34:57.326Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-10-04T02:34:57.328Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-10-04T02:34:57.329Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-10-04T02:34:57.330Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-10-04T02:34:57.331Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-10-04T02:34:58.167Z"}
+{"level":"info","message":"app is runing: 8888","timestamp":"2023-10-04T02:34:58.168Z"}
+{"level":"warn","message":"env: dcommerce_uat_1","timestamp":"2023-10-04T02:34:58.168Z"}
+{"level":"info","message":"DB Connection established","timestamp":"2023-10-04T02:34:58.851Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-10-04T02:35:07.890Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-10-04T02:35:07.892Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-10-04T02:35:07.893Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-10-04T02:35:07.894Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-10-04T02:35:07.895Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-10-04T02:35:08.562Z"}
+{"level":"info","message":"app is runing: 8888","timestamp":"2023-10-04T02:35:08.563Z"}
+{"level":"warn","message":"env: dcommerce_dev","timestamp":"2023-10-04T02:35:08.563Z"}
+{"level":"info","message":"DB Connection established","timestamp":"2023-10-04T02:35:12.099Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-10-04T02:37:30.830Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-10-04T02:37:30.832Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-10-04T02:37:30.833Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-10-04T02:37:30.833Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-10-04T02:37:30.834Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-10-04T02:37:31.552Z"}
+{"level":"info","message":"app is runing: 8888","timestamp":"2023-10-04T02:37:31.552Z"}
+{"level":"warn","message":"env: dcommerce_dev","timestamp":"2023-10-04T02:37:31.553Z"}
+{"level":"info","message":"DB Connection established","timestamp":"2023-10-04T02:37:35.247Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-10-04T02:40:17.687Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-10-04T02:40:17.689Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-10-04T02:40:17.690Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-10-04T02:40:17.691Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-10-04T02:40:17.692Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-10-04T02:40:18.414Z"}
+{"level":"info","message":"app is runing: 8888","timestamp":"2023-10-04T02:40:18.415Z"}
+{"level":"warn","message":"env: dcommerce_dev","timestamp":"2023-10-04T02:40:18.415Z"}
+{"level":"info","message":"DB Connection established","timestamp":"2023-10-04T02:40:22.051Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-10-04T02:47:27.455Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-10-04T02:47:27.457Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-10-04T02:47:27.458Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-10-04T02:47:27.458Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-10-04T02:47:27.460Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-10-04T02:47:28.193Z"}
+{"level":"info","message":"app is runing: 8888","timestamp":"2023-10-04T02:47:28.193Z"}
+{"level":"warn","message":"env: test","timestamp":"2023-10-04T02:47:28.194Z"}
+{"level":"error","message":"DB Connection error: SequelizeConnectionError: (conn=-1, no: 45012, SQLState: 08S01) Connection timeout: failed to create socket after 1003ms","timestamp":"2023-10-04T02:47:29.197Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-10-04T02:47:34.040Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-10-04T02:47:34.042Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-10-04T02:47:34.043Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-10-04T02:47:34.043Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-10-04T02:47:34.044Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-10-04T02:47:34.598Z"}
+{"level":"info","message":"app is runing: 8888","timestamp":"2023-10-04T02:47:34.598Z"}
+{"level":"warn","message":"env: test","timestamp":"2023-10-04T02:47:34.598Z"}
+{"level":"error","message":"DB Connection error: SequelizeConnectionError: (conn=-1, no: 45012, SQLState: 08S01) Connection timeout: failed to create socket after 1002ms","timestamp":"2023-10-04T02:47:35.600Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-10-04T02:49:39.191Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-10-04T02:49:39.193Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-10-04T02:49:39.194Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-10-04T02:49:39.195Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-10-04T02:49:39.196Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-10-04T02:49:39.912Z"}
+{"level":"info","message":"app is runing: 8888","timestamp":"2023-10-04T02:49:39.912Z"}
+{"level":"warn","message":"env: dcommerce_dev","timestamp":"2023-10-04T02:49:39.913Z"}
+{"level":"info","message":"DB Connection established","timestamp":"2023-10-04T02:49:40.574Z"}
+{"level":"info","message":"Datatase is synchronize","timestamp":"2023-10-04T02:50:50.989Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-10-04T02:52:13.008Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-10-04T02:52:13.011Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-10-04T02:52:13.011Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-10-04T02:52:13.012Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-10-04T02:52:13.013Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-10-04T02:52:13.746Z"}
+{"level":"info","message":"app is runing: 8888","timestamp":"2023-10-04T02:52:13.746Z"}
+{"level":"warn","message":"env: dcommerce_dev","timestamp":"2023-10-04T02:52:13.747Z"}
+{"level":"info","message":"DB Connection established","timestamp":"2023-10-04T02:52:14.465Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-10-04T02:52:37.843Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-10-04T02:52:37.845Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-10-04T02:52:37.846Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-10-04T02:52:37.847Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-10-04T02:52:37.848Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-10-04T02:52:38.514Z"}
+{"level":"info","message":"app is runing: 8888","timestamp":"2023-10-04T02:52:38.515Z"}
+{"level":"warn","message":"env: dcommerce_dev","timestamp":"2023-10-04T02:52:38.515Z"}
+{"level":"info","message":"DB Connection established","timestamp":"2023-10-04T02:52:39.412Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-10-04T02:54:32.310Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-10-04T02:54:32.312Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-10-04T02:54:32.312Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-10-04T02:54:32.313Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-10-04T02:54:32.314Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-10-04T02:54:33.037Z"}
+{"level":"info","message":"app is runing: 8888","timestamp":"2023-10-04T02:54:33.037Z"}
+{"level":"warn","message":"env: dcommerce_dev","timestamp":"2023-10-04T02:54:33.038Z"}
+{"level":"info","message":"DB Connection established","timestamp":"2023-10-04T02:54:33.649Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-10-04T03:01:14.941Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-10-04T03:01:14.942Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-10-04T03:01:14.943Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-10-04T03:01:14.944Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-10-04T03:01:14.945Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-10-04T03:01:15.629Z"}
+{"level":"info","message":"app is runing: 8888","timestamp":"2023-10-04T03:01:15.630Z"}
+{"level":"warn","message":"env: dcommerce_dev","timestamp":"2023-10-04T03:01:15.630Z"}
+{"level":"info","message":"DB Connection established","timestamp":"2023-10-04T03:01:16.351Z"}
+{"level":"info","message":"SQL COMMAND SELECT * FROM user WHERE cus_id='1000' AND cus_pass='1111'","timestamp":"2023-10-04T03:02:18.123Z"}
+{"level":"warn","message":"Token ===> eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiY3VzX2lkIjoxMDAwLCJjdXNfbmFtZSI6IkFkbWluIiwiY3VzX3RlbCI6IjAyMDc3MTUwMDA4IiwiaWF0IjoxNjk2Mzg4NTM4LCJleHAiOjE2OTY0MDY1Mzh9.Sg6K5vq0xphvDkU-ErHuMIqReMFpZNCMym2TxDshp3w","timestamp":"2023-10-04T03:02:18.231Z"}
+{"level":"info","message":"Datatase is synchronize","timestamp":"2023-10-04T03:02:24.736Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-10-04T03:08:22.768Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-10-04T03:08:22.771Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-10-04T03:08:22.771Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-10-04T03:08:22.772Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-10-04T03:08:22.773Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-10-04T03:08:23.602Z"}
+{"level":"info","message":"app is runing: 8888","timestamp":"2023-10-04T03:08:23.603Z"}
+{"level":"warn","message":"env: dcommerce_dev","timestamp":"2023-10-04T03:08:23.603Z"}
+{"level":"info","message":"DB Connection established","timestamp":"2023-10-04T03:08:24.214Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-10-04T03:08:34.273Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-10-04T03:08:34.275Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-10-04T03:08:34.276Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-10-04T03:08:34.276Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-10-04T03:08:34.278Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-10-04T03:08:34.978Z"}
+{"level":"info","message":"app is runing: 8888","timestamp":"2023-10-04T03:08:34.978Z"}
+{"level":"warn","message":"env: dcommerce_dev","timestamp":"2023-10-04T03:08:34.979Z"}
+{"level":"info","message":"DB Connection established","timestamp":"2023-10-04T03:08:35.615Z"}
+{"level":"info","message":"Datatase is synchronize","timestamp":"2023-10-04T03:09:42.059Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-10-04T03:16:59.991Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-10-04T03:16:59.993Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-10-04T03:16:59.994Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-10-04T03:16:59.994Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-10-04T03:16:59.996Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-10-04T03:17:00.957Z"}
+{"level":"info","message":"app is runing: 8888","timestamp":"2023-10-04T03:17:00.958Z"}
+{"level":"warn","message":"env: dcommerce_dev","timestamp":"2023-10-04T03:17:00.958Z"}
+{"level":"info","message":"DB Connection established","timestamp":"2023-10-04T03:17:01.939Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-10-04T03:17:07.441Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-10-04T03:17:07.443Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-10-04T03:17:07.444Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-10-04T03:17:07.444Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-10-04T03:17:07.445Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-10-04T03:17:08.213Z"}
+{"level":"info","message":"app is runing: 8888","timestamp":"2023-10-04T03:17:08.213Z"}
+{"level":"warn","message":"env: dcommerce_dev","timestamp":"2023-10-04T03:17:08.214Z"}
+{"level":"info","message":"DB Connection established","timestamp":"2023-10-04T03:17:08.955Z"}
+{"level":"info","message":"Datatase is synchronize","timestamp":"2023-10-04T03:18:17.721Z"}
+{"level":"warn","message":"Date 2023-01-01 2023-12-31","timestamp":"2023-10-04T03:50:46.566Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN outlet u ON u.id = p.outlet LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2023-10-04T03:50:46.613Z"}
+{"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' \n    ","timestamp":"2023-10-04T03:50:46.997Z"}
+{"level":"info","message":"Record count => 6","timestamp":"2023-10-04T03:50:47.079Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-10-04T03:50:47.080Z"}
+{"level":"warn","message":"Date 2023-01-01 2023-12-31","timestamp":"2023-10-04T03:52:11.389Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN outlet u ON u.id = p.outlet LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2023-10-04T03:52:11.403Z"}
+{"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' \n    ","timestamp":"2023-10-04T03:52:11.515Z"}
+{"level":"info","message":"Record count => 6","timestamp":"2023-10-04T03:52:11.568Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-10-04T03:52:11.571Z"}
+{"level":"warn","message":"Date 2023-01-01 2023-12-31","timestamp":"2023-10-04T03:52:53.481Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN outlet u ON u.id = p.outlet LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2023-10-04T03:52:53.512Z"}
+{"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' \n    ","timestamp":"2023-10-04T03:52:53.763Z"}
+{"level":"info","message":"Record count => 6","timestamp":"2023-10-04T03:52:54.074Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-10-04T03:52:54.075Z"}
+{"level":"warn","message":"Date 2023-01-01 2023-12-31","timestamp":"2023-10-04T03:53:54.077Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN outlet u ON u.id = p.outlet LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2023-10-04T03:53:54.111Z"}
+{"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' \n    ","timestamp":"2023-10-04T03:53:54.319Z"}
+{"level":"info","message":"Record count => 6","timestamp":"2023-10-04T03:53:54.389Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-10-04T03:53:54.390Z"}
+{"level":"info","message":"rider[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider]","timestamp":"2023-10-04T03:57:24.501Z"}
+{"level":"info","message":"rider[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider]","timestamp":"2023-10-04T04:00:52.412Z"}
+{"level":"info","message":"SQL COMMAND SELECT * FROM user WHERE cus_id='1000' AND cus_pass='1111'","timestamp":"2023-10-04T04:11:21.961Z"}
+{"level":"warn","message":"Token ===> eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiY3VzX2lkIjoxMDAwLCJjdXNfbmFtZSI6IkFkbWluIiwiY3VzX3RlbCI6IjAyMDc3MTUwMDA4IiwiaWF0IjoxNjk2MzkyNjgyLCJleHAiOjE2OTY0MTA2ODJ9.yAdgr0S8iyTsiDCMN5iXLsxlTUEmoEvkz1wtikuIc7U","timestamp":"2023-10-04T04:11:22.142Z"}
+{"level":"warn","message":"Date 2023-01-01 2023-12-31","timestamp":"2023-10-04T04:11:23.850Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN outlet u ON u.id = p.outlet LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2023-10-04T04:11:23.876Z"}
+{"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' \n    ","timestamp":"2023-10-04T04:11:24.178Z"}
+{"level":"info","message":"Record count => 6","timestamp":"2023-10-04T04:11:24.259Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-10-04T04:11:24.259Z"}
+{"level":"info","message":"rider[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider]","timestamp":"2023-10-04T04:11:33.439Z"}
+{"level":"info","message":"rider[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider]","timestamp":"2023-10-04T04:12:44.433Z"}
+{"level":"info","message":"rider[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider]","timestamp":"2023-10-04T04:13:18.150Z"}
+{"level":"info","message":"rider[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider]","timestamp":"2023-10-04T04:13:18.361Z"}
+{"level":"warn","message":"Date 2023-01-01 2023-12-31","timestamp":"2023-10-04T04:24:39.298Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN outlet u ON u.id = p.outlet LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2023-10-04T04:24:39.326Z"}
+{"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' \n    ","timestamp":"2023-10-04T04:24:39.523Z"}
+{"level":"info","message":"Record count => 6","timestamp":"2023-10-04T04:24:39.600Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-10-04T04:24:39.601Z"}
+{"level":"info","message":"rider[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider]","timestamp":"2023-10-04T04:24:43.837Z"}
+{"level":"warn","message":"Date 2023-01-01 2023-12-31","timestamp":"2023-10-04T04:31:19.467Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN outlet u ON u.id = p.outlet LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2023-10-04T04:31:19.502Z"}
+{"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' \n    ","timestamp":"2023-10-04T04:31:19.615Z"}
+{"level":"info","message":"Record count => 6","timestamp":"2023-10-04T04:31:19.683Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-10-04T04:31:19.684Z"}
+{"level":"warn","message":"Date 2023-01-01 2023-12-31","timestamp":"2023-10-04T04:31:20.935Z"}
+{"level":"warn","message":"Date 2023-01-01 2023-12-31","timestamp":"2023-10-04T04:31:22.408Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN outlet u ON u.id = p.outlet LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2023-10-04T04:31:22.416Z"}
+{"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' \n    ","timestamp":"2023-10-04T04:31:22.644Z"}
+{"level":"info","message":"Record count => 6","timestamp":"2023-10-04T04:31:22.715Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-10-04T04:31:22.716Z"}
+{"level":"warn","message":"Date 2023-01-01 2023-12-31","timestamp":"2023-10-04T04:31:25.431Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN outlet u ON u.id = p.outlet LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2023-10-04T04:31:25.444Z"}
+{"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' \n    ","timestamp":"2023-10-04T04:31:25.545Z"}
+{"level":"info","message":"Record count => 6","timestamp":"2023-10-04T04:31:25.619Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-10-04T04:31:25.619Z"}
+{"level":"info","message":"rider[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider]","timestamp":"2023-10-04T04:31:28.548Z"}
+{"level":"info","message":"rider[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider]","timestamp":"2023-10-04T05:08:41.217Z"}
+{"level":"info","message":"rider[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider]","timestamp":"2023-10-04T05:08:41.359Z"}
+{"level":"info","message":"rider[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider]","timestamp":"2023-10-04T05:09:11.178Z"}
+{"level":"info","message":"rider[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider]","timestamp":"2023-10-04T05:09:11.187Z"}
+{"level":"info","message":"rider[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider]","timestamp":"2023-10-04T05:10:19.660Z"}
+{"level":"info","message":"rider[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider]","timestamp":"2023-10-04T05:10:19.667Z"}
+{"level":"info","message":"rider[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider]","timestamp":"2023-10-04T05:21:25.950Z"}
+{"level":"info","message":"rider[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider]","timestamp":"2023-10-04T05:21:25.991Z"}
+{"level":"info","message":"rider[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider]","timestamp":"2023-10-04T05:23:00.493Z"}
+{"level":"info","message":"rider[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider]","timestamp":"2023-10-04T05:23:00.496Z"}
+{"level":"warn","message":"Date 2023-01-01 2023-12-31","timestamp":"2023-10-04T05:23:16.100Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN outlet u ON u.id = p.outlet LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2023-10-04T05:23:16.143Z"}
+{"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' \n    ","timestamp":"2023-10-04T05:23:16.404Z"}
+{"level":"info","message":"Record count => 6","timestamp":"2023-10-04T05:23:16.475Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-10-04T05:23:16.476Z"}
+{"level":"info","message":"rider[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider]","timestamp":"2023-10-04T05:24:05.685Z"}
+{"level":"warn","message":"Date 2023-01-01 2023-12-31","timestamp":"2023-10-04T05:24:40.949Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN outlet u ON u.id = p.outlet LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2023-10-04T05:24:40.987Z"}
+{"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' \n    ","timestamp":"2023-10-04T05:24:41.233Z"}
+{"level":"info","message":"Record count => 6","timestamp":"2023-10-04T05:24:41.292Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-10-04T05:24:41.292Z"}
+{"level":"warn","message":"Date 2023-01-01 2023-12-31","timestamp":"2023-10-04T05:24:44.672Z"}
+{"level":"warn","message":"Date 2023-01-01 2023-12-31","timestamp":"2023-10-04T05:24:47.499Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN outlet u ON u.id = p.outlet LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2023-10-04T05:24:47.507Z"}
+{"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' \n    ","timestamp":"2023-10-04T05:24:47.860Z"}
+{"level":"info","message":"Record count => 6","timestamp":"2023-10-04T05:24:47.944Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-10-04T05:24:47.944Z"}
+{"level":"warn","message":"Date 2023-01-01 2023-12-31","timestamp":"2023-10-04T05:24:50.513Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN outlet u ON u.id = p.outlet LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2023-10-04T05:24:50.522Z"}
+{"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' \n    ","timestamp":"2023-10-04T05:24:50.655Z"}
+{"level":"info","message":"Record count => 6","timestamp":"2023-10-04T05:24:50.731Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-10-04T05:24:50.731Z"}
+{"level":"info","message":"rider[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider]","timestamp":"2023-10-04T05:25:14.626Z"}
+{"level":"warn","message":"Date 2023-01-01 2023-12-31","timestamp":"2023-10-04T05:26:42.907Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN outlet u ON u.id = p.outlet LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2023-10-04T05:26:42.943Z"}
+{"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' \n    ","timestamp":"2023-10-04T05:26:43.248Z"}
+{"level":"info","message":"Record count => 6","timestamp":"2023-10-04T05:26:43.328Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-10-04T05:26:43.328Z"}
+{"level":"info","message":"rider[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider]","timestamp":"2023-10-04T05:26:48.931Z"}
+{"level":"warn","message":"Date 2023-01-01 2023-12-31","timestamp":"2023-10-04T05:27:27.365Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN outlet u ON u.id = p.outlet LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2023-10-04T05:27:27.400Z"}
+{"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' \n    ","timestamp":"2023-10-04T05:27:27.590Z"}
+{"level":"info","message":"Record count => 6","timestamp":"2023-10-04T05:27:27.654Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-10-04T05:27:27.654Z"}
+{"level":"warn","message":"Date 2023-01-01 2023-12-31","timestamp":"2023-10-04T05:27:28.881Z"}
+{"level":"warn","message":"Date 2023-01-01 2023-12-31","timestamp":"2023-10-04T05:27:31.417Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN outlet u ON u.id = p.outlet LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2023-10-04T05:27:31.437Z"}
+{"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' \n    ","timestamp":"2023-10-04T05:27:31.726Z"}
+{"level":"info","message":"Record count => 6","timestamp":"2023-10-04T05:27:31.797Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-10-04T05:27:31.798Z"}
+{"level":"warn","message":"Date 2023-01-01 2023-12-31","timestamp":"2023-10-04T05:27:33.287Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN outlet u ON u.id = p.outlet LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2023-10-04T05:27:33.297Z"}
+{"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' \n    ","timestamp":"2023-10-04T05:27:33.431Z"}
+{"level":"info","message":"Record count => 6","timestamp":"2023-10-04T05:27:33.493Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-10-04T05:27:33.494Z"}
+{"level":"info","message":"rider[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider]","timestamp":"2023-10-04T05:27:43.185Z"}
+{"level":"warn","message":"Date 2023-01-01 2023-12-31","timestamp":"2023-10-04T05:28:13.860Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN outlet u ON u.id = p.outlet LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2023-10-04T05:28:13.876Z"}
+{"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' \n    ","timestamp":"2023-10-04T05:28:14.008Z"}
+{"level":"info","message":"Record count => 6","timestamp":"2023-10-04T05:28:14.066Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-10-04T05:28:14.066Z"}
+{"level":"info","message":"rider[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider]","timestamp":"2023-10-04T05:28:16.906Z"}
+{"level":"warn","message":"Date 2023-01-01 2023-12-31","timestamp":"2023-10-04T08:29:54.194Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN outlet u ON u.id = p.outlet LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2023-10-04T08:29:54.409Z"}
+{"level":"error","message":"Something went wrong with error SequelizeDatabaseError: read ECONNRESET","timestamp":"2023-10-04T08:29:54.482Z"}
+{"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' \n    ","timestamp":"2023-10-04T08:29:54.789Z"}
+{"level":"info","message":"Record count => 6","timestamp":"2023-10-04T08:29:54.878Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-10-04T08:29:54.879Z"}
+{"level":"warn","message":"Date 2023-01-01 2023-12-31","timestamp":"2023-10-04T08:29:58.395Z"}
+{"level":"error","message":"Something went wrong with error SequelizeDatabaseError: read ECONNRESET","timestamp":"2023-10-04T08:29:58.485Z"}
+{"level":"warn","message":"Date 2023-01-01 2023-12-31","timestamp":"2023-10-04T08:30:04.622Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN outlet u ON u.id = p.outlet LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2023-10-04T08:30:04.636Z"}
+{"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' \n    ","timestamp":"2023-10-04T08:30:04.963Z"}
+{"level":"info","message":"Record count => 6","timestamp":"2023-10-04T08:30:05.038Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-10-04T08:30:05.038Z"}
+{"level":"warn","message":"Date 2023-01-01 2023-12-31","timestamp":"2023-10-04T08:30:06.953Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN outlet u ON u.id = p.outlet LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2023-10-04T08:30:06.960Z"}
+{"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' \n    ","timestamp":"2023-10-04T08:30:07.115Z"}
+{"level":"info","message":"Record count => 6","timestamp":"2023-10-04T08:30:07.175Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-10-04T08:30:07.178Z"}
+{"level":"info","message":"rider[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider]","timestamp":"2023-10-04T08:30:28.045Z"}
+{"level":"warn","message":"Date 2023-01-01 2023-12-31","timestamp":"2023-10-04T08:31:19.020Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN outlet u ON u.id = p.outlet LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2023-10-04T08:31:19.036Z"}
+{"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' \n    ","timestamp":"2023-10-04T08:31:19.253Z"}
+{"level":"info","message":"Record count => 6","timestamp":"2023-10-04T08:31:19.315Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-10-04T08:31:19.315Z"}
+{"level":"info","message":"rider[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider]","timestamp":"2023-10-04T08:31:35.214Z"}
+{"level":"info","message":"rider[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider]","timestamp":"2023-10-04T08:34:18.646Z"}
+{"level":"info","message":"rider[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider]","timestamp":"2023-10-04T08:35:22.913Z"}
+{"level":"info","message":"SQL COMMAND SELECT * FROM user WHERE cus_id='1000' AND cus_pass='1111'","timestamp":"2023-10-04T08:35:38.271Z"}
+{"level":"warn","message":"Token ===> eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiY3VzX2lkIjoxMDAwLCJjdXNfbmFtZSI6IkFkbWluIiwiY3VzX3RlbCI6IjAyMDc3MTUwMDA4IiwiaWF0IjoxNjk2NDA4NTM4LCJleHAiOjE2OTY0MjY1Mzh9.uwrrif-gqR9gDkNjJu7DupI4lYrsPjDvT2PaUjWlYEM","timestamp":"2023-10-04T08:35:38.387Z"}
+{"level":"warn","message":"Date 2023-01-01 2023-12-31","timestamp":"2023-10-04T08:35:40.585Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN outlet u ON u.id = p.outlet LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2023-10-04T08:35:40.609Z"}
+{"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' \n    ","timestamp":"2023-10-04T08:35:40.984Z"}
+{"level":"info","message":"Record count => 6","timestamp":"2023-10-04T08:35:41.066Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-10-04T08:35:41.066Z"}
+{"level":"info","message":"rider[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider]","timestamp":"2023-10-04T08:35:54.923Z"}
+{"level":"info","message":"rider[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider]","timestamp":"2023-10-04T08:36:42.865Z"}
+{"level":"info","message":"rider[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider]","timestamp":"2023-10-04T08:36:50.542Z"}
+{"level":"info","message":"rider[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider]","timestamp":"2023-10-04T08:37:27.271Z"}
+{"level":"info","message":"rider[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider]","timestamp":"2023-10-04T08:40:25.918Z"}
+{"level":"info","message":"rider[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider]","timestamp":"2023-10-04T08:43:02.506Z"}
+{"level":"warn","message":"Date 2023-01-01 2023-12-31","timestamp":"2023-10-04T08:44:39.404Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN outlet u ON u.id = p.outlet LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2023-10-04T08:44:39.545Z"}
+{"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' \n    ","timestamp":"2023-10-04T08:44:40.058Z"}
+{"level":"info","message":"Record count => 6","timestamp":"2023-10-04T08:44:40.112Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-10-04T08:44:40.113Z"}
+{"level":"info","message":"rider[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider]","timestamp":"2023-10-04T08:44:46.533Z"}
+{"level":"info","message":"rider[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider]","timestamp":"2023-10-04T08:55:55.702Z"}
+{"level":"info","message":"rider[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider]","timestamp":"2023-10-04T08:57:59.440Z"}
+{"level":"info","message":"SQL COMMAND SELECT * FROM user WHERE cus_id='1000' AND cus_pass='1111'","timestamp":"2023-10-04T13:37:03.154Z"}
+{"level":"warn","message":"Token ===> eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiY3VzX2lkIjoxMDAwLCJjdXNfbmFtZSI6IkFkbWluIiwiY3VzX3RlbCI6IjAyMDc3MTUwMDA4IiwiaWF0IjoxNjk2NDI2NjQzLCJleHAiOjE2OTY0NDQ2NDN9.gLw0cBtLM_cIUHtVJal4chL9bx6i7fThQQ5d3ZHhqSU","timestamp":"2023-10-04T13:37:23.443Z"}
+{"level":"warn","message":"Date 2023-01-01 2023-12-31","timestamp":"2023-10-04T13:37:46.643Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN outlet u ON u.id = p.outlet LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2023-10-04T13:37:52.194Z"}
+{"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' \n    ","timestamp":"2023-10-04T13:37:52.601Z"}
+{"level":"info","message":"Record count => 6","timestamp":"2023-10-04T13:37:52.656Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-10-04T13:37:52.656Z"}
+{"level":"error","message":"Something went wrong with error SequelizeDatabaseError: read ETIMEDOUT","timestamp":"2023-10-04T13:38:14.693Z"}
+{"level":"warn","message":"Date 2023-01-01 2023-12-31","timestamp":"2023-10-04T13:39:29.115Z"}
+{"level":"warn","message":"Date 2023-01-01 2023-12-31","timestamp":"2023-10-04T13:39:31.372Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN outlet u ON u.id = p.outlet LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2023-10-04T13:39:31.377Z"}
+{"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' \n    ","timestamp":"2023-10-04T13:39:31.518Z"}
+{"level":"info","message":"Record count => 6","timestamp":"2023-10-04T13:39:31.591Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-10-04T13:39:31.592Z"}
+{"level":"warn","message":"Date 2023-01-01 2023-12-31","timestamp":"2023-10-04T13:39:55.076Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN outlet u ON u.id = p.outlet LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2023-10-04T13:39:55.097Z"}
+{"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' \n    ","timestamp":"2023-10-04T13:39:55.185Z"}
+{"level":"info","message":"Record count => 6","timestamp":"2023-10-04T13:39:55.253Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-10-04T13:39:55.253Z"}
+{"level":"info","message":"rider[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider]","timestamp":"2023-10-04T13:40:11.583Z"}
+{"level":"info","message":"===== Create Sale Header =====[object Object]","timestamp":"2023-10-04T13:40:57.898Z"}
+{"level":"info","message":"********** Customer form [object Object]***********","timestamp":"2023-10-04T13:40:58.037Z"}
+{"level":"info","message":"********** Customer form ທ ນ້າ***********","timestamp":"2023-10-04T13:40:58.039Z"}
+{"level":"info","message":"*************Sale header 267 *************","timestamp":"2023-10-04T13:40:58.103Z"}
+{"level":"warn","message":"Check if lineId is null or undifine undefined","timestamp":"2023-10-04T13:40:58.105Z"}
+{"level":"warn","message":"header id ===> 267","timestamp":"2023-10-04T13:40:58.105Z"}
+{"level":"info","message":"Product Id ===>: 621","timestamp":"2023-10-04T13:40:58.210Z"}
+{"level":"info","message":"Cards available len ===>: 1 sale qty needed 1","timestamp":"2023-10-04T13:40:58.211Z"}
+{"level":"info","message":"$$$$$$ Reserve cards completed 1 records $$$$$","timestamp":"2023-10-04T13:40:58.296Z"}
+{"level":"warn","message":"Check if lineId is null or undifine undefined","timestamp":"2023-10-04T13:40:58.296Z"}
+{"level":"warn","message":"header id ===> 267","timestamp":"2023-10-04T13:40:58.297Z"}
+{"level":"info","message":"Product Id ===>: 618","timestamp":"2023-10-04T13:40:58.366Z"}
+{"level":"info","message":"Cards available len ===>: 1 sale qty needed 1","timestamp":"2023-10-04T13:40:58.367Z"}
+{"level":"info","message":"$$$$$$ Reserve cards completed 1 records $$$$$","timestamp":"2023-10-04T13:40:58.413Z"}
+{"level":"info","message":"==> Creating sale line bulk with locking id 1696426858104ZCIz5544","timestamp":"2023-10-04T13:40:58.414Z"}
+{"level":"info","message":"Transaction compleate [object Object]","timestamp":"2023-10-04T13:40:58.467Z"}
+{"level":"info","message":"===> Line created len: 2","timestamp":"2023-10-04T13:40:58.479Z"}
+{"level":"info","message":"===> Updating card saleLineId in card model","timestamp":"2023-10-04T13:40:58.479Z"}
+{"level":"info","message":"Update card saleLineId successfully undefined","timestamp":"2023-10-04T13:40:58.536Z"}
+{"level":"info","message":"===> Updating card saleLineId in card model","timestamp":"2023-10-04T13:40:58.537Z"}
+{"level":"info","message":"Update card saleLineId successfully undefined","timestamp":"2023-10-04T13:40:58.608Z"}
+{"level":"info","message":"All product count 2 to be update stock count","timestamp":"2023-10-04T13:40:58.670Z"}
+{"level":"info","message":"rider[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider]","timestamp":"2023-10-04T13:41:32.561Z"}
+{"level":"info","message":"===== Create Sale Header =====[object Object]","timestamp":"2023-10-04T13:42:05.095Z"}
+{"level":"info","message":"********** Customer form [object Object]***********","timestamp":"2023-10-04T13:42:05.213Z"}
+{"level":"info","message":"********** Customer form ຕາວັນ***********","timestamp":"2023-10-04T13:42:05.213Z"}
+{"level":"info","message":"*************Sale header 268 *************","timestamp":"2023-10-04T13:42:05.265Z"}
+{"level":"warn","message":"Check if lineId is null or undifine undefined","timestamp":"2023-10-04T13:42:05.266Z"}
+{"level":"warn","message":"header id ===> 268","timestamp":"2023-10-04T13:42:05.266Z"}
+{"level":"info","message":"Product Id ===>: 618","timestamp":"2023-10-04T13:42:05.328Z"}
+{"level":"info","message":"Cards available len ===>: 1 sale qty needed 1","timestamp":"2023-10-04T13:42:05.328Z"}
+{"level":"info","message":"$$$$$$ Reserve cards completed 1 records $$$$$","timestamp":"2023-10-04T13:42:05.386Z"}
+{"level":"info","message":"==> Creating sale line bulk with locking id 1696426925266GsS1b1","timestamp":"2023-10-04T13:42:05.387Z"}
+{"level":"info","message":"Transaction compleate [object Object]","timestamp":"2023-10-04T13:42:05.424Z"}
+{"level":"info","message":"===> Line created len: 1","timestamp":"2023-10-04T13:42:05.437Z"}
+{"level":"info","message":"===> Updating card saleLineId in card model","timestamp":"2023-10-04T13:42:05.438Z"}
+{"level":"info","message":"Update card saleLineId successfully undefined","timestamp":"2023-10-04T13:42:05.491Z"}
+{"level":"info","message":"All product count 1 to be update stock count","timestamp":"2023-10-04T13:42:05.537Z"}
+{"level":"warn","message":"Date 2023-01-01 2023-12-31","timestamp":"2023-10-04T13:46:14.492Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN outlet u ON u.id = p.outlet LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2023-10-04T13:46:14.516Z"}
+{"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' \n    ","timestamp":"2023-10-04T13:46:14.720Z"}
+{"level":"info","message":"Record count => 8","timestamp":"2023-10-04T13:46:14.783Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-10-04T13:46:14.783Z"}
+{"level":"info","message":"rider[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider]","timestamp":"2023-10-04T13:58:05.189Z"}
+{"level":"info","message":"rider[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider]","timestamp":"2023-10-04T14:01:53.933Z"}
+{"level":"info","message":"rider[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider]","timestamp":"2023-10-04T14:03:26.707Z"}
+{"level":"info","message":"rider[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider]","timestamp":"2023-10-04T14:03:52.177Z"}
+{"level":"info","message":"===== Create Sale Header =====[object Object]","timestamp":"2023-10-04T14:09:58.849Z"}
+{"level":"info","message":"********** Customer form [object Object]***********","timestamp":"2023-10-04T14:09:59.013Z"}
+{"level":"info","message":"********** Customer form ***********","timestamp":"2023-10-04T14:09:59.013Z"}
+{"level":"info","message":"*************Sale header 269 *************","timestamp":"2023-10-04T14:09:59.095Z"}
+{"level":"warn","message":"Check if lineId is null or undifine undefined","timestamp":"2023-10-04T14:09:59.097Z"}
+{"level":"warn","message":"header id ===> 269","timestamp":"2023-10-04T14:09:59.098Z"}
+{"level":"info","message":"Product Id ===>: 618","timestamp":"2023-10-04T14:09:59.156Z"}
+{"level":"info","message":"Cards available len ===>: 1 sale qty needed 1","timestamp":"2023-10-04T14:09:59.156Z"}
+{"level":"info","message":"$$$$$$ Reserve cards completed 1 records $$$$$","timestamp":"2023-10-04T14:09:59.211Z"}
+{"level":"info","message":"==> Creating sale line bulk with locking id 1696428599095tXEat937","timestamp":"2023-10-04T14:09:59.212Z"}
+{"level":"info","message":"Transaction compleate [object Object]","timestamp":"2023-10-04T14:09:59.270Z"}
+{"level":"info","message":"===> Line created len: 1","timestamp":"2023-10-04T14:09:59.287Z"}
+{"level":"info","message":"===> Updating card saleLineId in card model","timestamp":"2023-10-04T14:09:59.287Z"}
+{"level":"info","message":"Update card saleLineId successfully undefined","timestamp":"2023-10-04T14:09:59.340Z"}
+{"level":"info","message":"All product count 1 to be update stock count","timestamp":"2023-10-04T14:09:59.406Z"}
+{"level":"warn","message":"Date 2023-01-01 2023-12-31","timestamp":"2023-10-04T14:23:30.401Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN outlet u ON u.id = p.outlet LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2023-10-04T14:23:30.428Z"}
+{"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' \n    ","timestamp":"2023-10-04T14:23:30.777Z"}
+{"level":"info","message":"Record count => 9","timestamp":"2023-10-04T14:23:30.847Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-10-04T14:23:30.848Z"}
+{"level":"warn","message":"Date 2023-01-01 2023-12-31","timestamp":"2023-10-04T14:23:32.859Z"}
+{"level":"warn","message":"Date 2023-01-01 2023-12-31","timestamp":"2023-10-04T14:23:35.883Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN outlet u ON u.id = p.outlet LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2023-10-04T14:23:35.888Z"}
+{"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' \n    ","timestamp":"2023-10-04T14:23:36.062Z"}
+{"level":"info","message":"Record count => 9","timestamp":"2023-10-04T14:23:36.121Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-10-04T14:23:36.122Z"}
+{"level":"warn","message":"Date 2023-01-01 2023-12-31","timestamp":"2023-10-04T14:23:40.299Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN outlet u ON u.id = p.outlet LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2023-10-04T14:23:40.306Z"}
+{"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' \n    ","timestamp":"2023-10-04T14:23:40.491Z"}
+{"level":"info","message":"Record count => 9","timestamp":"2023-10-04T14:23:40.565Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-10-04T14:23:40.565Z"}
+{"level":"info","message":"rider[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider]","timestamp":"2023-10-04T14:28:25.476Z"}
+{"level":"info","message":"===== Create Sale Header =====[object Object]","timestamp":"2023-10-04T14:28:57.770Z"}
+{"level":"info","message":"********** Customer form [object Object]***********","timestamp":"2023-10-04T14:28:57.948Z"}
+{"level":"info","message":"********** Customer form ລິສາ***********","timestamp":"2023-10-04T14:28:57.949Z"}
+{"level":"info","message":"*************Sale header 270 *************","timestamp":"2023-10-04T14:28:58.038Z"}
+{"level":"warn","message":"Check if lineId is null or undifine undefined","timestamp":"2023-10-04T14:28:58.040Z"}
+{"level":"warn","message":"header id ===> 270","timestamp":"2023-10-04T14:28:58.041Z"}
+{"level":"info","message":"Product Id ===>: 618","timestamp":"2023-10-04T14:28:58.100Z"}
+{"level":"info","message":"Cards available len ===>: 1 sale qty needed 1","timestamp":"2023-10-04T14:28:58.100Z"}
+{"level":"info","message":"$$$$$$ Reserve cards completed 1 records $$$$$","timestamp":"2023-10-04T14:28:58.179Z"}
+{"level":"info","message":"==> Creating sale line bulk with locking id 1696429738039n5Nn3497","timestamp":"2023-10-04T14:28:58.179Z"}
+{"level":"info","message":"Transaction compleate [object Object]","timestamp":"2023-10-04T14:28:58.232Z"}
+{"level":"info","message":"===> Line created len: 1","timestamp":"2023-10-04T14:28:58.240Z"}
+{"level":"info","message":"===> Updating card saleLineId in card model","timestamp":"2023-10-04T14:28:58.240Z"}
+{"level":"info","message":"Update card saleLineId successfully undefined","timestamp":"2023-10-04T14:28:58.307Z"}
+{"level":"info","message":"All product count 1 to be update stock count","timestamp":"2023-10-04T14:28:58.365Z"}
+{"level":"warn","message":"Date 2023-01-01 2023-12-31","timestamp":"2023-10-04T14:53:51.670Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN outlet u ON u.id = p.outlet LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2023-10-04T14:53:51.689Z"}
+{"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' \n    ","timestamp":"2023-10-04T14:53:51.931Z"}
+{"level":"info","message":"Record count => 10","timestamp":"2023-10-04T14:53:51.990Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-10-04T14:53:51.990Z"}
+{"level":"info","message":"===== Create Sale Header =====[object Object]","timestamp":"2023-10-04T14:54:02.274Z"}
+{"level":"info","message":"*************Sale header 271 *************","timestamp":"2023-10-04T14:54:02.388Z"}
+{"level":"warn","message":"Check if lineId is null or undifine undefined","timestamp":"2023-10-04T14:54:02.388Z"}
+{"level":"warn","message":"header id ===> 271","timestamp":"2023-10-04T14:54:02.388Z"}
+{"level":"info","message":"Product Id ===>: 618","timestamp":"2023-10-04T14:54:02.455Z"}
+{"level":"info","message":"Cards available len ===>: 1 sale qty needed 1","timestamp":"2023-10-04T14:54:02.455Z"}
+{"level":"info","message":"$$$$$$ Reserve cards completed 1 records $$$$$","timestamp":"2023-10-04T14:54:02.522Z"}
+{"level":"info","message":"==> Creating sale line bulk with locking id 1696431242388925zE159","timestamp":"2023-10-04T14:54:02.523Z"}
+{"level":"info","message":"Transaction compleate [object Object]","timestamp":"2023-10-04T14:54:02.571Z"}
+{"level":"info","message":"===> Line created len: 1","timestamp":"2023-10-04T14:54:02.577Z"}
+{"level":"info","message":"===> Updating card saleLineId in card model","timestamp":"2023-10-04T14:54:02.578Z"}
+{"level":"info","message":"Update card saleLineId successfully undefined","timestamp":"2023-10-04T14:54:02.644Z"}
+{"level":"info","message":"All product count 1 to be update stock count","timestamp":"2023-10-04T14:54:02.704Z"}
+{"level":"info","message":"rider[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider]","timestamp":"2023-10-04T14:54:13.660Z"}
+{"level":"info","message":"===== Create Sale Header =====[object Object]","timestamp":"2023-10-04T14:54:47.709Z"}
+{"level":"info","message":"********** Customer form [object Object]***********","timestamp":"2023-10-04T14:54:47.821Z"}
+{"level":"info","message":"********** Customer form ສຸພາພອນ***********","timestamp":"2023-10-04T14:54:47.822Z"}
+{"level":"info","message":"*************Sale header 272 *************","timestamp":"2023-10-04T14:54:47.877Z"}
+{"level":"warn","message":"Check if lineId is null or undifine undefined","timestamp":"2023-10-04T14:54:47.877Z"}
+{"level":"warn","message":"header id ===> 272","timestamp":"2023-10-04T14:54:47.878Z"}
+{"level":"info","message":"Product Id ===>: 621","timestamp":"2023-10-04T14:54:47.924Z"}
+{"level":"info","message":"Cards available len ===>: 1 sale qty needed 1","timestamp":"2023-10-04T14:54:47.924Z"}
+{"level":"info","message":"$$$$$$ Reserve cards completed 1 records $$$$$","timestamp":"2023-10-04T14:54:47.983Z"}
+{"level":"warn","message":"Check if lineId is null or undifine undefined","timestamp":"2023-10-04T14:54:47.983Z"}
+{"level":"warn","message":"header id ===> 272","timestamp":"2023-10-04T14:54:47.984Z"}
+{"level":"info","message":"Product Id ===>: 618","timestamp":"2023-10-04T14:54:48.054Z"}
+{"level":"info","message":"Cards available len ===>: 1 sale qty needed 1","timestamp":"2023-10-04T14:54:48.054Z"}
+{"level":"info","message":"$$$$$$ Reserve cards completed 1 records $$$$$","timestamp":"2023-10-04T14:54:48.111Z"}
+{"level":"info","message":"==> Creating sale line bulk with locking id 1696431287877KlPVx483","timestamp":"2023-10-04T14:54:48.112Z"}
+{"level":"info","message":"Transaction compleate [object Object]","timestamp":"2023-10-04T14:54:48.160Z"}
+{"level":"info","message":"===> Line created len: 2","timestamp":"2023-10-04T14:54:48.171Z"}
+{"level":"info","message":"===> Updating card saleLineId in card model","timestamp":"2023-10-04T14:54:48.171Z"}
+{"level":"info","message":"Update card saleLineId successfully undefined","timestamp":"2023-10-04T14:54:48.221Z"}
+{"level":"info","message":"===> Updating card saleLineId in card model","timestamp":"2023-10-04T14:54:48.221Z"}
+{"level":"info","message":"Update card saleLineId successfully undefined","timestamp":"2023-10-04T14:54:48.272Z"}
+{"level":"info","message":"All product count 2 to be update stock count","timestamp":"2023-10-04T14:54:48.336Z"}
+{"level":"warn","message":"Date 2023-01-01 2023-12-31","timestamp":"2023-10-04T14:56:19.764Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN outlet u ON u.id = p.outlet LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2023-10-04T14:56:19.782Z"}
+{"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' \n    ","timestamp":"2023-10-04T14:56:19.928Z"}
+{"level":"info","message":"Record count => 11","timestamp":"2023-10-04T14:56:19.983Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-10-04T14:56:19.984Z"}

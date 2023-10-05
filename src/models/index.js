@@ -33,6 +33,7 @@ sequelize.authenticate().then(() => {
 const db = {}
 db.sequelize = sequelize;
 db.Sequelize = Sequelize
+db.company = require("../company/model")(sequelize, DataTypes);
 db.saleHeader = require("../sales/model")(sequelize, DataTypes);
 db.customer = require("../dynamicCustomer/model")(sequelize, DataTypes);
 db.shipping = require("../shipping/model")(sequelize, DataTypes);
