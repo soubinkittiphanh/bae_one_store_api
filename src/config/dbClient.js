@@ -6,6 +6,13 @@ const clientDB = {
         "database": "dcommerce_pro_chithanh",
         "port": 3306,
     },
+    "laofriend": {
+        "host": "150.95.31.23",
+        "user": "root",
+        "password": "sdat@3480",
+        "database": "dcommerce_pro_laofriend",
+        "port": 3306,
+    },
     // "chithanh": {
     //     "host": "209.209.40.80",
     //     "user": "chithanh",
@@ -27,6 +34,7 @@ const clientDB = {
         "database": "dcommerce_pro_peeair4",
         "port": 34248,
     },
+
     "uat": {
         "host": "150.95.31.23",
         "user": "root",

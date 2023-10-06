@@ -47,6 +47,50 @@ const createCategory = async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 };
+// Create a new category
+const generate = async (req, res) => {
+
+  const categoryList =
+    [
+      {
+        "categ_name": "ກາເຟ",
+        "isActive": true
+      },
+      {
+        "categ_name": "ເຄື່ອງຫອມ",
+        "isActive": true
+      },
+      {
+        "categ_name": "ເຄື່ອງຝາກ",
+        "isActive": true
+      },
+      {
+        "categ_name": "ຜ້າ",
+        "isActive": true
+      },
+      {
+        "categ_name": "ໄມ້",
+        "isActive": true
+      },
+      {
+        "categ_name": "ເຂົ້າ",
+        "isActive": true
+      },
+      {
+        "categ_name": "ນ້ຳເຜິ້ງ",
+        "isActive": true
+      }
+    ]
+
+
+  try {
+    const newCategory = await Category.bulkCreate(categoryList);
+    res.status(200).json(newCategory);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
 
 // Update an existing category by ID
 const updateCategoryById = async (req, res) => {
@@ -95,4 +139,5 @@ module.exports = {
   createCategory,
   updateCategoryById,
   deleteCategoryById,
+  generate
 };

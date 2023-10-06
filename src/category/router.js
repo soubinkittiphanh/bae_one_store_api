@@ -10,6 +10,7 @@ router.use(validateToken)
 
 router
 .post("/create", controller.createCategory)
+.post("/generate", controller.generate)
 .put("/update/:categ_id", controller.updateCategoryById)
 .delete("/find/:categ_id", controller.deleteCategoryById)
 .get("/find", controller.getAllCategories)
