@@ -30,6 +30,7 @@ const terminal = require("../terminal").router
 const user = require("../user").router
 const shipping = require("../shipping").router
 const company = require("../company").router
+const tutorial = require("../tutorial").router
 
 module.exports={
     orderRouter,
@@ -63,5 +64,6 @@ module.exports={
     terminal,
     user,
     shipping,
-    company
+    company,
+    tutorial
 }

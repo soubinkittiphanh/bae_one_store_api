@@ -19,20 +19,40 @@ const sequelize = new Sequelize(
     define: {
         indexes: false,
     }
-
 }
 )
 
+// Connect to the tutorial database
+const tutorialDB = new Sequelize('tutorial_db', env.user, env.password, {
+    host: env.host,
+    dialect: 'mariadb',
+    port: env.port,
+    pool: {
+        max: 5,
+        min: 2,
+        acquire: 30000,
+        idle: 10000
+    }
+  });
+// Authenticate tutorial db
+tutorialDB.authenticate().then(() => {
+    logger.info("tutorial_db Connection established")
+}).catch(err => {
+    logger.error("tutorial_db Connection error: " + err);
+})
+
 // DataTypes.NUMBER
 sequelize.authenticate().then(() => {
-    logger.info("DB Connection established")
+    logger.info("client_db Connection established")
 }).catch(err => {
-    logger.error("DB Connection error: " + err);
+    logger.error("client_db Connection error: " + err);
 })
 
 const db = {}
 db.sequelize = sequelize;
 db.Sequelize = Sequelize
+db.centralSequelize = tutorialDB;
+db.tuturial = require("../tutorial/model")(tutorialDB, DataTypes);
 db.product = require("../product/model")(sequelize, DataTypes);
 db.company = require("../company/model")(sequelize, DataTypes);
 db.saleHeader = require("../sales/model")(sequelize, DataTypes);
@@ -66,14 +86,17 @@ db.payment = require("../paymentMethod/model")(sequelize, DataTypes);
 // const UserTerminals = sequelize.define('user_terminals', {});
 
 //***************Map order to delivery customer**************/
-db.customer.belongsTo(db.saleHeader,{
+db.customer.belongsTo(db.saleHeader, {
     foreignKey: 'saleHeaderId',
     as: 'saleHeader'
 })
 db.saleHeader.hasOne(db.customer)
 
 db.sequelize.sync({ force: false, alter: true }).then(() => {
-    logger.info("Datatase is synchronize")
+    logger.info("Datatase client is synchronize")
+})
+db.centralSequelize.sync({ force: false, alter: true }).then(() => {
+    logger.info("Datatase central is synchronize")
 })
 db.product.belongsTo(db.currency, {
     foreignKey: 'costCurrencyId',
@@ -208,8 +231,8 @@ db.customer.belongsTo(db.geography, {
     foreignKey: 'geoId',
     as: 'geography'
 })
-db.customer.belongsTo(db.shipping,{
-    foreignKey:'shippingId',
+db.customer.belongsTo(db.shipping, {
+    foreignKey: 'shippingId',
     as: 'shipping'
 })
 // Sale mapping //
