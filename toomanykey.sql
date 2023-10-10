@@ -180,3 +180,20 @@ ALTER TABLE `shipping` DROP INDEX `code_27`;
 ALTER TABLE `shipping` DROP INDEX `code_28`;
 ALTER TABLE `shipping` DROP INDEX `code_29`;
 ALTER TABLE `shipping` DROP INDEX `code_30`;
+
+ALTER TABLE `company` DROP INDEX `mnemonic_1`;
+ALTER TABLE `company` DROP INDEX `mnemonic_2`;
+ALTER TABLE `company` DROP INDEX `mnemonic_3`;
+ALTER TABLE `company` DROP INDEX `mnemonic_4`;
+ALTER TABLE `company` DROP INDEX `mnemonic_5`;
+ALTER TABLE `company` DROP INDEX `mnemonic_6`;
+ALTER TABLE `company` DROP INDEX `mnemonic_7`;
+ALTER TABLE `company` DROP INDEX `mnemonic_8`;
+ALTER TABLE `company` DROP INDEX `mnemonic_9`;
+ALTER TABLE `company` DROP INDEX `mnemonic_10`;
+ALTER TABLE `company` DROP INDEX `mnemonic_11`;
+ALTER TABLE `company` DROP INDEX `mnemonic_12`;
+ALTER TABLE `company` DROP INDEX `mnemonic_13`;
+ALTER TABLE `company` DROP INDEX `mnemonic_14`;
+ALTER TABLE `company` DROP INDEX `mnemonic_15`;
+

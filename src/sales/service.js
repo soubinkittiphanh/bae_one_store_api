@@ -8,7 +8,12 @@ const saleHeaderReversal = async (headerId)=>{
     logger.info("Reversal sale header "+headerId)
     try {
         const header = await SaleHeader.findByPk(headerId)
-        logger.info("before set isActive")
+
+        if(!header) {
+            logger.warn(`Saleheader id ${headerId} could not be founded`)
+            return 
+        } 
+        logger.info(`before set isActive ${header.id}`)
         const reversedSaleHeader = await header.update({
             isActive:false
         })

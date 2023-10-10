@@ -3202,3 +3202,434 @@
 {"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' \n    ","timestamp":"2023-10-10T11:34:01.112Z"}
 {"level":"info","message":"Record count => 17","timestamp":"2023-10-10T11:34:01.168Z"}
 {"level":"info","message":"Cal finish","timestamp":"2023-10-10T11:34:01.169Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-10-10T11:35:12.845Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-10-10T11:35:12.849Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-10-10T11:35:12.851Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-10-10T11:35:12.851Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-10-10T11:35:12.853Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-10-10T11:35:13.969Z"}
+{"level":"info","message":"app is runing: 8888","timestamp":"2023-10-10T11:35:13.970Z"}
+{"level":"warn","message":"env: dcommerce_dev","timestamp":"2023-10-10T11:35:13.970Z"}
+{"level":"info","message":"tutorial_db Connection established","timestamp":"2023-10-10T11:35:14.605Z"}
+{"level":"info","message":"client_db Connection established","timestamp":"2023-10-10T11:35:14.647Z"}
+{"level":"info","message":"Datatase central is synchronize","timestamp":"2023-10-10T11:35:15.072Z"}
+{"level":"info","message":"Datatase client is synchronize","timestamp":"2023-10-10T11:36:17.090Z"}
+{"level":"warn","message":"Date 2023-01-01 2023-12-31","timestamp":"2023-10-10T12:07:28.853Z"}
+{"level":"warn","message":"Date 2023-01-01 2023-12-31","timestamp":"2023-10-10T12:07:30.967Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN outlet u ON u.id = p.outlet LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2023-10-10T12:07:31.000Z"}
+{"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' \n    ","timestamp":"2023-10-10T12:07:31.409Z"}
+{"level":"info","message":"Record count => 17","timestamp":"2023-10-10T12:07:31.483Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-10-10T12:07:31.483Z"}
+{"level":"warn","message":"Date 2023-01-01 2023-12-31","timestamp":"2023-10-10T12:07:33.200Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN outlet u ON u.id = p.outlet LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2023-10-10T12:07:33.221Z"}
+{"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' \n    ","timestamp":"2023-10-10T12:07:33.369Z"}
+{"level":"info","message":"Record count => 17","timestamp":"2023-10-10T12:07:33.432Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-10-10T12:07:33.433Z"}
+{"level":"info","message":"===== Create Sale Header =====[object Object]","timestamp":"2023-10-10T12:07:45.995Z"}
+{"level":"info","message":"*************Sale header 284 *************","timestamp":"2023-10-10T12:07:46.144Z"}
+{"level":"warn","message":"Check if lineId is null or undifine undefined","timestamp":"2023-10-10T12:07:46.146Z"}
+{"level":"warn","message":"header id ===> 284","timestamp":"2023-10-10T12:07:46.146Z"}
+{"level":"info","message":"Product Id ===>: 619","timestamp":"2023-10-10T12:07:46.222Z"}
+{"level":"info","message":"Cards available len ===>: 1 sale qty needed 1","timestamp":"2023-10-10T12:07:46.222Z"}
+{"level":"info","message":"$$$$$$ Reserve cards completed 1 records $$$$$","timestamp":"2023-10-10T12:07:46.313Z"}
+{"level":"info","message":"==> Creating sale line bulk with locking id 1696939666145mLv7u29","timestamp":"2023-10-10T12:07:46.314Z"}
+{"level":"info","message":"Transaction compleate [object Object]","timestamp":"2023-10-10T12:07:46.375Z"}
+{"level":"info","message":"===> Line created len: 1","timestamp":"2023-10-10T12:07:46.391Z"}
+{"level":"info","message":"===> Updating card saleLineId in card model","timestamp":"2023-10-10T12:07:46.392Z"}
+{"level":"info","message":"Update card saleLineId successfully undefined","timestamp":"2023-10-10T12:07:46.459Z"}
+{"level":"info","message":"All product count 1 to be update stock count","timestamp":"2023-10-10T12:07:46.530Z"}
+{"level":"info","message":"===== Create Sale Header =====[object Object]","timestamp":"2023-10-10T12:08:07.185Z"}
+{"level":"info","message":"*************Sale header 285 *************","timestamp":"2023-10-10T12:08:07.284Z"}
+{"level":"warn","message":"Check if lineId is null or undifine undefined","timestamp":"2023-10-10T12:08:07.284Z"}
+{"level":"warn","message":"header id ===> 285","timestamp":"2023-10-10T12:08:07.284Z"}
+{"level":"info","message":"Product Id ===>: 622","timestamp":"2023-10-10T12:08:07.345Z"}
+{"level":"info","message":"Cards available len ===>: 0 sale qty needed 1","timestamp":"2023-10-10T12:08:07.346Z"}
+{"level":"error","message":"Stock is not enought for productId 622","timestamp":"2023-10-10T12:08:07.347Z"}
+{"level":"warn","message":"Reversal cards by lockingSessionId 1696939687284Yok7X920","timestamp":"2023-10-10T12:08:07.349Z"}
+{"level":"info","message":"All card found for this saleLine 0","timestamp":"2023-10-10T12:08:07.414Z"}
+{"level":"error","message":"Something wrong need to reverse header Error: Error: Stock not enought #622","timestamp":"2023-10-10T12:08:07.415Z"}
+{"level":"info","message":"Reversal sale header 285","timestamp":"2023-10-10T12:08:07.416Z"}
+{"level":"info","message":"before set isActive","timestamp":"2023-10-10T12:08:07.489Z"}
+{"level":"error","message":"SaleHeader id 285 cannot be reserved TypeError: Cannot read properties of null (reading 'update')","timestamp":"2023-10-10T12:08:07.491Z"}
+{"level":"error","message":"Error occurs Error: SaleHeader id 285 cannot be reserved TypeError: Cannot read properties of null (reading 'update')","timestamp":"2023-10-10T12:08:07.535Z"}
+{"level":"info","message":"*************** FETCH PRODUCT BY ID  ***************","timestamp":"2023-10-10T12:08:22.755Z"}
+{"level":"info","message":"*************Payload: *****************","timestamp":"2023-10-10T12:08:22.756Z"}
+{"level":"info","message":"Product ID ===> 622","timestamp":"2023-10-10T12:09:24.889Z"}
+{"level":"warn","message":"1696939764893zXr3p430","timestamp":"2023-10-10T12:09:24.895Z"}
+{"level":"warn","message":"Row insert productId ===> 622","timestamp":"2023-10-10T12:09:24.896Z"}
+{"level":"info","message":"Rows inserted successfully","timestamp":"2023-10-10T12:09:24.984Z"}
+{"level":"info","message":"All product count 5 to be update stock count","timestamp":"2023-10-10T12:09:25.097Z"}
+{"level":"warn","message":"Date 2023-01-01 2023-12-31","timestamp":"2023-10-10T12:09:28.929Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN outlet u ON u.id = p.outlet LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2023-10-10T12:09:28.948Z"}
+{"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' \n    ","timestamp":"2023-10-10T12:09:29.124Z"}
+{"level":"info","message":"Record count => 17","timestamp":"2023-10-10T12:09:29.189Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-10-10T12:09:29.190Z"}
+{"level":"info","message":"===== Create Sale Header =====[object Object]","timestamp":"2023-10-10T12:09:33.163Z"}
+{"level":"info","message":"*************Sale header 286 *************","timestamp":"2023-10-10T12:09:33.297Z"}
+{"level":"warn","message":"Check if lineId is null or undifine undefined","timestamp":"2023-10-10T12:09:33.298Z"}
+{"level":"warn","message":"header id ===> 286","timestamp":"2023-10-10T12:09:33.298Z"}
+{"level":"info","message":"Product Id ===>: 622","timestamp":"2023-10-10T12:09:33.377Z"}
+{"level":"info","message":"Cards available len ===>: 1 sale qty needed 1","timestamp":"2023-10-10T12:09:33.378Z"}
+{"level":"info","message":"$$$$$$ Reserve cards completed 1 records $$$$$","timestamp":"2023-10-10T12:09:33.434Z"}
+{"level":"info","message":"==> Creating sale line bulk with locking id 1696939773298c3wjv67","timestamp":"2023-10-10T12:09:33.435Z"}
+{"level":"info","message":"Transaction compleate [object Object]","timestamp":"2023-10-10T12:09:33.491Z"}
+{"level":"info","message":"===> Line created len: 1","timestamp":"2023-10-10T12:09:33.505Z"}
+{"level":"info","message":"===> Updating card saleLineId in card model","timestamp":"2023-10-10T12:09:33.506Z"}
+{"level":"info","message":"Update card saleLineId successfully undefined","timestamp":"2023-10-10T12:09:33.576Z"}
+{"level":"info","message":"All product count 1 to be update stock count","timestamp":"2023-10-10T12:09:33.641Z"}
+{"level":"info","message":"===== Create Sale Header =====[object Object]","timestamp":"2023-10-10T12:09:52.233Z"}
+{"level":"info","message":"*************Sale header 287 *************","timestamp":"2023-10-10T12:09:52.355Z"}
+{"level":"warn","message":"Check if lineId is null or undifine undefined","timestamp":"2023-10-10T12:09:52.356Z"}
+{"level":"warn","message":"header id ===> 287","timestamp":"2023-10-10T12:09:52.356Z"}
+{"level":"info","message":"Product Id ===>: 622","timestamp":"2023-10-10T12:09:52.415Z"}
+{"level":"info","message":"Cards available len ===>: 0 sale qty needed 1","timestamp":"2023-10-10T12:09:52.415Z"}
+{"level":"error","message":"Stock is not enought for productId 622","timestamp":"2023-10-10T12:09:52.415Z"}
+{"level":"warn","message":"Reversal cards by lockingSessionId 1696939792356S7qwe701","timestamp":"2023-10-10T12:09:52.416Z"}
+{"level":"info","message":"All card found for this saleLine 0","timestamp":"2023-10-10T12:09:52.478Z"}
+{"level":"error","message":"Something wrong need to reverse header Error: Error: Stock not enought #622","timestamp":"2023-10-10T12:09:52.478Z"}
+{"level":"info","message":"Reversal sale header 287","timestamp":"2023-10-10T12:09:52.478Z"}
+{"level":"info","message":"before set isActive","timestamp":"2023-10-10T12:09:52.534Z"}
+{"level":"error","message":"SaleHeader id 287 cannot be reserved TypeError: Cannot read properties of null (reading 'update')","timestamp":"2023-10-10T12:09:52.537Z"}
+{"level":"error","message":"Error occurs Error: SaleHeader id 287 cannot be reserved TypeError: Cannot read properties of null (reading 'update')","timestamp":"2023-10-10T12:09:52.584Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-10-10T12:15:01.196Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-10-10T12:15:01.199Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-10-10T12:15:01.199Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-10-10T12:15:01.200Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-10-10T12:15:01.201Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-10-10T12:15:02.350Z"}
+{"level":"info","message":"app is runing: 8888","timestamp":"2023-10-10T12:15:02.350Z"}
+{"level":"warn","message":"env: dcommerce_dev","timestamp":"2023-10-10T12:15:02.351Z"}
+{"level":"info","message":"client_db Connection established","timestamp":"2023-10-10T12:15:02.877Z"}
+{"level":"info","message":"tutorial_db Connection established","timestamp":"2023-10-10T12:15:02.883Z"}
+{"level":"info","message":"Datatase central is synchronize","timestamp":"2023-10-10T12:15:03.314Z"}
+{"level":"warn","message":"Date 2023-01-01 2023-12-31","timestamp":"2023-10-10T12:15:04.888Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN outlet u ON u.id = p.outlet LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2023-10-10T12:15:04.922Z"}
+{"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' \n    ","timestamp":"2023-10-10T12:15:05.211Z"}
+{"level":"info","message":"Record count => 17","timestamp":"2023-10-10T12:15:05.279Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-10-10T12:15:05.280Z"}
+{"level":"info","message":"===== Create Sale Header =====[object Object]","timestamp":"2023-10-10T12:15:10.145Z"}
+{"level":"info","message":"*************Sale header 288 *************","timestamp":"2023-10-10T12:15:10.277Z"}
+{"level":"warn","message":"Check if lineId is null or undifine undefined","timestamp":"2023-10-10T12:15:10.279Z"}
+{"level":"warn","message":"header id ===> 288","timestamp":"2023-10-10T12:15:10.279Z"}
+{"level":"info","message":"Product Id ===>: 622","timestamp":"2023-10-10T12:15:10.358Z"}
+{"level":"info","message":"Cards available len ===>: 0 sale qty needed 1","timestamp":"2023-10-10T12:15:10.359Z"}
+{"level":"error","message":"Stock is not enought for productId 622","timestamp":"2023-10-10T12:15:10.359Z"}
+{"level":"warn","message":"Reversal cards by lockingSessionId 1696940110278BKLVI73","timestamp":"2023-10-10T12:15:10.360Z"}
+{"level":"info","message":"All card found for this saleLine 0","timestamp":"2023-10-10T12:15:10.427Z"}
+{"level":"error","message":"Something wrong need to reverse header Error: Error: Stock not enought #622","timestamp":"2023-10-10T12:15:10.429Z"}
+{"level":"info","message":"Reversal sale header 288","timestamp":"2023-10-10T12:15:10.429Z"}
+{"level":"info","message":"before set isActive","timestamp":"2023-10-10T12:15:10.504Z"}
+{"level":"error","message":"SaleHeader id 288 cannot be reserved TypeError: Cannot read properties of null (reading 'update')","timestamp":"2023-10-10T12:15:10.512Z"}
+{"level":"error","message":"Error occurs Error: SaleHeader id 288 cannot be reserved TypeError: Cannot read properties of null (reading 'update')","timestamp":"2023-10-10T12:15:10.567Z"}
+{"level":"info","message":"Datatase client is synchronize","timestamp":"2023-10-10T12:16:08.348Z"}
+{"level":"warn","message":"Date 2023-01-01 2023-12-31","timestamp":"2023-10-10T12:17:48.034Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN outlet u ON u.id = p.outlet LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2023-10-10T12:17:48.053Z"}
+{"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' \n    ","timestamp":"2023-10-10T12:17:48.244Z"}
+{"level":"info","message":"Record count => 17","timestamp":"2023-10-10T12:17:48.318Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-10-10T12:17:48.319Z"}
+{"level":"info","message":"===== Create Sale Header =====[object Object]","timestamp":"2023-10-10T12:17:57.550Z"}
+{"level":"info","message":"*************Sale header 289 *************","timestamp":"2023-10-10T12:17:57.666Z"}
+{"level":"warn","message":"Check if lineId is null or undifine undefined","timestamp":"2023-10-10T12:17:57.666Z"}
+{"level":"warn","message":"header id ===> 289","timestamp":"2023-10-10T12:17:57.666Z"}
+{"level":"info","message":"Product Id ===>: 622","timestamp":"2023-10-10T12:17:57.723Z"}
+{"level":"info","message":"Cards available len ===>: 0 sale qty needed 1","timestamp":"2023-10-10T12:17:57.724Z"}
+{"level":"error","message":"Stock is not enought for productId 622","timestamp":"2023-10-10T12:17:57.724Z"}
+{"level":"warn","message":"Reversal cards by lockingSessionId 169694027766651fF8989","timestamp":"2023-10-10T12:17:57.724Z"}
+{"level":"info","message":"All card found for this saleLine 0","timestamp":"2023-10-10T12:17:57.786Z"}
+{"level":"error","message":"Something wrong need to reverse header Error: Error: Stock not enought #622","timestamp":"2023-10-10T12:17:57.787Z"}
+{"level":"info","message":"Reversal sale header 289","timestamp":"2023-10-10T12:17:57.787Z"}
+{"level":"info","message":"before set isActive","timestamp":"2023-10-10T12:17:57.843Z"}
+{"level":"error","message":"SaleHeader id 289 cannot be reserved TypeError: Cannot read properties of null (reading 'update')","timestamp":"2023-10-10T12:17:57.844Z"}
+{"level":"error","message":"Error occurs Error: SaleHeader id 289 cannot be reserved TypeError: Cannot read properties of null (reading 'update')","timestamp":"2023-10-10T12:17:57.892Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-10-10T12:18:19.416Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-10-10T12:18:19.418Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-10-10T12:18:19.419Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-10-10T12:18:19.419Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-10-10T12:18:19.420Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-10-10T12:18:20.068Z"}
+{"level":"info","message":"app is runing: 8888","timestamp":"2023-10-10T12:18:20.068Z"}
+{"level":"warn","message":"env: dcommerce_dev","timestamp":"2023-10-10T12:18:20.068Z"}
+{"level":"info","message":"tutorial_db Connection established","timestamp":"2023-10-10T12:18:21.326Z"}
+{"level":"info","message":"client_db Connection established","timestamp":"2023-10-10T12:18:21.413Z"}
+{"level":"info","message":"Datatase central is synchronize","timestamp":"2023-10-10T12:18:21.805Z"}
+{"level":"info","message":"Datatase client is synchronize","timestamp":"2023-10-10T12:19:24.136Z"}
+{"level":"warn","message":"Date 2023-01-01 2023-12-31","timestamp":"2023-10-10T12:19:38.608Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN outlet u ON u.id = p.outlet LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2023-10-10T12:19:38.640Z"}
+{"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' \n    ","timestamp":"2023-10-10T12:19:38.970Z"}
+{"level":"info","message":"Record count => 17","timestamp":"2023-10-10T12:19:39.056Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-10-10T12:19:39.056Z"}
+{"level":"info","message":"===== Create Sale Header =====[object Object]","timestamp":"2023-10-10T12:19:44.817Z"}
+{"level":"info","message":"*************Sale header 290 *************","timestamp":"2023-10-10T12:19:44.938Z"}
+{"level":"warn","message":"Check if lineId is null or undifine undefined","timestamp":"2023-10-10T12:19:44.940Z"}
+{"level":"warn","message":"header id ===> 290","timestamp":"2023-10-10T12:19:44.940Z"}
+{"level":"info","message":"Product Id ===>: 622","timestamp":"2023-10-10T12:19:45.005Z"}
+{"level":"info","message":"Cards available len ===>: 0 sale qty needed 1","timestamp":"2023-10-10T12:19:45.006Z"}
+{"level":"error","message":"Stock is not enought for productId 622","timestamp":"2023-10-10T12:19:45.007Z"}
+{"level":"warn","message":"Reversal cards by lockingSessionId 1696940384939mNIdN637","timestamp":"2023-10-10T12:19:45.007Z"}
+{"level":"info","message":"All card found for this saleLine 0","timestamp":"2023-10-10T12:19:45.062Z"}
+{"level":"error","message":"Something wrong need to reverse header Error: Error: Stock not enought #622","timestamp":"2023-10-10T12:19:45.064Z"}
+{"level":"info","message":"Reversal sale header 290","timestamp":"2023-10-10T12:19:45.072Z"}
+{"level":"info","message":"before set isActive","timestamp":"2023-10-10T12:19:45.133Z"}
+{"level":"error","message":"SaleHeader id 290 cannot be reserved TypeError: Cannot read properties of null (reading 'update')","timestamp":"2023-10-10T12:19:45.134Z"}
+{"level":"error","message":"Error occurs Error: SaleHeader id 290 cannot be reserved TypeError: Cannot read properties of null (reading 'update')","timestamp":"2023-10-10T12:19:45.173Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-10-10T12:23:04.905Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-10-10T12:23:04.907Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-10-10T12:23:04.908Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-10-10T12:23:04.908Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-10-10T12:23:04.910Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-10-10T12:23:05.688Z"}
+{"level":"info","message":"app is runing: 8888","timestamp":"2023-10-10T12:23:05.689Z"}
+{"level":"warn","message":"env: dcommerce_dev","timestamp":"2023-10-10T12:23:05.689Z"}
+{"level":"info","message":"client_db Connection established","timestamp":"2023-10-10T12:23:06.225Z"}
+{"level":"info","message":"tutorial_db Connection established","timestamp":"2023-10-10T12:23:06.252Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-10-10T12:23:48.816Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-10-10T12:23:48.818Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-10-10T12:23:48.818Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-10-10T12:23:48.819Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-10-10T12:23:48.820Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-10-10T12:23:49.578Z"}
+{"level":"info","message":"app is runing: 8888","timestamp":"2023-10-10T12:23:49.579Z"}
+{"level":"warn","message":"env: dcommerce_dev","timestamp":"2023-10-10T12:23:49.579Z"}
+{"level":"info","message":"client_db Connection established","timestamp":"2023-10-10T12:23:50.144Z"}
+{"level":"info","message":"tutorial_db Connection established","timestamp":"2023-10-10T12:23:50.150Z"}
+{"level":"info","message":"Datatase central is synchronize","timestamp":"2023-10-10T12:23:50.580Z"}
+{"level":"info","message":"Datatase client is synchronize","timestamp":"2023-10-10T12:24:58.616Z"}
+{"level":"info","message":"===== Create Sale Header =====[object Object]","timestamp":"2023-10-10T12:25:17.095Z"}
+{"level":"info","message":"*************Sale header 291 *************","timestamp":"2023-10-10T12:25:17.236Z"}
+{"level":"warn","message":"Check if lineId is null or undifine undefined","timestamp":"2023-10-10T12:25:17.239Z"}
+{"level":"warn","message":"header id ===> 291","timestamp":"2023-10-10T12:25:17.239Z"}
+{"level":"info","message":"Product Id ===>: 622","timestamp":"2023-10-10T12:25:17.301Z"}
+{"level":"info","message":"Cards available len ===>: 0 sale qty needed 1","timestamp":"2023-10-10T12:25:17.302Z"}
+{"level":"error","message":"Stock is not enought for productId 622","timestamp":"2023-10-10T12:25:17.303Z"}
+{"level":"warn","message":"Reversal cards by lockingSessionId 1696940717238LgXZc309","timestamp":"2023-10-10T12:25:17.303Z"}
+{"level":"info","message":"All card found for this saleLine 0","timestamp":"2023-10-10T12:25:17.365Z"}
+{"level":"error","message":"Something wrong need to reverse header Error: Error: Stock not enought #622","timestamp":"2023-10-10T12:25:17.366Z"}
+{"level":"info","message":"Reversal sale header 291","timestamp":"2023-10-10T12:25:17.374Z"}
+{"level":"error","message":"SaleHeader id 291 cannot be reserved TypeError: logger.warning is not a function","timestamp":"2023-10-10T12:25:17.438Z"}
+{"level":"error","message":"Error occurs Error: SaleHeader id 291 cannot be reserved TypeError: logger.warning is not a function","timestamp":"2023-10-10T12:25:17.483Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-10-10T12:26:35.834Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-10-10T12:26:35.836Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-10-10T12:26:35.837Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-10-10T12:26:35.837Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-10-10T12:26:35.839Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-10-10T12:26:36.548Z"}
+{"level":"info","message":"app is runing: 8888","timestamp":"2023-10-10T12:26:36.549Z"}
+{"level":"warn","message":"env: dcommerce_dev","timestamp":"2023-10-10T12:26:36.554Z"}
+{"level":"info","message":"client_db Connection established","timestamp":"2023-10-10T12:26:38.065Z"}
+{"level":"info","message":"tutorial_db Connection established","timestamp":"2023-10-10T12:26:38.071Z"}
+{"level":"info","message":"Datatase central is synchronize","timestamp":"2023-10-10T12:26:38.508Z"}
+{"level":"info","message":"===== Create Sale Header =====[object Object]","timestamp":"2023-10-10T12:26:45.462Z"}
+{"level":"info","message":"*************Sale header 292 *************","timestamp":"2023-10-10T12:26:45.588Z"}
+{"level":"warn","message":"Check if lineId is null or undifine undefined","timestamp":"2023-10-10T12:26:45.589Z"}
+{"level":"warn","message":"header id ===> 292","timestamp":"2023-10-10T12:26:45.590Z"}
+{"level":"info","message":"Product Id ===>: 622","timestamp":"2023-10-10T12:26:45.935Z"}
+{"level":"info","message":"Cards available len ===>: 0 sale qty needed 1","timestamp":"2023-10-10T12:26:45.939Z"}
+{"level":"error","message":"Stock is not enought for productId 622","timestamp":"2023-10-10T12:26:45.939Z"}
+{"level":"warn","message":"Reversal cards by lockingSessionId 1696940805589aVfSX911","timestamp":"2023-10-10T12:26:45.940Z"}
+{"level":"info","message":"All card found for this saleLine 0","timestamp":"2023-10-10T12:26:46.005Z"}
+{"level":"error","message":"Something wrong need to reverse header Error: Error: Stock not enought #622","timestamp":"2023-10-10T12:26:46.007Z"}
+{"level":"info","message":"Reversal sale header 292","timestamp":"2023-10-10T12:26:46.011Z"}
+{"level":"warn","message":"Saleheader id 292 could not be founded","timestamp":"2023-10-10T12:26:46.078Z"}
+{"level":"info","message":"Transaction compleate [object Object]","timestamp":"2023-10-10T12:26:46.113Z"}
+{"level":"info","message":"Datatase client is synchronize","timestamp":"2023-10-10T12:27:43.014Z"}
+{"level":"info","message":"===== Create Sale Header =====[object Object]","timestamp":"2023-10-10T12:27:51.488Z"}
+{"level":"info","message":"*************Sale header 293 *************","timestamp":"2023-10-10T12:27:51.613Z"}
+{"level":"warn","message":"Check if lineId is null or undifine undefined","timestamp":"2023-10-10T12:27:51.614Z"}
+{"level":"warn","message":"header id ===> 293","timestamp":"2023-10-10T12:27:51.614Z"}
+{"level":"info","message":"Product Id ===>: 622","timestamp":"2023-10-10T12:27:51.665Z"}
+{"level":"info","message":"Cards available len ===>: 0 sale qty needed 1","timestamp":"2023-10-10T12:27:51.666Z"}
+{"level":"error","message":"Stock is not enought for productId 622","timestamp":"2023-10-10T12:27:51.670Z"}
+{"level":"warn","message":"Reversal cards by lockingSessionId 1696940871614sWKqo814","timestamp":"2023-10-10T12:27:51.670Z"}
+{"level":"info","message":"All card found for this saleLine 0","timestamp":"2023-10-10T12:27:51.722Z"}
+{"level":"error","message":"Something wrong need to reverse header Error: Error: Stock not enought #622","timestamp":"2023-10-10T12:27:51.723Z"}
+{"level":"info","message":"Reversal sale header 293","timestamp":"2023-10-10T12:27:51.724Z"}
+{"level":"warn","message":"Saleheader id 293 could not be founded","timestamp":"2023-10-10T12:27:51.784Z"}
+{"level":"info","message":"Transaction compleate [object Object]","timestamp":"2023-10-10T12:27:51.840Z"}
+{"level":"warn","message":"Date 2023-01-01 2023-12-31","timestamp":"2023-10-10T12:28:15.547Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN outlet u ON u.id = p.outlet LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2023-10-10T12:28:15.569Z"}
+{"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' \n    ","timestamp":"2023-10-10T12:28:15.970Z"}
+{"level":"info","message":"Record count => 17","timestamp":"2023-10-10T12:28:16.047Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-10-10T12:28:16.047Z"}
+{"level":"warn","message":"Date 2023-10-01 2023-10-10","timestamp":"2023-10-10T12:28:23.057Z"}
+{"level":"warn","message":"Date 2023-01-01 2023-12-31","timestamp":"2023-10-10T12:36:42.677Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN outlet u ON u.id = p.outlet LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2023-10-10T12:36:42.694Z"}
+{"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' \n    ","timestamp":"2023-10-10T12:36:42.941Z"}
+{"level":"info","message":"Record count => 17","timestamp":"2023-10-10T12:36:43.023Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-10-10T12:36:43.024Z"}
+{"level":"info","message":"===== Create Sale Header =====[object Object]","timestamp":"2023-10-10T12:36:45.613Z"}
+{"level":"info","message":"*************Sale header 294 *************","timestamp":"2023-10-10T12:36:45.741Z"}
+{"level":"warn","message":"Check if lineId is null or undifine undefined","timestamp":"2023-10-10T12:36:45.742Z"}
+{"level":"warn","message":"header id ===> 294","timestamp":"2023-10-10T12:36:45.742Z"}
+{"level":"info","message":"Product Id ===>: 622","timestamp":"2023-10-10T12:36:45.801Z"}
+{"level":"info","message":"Cards available len ===>: 0 sale qty needed 1","timestamp":"2023-10-10T12:36:45.801Z"}
+{"level":"error","message":"Stock is not enought for productId 622","timestamp":"2023-10-10T12:36:45.801Z"}
+{"level":"warn","message":"Reversal cards by lockingSessionId 1696941405741sJcF5564","timestamp":"2023-10-10T12:36:45.801Z"}
+{"level":"info","message":"All card found for this saleLine 0","timestamp":"2023-10-10T12:36:45.862Z"}
+{"level":"error","message":"Something wrong need to reverse header Error: Error: Stock not enought #622","timestamp":"2023-10-10T12:36:45.862Z"}
+{"level":"info","message":"Reversal sale header 294","timestamp":"2023-10-10T12:36:45.865Z"}
+{"level":"warn","message":"Saleheader id 294 could not be founded","timestamp":"2023-10-10T12:36:45.920Z"}
+{"level":"info","message":"Transaction compleate [object Object]","timestamp":"2023-10-10T12:36:45.982Z"}
+{"level":"warn","message":"Date 2023-01-01 2023-12-31","timestamp":"2023-10-10T12:36:48.406Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN outlet u ON u.id = p.outlet LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2023-10-10T12:36:48.428Z"}
+{"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' \n    ","timestamp":"2023-10-10T12:36:48.607Z"}
+{"level":"info","message":"Record count => 17","timestamp":"2023-10-10T12:36:48.678Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-10-10T12:36:48.679Z"}
+{"level":"warn","message":"Date 2023-10-01 2023-10-10","timestamp":"2023-10-10T12:37:11.639Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-10-10T12:40:10.068Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-10-10T12:40:10.071Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-10-10T12:40:10.071Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-10-10T12:40:10.072Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-10-10T12:40:10.073Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-10-10T12:40:10.924Z"}
+{"level":"info","message":"app is runing: 8888","timestamp":"2023-10-10T12:40:10.924Z"}
+{"level":"warn","message":"env: dcommerce_dev","timestamp":"2023-10-10T12:40:10.924Z"}
+{"level":"info","message":"tutorial_db Connection established","timestamp":"2023-10-10T12:40:11.441Z"}
+{"level":"info","message":"client_db Connection established","timestamp":"2023-10-10T12:40:11.483Z"}
+{"level":"info","message":"Datatase central is synchronize","timestamp":"2023-10-10T12:40:11.869Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-10-10T12:40:39.295Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-10-10T12:40:39.297Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-10-10T12:40:39.297Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-10-10T12:40:39.298Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-10-10T12:40:39.299Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-10-10T12:40:40.030Z"}
+{"level":"info","message":"app is runing: 8888","timestamp":"2023-10-10T12:40:40.030Z"}
+{"level":"warn","message":"env: dcommerce_dev","timestamp":"2023-10-10T12:40:40.030Z"}
+{"level":"info","message":"client_db Connection established","timestamp":"2023-10-10T12:40:40.658Z"}
+{"level":"info","message":"tutorial_db Connection established","timestamp":"2023-10-10T12:40:40.691Z"}
+{"level":"info","message":"Datatase central is synchronize","timestamp":"2023-10-10T12:40:41.144Z"}
+{"level":"info","message":"Datatase client is synchronize","timestamp":"2023-10-10T12:41:44.765Z"}
+{"level":"warn","message":"Date 2023-01-01 2023-12-31","timestamp":"2023-10-10T12:41:58.692Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN outlet u ON u.id = p.outlet LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2023-10-10T12:41:58.723Z"}
+{"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' \n    ","timestamp":"2023-10-10T12:41:59.090Z"}
+{"level":"info","message":"Record count => 17","timestamp":"2023-10-10T12:41:59.155Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-10-10T12:41:59.155Z"}
+{"level":"info","message":"===== Create Sale Header =====[object Object]","timestamp":"2023-10-10T12:42:07.381Z"}
+{"level":"info","message":"*************Sale header 295 *************","timestamp":"2023-10-10T12:42:07.477Z"}
+{"level":"warn","message":"Check if lineId is null or undifine undefined","timestamp":"2023-10-10T12:42:07.479Z"}
+{"level":"warn","message":"header id ===> 295","timestamp":"2023-10-10T12:42:07.479Z"}
+{"level":"info","message":"Product Id ===>: 622","timestamp":"2023-10-10T12:42:07.547Z"}
+{"level":"info","message":"Cards available len ===>: 0 sale qty needed 1","timestamp":"2023-10-10T12:42:07.549Z"}
+{"level":"error","message":"Stock is not enought for productId 622","timestamp":"2023-10-10T12:42:07.549Z"}
+{"level":"warn","message":"Reversal cards by lockingSessionId 1696941727479NlGUO833","timestamp":"2023-10-10T12:42:07.550Z"}
+{"level":"info","message":"All card found for this saleLine 0","timestamp":"2023-10-10T12:42:07.601Z"}
+{"level":"error","message":"Something wrong need to reverse header Error: Error: Stock not enought #622","timestamp":"2023-10-10T12:42:07.601Z"}
+{"level":"info","message":"Transaction compleate [object Object]","timestamp":"2023-10-10T12:42:07.661Z"}
+{"level":"warn","message":"Date 2023-10-01 2023-10-10","timestamp":"2023-10-10T12:42:52.688Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-10-10T12:50:31.498Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-10-10T12:50:31.500Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-10-10T12:50:31.500Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-10-10T12:50:31.501Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-10-10T12:50:31.502Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-10-10T12:50:32.297Z"}
+{"level":"info","message":"app is runing: 8888","timestamp":"2023-10-10T12:50:32.298Z"}
+{"level":"warn","message":"env: dcommerce_dev","timestamp":"2023-10-10T12:50:32.298Z"}
+{"level":"info","message":"tutorial_db Connection established","timestamp":"2023-10-10T12:50:32.856Z"}
+{"level":"info","message":"client_db Connection established","timestamp":"2023-10-10T12:50:32.882Z"}
+{"level":"info","message":"Datatase central is synchronize","timestamp":"2023-10-10T12:50:33.272Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-10-10T12:54:02.850Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-10-10T12:54:02.854Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-10-10T12:54:02.856Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-10-10T12:54:02.857Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-10-10T12:54:02.859Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-10-10T12:54:04.094Z"}
+{"level":"info","message":"app is runing: 8888","timestamp":"2023-10-10T12:54:04.094Z"}
+{"level":"warn","message":"env: dcommerce_dev","timestamp":"2023-10-10T12:54:04.095Z"}
+{"level":"info","message":"client_db Connection established","timestamp":"2023-10-10T12:54:04.665Z"}
+{"level":"info","message":"tutorial_db Connection established","timestamp":"2023-10-10T12:54:04.680Z"}
+{"level":"info","message":"Datatase central is synchronize","timestamp":"2023-10-10T12:54:05.575Z"}
+{"level":"warn","message":"Date 2023-01-01 2023-12-31","timestamp":"2023-10-10T12:54:33.070Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN outlet u ON u.id = p.outlet LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2023-10-10T12:54:33.093Z"}
+{"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' \n    ","timestamp":"2023-10-10T12:54:33.556Z"}
+{"level":"info","message":"Record count => 17","timestamp":"2023-10-10T12:54:33.614Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-10-10T12:54:33.614Z"}
+{"level":"info","message":"Datatase client is synchronize","timestamp":"2023-10-10T12:55:14.809Z"}
+{"level":"info","message":"===== Create Sale Header =====[object Object]","timestamp":"2023-10-10T12:55:20.614Z"}
+{"level":"info","message":"*************Sale header 296 *************","timestamp":"2023-10-10T12:55:20.749Z"}
+{"level":"warn","message":"Check if lineId is null or undifine undefined","timestamp":"2023-10-10T12:55:20.750Z"}
+{"level":"warn","message":"header id ===> 296","timestamp":"2023-10-10T12:55:20.750Z"}
+{"level":"info","message":"Product Id ===>: 622","timestamp":"2023-10-10T12:55:20.805Z"}
+{"level":"info","message":"Cards available len ===>: 0 sale qty needed 1","timestamp":"2023-10-10T12:55:20.806Z"}
+{"level":"error","message":"Stock is not enought for productId 622","timestamp":"2023-10-10T12:55:20.806Z"}
+{"level":"warn","message":"Reversal cards by lockingSessionId 1696942520750Mkztv98","timestamp":"2023-10-10T12:55:20.807Z"}
+{"level":"info","message":"All card found for this saleLine 0","timestamp":"2023-10-10T12:55:20.858Z"}
+{"level":"error","message":"Something wrong need to reverse header Error: Error: Stock not enought #622","timestamp":"2023-10-10T12:55:20.859Z"}
+{"level":"error","message":"Error occurs Error: Error: Error: Stock not enought #622","timestamp":"2023-10-10T12:55:20.914Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-10-10T13:04:10.124Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-10-10T13:04:10.126Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-10-10T13:04:10.127Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-10-10T13:04:10.127Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-10-10T13:04:10.128Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-10-10T13:04:11.019Z"}
+{"level":"info","message":"app is runing: 8888","timestamp":"2023-10-10T13:04:11.019Z"}
+{"level":"warn","message":"env: dcommerce_dev","timestamp":"2023-10-10T13:04:11.019Z"}
+{"level":"info","message":"tutorial_db Connection established","timestamp":"2023-10-10T13:04:11.505Z"}
+{"level":"info","message":"client_db Connection established","timestamp":"2023-10-10T13:04:11.511Z"}
+{"level":"info","message":"Datatase central is synchronize","timestamp":"2023-10-10T13:04:12.519Z"}
+{"level":"info","message":"Datatase client is synchronize","timestamp":"2023-10-10T13:05:18.023Z"}
+{"level":"warn","message":"Date 2023-01-01 2023-12-31","timestamp":"2023-10-10T13:05:25.798Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN outlet u ON u.id = p.outlet LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2023-10-10T13:05:25.841Z"}
+{"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' \n    ","timestamp":"2023-10-10T13:05:26.187Z"}
+{"level":"info","message":"Record count => 17","timestamp":"2023-10-10T13:05:26.257Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-10-10T13:05:26.258Z"}
+{"level":"info","message":"===== Create Sale Header =====[object Object]","timestamp":"2023-10-10T13:05:34.253Z"}
+{"level":"info","message":"*************Sale header 297 *************","timestamp":"2023-10-10T13:05:34.368Z"}
+{"level":"warn","message":"Check if lineId is null or undifine undefined","timestamp":"2023-10-10T13:05:34.371Z"}
+{"level":"warn","message":"header id ===> 297","timestamp":"2023-10-10T13:05:34.371Z"}
+{"level":"info","message":"Product Id ===>: 622","timestamp":"2023-10-10T13:05:34.432Z"}
+{"level":"info","message":"Cards available len ===>: 0 sale qty needed 1","timestamp":"2023-10-10T13:05:34.433Z"}
+{"level":"error","message":"Stock is not enought for productId 622","timestamp":"2023-10-10T13:05:34.433Z"}
+{"level":"warn","message":"Reversal cards by lockingSessionId 1696943134370ObU0c79","timestamp":"2023-10-10T13:05:34.434Z"}
+{"level":"info","message":"All card found for this saleLine 0","timestamp":"2023-10-10T13:05:34.493Z"}
+{"level":"error","message":"Something wrong need to reverse header Error: Error: Stock not enought #622","timestamp":"2023-10-10T13:05:34.496Z"}
+{"level":"info","message":"Reversal sale header 297","timestamp":"2023-10-10T13:05:34.552Z"}
+{"level":"info","message":"before set isActive 297","timestamp":"2023-10-10T13:05:34.615Z"}
+{"level":"info","message":"after set isActive","timestamp":"2023-10-10T13:05:34.682Z"}
+{"level":"info","message":"SaleHeader id 297 has been reserved false","timestamp":"2023-10-10T13:05:34.683Z"}
+{"level":"warn","message":"Transaction reversed","timestamp":"2023-10-10T13:05:34.683Z"}
+{"level":"warn","message":"Date 2023-10-01 2023-10-10","timestamp":"2023-10-10T13:05:57.371Z"}
+{"level":"warn","message":"Date 2023-01-01 2023-12-31","timestamp":"2023-10-10T13:06:11.310Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN outlet u ON u.id = p.outlet LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2023-10-10T13:06:11.325Z"}
+{"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' \n    ","timestamp":"2023-10-10T13:06:11.564Z"}
+{"level":"info","message":"Record count => 17","timestamp":"2023-10-10T13:06:11.907Z"}
+{"level":"info","message":"Cal finish","timestamp":"2023-10-10T13:06:11.908Z"}
+{"level":"info","message":"===== Create Sale Header =====[object Object]","timestamp":"2023-10-10T13:06:14.995Z"}
+{"level":"info","message":"*************Sale header 298 *************","timestamp":"2023-10-10T13:06:15.132Z"}
+{"level":"warn","message":"Check if lineId is null or undifine undefined","timestamp":"2023-10-10T13:06:15.133Z"}
+{"level":"warn","message":"header id ===> 298","timestamp":"2023-10-10T13:06:15.133Z"}
+{"level":"info","message":"Product Id ===>: 622","timestamp":"2023-10-10T13:06:15.193Z"}
+{"level":"info","message":"Cards available len ===>: 0 sale qty needed 1","timestamp":"2023-10-10T13:06:15.193Z"}
+{"level":"error","message":"Stock is not enought for productId 622","timestamp":"2023-10-10T13:06:15.194Z"}
+{"level":"warn","message":"Reversal cards by lockingSessionId 1696943175133irRZN541","timestamp":"2023-10-10T13:06:15.194Z"}
+{"level":"info","message":"All card found for this saleLine 0","timestamp":"2023-10-10T13:06:15.253Z"}
+{"level":"error","message":"Something wrong need to reverse header Error: Error: Stock not enought #622","timestamp":"2023-10-10T13:06:15.254Z"}
+{"level":"info","message":"Reversal sale header 298","timestamp":"2023-10-10T13:06:15.300Z"}
+{"level":"info","message":"before set isActive 298","timestamp":"2023-10-10T13:06:15.365Z"}
+{"level":"info","message":"after set isActive","timestamp":"2023-10-10T13:06:15.431Z"}
+{"level":"info","message":"SaleHeader id 298 has been reserved false","timestamp":"2023-10-10T13:06:15.431Z"}
+{"level":"warn","message":"Transaction reversed","timestamp":"2023-10-10T13:06:15.432Z"}
+{"level":"info","message":"===== Create Sale Header =====[object Object]","timestamp":"2023-10-10T13:06:46.764Z"}
+{"level":"info","message":"*************Sale header 299 *************","timestamp":"2023-10-10T13:06:46.995Z"}
+{"level":"warn","message":"Check if lineId is null or undifine undefined","timestamp":"2023-10-10T13:06:46.997Z"}
+{"level":"warn","message":"header id ===> 299","timestamp":"2023-10-10T13:06:46.998Z"}
+{"level":"info","message":"Product Id ===>: 619","timestamp":"2023-10-10T13:06:47.073Z"}
+{"level":"info","message":"Cards available len ===>: 1 sale qty needed 1","timestamp":"2023-10-10T13:06:47.076Z"}
+{"level":"info","message":"$$$$$$ Reserve cards completed 1 records $$$$$","timestamp":"2023-10-10T13:06:47.151Z"}
+{"level":"info","message":"==> Creating sale line bulk with locking id 1696943206995Ioqb3632","timestamp":"2023-10-10T13:06:47.153Z"}
+{"level":"info","message":"Transaction compleate [object Object]","timestamp":"2023-10-10T13:06:47.202Z"}
+{"level":"info","message":"===> Line created len: 1","timestamp":"2023-10-10T13:06:47.221Z"}
+{"level":"info","message":"===> Updating card saleLineId in card model","timestamp":"2023-10-10T13:06:47.221Z"}
+{"level":"info","message":"Update card saleLineId successfully undefined","timestamp":"2023-10-10T13:06:47.281Z"}
+{"level":"info","message":"All product count 1 to be update stock count","timestamp":"2023-10-10T13:06:47.347Z"}
+{"level":"info","message":"===== Create Sale Header =====[object Object]","timestamp":"2023-10-10T13:08:38.103Z"}
+{"level":"info","message":"*************Sale header 300 *************","timestamp":"2023-10-10T13:08:38.226Z"}
+{"level":"warn","message":"Check if lineId is null or undifine undefined","timestamp":"2023-10-10T13:08:38.228Z"}
+{"level":"warn","message":"header id ===> 300","timestamp":"2023-10-10T13:08:38.228Z"}
+{"level":"info","message":"Product Id ===>: 619","timestamp":"2023-10-10T13:08:38.296Z"}
+{"level":"info","message":"Cards available len ===>: 1 sale qty needed 1","timestamp":"2023-10-10T13:08:38.297Z"}
+{"level":"info","message":"$$$$$$ Reserve cards completed 1 records $$$$$","timestamp":"2023-10-10T13:08:38.370Z"}
+{"level":"info","message":"==> Creating sale line bulk with locking id 1696943318227zWjfZ673","timestamp":"2023-10-10T13:08:38.370Z"}
+{"level":"info","message":"Transaction compleate [object Object]","timestamp":"2023-10-10T13:08:38.443Z"}
+{"level":"info","message":"===> Line created len: 1","timestamp":"2023-10-10T13:08:38.458Z"}
+{"level":"info","message":"===> Updating card saleLineId in card model","timestamp":"2023-10-10T13:08:38.459Z"}
+{"level":"info","message":"Update card saleLineId successfully undefined","timestamp":"2023-10-10T13:08:38.528Z"}
+{"level":"info","message":"All product count 1 to be update stock count","timestamp":"2023-10-10T13:08:38.578Z"}

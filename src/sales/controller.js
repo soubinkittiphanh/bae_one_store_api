@@ -70,6 +70,7 @@ exports.createSaleHeader = async (req, res) => {
       //  Line with headerId
       // **********************
       const lockingSessionId = common.generateLockingSessionId()
+      const errorList = []
       try {
         const linesWithHeaderId = await assignHeaderId(lines, saleHeader.id, lockingSessionId, false, locationId)
         lineService.createBulkSaleLine(res, linesWithHeaderId, lockingSessionId)
@@ -78,11 +79,17 @@ exports.createSaleHeader = async (req, res) => {
         //  Reverse SaleHeader just created
         // ********************************************
         logger.error("Something wrong need to reverse header " + error)
-        await headerService.saleHeaderReversal(saleHeader.id)
         res.status(500).send("Unfortunately " + error)
+        // throw new Error(error)
+        errorList.push(error)
       }
-      return { customer, saleHeader };
+      const reversalRequire = errorList.length>0 ?true:false
+      return { customer, saleHeader,reversalRequire };
     })
+    if(result.reversalRequire){
+      await headerService.saleHeaderReversal(result.saleHeader.id)
+      return logger.warn(`Transaction reversed`)
+    }
     logger.info(`Transaction compleate ${result}`)
   } catch (error) {
     logger.error(`Error occurs ${error}`)
