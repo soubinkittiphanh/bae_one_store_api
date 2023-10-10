@@ -3008,3 +3008,65 @@
 {"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2023-10-01 00:00:00' AND '2023-10-30 23:59:59' \n    ","timestamp":"2023-10-10T04:09:30.176Z"}
 {"level":"info","message":"Record count => 17","timestamp":"2023-10-10T04:09:30.237Z"}
 {"level":"info","message":"Cal finish","timestamp":"2023-10-10T04:09:30.237Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-10-10T06:20:27.937Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-10-10T06:20:27.940Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-10-10T06:20:27.940Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-10-10T06:20:27.941Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-10-10T06:20:27.943Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-10-10T06:20:28.797Z"}
+{"level":"info","message":"app is runing: 8888","timestamp":"2023-10-10T06:20:28.798Z"}
+{"level":"warn","message":"env: dcommerce_dev","timestamp":"2023-10-10T06:20:28.798Z"}
+{"level":"info","message":"client_db Connection established","timestamp":"2023-10-10T06:20:29.335Z"}
+{"level":"info","message":"tutorial_db Connection established","timestamp":"2023-10-10T06:20:29.342Z"}
+{"level":"info","message":"Datatase central is synchronize","timestamp":"2023-10-10T06:20:30.044Z"}
+{"level":"info","message":"Datatase client is synchronize","timestamp":"2023-10-10T06:21:36.022Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-10-10T06:34:51.191Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-10-10T06:34:51.193Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-10-10T06:34:51.194Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-10-10T06:34:51.195Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-10-10T06:34:51.196Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-10-10T06:34:52.021Z"}
+{"level":"info","message":"app is runing: 8888","timestamp":"2023-10-10T06:34:52.022Z"}
+{"level":"warn","message":"env: dcommerce_dev","timestamp":"2023-10-10T06:34:52.022Z"}
+{"level":"info","message":"tutorial_db Connection established","timestamp":"2023-10-10T06:34:52.635Z"}
+{"level":"info","message":"client_db Connection established","timestamp":"2023-10-10T06:34:52.684Z"}
+{"level":"info","message":"Datatase central is synchronize","timestamp":"2023-10-10T06:34:53.157Z"}
+{"level":"info","message":"Datatase client is synchronize","timestamp":"2023-10-10T06:35:54.560Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-10-10T06:47:50.077Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-10-10T06:47:50.079Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-10-10T06:47:50.080Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-10-10T06:47:50.081Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-10-10T06:47:50.082Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-10-10T06:47:51.022Z"}
+{"level":"info","message":"app is runing: 8888","timestamp":"2023-10-10T06:47:51.023Z"}
+{"level":"warn","message":"env: dcommerce_dev","timestamp":"2023-10-10T06:47:51.025Z"}
+{"level":"info","message":"tutorial_db Connection established","timestamp":"2023-10-10T06:47:51.555Z"}
+{"level":"info","message":"client_db Connection established","timestamp":"2023-10-10T06:47:51.591Z"}
+{"level":"info","message":"Datatase central is synchronize","timestamp":"2023-10-10T06:47:51.967Z"}
+{"level":"info","message":"Datatase client is synchronize","timestamp":"2023-10-10T06:48:52.783Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-10-10T06:49:34.387Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-10-10T06:49:34.389Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-10-10T06:49:34.390Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-10-10T06:49:34.390Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-10-10T06:49:34.391Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-10-10T06:49:35.131Z"}
+{"level":"info","message":"app is runing: 8888","timestamp":"2023-10-10T06:49:35.132Z"}
+{"level":"warn","message":"env: dcommerce_dev","timestamp":"2023-10-10T06:49:35.132Z"}
+{"level":"info","message":"client_db Connection established","timestamp":"2023-10-10T06:49:35.677Z"}
+{"level":"info","message":"tutorial_db Connection established","timestamp":"2023-10-10T06:49:35.723Z"}
+{"level":"info","message":"Datatase central is synchronize","timestamp":"2023-10-10T06:49:36.222Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-10-10T06:50:11.569Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-10-10T06:50:11.571Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-10-10T06:50:11.572Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-10-10T06:50:11.572Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-10-10T06:50:11.573Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-10-10T06:50:12.320Z"}
+{"level":"info","message":"app is runing: 8888","timestamp":"2023-10-10T06:50:12.321Z"}
+{"level":"warn","message":"env: dcommerce_dev","timestamp":"2023-10-10T06:50:12.321Z"}
+{"level":"info","message":"client_db Connection established","timestamp":"2023-10-10T06:50:12.835Z"}
+{"level":"info","message":"tutorial_db Connection established","timestamp":"2023-10-10T06:50:12.850Z"}
+{"level":"info","message":"Datatase central is synchronize","timestamp":"2023-10-10T06:50:13.289Z"}
+{"level":"info","message":"Datatase client is synchronize","timestamp":"2023-10-10T06:51:11.333Z"}
+{"level":"warn","message":"Date 2023-10-01 2023-10-10","timestamp":"2023-10-10T09:49:40.390Z"}
+{"level":"info","message":"*************** FETCH PRODUCT BY ID  ***************","timestamp":"2023-10-10T09:49:45.538Z"}
+{"level":"info","message":"*************Payload: *****************","timestamp":"2023-10-10T09:49:45.538Z"}
