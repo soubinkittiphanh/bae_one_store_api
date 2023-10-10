@@ -198,6 +198,7 @@ LEFT JOIN outlet o ON
     o.id = p.outlet
 LEFT JOIN image_path i ON
     i.pro_id = p.pro_id
+WHERE p.isActive = true
 GROUP BY
     p.pro_id
 ORDER BY
