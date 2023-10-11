@@ -3873,3 +3873,15 @@
 {"level":"info","message":"Record count => 17","timestamp":"2023-10-10T14:18:54.098Z"}
 {"level":"info","message":"Cal finish","timestamp":"2023-10-10T14:18:54.098Z"}
 {"level":"warn","message":"Date 2023-10-01 2023-10-10","timestamp":"2023-10-10T14:18:56.376Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2023-10-11T04:26:59.055Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2023-10-11T04:26:59.057Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2023-10-11T04:26:59.058Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2023-10-11T04:26:59.058Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2023-10-11T04:26:59.060Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2023-10-11T04:26:59.834Z"}
+{"level":"info","message":"app is runing: 8888","timestamp":"2023-10-11T04:26:59.835Z"}
+{"level":"warn","message":"env: dcommerce_pro_laofriend","timestamp":"2023-10-11T04:26:59.835Z"}
+{"level":"info","message":"client_db Connection established","timestamp":"2023-10-11T04:27:01.022Z"}
+{"level":"info","message":"tutorial_db Connection established","timestamp":"2023-10-11T04:27:01.029Z"}
+{"level":"info","message":"Datatase central is synchronize","timestamp":"2023-10-11T04:27:01.565Z"}
+{"level":"info","message":"Datatase client is synchronize","timestamp":"2023-10-11T04:28:18.617Z"}

@@ -13,6 +13,19 @@ module.exports = {
       res.status(500).json({ error: 'Internal server error' });
     }
   },
+  async findActiveCurrencies(req, res) {
+    try {
+      const currencies = await Currency.findAll({
+        where: {
+          isActive: true
+        }
+      });
+      res.status(200).json(currencies);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  },
 
   async findCurrency(req, res) {
     const { id } = req.params;
