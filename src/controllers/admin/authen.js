@@ -6,7 +6,7 @@ const authenticate = async (req, res) => {
     console.log("************* User auth  *****************");
     console.log(`*************Payload: ${body} *****************`);
     const { mem_id, mem_pwd } = body;
-    const sqlLogin = `SELECT * FROM user WHERE cus_id='${mem_id}' AND cus_pass='${mem_pwd}'`
+    const sqlLogin = `SELECT * FROM user WHERE cus_id='${mem_id}' AND cus_pass='${mem_pwd}' AND isActive=true`
     logger.info("SQL COMMAND "+sqlLogin)
     Db.query(sqlLogin, (er, re) => {
         if (er) return res.send("Error: " + er)
