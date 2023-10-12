@@ -31,6 +31,9 @@ const user = require("../user").router
 const shipping = require("../shipping").router
 const company = require("../company").router
 const tutorial = require("../tutorial").router
+const group = require("../group").router
+const authority = require("../authority").router
+const account = require("../account").router
 
 module.exports={
     orderRouter,
@@ -65,5 +68,8 @@ module.exports={
     user,
     shipping,
     company,
-    tutorial
+    tutorial,
+    group,
+    authority,
+    account
 }

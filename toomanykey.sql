@@ -197,3 +197,19 @@ ALTER TABLE `company` DROP INDEX `mnemonic_13`;
 ALTER TABLE `company` DROP INDEX `mnemonic_14`;
 ALTER TABLE `company` DROP INDEX `mnemonic_15`;
 
+ALTER TABLE `userGroup` DROP INDEX `code_15`;
+ALTER TABLE `userGroup` DROP INDEX `code_16`;
+ALTER TABLE `userGroup` DROP INDEX `code_17`;
+ALTER TABLE `userGroup` DROP INDEX `code_18`;
+ALTER TABLE `userGroup` DROP INDEX `code_19`;
+ALTER TABLE `userGroup` DROP INDEX `code_20`;
+ALTER TABLE `userGroup` DROP INDEX `code_21`;
+
+ALTER TABLE `authority` DROP INDEX `code_15`;
+ALTER TABLE `authority` DROP INDEX `code_16`;
+ALTER TABLE `authority` DROP INDEX `code_17`;
+ALTER TABLE `authority` DROP INDEX `code_18`;
+ALTER TABLE `authority` DROP INDEX `code_19`;
+ALTER TABLE `authority` DROP INDEX `code_20`;
+ALTER TABLE `authority` DROP INDEX `code_21`;
+

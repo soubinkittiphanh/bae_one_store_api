@@ -1,93 +1,37 @@
 const logger = require('../api/logger');
-const Unit = require('../models').unit
-// function generateRandomString(length) {
-//     let result = '';
-//     const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-//     const charactersLength = characters.length;
-//     for (let i = 0; i < length; i++) {
-//       result += characters.charAt(Math.floor(Math.random() * charactersLength));
-//     }
+const User = require('../models').user;
+const Terminal = require('../models').terminal;
+const Group = require('../models').group;
+const Authority = require('../models').authority;
+const getUserById = async ( cus_id, cus_pass) => {
 
-//     return result;
-//   }
-
-const createHulkUnit = (req, res) => {
-    const rowsToInsert =
-        [
-            {
-                name: 'each',
-                unitRate: 1,
-                isActive: true
+    try {
+        const user = await User.findOne({
+            where: {
+                cus_id, cus_pass
+            }, include: [{
+                model: Terminal,
+                through: { attributes: [] }
             },
             {
-                name: 'dozen',
-                unitRate: 12,
-                isActive: true
-            },
-            {
-                name: 'pound',
-                unitRate: 16,
-                isActive: true
-            },
-            {
-                name: 'gallon',
-                unitRate: 128,
-                isActive: true
-            },
-            {
-                name: 'bottle',
-                unitRate: 1,
-                isActive: true
-            },
-            {
-                name: 'case',
-                unitRate: 12,
-                isActive: true
-            },
-            {
-                name: 'can',
-                unitRate: 1,
-                isActive: true
-            },
-            {
-                name: 'pack',
-                unitRate: 6,
-                isActive: true
-            },
-            {
-                name: 'piece',
-                unitRate: 1,
-                isActive: true
-            },
-            {
-                name: "meter",
-                unitRate: 1.0,
-                isActive: true
-            },
-            {
-                name: "liter",
-                unitRate: 0.001,
-                isActive: true
-            },
-            {
-                name: "kilogram",
-                unitRate: 1.0,
-                isActive: false
-            },
-
-        ]
-
-    Unit.bulkCreate(rowsToInsert)
-        .then(() => {
-            logger.info('Rows inserted successfully')
-            return res.status(200).send("Transction completed")
+                model: Group,
+                as: 'userGroup', // set the alias for the userGroup association
+                include: [
+                    {
+                        model: Authority
+                    }
+                ]
+            }
+            ]
         })
-        .catch((error) => {
-            logger.error('Error inserting rows:', error)
-            return res.status(403).send("Server error " + error)
-        });
-}
+        logger.info(`**********${user}**********`)
+        return user;
+    } catch (error) {
+        logger.error(`Cannot get user with error ${error}`)
+        return null
+    }
+};
 
 module.exports = {
-    createHulkUnit,
+    getUserById,
 }

@@ -52,6 +52,8 @@ const db = {}
 db.sequelize = sequelize;
 db.Sequelize = Sequelize
 db.centralSequelize = tutorialDB;
+db.group = require("../group/model")(sequelize, DataTypes);
+db.authority = require("../authority/model")(sequelize, DataTypes);
 db.tuturial = require("../tutorial/model")(tutorialDB, DataTypes);
 db.product = require("../product/model")(sequelize, DataTypes);
 db.company = require("../company/model")(sequelize, DataTypes);
@@ -85,6 +87,12 @@ db.unit = require("../unit/model")(sequelize, DataTypes);
 db.payment = require("../paymentMethod/model")(sequelize, DataTypes);
 // const UserTerminals = sequelize.define('user_terminals', {});
 
+
+db.user.belongsTo(db.group, {
+    foreignKey: 'groupId',
+    as: 'userGroup'
+})
+
 //***************Map order to delivery customer**************/
 db.customer.belongsTo(db.saleHeader, {
     foreignKey: 'saleHeaderId',
@@ -112,6 +120,9 @@ db.card.belongsTo(db.currency, {
 })
 db.user.belongsToMany(db.terminal, { through: 'UserTerminals' })
 db.terminal.belongsToMany(db.user, { through: 'UserTerminals' })
+db.authority.belongsToMany(db.group, { through: 'GroupAuthorities' })
+db.group.belongsToMany(db.authority, { through: 'GroupAuthorities' })
+
 
 db.terminal.belongsTo(db.location, {
     foreignKey: 'locationId',
