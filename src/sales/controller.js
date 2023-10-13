@@ -83,10 +83,10 @@ exports.createSaleHeader = async (req, res) => {
         // throw new Error(error)
         errorList.push(error)
       }
-      const reversalRequire = errorList.length>0 ?true:false
-      return { customer, saleHeader,reversalRequire };
+      const reversalRequire = errorList.length > 0 ? true : false
+      return { customer, saleHeader, reversalRequire };
     })
-    if(result.reversalRequire){
+    if (result.reversalRequire) {
       await headerService.saleHeaderReversal(result.saleHeader.id)
       return logger.warn(`Transaction reversed`)
     }
@@ -284,7 +284,7 @@ const reserveCard = async (line, lockingSessionId, qty, locationId) => {
 
 exports.getSaleHeaders = async (req, res) => {
   try {
-    const saleHeaders = await SaleHeader.findAll({ include: ['lines', 'user', 'client', 'payment', 'currency', 'location',Customer], });
+    const saleHeaders = await SaleHeader.findAll({ include: ['lines', 'user', 'client', 'payment', 'currency', 'location', Customer], });
 
     res.status(200).json({ success: true, data: saleHeaders });
   } catch (error) {
@@ -296,9 +296,10 @@ exports.getSaleHeaders = async (req, res) => {
 exports.getSaleHeadersByDate = async (req, res) => {
   const date = JSON.parse(req.query.date);
   logger.warn("Date " + date.startDate + " " + date.endDate)
+  logger.warn(`Request date ${date.startDate} userId ${req.user.id}`)
   try {
     const saleHeaders = await SaleHeader.findAll({
-      include: ['user', 'client', 'payment', 'currency', 'location',Customer,
+      include: ['user', 'client', 'payment', 'currency', 'location', Customer,
         {
           model: Line,
           as: "lines",
@@ -316,6 +317,39 @@ exports.getSaleHeadersByDate = async (req, res) => {
           [Op.between]: [date.startDate, date.endDate]
         },
         // isActive:false
+      }
+    });
+
+    res.status(200).send(saleHeaders);
+  } catch (error) {
+    logger.error("===> Filter by date error: " + error)
+    res.status(500).send(error);
+  }
+};
+
+exports.getSaleHeadersByDateAndUser = async (req, res) => {
+  const date = JSON.parse(req.query.date);
+  logger.warn(`Request date ${date.startDate} userId ${date.userId}`)
+  try {
+    const saleHeaders = await SaleHeader.findAll({
+      include: ['user', 'client', 'payment', 'currency', 'location', Customer,
+        {
+          model: Line,
+          as: "lines",
+          include: [
+            {
+              model: Product,
+              as: "product"
+            }
+          ]
+        }
+
+      ],
+      where: {
+        bookingDate: {
+          [Op.between]: [date.startDate, date.endDate]
+        },
+        userId: date.userId
       }
     });
 

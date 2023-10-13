@@ -14,7 +14,7 @@ exports.getAllAuthorities = async (req, res) => {
 };
 exports.getAllActiveAuthorities = async (req, res) => {
   try {
-    const authorities = await Authority.findAll({where:{isActive:true}});
+    const authorities = await Authority.findAll({ where: { isActive: true } });
     res.status(200).json(authorities);
   } catch (error) {
     logger.error(error);
@@ -46,6 +46,93 @@ exports.createAuthority = async (req, res) => {
       name,
       isActive,
     });
+    res.status(201).json(authority);
+  } catch (error) {
+    logger.error(error);
+    res.status(503).send(error)
+  }
+};
+// POST a new authority bulkCreate
+exports.createBulkAuthority = async (req, res) => {
+  const { code, name, isActive } = req.body;
+
+  const authorityList = [
+    {
+
+      "code": "POS",
+      "name": "ການຂາຍ",
+      "isActive": true,
+      "createdAt": "2023-10-12T09:25:10.000Z",
+      "updateTimestamp": "2023-10-12T09:25:10.000Z"
+    },
+    {
+
+      "code": "PRODUCT",
+      "name": "ສິນຄ້າ",
+      "isActive": true,
+      "createdAt": "2023-10-12T09:49:09.000Z",
+      "updateTimestamp": "2023-10-12T09:49:09.000Z"
+    },
+    {
+
+      "code": "INVENTORY",
+      "name": "ສາງສິນຄ້າ",
+      "isActive": true,
+      "createdAt": "2023-10-12T11:59:46.000Z",
+      "updateTimestamp": "2023-10-12T11:59:46.000Z"
+    },
+    {
+
+      "code": "CLIENT",
+      "name": "ລູກຄ້າ",
+      "isActive": true,
+      "createdAt": "2023-10-12T12:00:10.000Z",
+      "updateTimestamp": "2023-10-12T12:00:10.000Z"
+    },
+    {
+
+      "code": "BRANCH",
+      "name": "ຮ້ານຄ້າ",
+      "isActive": true,
+      "createdAt": "2023-10-12T12:00:23.000Z",
+      "updateTimestamp": "2023-10-12T12:00:23.000Z"
+    },
+    {
+
+      "code": "SHIPPING",
+      "name": "ຂົນສົ່ງ",
+      "isActive": true,
+      "createdAt": "2023-10-12T12:00:38.000Z",
+      "updateTimestamp": "2023-10-12T12:00:38.000Z"
+    },
+    {
+
+      "code": "ACCOUNT",
+      "name": "ບັນຊີ",
+      "isActive": true,
+      "createdAt": "2023-10-12T12:00:54.000Z",
+      "updateTimestamp": "2023-10-12T12:00:54.000Z"
+    },
+    {
+
+      "code": "HELP",
+      "name": "ຮຽນຮູ້",
+      "isActive": true,
+      "createdAt": "2023-10-12T12:01:23.000Z",
+      "updateTimestamp": "2023-10-12T12:01:23.000Z"
+    },
+    {
+
+      "code": "SETTING",
+      "name": "ຕັ້ງຄ່າ",
+      "isActive": true,
+      "createdAt": "2023-10-12T12:01:38.000Z",
+      "updateTimestamp": "2023-10-12T12:01:38.000Z"
+    }
+  ]
+
+  try {
+    const authority = await Authority.bulkCreate(authorityList);
     res.status(201).json(authority);
   } catch (error) {
     logger.error(error);

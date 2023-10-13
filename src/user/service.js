@@ -16,9 +16,11 @@ const getUserById = async ( cus_id, cus_pass) => {
             {
                 model: Group,
                 as: 'userGroup', // set the alias for the userGroup association
+                attributes: ['code', 'name'], // select only the id and name fields
                 include: [
                     {
-                        model: Authority
+                        model: Authority,
+                        attributes: ['code', 'name'], // select only the id and name fields
                     }
                 ]
             }

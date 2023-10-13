@@ -21,4 +21,5 @@ router.post("/create", controller.createAuthority)
     .get("/find", controller.getAllActiveAuthorities)
     .get("/findAll", controller.getAllAuthorities)
     .get("/find/:id", controller.getAuthorityById)
+    .post("/generate", controller.createBulkAuthority)
 module.exports = router
