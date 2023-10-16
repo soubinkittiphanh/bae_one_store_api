@@ -14,6 +14,16 @@ const getAllCategories = async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 };
+// Get all categories
+const getAllActiveCategories = async (req, res) => {
+  try {
+    const categories = await Category.findAll({where: {isActive:true}});
+    res.status(200).json(categories);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
 
 // Get a single category by ID
 const getCategoryById = async (req, res) => {
@@ -139,5 +149,6 @@ module.exports = {
   createCategory,
   updateCategoryById,
   deleteCategoryById,
-  generate
+  generate,
+  getAllActiveCategories
 };

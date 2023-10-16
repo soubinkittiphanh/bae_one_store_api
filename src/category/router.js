@@ -13,7 +13,8 @@ router
 .post("/generate", controller.generate)
 .put("/update/:categ_id", controller.updateCategoryById)
 .delete("/find/:categ_id", controller.deleteCategoryById)
-.get("/find", controller.getAllCategories)
+.get("/find", controller.getAllActiveCategories)
+.get("/findAll", controller.getAllCategories)
 .get("/find/:categ_id", controller.getCategoryById)
 // .post("/bulkCreate",service.createHulkStockCard)
 module.exports = router
