@@ -52,21 +52,21 @@ const db = {}
 db.sequelize = sequelize;
 db.Sequelize = Sequelize
 db.centralSequelize = tutorialDB;
+db.quotationHeader = require("../quotation/model")(sequelize, DataTypes);
+db.quotationLine = require("../quotation/line/model")(sequelize, DataTypes);
+db.customer = require("../dynamicCustomer/model")(sequelize, DataTypes);
 db.group = require("../group/model")(sequelize, DataTypes);
 db.authority = require("../authority/model")(sequelize, DataTypes);
 db.tuturial = require("../tutorial/model")(tutorialDB, DataTypes);
 db.product = require("../product/model")(sequelize, DataTypes);
 db.company = require("../company/model")(sequelize, DataTypes);
 db.saleHeader = require("../sales/model")(sequelize, DataTypes);
-db.customer = require("../dynamicCustomer/model")(sequelize, DataTypes);
 db.shipping = require("../shipping/model")(sequelize, DataTypes);
 db.user = require("../user/model")(sequelize, DataTypes);
 db.location = require("../location/model")(sequelize, DataTypes);
 db.terminal = require("../terminal/model")(sequelize, DataTypes);
 db.transferHeader = require("../transfer/model")(sequelize, DataTypes);
 db.transferLine = require("../transfer/line/model")(sequelize, DataTypes);
-db.quotationHeader = require("../quotation/model")(sequelize, DataTypes);
-db.quotationLine = require("../quotation/line/model")(sequelize, DataTypes);
 db.card = require("../card/model")(sequelize, DataTypes);
 db.chartAccount = require("../account/model")(sequelize, DataTypes);
 db.gl = require("../GL/model")(sequelize, DataTypes);
@@ -127,6 +127,10 @@ db.group.belongsToMany(db.authority, { through: 'GroupAuthorities' })
 db.terminal.belongsTo(db.location, {
     foreignKey: 'locationId',
     as: 'location'
+})
+db.location.belongsTo(db.company, {
+    foreignKey: 'companyId',
+    as: 'company'
 })
 
 db.transferHeader.belongsTo(db.location, {

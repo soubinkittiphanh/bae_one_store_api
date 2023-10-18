@@ -50,8 +50,8 @@ exports.createCompany = async (req, res) => {
     const company = await Company.create(req.body);
     res.json(company);
   } catch (err) {
-    logger.error(err);
-    res.status(500).json({ message: 'Server Error' });
+    logger.error(`cannot create record, error occured ${err}`);
+    res.status(500).json({ message: 'Server Error'+err });
   }
 };
 
