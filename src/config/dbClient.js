@@ -20,6 +20,13 @@ const clientDB = {
         "database": "dcommerce_pro_beverhome",
         "port": 3306,
     },
+    "chithan_dev": {
+        "host": "150.95.31.23",
+        "user": "root",
+        "password": "sdat@3480",
+        "database": "dcommerce_pro_chithanh_migration",
+        "port": 3306,
+    },
     // "chithanh": {
     //     "host": "209.209.40.80",
     //     "user": "chithanh",
