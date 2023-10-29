@@ -52,6 +52,7 @@ const db = {}
 db.sequelize = sequelize;
 db.Sequelize = Sequelize
 db.centralSequelize = tutorialDB;
+db.priceList = require("../priceList/model")(sequelize, DataTypes);
 db.quotationHeader = require("../quotation/model")(sequelize, DataTypes);
 db.quotationLine = require("../quotation/line/model")(sequelize, DataTypes);
 db.customer = require("../dynamicCustomer/model")(sequelize, DataTypes);
@@ -91,6 +92,17 @@ db.payment = require("../paymentMethod/model")(sequelize, DataTypes);
 db.user.belongsTo(db.group, {
     foreignKey: 'groupId',
     as: 'userGroup'
+})
+db.priceList.belongsTo(db.product, {
+    foreignKey: 'productId',
+    as: 'product'
+})
+db.priceList.belongsTo(db.currency, {
+    foreignKey: 'currencyId',
+    as: 'currency'
+})
+db.product.hasMany(db.priceList, {
+    as: 'priceLists'
 })
 
 //***************Map order to delivery customer**************/
