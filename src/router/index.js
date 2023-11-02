@@ -35,6 +35,8 @@ const group = require("../group").router
 const authority = require("../authority").router
 const account = require("../account").router
 const priceList = require("../priceList").router
+const order = require("../order").router
+const vendor = require("../vendor").router
 
 module.exports={
     orderRouter,
@@ -73,5 +75,7 @@ module.exports={
     group,
     authority,
     account,
-    priceList
+    priceList,
+    order,
+    vendor
 }

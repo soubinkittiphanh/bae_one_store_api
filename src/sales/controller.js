@@ -2,6 +2,8 @@
 const SaleHeader = require('../models').saleHeader;
 const Customer = require('../models').customer;
 const Line = require('../models').saleLine;
+const Shipping = require('../models').shipping;
+const Geo = require('../models').geography;
 const Product = require('../models').product;
 const Card = require('../models').card;
 const Unit = require('../models').unit;
@@ -299,7 +301,7 @@ exports.getSaleHeadersByDate = async (req, res) => {
   logger.warn(`Request date ${date.startDate} userId ${req.user.id}`)
   try {
     const saleHeaders = await SaleHeader.findAll({
-      include: ['user', 'client', 'payment', 'currency', 'location', Customer,
+      include: ['user', 'client', 'payment', 'currency', 'location',
         {
           model: Line,
           as: "lines",
@@ -309,6 +311,10 @@ exports.getSaleHeadersByDate = async (req, res) => {
               as: "product"
             }
           ]
+        },
+        {
+          model: Customer,
+          include: ['geography','shipping']
         }
 
       ],

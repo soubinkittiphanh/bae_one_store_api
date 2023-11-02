@@ -33,7 +33,7 @@ const tutorialDB = new Sequelize('tutorial_db', env.user, env.password, {
         acquire: 30000,
         idle: 10000
     }
-  });
+});
 // Authenticate tutorial db
 tutorialDB.authenticate().then(() => {
     logger.info("tutorial_db Connection established")
@@ -52,6 +52,8 @@ const db = {}
 db.sequelize = sequelize;
 db.Sequelize = Sequelize
 db.centralSequelize = tutorialDB;
+db.order = require("../order/model")(sequelize, DataTypes);
+db.vendor = require("../vendor/model")(sequelize, DataTypes);
 db.priceList = require("../priceList/model")(sequelize, DataTypes);
 db.quotationHeader = require("../quotation/model")(sequelize, DataTypes);
 db.quotationLine = require("../quotation/line/model")(sequelize, DataTypes);
@@ -88,6 +90,32 @@ db.unit = require("../unit/model")(sequelize, DataTypes);
 db.payment = require("../paymentMethod/model")(sequelize, DataTypes);
 // const UserTerminals = sequelize.define('user_terminals', {});
 
+db.order.belongsTo(db.client, {
+    foreignKey: 'clientId',
+    as: 'client'
+})
+db.order.belongsTo(db.user, {
+    foreignKey: 'userId',
+    as: 'user'
+})
+
+db.order.belongsTo(db.currency, {
+    foreignKey: 'currencyId',
+    as: 'currency'
+})
+db.order.belongsTo(db.currency, {
+    foreignKey: 'shippingFeeCurrencyId',
+    as: 'shippingFeeCurrency'
+})
+
+db.order.belongsTo(db.vendor, {
+    foreignKey: 'vendorId',
+    as: 'vendor'
+})
+db.order.belongsTo(db.payment, {
+    foreignKey: 'paymentId',
+    as: 'payment',
+})
 
 db.user.belongsTo(db.group, {
     foreignKey: 'groupId',

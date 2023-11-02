@@ -14,7 +14,7 @@ module.exports = (sequelize, DataTypes) => {
         },
         type: {
             allowNull: false,
-            type: DataTypes.ENUM('Percent', 'Direct'),
+            type: DataTypes.ENUM('Percent', 'Price'),
             defaultValue: 'Percent'
         },
         isActive: {

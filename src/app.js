@@ -49,6 +49,8 @@ const buildApp = async () => {
     app.use("/api/authority",myRouter.authority)
     app.use("/api/account",myRouter.account)
     app.use("/api/priceList",myRouter.priceList)
+    app.use("/api/order",myRouter.order)
+    app.use("/api/vendor",myRouter.vendor)
 
     Router.category(app);
     Router.product(app);
