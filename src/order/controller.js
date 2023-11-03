@@ -22,6 +22,10 @@ exports.create = async (req, res) => {
       // Create a Order
       let order = {
         clientId: customer.id,
+        currencyId:req.body.currencyId,
+        priceRate:req.body.priceRate,
+        shippingFeeCurrencyId:req.body.shippingFeeCurrencyId,
+        shippingRate:req.body.shippingRate,
         status: req.body.status,
         bookingDate: req.body.bookingDate,
         name: req.body.name,
@@ -116,6 +120,33 @@ exports.update = async (req, res) => {
     }
   }
   Order.update({ ...req.body, clientId: client['id'] }, {
+    where: { id: id }
+  })
+    .then(num => {
+      if (num == 1) {
+        res.send({
+          message: "Order was updated successfully."
+        });
+      } else {
+
+        res.send({
+          message: `Cannot update Order with id=${id}. Maybe Order was not found or req.body is empty!`
+        });
+      }
+    })
+    .catch(err => {
+      logger.error(`Cannot update order with error ${err}`)
+      res.status(500).send({
+        message: "Error updating Order with id=" + id
+      });
+    });
+};
+
+exports.updateStatus = async (req, res) => {
+  const id = req.params.id;
+  const {status} = req.body;
+
+  Order.update({ status}, {
     where: { id: id }
   })
     .then(num => {

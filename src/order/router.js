@@ -17,6 +17,7 @@ router.use(validateToken);
 
 router.post("/create", controller.create)
     .put("/update/:id", controller.update)
+    .put("/changeStatus/:id", controller.updateStatus)
     .delete("/find/:id", controller.delete)
     .get("/find", controller.findAll)
     .get("/findAll", controller.findAll)

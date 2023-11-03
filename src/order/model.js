@@ -12,7 +12,6 @@ module.exports = (sequelize, DataTypes) => {
         },
         note: {
             type: DataTypes.STRING,
-            allowNull: false,
         },
         trackingNumber: {
             type: DataTypes.STRING,
@@ -38,8 +37,8 @@ module.exports = (sequelize, DataTypes) => {
         },
         status: {
             allowNull: false,
-            type: DataTypes.ENUM('await', 'received', 'delivered',),
-            defaultValue: 'await'
+            type: DataTypes.ENUM('ORDERED', 'RECEIVED', 'INVOICED',),
+            defaultValue: 'ORDERED'
         },
         isActive: {
             type: DataTypes.BOOLEAN,
