@@ -90,6 +90,10 @@ db.unit = require("../unit/model")(sequelize, DataTypes);
 db.payment = require("../paymentMethod/model")(sequelize, DataTypes);
 // const UserTerminals = sequelize.define('user_terminals', {});
 
+db.order.belongsTo(db.location, {
+    foreignKey: 'locationId',
+    as: 'location'
+})
 db.order.belongsTo(db.client, {
     foreignKey: 'clientId',
     as: 'client'
