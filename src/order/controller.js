@@ -151,12 +151,11 @@ exports.updateStatus = async (req, res) => {
   })
     .then(num => {
       if (num == 1) {
-        res.send({
+        res.status(200).send({
           message: "Order was updated successfully."
         });
       } else {
-
-        res.send({
+        res.status(503).send({
           message: `Cannot update Order with id=${id}. Maybe Order was not found or req.body is empty!`
         });
       }
