@@ -52,6 +52,7 @@ const db = {}
 db.sequelize = sequelize;
 db.Sequelize = Sequelize
 db.centralSequelize = tutorialDB;
+db.orderHIS = require("../order_history/model")(sequelize, DataTypes);
 db.order = require("../order/model")(sequelize, DataTypes);
 db.vendor = require("../vendor/model")(sequelize, DataTypes);
 db.priceList = require("../priceList/model")(sequelize, DataTypes);
@@ -89,7 +90,13 @@ db.saleLine = require("../sales/line/model")(sequelize, DataTypes);
 db.unit = require("../unit/model")(sequelize, DataTypes);
 db.payment = require("../paymentMethod/model")(sequelize, DataTypes);
 // const UserTerminals = sequelize.define('user_terminals', {});
-
+db.orderHIS.belongsTo(db.order,{
+    foreignKey:'originalId',
+    as:'original'
+})
+db.order.hasMany(db.orderHIS,{
+    as:'histories'
+})
 db.order.belongsTo(db.location, {
     foreignKey: 'locationId',
     as: 'location'

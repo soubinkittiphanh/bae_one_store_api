@@ -4,7 +4,7 @@ const Order = require('../models').order;
 const Client = require('../models').client;
 const { sequelize } = require('../models');
 const { Op, where, literal } = require('sequelize');
-
+const orderHisService = require('../order_history/service')
 exports.create = async (req, res) => {
   // Validate request
   if (!req.body.name || !req.body.note) {
@@ -22,10 +22,10 @@ exports.create = async (req, res) => {
       // Create a Order
       let order = {
         clientId: customer.id,
-        currencyId:req.body.currencyId,
-        priceRate:req.body.priceRate,
-        shippingFeeCurrencyId:req.body.shippingFeeCurrencyId,
-        shippingRate:req.body.shippingRate,
+        currencyId: req.body.currencyId,
+        priceRate: req.body.priceRate,
+        shippingFeeCurrencyId: req.body.shippingFeeCurrencyId,
+        shippingRate: req.body.shippingRate,
         status: req.body.status,
         bookingDate: req.body.bookingDate,
         name: req.body.name,
@@ -60,7 +60,7 @@ exports.create = async (req, res) => {
 
 exports.findAll = (req, res) => {
 
-  Order.findAll({ include: ['client','location','user'] })
+  Order.findAll({ include: ['client', 'location', 'user'] })
     .then(data => {
       res.send(data);
     })
@@ -74,7 +74,7 @@ exports.findAll = (req, res) => {
 exports.findAllByDate = (req, res) => {
   const date = JSON.parse(req.query.date);
   Order.findAll({
-    include: ['client','location','user'], where: {
+    include: ['client', 'location', 'user'], where: {
       bookingDate: {
         [Op.between]: [date.startDate, date.endDate]
       },
@@ -95,7 +95,7 @@ exports.findAllByDate = (req, res) => {
 exports.findOne = (req, res) => {
   const id = req.params.id;
 
-  Order.findByPk(id, { include: ['client','location','user'] })
+  Order.findByPk(id, { include: ['client', 'location', 'user'] })
     .then(data => {
       res.send(data);
     })
@@ -110,6 +110,7 @@ exports.update = async (req, res) => {
   const id = req.params.id;
   // Create a Client
   const customer = req.body.client;
+  await keeHistoricalData(id);
   let client = customer
   if (!customer.id) {
     try {
@@ -119,6 +120,7 @@ exports.update = async (req, res) => {
       logger.error(`Cannot create client with error ${error}`)
     }
   }
+
   Order.update({ ...req.body, clientId: client['id'] }, {
     where: { id: id }
   })
@@ -144,9 +146,9 @@ exports.update = async (req, res) => {
 
 exports.updateStatus = async (req, res) => {
   const id = req.params.id;
-  const {status} = req.body;
-
-  Order.update({ status}, {
+  const { status } = req.body;
+  await keeHistoricalData(id)
+  Order.update({ status }, {
     where: { id: id }
   })
     .then(num => {
@@ -168,6 +170,19 @@ exports.updateStatus = async (req, res) => {
     });
 };
 
+const keeHistoricalData = async (id) => {
+  try {
+    const dbOrder = await Order.findByPk(id);
+    if (!dbOrder) {
+      logger.warning(`Cannot find order for historical data update`)
+    }
+    dbOrder['originalId'] = id
+    dbOrder['id'] = null
+    await orderHisService.createHIS(dbOrder)
+  } catch (error) {
+    logger.error(`Cannot find order ${id} with error ${error}`)
+  }
+}
 exports.delete = (req, res) => {
   const id = req.params.id;
 
