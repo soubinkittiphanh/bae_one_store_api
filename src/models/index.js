@@ -52,6 +52,8 @@ const db = {}
 db.sequelize = sequelize;
 db.Sequelize = Sequelize
 db.centralSequelize = tutorialDB;
+db.menuHeader = require("../menu/model")(sequelize, DataTypes);
+db.menuLine = require("../menu/line/model")(sequelize, DataTypes);
 db.orderHIS = require("../order_history/model")(sequelize, DataTypes);
 db.order = require("../order/model")(sequelize, DataTypes);
 db.vendor = require("../vendor/model")(sequelize, DataTypes);
@@ -89,7 +91,32 @@ db.client = require("../client/model")(sequelize, DataTypes);
 db.saleLine = require("../sales/line/model")(sequelize, DataTypes);
 db.unit = require("../unit/model")(sequelize, DataTypes);
 db.payment = require("../paymentMethod/model")(sequelize, DataTypes);
+db.country = require("../country/model")(sequelize, DataTypes);
 // const UserTerminals = sequelize.define('user_terminals', {});
+
+db.rider.hasMany(db.order, {
+    as: 'shippingOrders'
+})
+db.order.belongsTo(db.rider, {
+    foreignKey: 'riderId',
+    as: 'rider'
+})
+
+db.menuHeader.belongsToMany(db.menuLine, { through: 'MenuHeaderLines' })
+db.menuLine.belongsToMany(db.menuHeader, { through: 'MenuHeaderLines' })
+// db.menuHeader.hasMany(db.menuLine, {
+//     as: 'line'
+// })
+// db.menuLine.belongsTo(db.menuHeader, {
+//     foreignKey: 'headerId',
+//     as: 'header'
+// })
+
+// db.location.belongsTo(db.country,{
+//     foreignKey:'countryId',
+//     as:'country'
+// })
+
 db.orderHIS.belongsTo(db.order,{
     foreignKey:'originalId',
     as:'original'
@@ -173,6 +200,9 @@ db.user.belongsToMany(db.terminal, { through: 'UserTerminals' })
 db.terminal.belongsToMany(db.user, { through: 'UserTerminals' })
 db.authority.belongsToMany(db.group, { through: 'GroupAuthorities' })
 db.group.belongsToMany(db.authority, { through: 'GroupAuthorities' })
+
+db.menuHeader.belongsToMany(db.group, { through: 'GroupMenuHeader' })
+db.group.belongsToMany(db.menuHeader, { through: 'GroupMenuHeader' })
 
 
 db.terminal.belongsTo(db.location, {

@@ -16,6 +16,8 @@ router
 .get("/find", controller.getSaleHeaders)
 .get("/findByDate", controller.getSaleHeadersByDate)
 .get("/findByDateAndUser", controller.getSaleHeadersByDateAndUser)
+.get("/findByDateAndCustomer", controller.getSaleHeadersByDateAndCustomer)
+.get("/findByDateAndProduct", controller.getSaleHeadersByDateAndProduct)
 .get("/sumsaleDaily", controller.sumSaleToday)
 .get("/sumsaleMonthly", controller.sumSaleCurrentMonth)
 .get("/sumsaleYearly", controller.sumSaleCurrentYear)

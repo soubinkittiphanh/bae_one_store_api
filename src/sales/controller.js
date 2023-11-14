@@ -314,7 +314,7 @@ exports.getSaleHeadersByDate = async (req, res) => {
         },
         {
           model: Customer,
-          include: ['geography','shipping']
+          include: ['geography', 'shipping']
         }
 
       ],
@@ -346,6 +346,10 @@ exports.getSaleHeadersByDateAndUser = async (req, res) => {
             {
               model: Product,
               as: "product"
+            },
+            {
+              model: SaleHeader,
+              as: "header"
             }
           ]
         }
@@ -355,11 +359,93 @@ exports.getSaleHeadersByDateAndUser = async (req, res) => {
         bookingDate: {
           [Op.between]: [date.startDate, date.endDate]
         },
-        userId: date.userId
+        userId: {
+          [date.userId < 1 ? Op.ne : Op.eq]: date.userId,
+        }
       }
     });
 
     res.status(200).send(saleHeaders);
+  } catch (error) {
+    logger.error("===> Filter by date error: " + error)
+    res.status(500).send(error);
+  }
+};
+exports.getSaleHeadersByDateAndCustomer = async (req, res) => {
+  const date = JSON.parse(req.query.date);
+  logger.warn(`Request date ${date.startDate} customerId ${date.clientId}`)
+  try {
+    const saleHeaders = await SaleHeader.findAll({
+      include: ['user', 'client', 'payment', 'currency', 'location', Customer,
+        {
+          model: Line,
+          as: "lines",
+          include: [
+            {
+              model: Product,
+              as: "product"
+            },
+            {
+              model: SaleHeader,
+              as: "header"
+            }
+          ]
+        }
+
+      ],
+      where: {
+        bookingDate: {
+          [Op.between]: [date.startDate, date.endDate]
+        },
+        clientId: {
+          [date.clientId < 1 ? Op.ne : Op.eq]: date.clientId,
+        }
+      }
+    });
+
+    res.status(200).send(saleHeaders);
+  } catch (error) {
+    logger.error("===> Filter by date error: " + error)
+    res.status(500).send(error);
+  }
+};
+exports.getSaleHeadersByDateAndProduct = async (req, res) => {
+  const date = JSON.parse(req.query.date);
+  const productId = date.productId;
+  logger.warn(`Request date ${date.startDate} customerId ${date.productId}`)
+  try {
+    const saleLines = await Line.findAll({
+      attributes: [
+        ['productId', 'product_id'], // Aliasing product.id as product_id
+        ['headerId', 'header_id'],   // Aliasing header.id as header_id
+        [sequelize.fn('SUM', sequelize.col('price')), 'totalPrice'],
+        [sequelize.fn('SUM', sequelize.col('saleLine.total')), 'totalAmount'],
+        [sequelize.fn('SUM', sequelize.col('quantity')), 'totalQTY'],
+        [sequelize.fn('SUM', sequelize.col('header.discount')), 'totalDiscount'],
+      ],
+      group: ['productId'],
+      include: [
+        {
+          model: Product,
+          as: "product"
+        },
+        {
+          model: SaleHeader,
+          as: "header",
+          include: ['user', 'client', 'payment', 'currency', 'location', Customer],
+          where: {
+            '$header.bookingDate$': {
+              [Op.between]: [date.startDate, date.endDate]
+            },
+            '$saleLine.productId$': { // Assuming `productId` is the correct field name
+              [productId < 1 ? Op.ne : Op.eq]: productId,
+            },
+          },
+        }
+      ],
+    });
+
+    res.status(200).send(saleLines);
   } catch (error) {
     logger.error("===> Filter by date error: " + error)
     res.status(500).send(error);

@@ -4,7 +4,6 @@ const logger = require('./logger');
 const secretKey = require('../config').actksecret;
 function validateToken(req, res, next) {
     const authHeader = req.headers['authorization']
-    logger.warn(`Token from client: ${authHeader}`);
     const token = authHeader && authHeader.split(' ')[1]
     if (!token) return res.status(401).send('Request without token is prohibited')
     jwt.verify(token, secretKey, (error, user) => {

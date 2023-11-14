@@ -2,7 +2,7 @@
 const controller = require("./controller")
 const express = require("express")
 const router = express.Router()
-const {validateToken} = require('../api').jwtApi
+const { validateToken } = require('../api').jwtApi
 const { body } = require('express-validator');
 router.use(validateToken);
 
@@ -15,7 +15,9 @@ router.use(validateToken);
 //     // body('isActive').isBoolean().withMessage('isActive must be a boolean value'),
 //   ];
 
-router.post("/create", controller.create)
+router
+    .post("/create", controller.create)
+    .post("/upload", controller.upload)
     .put("/update/:id", controller.update)
     .delete("/find/:id", controller.delete)
     .get("/find", controller.getAllActive)

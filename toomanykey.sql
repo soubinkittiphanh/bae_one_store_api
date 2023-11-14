@@ -197,6 +197,21 @@ ALTER TABLE `company` DROP INDEX `mnemonic_13`;
 ALTER TABLE `company` DROP INDEX `mnemonic_14`;
 ALTER TABLE `company` DROP INDEX `mnemonic_15`;
 
+ALTER TABLE `userGroup` DROP INDEX `code_1`;
+ALTER TABLE `userGroup` DROP INDEX `code_2`;
+ALTER TABLE `userGroup` DROP INDEX `code_3`;
+ALTER TABLE `userGroup` DROP INDEX `code_3`;
+ALTER TABLE `userGroup` DROP INDEX `code_4`;
+ALTER TABLE `userGroup` DROP INDEX `code_5`;
+ALTER TABLE `userGroup` DROP INDEX `code_6`;
+ALTER TABLE `userGroup` DROP INDEX `code_7`;
+ALTER TABLE `userGroup` DROP INDEX `code_8`;
+ALTER TABLE `userGroup` DROP INDEX `code_9`;
+ALTER TABLE `userGroup` DROP INDEX `code_10`;
+ALTER TABLE `userGroup` DROP INDEX `code_11`;
+ALTER TABLE `userGroup` DROP INDEX `code_12`;
+ALTER TABLE `userGroup` DROP INDEX `code_13`;
+ALTER TABLE `userGroup` DROP INDEX `code_14`;
 ALTER TABLE `userGroup` DROP INDEX `code_15`;
 ALTER TABLE `userGroup` DROP INDEX `code_16`;
 ALTER TABLE `userGroup` DROP INDEX `code_17`;
@@ -204,6 +219,14 @@ ALTER TABLE `userGroup` DROP INDEX `code_18`;
 ALTER TABLE `userGroup` DROP INDEX `code_19`;
 ALTER TABLE `userGroup` DROP INDEX `code_20`;
 ALTER TABLE `userGroup` DROP INDEX `code_21`;
+
+ALTER TABLE `authority` DROP INDEX `code_1`;
+ALTER TABLE `authority` DROP INDEX `code_2`;
+ALTER TABLE `authority` DROP INDEX `code_3`;
+ALTER TABLE `authority` DROP INDEX `code_4`;
+ALTER TABLE `authority` DROP INDEX `code_5`;
+ALTER TABLE `authority` DROP INDEX `code_6`;
+ALTER TABLE `authority` DROP INDEX `code_7`;
 
 ALTER TABLE `authority` DROP INDEX `code_15`;
 ALTER TABLE `authority` DROP INDEX `code_16`;
@@ -214,4 +237,26 @@ ALTER TABLE `authority` DROP INDEX `code_20`;
 ALTER TABLE `authority` DROP INDEX `code_21`;
 
 
+ALTER TABLE `country` DROP INDEX `abbr_1`;
+ALTER TABLE `country` DROP INDEX `abbr_2`;
+ALTER TABLE `country` DROP INDEX `abbr_3`;
+ALTER TABLE `country` DROP INDEX `abbr_4`;
+ALTER TABLE `country` DROP INDEX `abbr_5`;
+ALTER TABLE `country` DROP INDEX `abbr_6`;
+ALTER TABLE `country` DROP INDEX `abbr_7`;
+ALTER TABLE `country` DROP INDEX `abbr_8`;
+ALTER TABLE `country` DROP INDEX `abbr_9`;
+ALTER TABLE `country` DROP INDEX `abbr_10`;
+ALTER TABLE `country` DROP INDEX `abbr_11`;
+ALTER TABLE `country` DROP INDEX `abbr_12`;
+ALTER TABLE `country` DROP INDEX `abbr_13`;
+ALTER TABLE `country` DROP INDEX `abbr_14`;
+
+ALTER TABLE `country` DROP INDEX `abbr_15`;
+ALTER TABLE `country` DROP INDEX `abbr_16`;
+ALTER TABLE `country` DROP INDEX `abbr_17`;
+ALTER TABLE `country` DROP INDEX `abbr_18`;
+ALTER TABLE `country` DROP INDEX `abbr_19`;
+ALTER TABLE `country` DROP INDEX `abbr_20`;
+ALTER TABLE `country` DROP INDEX `abbr_21`;
 

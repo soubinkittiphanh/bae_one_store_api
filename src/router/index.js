@@ -2,7 +2,7 @@ const orderRouter = require("./orderRouter")
 const dymCustomerRouter =require("./dymCustomerRouter")
 const reportRouter =  require("./reportRouter")
 const generalLedger = require("./generalLedger")
-const chartAccount = require("./chartOfAccount")
+const chartAccount = require("../account").router
 const upgrade = require("./upgrade")
 const rider = require("../rider").router
 const location = require("../location").router
@@ -21,6 +21,8 @@ const client = require("../client").router
 const unit = require("../unit").router
 const paymentMethod = require("../paymentMethod").router
 const sale = require("../sales").router
+const menuHeader = require("../menu").router
+const menuLine = require("../menu/line").router
 const product = require("../product").router
 const saleLine = require("../sales/line").router
 const quotation = require("../quotation").router
@@ -77,5 +79,7 @@ module.exports={
     account,
     priceList,
     order,
-    vendor
+    vendor,
+    menuHeader,
+    menuLine
 }

@@ -3,7 +3,7 @@
 module.exports = (sequelize, DataTypes) => {
     const ApHeader = sequelize.define('payment_header', {
         bookingDate: {
-            type: DataTypes.DATE,
+            type: DataTypes.DATEONLY,
             allowNull: false,
         },
         paymentNumber: {

@@ -6,13 +6,7 @@ const { sequelize } = require('../models');
 const { Op, where, literal } = require('sequelize');
 const orderHisService = require('../order_history/service')
 exports.create = async (req, res) => {
-  // Validate request
-  if (!req.body.name || !req.body.note) {
-    res.status(400).send({
-      message: "Name and note cannot be empty!"
-    });
-    return;
-  }
+
   try {
     const result = await sequelize.transaction(async (t) => {
       // Create a Client
@@ -172,12 +166,11 @@ exports.updateStatus = async (req, res) => {
 
 const keeHistoricalData = async (id) => {
   try {
-    const dbOrder = await Order.findByPk(id);
+    const selectedFields = ['id','bookingDate', 'name', 'note', 'trackingNumber', 'link', 'price', 'priceRate', 'shippingFee', 'shippingRate', 'status', 'isActive'];
+    const dbOrder = await Order.findByPk(id,{ attributes: selectedFields,});
     if (!dbOrder) {
       logger.warning(`Cannot find order for historical data update`)
     }
-    dbOrder['originalId'] = id
-    dbOrder['id'] = null
     await orderHisService.createHIS(dbOrder)
   } catch (error) {
     logger.error(`Cannot find order ${id} with error ${error}`)

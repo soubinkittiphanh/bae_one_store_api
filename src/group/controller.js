@@ -1,30 +1,22 @@
 const logger = require('../api/logger');
 const Group = require('../models').group;
+const MenuHeader = require('../models').menuHeader;
+const MenuLine = require('../models').menuLine;
 const Authority = require('../models').authority;
 const { Op } = require('sequelize');
 
 const controller = {
   async create(req, res) {
     try {
-      const { name, code, isActive, authorities } = req.body;
+      const { name, code, isActive, menuHeaders } = req.body;
       const group = await Group.create({
         name,
         code,
         isActive,
       });
-
-      const authorityList = await Authority.findAll({
-        where: {
-          id: {
-            [Op.in]: authorities.map(el => el.id)
-          }
-        }
-      });
-      logger.info(`Authories list ${authorityList.length}`)
       try {
-
         // await group.setAuthorities(authorityList);
-        await setTerminals(group.id, authorities, res)
+        await setMenus(group.id, menuHeaders, res)
       } catch (error) {
         logger.error(`update authority error ${error}`)
       }
@@ -40,8 +32,14 @@ const controller = {
     try {
       const group = await Group.findAll({
         include: [{
-          model: Authority,
-          through: { attributes: [] }
+          model: MenuHeader,
+          through: { attributes: [] },
+          include: [
+            {
+              model: MenuLine,
+              attributes: ['name', 'llname', 'icon', 'path'],
+            }
+          ]
         }]
       });
       return res.status(200).json(group);
@@ -57,8 +55,14 @@ const controller = {
           isActive: true
         },
         include: [{
-          model: Authority,
-          through: { attributes: [] }
+          model: MenuHeader,
+          through: { attributes: [] },
+          include: [
+            {
+              model: MenuLine,
+              attributes: ['name', 'llname', 'icon', 'path'],
+            }
+          ]
         }]
       });
       return res.status(200).json(group);
@@ -73,8 +77,14 @@ const controller = {
       const { id } = req.params;
       const group = await Group.findByPk(id, {
         include: [{
-          model: Authority,
-          through: { attributes: [] }
+          model: MenuHeader,
+          through: { attributes: [] },
+          include: [
+            {
+              model: MenuLine,
+              attributes: ['name', 'llname', 'icon', 'path'],
+            }
+          ]
         }]
       });
       if (!Group) {
@@ -90,10 +100,10 @@ const controller = {
   async update(req, res) {
     try {
       const { id } = req.params;
-      const { name, code, isActive, authorities } = req.body;
+      const { name, code, isActive, menuHeaders } = req.body;
       const group = await Group.findByPk(id, {
         include: [{
-          model: Authority,
+          model: MenuHeader,
           through: { attributes: [] }
         }]
       });
@@ -104,24 +114,15 @@ const controller = {
       group.code = code;
       group.isActive = isActive;
 
-      logger.info(`Authories list ${authorities.length}`)
+      logger.info(`Authories list ${menuHeaders.length}`)
       await group.save();
-      await setTerminals(group.id, authorities, res)
-      // const terminals = await Authority.findAll({
-      //   where: {
-      //     id: {
-      //       [Op.in]: authorities.map(el => el.id)
-      //     }
-      //   }
-      // });
-      // await group.setAuthorities(terminals);
-      // return res.status(200).json(group);
+      await setMenus(group.id, menuHeaders, res)
     } catch (error) {
       logger.error(`something wrong ${error}`);
       return res.status(500).json({ message: 'Internal server error' });
     }
   },
- 
+
   async delete(req, res) {
     try {
       const { id } = req.params;
@@ -143,7 +144,7 @@ const setTerminals = async (userId, terminalList, res) => {
   try {
     const group = await Group.findByPk(userId, {
       include: [{
-        model: Authority,
+        model: MenuHeader,
         through: { attributes: [] }
       }]
     });
@@ -162,6 +163,37 @@ const setTerminals = async (userId, terminalList, res) => {
       }
     });
     await group.setAuthorities(terminals);
+    res.status(200).json(group);
+  } catch (error) {
+    logger.error(`ERROR update terminal list ${error}`)
+    res.status(500).json({ message: error });
+  }
+}
+
+const setMenus = async (groupId, menuHeaderList, res) => {
+  logger.info(`ID GROUP ${groupId} | terminal ${menuHeaderList.length}`)
+  try {
+    const group = await Group.findByPk(groupId, {
+      include: [{
+        model: MenuHeader,
+        through: { attributes: [] }
+      }]
+    });
+    if (!group) {
+      return res.status(404).json({ message: 'Group not found' });
+    }
+    logger.info(`Group found ${group.name}`)
+    for (const iterator of menuHeaderList) {
+      logger.warn(`Group loop ${iterator['name']}`)
+    }
+    const menuHeader = await MenuHeader.findAll({
+      where: {
+        id: {
+          [Op.in]: menuHeaderList.map(el => el.id)
+        }
+      }
+    });
+    await group.setMenuHeaders(menuHeader);
     res.status(200).json(group);
   } catch (error) {
     logger.error(`ERROR update terminal list ${error}`)

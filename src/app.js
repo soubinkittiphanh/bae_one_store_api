@@ -16,7 +16,7 @@ const buildApp = async () => {
     app.use("/api",myRouter.orderRouter);
     app.use("/api",myRouter.reportRouter);
     app.use("/api/financial",myRouter.generalLedger)
-    app.use("/api/financial",myRouter.chartAccount)
+    app.use("/api/accountChart",myRouter.chartAccount)
     app.use("/api/upgrade",myRouter.upgrade)
     app.use("/api/rider",myRouter.rider)
     app.use("/api/location",myRouter.location)
@@ -51,6 +51,8 @@ const buildApp = async () => {
     app.use("/api/priceList",myRouter.priceList)
     app.use("/api/order",myRouter.order)
     app.use("/api/vendor",myRouter.vendor)
+    app.use("/api/menuHeader",myRouter.menuHeader)
+    app.use("/api/menuLine",myRouter.menuLine)
 
     Router.category(app);
     Router.product(app);
