@@ -76,13 +76,6 @@ const txnHis = async (app) => {
     app.put('/txn_his_e',authentication, TxnHis.updateTxnHis)
     app.get('/txn_his_f',authentication, TxnHis.fetchTxnHis)
 }
-// const authenticate = async (app) => {
-//     app.post('/userLogin', Auth.authenticate)
-//     app.post('/cus_auth', Auth.Authcustomer)
-// }
-// const login = async (app) => {
-//     app.get('/login',authentication, Login.login)
-// }
 function authentication(req, res, next) {
     console.log("Middleware");
     const authHeader = req.headers['authorization']
