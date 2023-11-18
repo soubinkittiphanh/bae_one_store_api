@@ -54,7 +54,7 @@ exports.create = async (req, res) => {
 
 exports.findAll = (req, res) => {
 
-  Order.findAll({ include: ['client', 'location', 'user'] })
+  Order.findAll({ include: ['client', 'location', 'user','histories'] })
     .then(data => {
       res.send(data);
     })
@@ -68,7 +68,7 @@ exports.findAll = (req, res) => {
 exports.findAllByDate = (req, res) => {
   const date = JSON.parse(req.query.date);
   Order.findAll({
-    include: ['client', 'location', 'user'], where: {
+    include: ['client', 'location', 'user','histories'], where: {
       bookingDate: {
         [Op.between]: [date.startDate, date.endDate]
       },
@@ -89,7 +89,7 @@ exports.findAllByDate = (req, res) => {
 exports.findOne = (req, res) => {
   const id = req.params.id;
 
-  Order.findByPk(id, { include: ['client', 'location', 'user'] })
+  Order.findByPk(id, { include: ['client', 'location', 'user','histories'] })
     .then(data => {
       res.send(data);
     })
