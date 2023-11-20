@@ -131,6 +131,73 @@ exports.updateSaleHeader = async (req, res) => {
     res.status(500).send(`Cannot update data with ${error}`);
   }
 };
+exports.reverseSaleHeader = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { isActive,remark } = req.body;
+    const saleHeader = await SaleHeader.findByPk(id, {
+      include: [{
+        model: Line,
+        as: "lines",
+        include: [
+          {
+            model: Product,
+            as: "product"
+          },
+          'cards'
+        ]
+      }]
+    });
+    if (!saleHeader) {
+      logger.error("Order Id " + id + ' is not found')
+      return res.status(404).json({ success: false, message: 'Sale header not found' });
+    }
+    logger.info(`SaleLine len: ${saleHeader['lines'].length}`)
+    logger.info(`SaleLine product len: ${saleHeader['lines'].length}`)
+    // Collect card id to reverse back
+    // const cardIds = [];
+    // for (const iterator of saleHeader['lines']) {
+    //   logger.info(`product id ${iterator['product']['id']}`)
+    //   cardIds.concat(iterator['cards'].map(card => card['id']))
+    // }
+    const cardIds = saleHeader['lines'].flatMap(iterator => iterator['cards'].map(card => card['id']));
+
+    const result = await sequelize.transaction(async (t) => {
+      const updatedRecord = await saleHeader.update({ isActive,remark }, { transaction: t });
+      const [numUpdated] = await Card.update(
+        {
+          card_isused: 0,
+          saleLineId: null,
+          isActive: true,
+        },
+        {
+          where: {
+            id: {
+              [Op.in]: cardIds,
+            },
+          },
+        }, { transaction: t }
+      );
+      return { updatedRecord, numUpdated };
+    })
+
+
+
+
+    logger.info("Reversal is on going...")
+    // ********** Clasify new or old saleLine ********** //
+    logger.info(`Reversal transaction completed ${saleHeader}`)
+
+    // ************* TAKE THE PRODUC ID FOR UPDATE STOCK COUNT IN PRODUCT TABLE *************//
+    updateProductStockCount(saleHeader['lines'])
+    // ************* TAKE THE PRODUC ID FOR UPDATE STOCK COUNT IN PRODUCT TABLE *************//
+
+    res.status(200).json(saleHeader);
+  } catch (error) {
+    logger.error("Cannot reverse data " + error)
+    res.status(500).send(`Cannot reverse data with ${error}`);
+  }
+};
 const assignHeaderId = async (line, id, lockingSessionId, isUpdate, locationId) => {
   for (const iterator of line) {
     logger.warn(`Check if lineId is null or undifine ${iterator.id}`)
