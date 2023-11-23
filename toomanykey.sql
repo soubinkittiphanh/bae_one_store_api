@@ -260,3 +260,11 @@ ALTER TABLE `country` DROP INDEX `abbr_19`;
 ALTER TABLE `country` DROP INDEX `abbr_20`;
 ALTER TABLE `country` DROP INDEX `abbr_21`;
 
+ALTER TABLE `menuHeader` DROP INDEX `code_15`;
+ALTER TABLE `menuHeader` DROP INDEX `code_16`;
+ALTER TABLE `menuHeader` DROP INDEX `code_17`;
+ALTER TABLE `menuHeader` DROP INDEX `code_18`;
+ALTER TABLE `menuHeader` DROP INDEX `code_19`;
+ALTER TABLE `menuHeader` DROP INDEX `code_20`;
+ALTER TABLE `menuHeader` DROP INDEX `code_21`;
+
