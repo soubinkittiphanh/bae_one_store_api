@@ -57,7 +57,6 @@ module.exports = (sequelize, DataTypes) => {
         // if you don't want that, set the following
         freezeTableName: true,
     })
-
     return OrderHIS;
 };
 

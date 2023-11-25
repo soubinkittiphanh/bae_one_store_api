@@ -9,14 +9,12 @@ exports.create = async (req, res) => {
 
   try {
     const result = await sequelize.transaction(async (t) => {
-      // Create a Client
-      const customer = req.body.client;
-      let client = null
-      let dbOrder = null
-      // Create a Order
       let order = {
-        clientId: customer.id,
+        clientId: req.body.client.id,
+        senderId: req.body.sender.id,
         currencyId: req.body.currencyId,
+        locationId: req.body.locationId,
+        endLocationId: req.body.endLocationId,
         priceRate: req.body.priceRate,
         shippingFeeCurrencyId: req.body.shippingFeeCurrencyId,
         shippingRate: req.body.shippingRate,
@@ -30,20 +28,16 @@ exports.create = async (req, res) => {
         price: req.body.price ? req.body.price : 0,
         isActive: req.body.isActive ? req.body.isActive : true,
       };
-      if (!customer.id) {
-        try {
-          client = await Client.create(customer, { transaction: t })
-          order.clientId = client['id']
-        } catch (error) {
-          logger.error(`Cannot create client with error ${error}`)
-        }
+      if (!req.body.client.id) {
+        const dbClient = await Client.create(req.body.client, { transaction: t })
+        order.clientId = dbClient['id']
       }
-      try {
-        dbOrder = await Order.create(order, { transaction: t })
-      } catch (error) {
-        logger.error(`Cannot create order with error ${error}`)
+      if (!req.body.sender.id) {
+        const dbSender = await Client.create(req.body.sender, { transaction: t })
+        order.senderId = dbSender['id']
       }
-      return { dbOrder, client }
+      const dbOrder = await Order.create(order, { transaction: t })
+      return { dbOrder }
     })
     return res.status(201).send(result)
   } catch (error) {
@@ -53,8 +47,7 @@ exports.create = async (req, res) => {
 };
 
 exports.findAll = (req, res) => {
-
-  Order.findAll({ include: ['client', 'location', 'user','histories'] })
+  Order.findAll({ include: ['client', 'location', 'user', 'histories', 'sender','endLocation'] })
     .then(data => {
       res.send(data);
     })
@@ -68,7 +61,7 @@ exports.findAll = (req, res) => {
 exports.findAllByDate = (req, res) => {
   const date = JSON.parse(req.query.date);
   Order.findAll({
-    include: ['client', 'location', 'user','histories'], where: {
+    include: ['client', 'location', 'user', 'histories', 'sender','endLocation'], where: {
       bookingDate: {
         [Op.between]: [date.startDate, date.endDate]
       },
@@ -89,7 +82,7 @@ exports.findAllByDate = (req, res) => {
 exports.findOne = (req, res) => {
   const id = req.params.id;
 
-  Order.findByPk(id, { include: ['client', 'location', 'user','histories'] })
+  Order.findByPk(id, { include: ['client', 'location', 'user', 'histories', 'sender','endLocation'] })
     .then(data => {
       res.send(data);
     })
@@ -103,19 +96,32 @@ exports.findOne = (req, res) => {
 exports.update = async (req, res) => {
   const id = req.params.id;
   // Create a Client
-  const customer = req.body.client;
+  const client = req.body.client;
+  const sender = req.body.sender;
+  let order = req.body
+  //******** We dont get senderId and clientId from request [Need to assign manualy]********* */
+  order.senderId = sender.id
+  order.clientId = client.id
+  //******** We dont get senderId and clientId from request [Need to assign manualy]********* */
   await keeHistoricalData(id);
-  let client = customer
-  if (!customer.id) {
+  if (!client.id) {
     try {
-      client = await Client.create(customer)
-      order.clientId = client['id']
+      const dbClient = await Client.create(customer)
+      order.clientId = dbClient['id']
     } catch (error) {
       logger.error(`Cannot create client with error ${error}`)
     }
   }
+  if (!sender.id) {
+    try {
+      const dbSender = await Client.create(sender)
+      order.senderId = dbSender['id']
+    } catch (error) {
+      logger.error(`Cannot create client for sender  with error ${error}`)
+    }
+  }
 
-  Order.update({ ...req.body, clientId: client['id'] }, {
+  Order.update(order, {
     where: { id: id }
   })
     .then(num => {
@@ -124,7 +130,6 @@ exports.update = async (req, res) => {
           message: "Order was updated successfully."
         });
       } else {
-
         res.send({
           message: `Cannot update Order with id=${id}. Maybe Order was not found or req.body is empty!`
         });
@@ -166,12 +171,13 @@ exports.updateStatus = async (req, res) => {
 
 const keeHistoricalData = async (id) => {
   try {
-    const selectedFields = ['id','bookingDate', 'name', 'note', 'trackingNumber', 'link', 'price', 'priceRate', 'shippingFee', 'shippingRate', 'status', 'isActive'];
-    const dbOrder = await Order.findByPk(id,{ attributes: selectedFields,});
+    // const selectedFields = ['id', 'bookingDate', 'name', 'note', 'trackingNumber', 'link', 'price', 'priceRate', 'shippingFee', 'shippingRate', 'status', 'isActive'];
+    // const dbOrder = await Order.findByPk(id, { attributes: selectedFields, });
+    const dbOrder = await Order.findByPk(id);
     if (!dbOrder) {
       logger.warning(`Cannot find order for historical data update`)
     }
-    await orderHisService.createHIS(dbOrder)
+    await orderHisService.createHIS(dbOrder.toJSON())
   } catch (error) {
     logger.error(`Cannot find order ${id} with error ${error}`)
   }

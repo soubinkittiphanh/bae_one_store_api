@@ -267,4 +267,12 @@ ALTER TABLE `menuHeader` DROP INDEX `code_18`;
 ALTER TABLE `menuHeader` DROP INDEX `code_19`;
 ALTER TABLE `menuHeader` DROP INDEX `code_20`;
 ALTER TABLE `menuHeader` DROP INDEX `code_21`;
+ALTER TABLE `menuHeader` DROP INDEX `code_22`;
+ALTER TABLE `menuHeader` DROP INDEX `code_23`;
+ALTER TABLE `menuHeader` DROP INDEX `code_24`;
+ALTER TABLE `menuHeader` DROP INDEX `code_25`;
+ALTER TABLE `menuHeader` DROP INDEX `code_26`;
+ALTER TABLE `menuHeader` DROP INDEX `code_27`;
+ALTER TABLE `menuHeader` DROP INDEX `code_28`;
+ALTER TABLE `menuHeader` DROP INDEX `code_29`;
 

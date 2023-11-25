@@ -97,10 +97,7 @@ db.country = require("../country/model")(sequelize, DataTypes);
 db.rider.hasMany(db.order, {
     as: 'shippingOrders'
 })
-db.order.belongsTo(db.rider, {
-    foreignKey: 'riderId',
-    as: 'rider'
-})
+
 
 db.menuHeader.belongsToMany(db.menuLine, { through: 'MenuHeaderLines' })
 db.menuLine.belongsToMany(db.menuHeader, { through: 'MenuHeaderLines' })
@@ -117,16 +114,72 @@ db.menuLine.belongsToMany(db.menuHeader, { through: 'MenuHeaderLines' })
 //     as:'country'
 // })
 
+db.orderHIS.belongsTo(db.location, {
+    foreignKey: 'locationId',
+    as: 'location'
+})
+db.orderHIS.belongsTo(db.location, {
+    foreignKey: 'endLocationId',
+    as: 'endLocation'
+})
+db.orderHIS.belongsTo(db.client, {
+    foreignKey: 'senderId',
+    as: 'sender'
+})
+db.orderHIS.belongsTo(db.client, {
+    foreignKey: 'clientId',
+    as: 'client'
+})
+db.orderHIS.belongsTo(db.user, {
+    foreignKey: 'userId',
+    as: 'user'
+})
+
+db.orderHIS.belongsTo(db.currency, {
+    foreignKey: 'currencyId',
+    as: 'currency'
+})
+
+db.orderHIS.belongsTo(db.currency, {
+    foreignKey: 'shippingFeeCurrencyId',
+    as: 'shippingFeeCurrency'
+})
+
+db.orderHIS.belongsTo(db.vendor, {
+    foreignKey: 'vendorId',
+    as: 'vendor'
+})
+db.orderHIS.belongsTo(db.payment, {
+    foreignKey: 'paymentId',
+    as: 'payment',
+})
 db.orderHIS.belongsTo(db.order,{
     foreignKey:'originalId',
     as:'original'
 })
+db.orderHIS.belongsTo(db.rider, {
+    foreignKey: 'riderId',
+    as: 'rider'
+})
+db.orderHIS.belongsTo(db.shipping, {
+    foreignKey: 'shippingId',
+    as: 'shipping'
+})
+
 db.order.hasMany(db.orderHIS,{
     as:'histories'
 })
 db.order.belongsTo(db.location, {
     foreignKey: 'locationId',
     as: 'location'
+})
+db.order.belongsTo(db.location, {
+    foreignKey: 'endLocationId',
+    as: 'endLocation'
+})
+db.order.belongsTo(db.client, {
+    foreignKey: 'senderId',
+    as: 'sender'
 })
 db.order.belongsTo(db.client, {
     foreignKey: 'clientId',
@@ -141,6 +194,7 @@ db.order.belongsTo(db.currency, {
     foreignKey: 'currencyId',
     as: 'currency'
 })
+
 db.order.belongsTo(db.currency, {
     foreignKey: 'shippingFeeCurrencyId',
     as: 'shippingFeeCurrency'
@@ -153,6 +207,14 @@ db.order.belongsTo(db.vendor, {
 db.order.belongsTo(db.payment, {
     foreignKey: 'paymentId',
     as: 'payment',
+})
+db.order.belongsTo(db.rider, {
+    foreignKey: 'riderId',
+    as: 'rider'
+})
+db.order.belongsTo(db.shipping, {
+    foreignKey: 'shippingId',
+    as: 'shipping'
 })
 
 db.user.belongsTo(db.group, {
