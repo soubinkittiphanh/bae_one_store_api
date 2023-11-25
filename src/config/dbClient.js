@@ -49,11 +49,19 @@ const clientDB = {
         "port": 34248,
     },
 
+
     "uat": {
         "host": "150.95.31.23",
         "user": "root",
         "password": "sdat@3480",
         "database": "dcommerce_uat_1",
+        "port": 3306,
+    },
+    "jnong": {
+        "host": "150.95.31.23",
+        "user": "root",
+        "password": "sdat@3480",
+        "database": "dcommerce_pro_jnong",
         "port": 3306,
     },
     "dev": {
