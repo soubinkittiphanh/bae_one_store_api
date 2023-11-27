@@ -16,6 +16,7 @@ router.post("/create",validator.createReceiveHeaderValidation, controller.create
     .put("/update/:id",validator.updateReceiveHeaderValidation, controller.updateReceiveHeader)
     .delete("/find/:id", controller.deleteReceiveHeader)
     .get("/find", controller.getAllReceiveHeaders)
+    .get("/findByDate", controller.getAllReceiveHeadersByDate)
     .get("/find/:id", controller.getReceiveHeaderById)
     // .post("/bulkCreate",service.createHulkStockCard)
 module.exports = router

@@ -17,6 +17,7 @@ router.post("/create", validator.create, controller.createPaymentHeader)
     .put("/update/:id", validator.update, controller.updatePaymentHeaderById)
     .delete("/find/:id", controller.deletePaymentHeaderById)
     .get("/find", controller.getAllPaymentHeaders)
+    .get("/findByDate", controller.getAllPaymentHeadersByDate)
     .get("/find/:id", controller.getPaymentHeaderById)
 // .post("/bulkCreate",service.createHulkStockCard)
 module.exports = router

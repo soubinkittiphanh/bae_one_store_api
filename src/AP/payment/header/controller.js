@@ -2,7 +2,7 @@
 const PaymentHeader = require('../../../models').apPaymentHeader;
 const { body, validationResult } = require('express-validator');
 const logger = require('../../../api/logger');
-
+const { Op, where, literal } = require('sequelize');
 
 // Create Payment Header
 function replaceAll(str, find, replace) {
@@ -48,6 +48,23 @@ exports.getAllPaymentHeaders = async (req, res) => {
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "Server Error" });
+  }
+};
+
+exports.getAllPaymentHeadersByDate = async (req, res) => {
+  const date = JSON.parse(req.query.date);
+  try {
+    const paymentHeaders = await PaymentHeader.findAll({
+      where: {
+        bookingDate: {
+          [Op.between]: [date.startDate, date.endDate]
+        },
+      }
+    });
+    res.status(200).json(paymentHeaders);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server Error' });
   }
 };
 

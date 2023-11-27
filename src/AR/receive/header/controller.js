@@ -2,7 +2,7 @@
 const ReceiveHeader = require('../../../models').arReceiveHeader;
 const { body, validationResult } = require('express-validator');
 const logger = require('../../../api/logger');
-
+const { Op, where, literal } = require('sequelize');
 
 // Create Payment Header
 function replaceAll(str, find, replace) {
@@ -28,6 +28,22 @@ const createReceiveHeader = async (req, res) => {
 const getAllReceiveHeaders = async (req, res) => {
   try {
     const receiveHeaders = await ReceiveHeader.findAll();
+    res.status(200).json(receiveHeaders);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+const getAllReceiveHeadersByDate = async (req, res) => {
+  const date = JSON.parse(req.query.date);
+  try {
+    const receiveHeaders = await ReceiveHeader.findAll({
+      where: {
+        bookingDate: {
+          [Op.between]: [date.startDate, date.endDate]
+        },
+      }
+    });
     res.status(200).json(receiveHeaders);
   } catch (error) {
     console.error(error);
@@ -92,4 +108,5 @@ module.exports = {
   getReceiveHeaderById,
   updateReceiveHeader,
   deleteReceiveHeader,
+  getAllReceiveHeadersByDate
 };
