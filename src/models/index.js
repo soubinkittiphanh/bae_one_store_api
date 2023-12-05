@@ -52,6 +52,7 @@ const db = {}
 db.sequelize = sequelize;
 db.Sequelize = Sequelize
 db.centralSequelize = tutorialDB;
+db.orderTable = require("../orderTable/model")(sequelize, DataTypes);
 db.menuHeader = require("../menu/model")(sequelize, DataTypes);
 db.menuLine = require("../menu/line/model")(sequelize, DataTypes);
 db.orderHIS = require("../order_history/model")(sequelize, DataTypes);
@@ -97,8 +98,13 @@ db.country = require("../country/model")(sequelize, DataTypes);
 db.rider.hasMany(db.order, {
     as: 'shippingOrders'
 })
-
-
+db.orderTable.hasMany(db.saleHeader,{
+    as: 'saleHeader'
+})
+db.saleHeader.belongsTo(db.orderTable, {
+    foreignKey: 'orderTableId',
+    as: 'orderTable'
+})
 db.menuHeader.belongsToMany(db.menuLine, { through: 'MenuHeaderLines' })
 db.menuLine.belongsToMany(db.menuHeader, { through: 'MenuHeaderLines' })
 // db.menuHeader.hasMany(db.menuLine, {

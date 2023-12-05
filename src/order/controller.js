@@ -11,7 +11,7 @@ exports.create = async (req, res) => {
     const result = await sequelize.transaction(async (t) => {
       let order = {
         clientId: req.body.client.id,
-        senderId: req.body.sender.id,
+        // senderId: req.body.sender.id,
         currencyId: req.body.currencyId,
         locationId: req.body.locationId,
         endLocationId: req.body.endLocationId,
@@ -29,13 +29,16 @@ exports.create = async (req, res) => {
         isActive: req.body.isActive ? req.body.isActive : true,
       };
       if (!req.body.client.id) {
+        logger.warn(`Client id is not found ${req.body.client.id}`)
         const dbClient = await Client.create(req.body.client, { transaction: t })
         order.clientId = dbClient['id']
       }
-      if (!req.body.sender.id) {
-        const dbSender = await Client.create(req.body.sender, { transaction: t })
-        order.senderId = dbSender['id']
-      }
+      // ****************** ENABLE BELOW CODE TO STORE SENDER AND SENDER ABOVE ******************
+      // if (!req.body.sender.id) {
+      //   logger.warn(`Create sender ${JSON.stringify(req.body.sender)}`)
+      //   const dbSender = await Client.create(req.body.sender, { transaction: t })
+      //   order.senderId = dbSender['id']
+      // }
       const dbOrder = await Order.create(order, { transaction: t })
       return { dbOrder }
     })
@@ -97,10 +100,10 @@ exports.update = async (req, res) => {
   const id = req.params.id;
   // Create a Client
   const client = req.body.client;
-  const sender = req.body.sender;
+  // const sender = req.body.sender;
   let order = req.body
   //******** We dont get senderId and clientId from request [Need to assign manualy]********* */
-  order.senderId = sender.id
+  // order.senderId = sender.id
   order.clientId = client.id
   //******** We dont get senderId and clientId from request [Need to assign manualy]********* */
   await keeHistoricalData(id);
@@ -112,14 +115,16 @@ exports.update = async (req, res) => {
       logger.error(`Cannot create client with error ${error}`)
     }
   }
-  if (!sender.id) {
-    try {
-      const dbSender = await Client.create(sender)
-      order.senderId = dbSender['id']
-    } catch (error) {
-      logger.error(`Cannot create client for sender  with error ${error}`)
-    }
-  }
+
+// ****************** ENABLE BELOW CODE TO STORE SENDER AND SENDER ABOVE ******************
+  // if (!sender.id) {
+  //   try {
+  //     const dbSender = await Client.create(sender)
+  //     order.senderId = dbSender['id']
+  //   } catch (error) {
+  //     logger.error(`Cannot create client for sender  with error ${error}`)
+  //   }
+  // }
 
   Order.update(order, {
     where: { id: id }
