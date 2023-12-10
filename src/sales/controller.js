@@ -56,6 +56,7 @@ exports.createSaleHeader = async (req, res) => {
     let { bookingDate, remark, discount, total, exchangeRate, isActive, lines, clientId, paymentId, currencyId, userId, referenceNo, locationId, customerForm } = req.body;
     logger.info("===== Create Sale Header =====" + req.body)
     const result = await sequelize.transaction(async (t) => {
+      logger.warn(`SALE HEADER: ${JSON.stringify(req.body)}`)
       const saleHeader = await SaleHeader.create({ bookingDate, remark, discount, total, exchangeRate, isActive, clientId, paymentId, currencyId, userId, referenceNo, locationId }, { transaction: t });
       let customer = null
 

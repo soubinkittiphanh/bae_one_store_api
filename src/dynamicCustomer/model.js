@@ -29,7 +29,7 @@ module.exports = (sequelize, DataTypes) => {
         },
         txn_date: {
             type: DataTypes.DATEONLY,
-            allowNull: false,
+            // allowNull: false,
         },
         isActive: {
             type: DataTypes.BOOLEAN,
