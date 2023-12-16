@@ -402,6 +402,7 @@ exports.getSaleHeadersByDate = async (req, res) => {
 };
 
 exports.getSaleHeadersByDateAndUser = async (req, res) => {
+  logger.warn("=============Loading saleHeader data=============")
   const date = JSON.parse(req.query.date);
   logger.warn(`Request date ${date.startDate} userId ${date.userId}`)
   try {
@@ -418,8 +419,13 @@ exports.getSaleHeadersByDateAndUser = async (req, res) => {
             {
               model: SaleHeader,
               as: "header"
-            }
+            },
+      
           ]
+        },
+        {
+          model: Customer,
+          include: ['geography', 'shipping']
         }
 
       ],
