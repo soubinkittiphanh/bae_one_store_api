@@ -48,8 +48,13 @@ const clientDB = {
         "database": "dcommerce_pro_peeair4",
         "port": 34248,
     },
-
-
+    "peeair4_2024": {
+        "host": "150.95.31.23",
+        "user": "root",
+        "password": "sdat@3480",
+        "database": "dcommerce_pro_peeair4_2024",
+        "port": 3306,
+    },
     "uat": {
         "host": "150.95.31.23",
         "user": "root",

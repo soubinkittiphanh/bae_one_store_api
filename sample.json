@@ -1,0 +1,51 @@
+{
+    "id": 380,
+    "bookingDate": "2023-12-10",
+    "referenceNo": "",
+    "remark": "",
+    "discount": 0,
+    "total": 5000,
+    "exchangeRate": 1,
+    "isActive": true,
+    "createdAt": "2023-12-10T09:17:57.000Z",
+    "updateTimestamp": "2023-12-10T09:17:57.000Z",
+    "orderTableId": null,
+    "paymentId": 1,
+    "clientId": 1,
+    "currencyId": 1,
+    "userId": 1,
+    "locationId": 1,
+    "customerId": null,
+    "lines": [
+        {
+            "id": 945,
+            "quantity": 1,
+            "unitRate": 1,
+            "price": 5000,
+            "discount": 0,
+            "total": 5000,
+            "isActive": true,
+            "createdAt": "2023-12-10T09:17:57.000Z",
+            "updateTimestamp": "2023-12-10T09:17:57.000Z",
+            "saleHeaderId": 380,
+            "headerId": 380,
+            "productId": 619,
+            "unitId": 1
+        },
+        {
+            "id": 946,
+            "quantity": 1,
+            "unitRate": 1,
+            "price": 5000,
+            "discount": 0,
+            "total": 5000,
+            "isActive": true,
+            "createdAt": "2023-12-10T09:17:57.000Z",
+            "updateTimestamp": "2023-12-10T09:17:57.000Z",
+            "saleHeaderId": 380,
+            "headerId": 380,
+            "productId": 619,
+            "unitId": 1
+        }
+    ]
+}

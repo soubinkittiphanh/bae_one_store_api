@@ -7,14 +7,28 @@ alter table dynamic_customer drop foreign key dynamic_customer_shippingId_foreig
 alter table saleHeader drop foreign key saleHeader_ibfk_1121;
 drop table dynamic_customer;
 -- CREATE USER GROUP: 
-insert into dcommerce_demo.userGroup SELECT * FROM dcommerce_uat_1.userGroup;
+insert into dcommerce_pro_peeair4_2024.userGroup SELECT * FROM dcommerce_uat_1.userGroup;
 -- ASSIGN USER TO GROUP JUST CREATED: 
 update user set groupId = 1;
 -- GENERATE AUTHORITY
-insert into dcommerce_demo.authority SELECT * FROM dcommerce_uat_1.authority;
+insert into dcommerce_pro_peeair4_2024.authority SELECT * FROM dcommerce_uat_1.authority;
 -- ASSIGN AUTHORITY JUST CREATED TO GROUP JUST CREATE
 -- insert into dcommerce_pro_chithanh.GroupAuthorities SELECT * FROM dcommerce_uat_1.GroupAuthorities;
-insert into dcommerce_pro_beverhome.GroupAuthorities SELECT * FROM dcommerce_uat_1.GroupAuthorities;
+insert into dcommerce_pro_peeair4_2024.GroupAuthorities SELECT * FROM dcommerce_uat_1.GroupAuthorities;
+insert into dcommerce_pro_peeair4_2024.GroupMenuHeader SELECT * FROM dcommerce_pro_beverhome.GroupMenuHeader;
+insert into dcommerce_pro_peeair4_2024.MenuHeaderLines SELECT * FROM dcommerce_uat_1.MenuHeaderLines;
+insert into dcommerce_pro_peeair4_2024.menuHeader SELECT * FROM dcommerce_pro_beverhome.menuHeader;
+insert into dcommerce_pro_peeair4_2024.menuLine SELECT * FROM dcommerce_uat_1.menuLine;
+insert into category select * from dcommerce_pro_peeair4.category;     
+
+delete from shipping;
+delete from payment; 
+delete from geography;
+insert into dcommerce_pro_peeair4_2024.shipping select * from dcommerce_uat_1.shipping;
+insert into dcommerce_pro_peeair4_2024.payment select * from dcommerce_uat_1.payment;
+insert into dcommerce_pro_peeair4_2024.geography select * from dcommerce_uat_1.geography;
+
+update outlet set name='', tel='';
 -- CREATE BRANCH
 -- ASSIGN SINGLE LOCATION TO BRANCH
 alter table dynamic_customer drop column riderId;
