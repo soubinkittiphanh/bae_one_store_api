@@ -54,7 +54,7 @@ const createProd = async (req, res) => {
             else sqlComImages += `(${pro_id},'${i.name}','${i.path}'),`;
 
         });
-        const sqlCom = `INSERT INTO product(pro_category, pro_id, pro_name, pro_price, pro_desc, pro_status,retail_cost_percent,outlet,cost_price,
+        const sqlCom = `INSERT INTO product(pro_category, pro_id, pro_name, pro_price, pro_desc, pro_status,retail_cost_percent,outletId,cost_price,
             locking_session_id,createdAt,updateTimestamp,minStock,barCode,receiveUnitId,stockUnitId,costCurrencyId,saleCurrencyId,isActive)
         VALUES('${pro_cat}','${pro_id}','${pro_name}','${pro_price}','${pro_desc}','${pro_status}','${retail_percent}','${outlet}','${costPrice}',${locking_session_id},'${mysqlDateTime}','${mysqlDateTime}',${minStock},'${barCode}',${receiveUnitId},${stockUnitId},${costCurrencyId},${saleCurrencyId},${isActive});`
         //*****************  INSERT PRODUCT SQL  *****************//
@@ -102,7 +102,7 @@ const updateProd = async (req, res) => {
     let sqlComImages = 'INSERT INTO image_path(pro_id, img_name, img_path)VALUES';
     const sqlCom = `UPDATE product SET pro_category='${pro_cat}', pro_name='${pro_name}', pro_price='${pro_price}', 
     pro_desc='${pro_desc}', pro_status='${pro_status}',retail_cost_percent='${retail_percent}',isActive=${isActive},
-    cost_price='${cost_price}',outlet='${outlet}',minStock=${minStock},barCode='${barCode}',
+    cost_price='${cost_price}',outletId='${outlet}',minStock=${minStock},barCode='${barCode}',
     receiveUnitId=${receiveUnitId},stockUnitId=${stockUnitId},saleCurrencyId=${saleCurrencyId},costCurrencyId=${costCurrencyId}
      WHERE pro_id='${pro_id}'`
     logger.info("************* UPDATE PRODUCT *****************");
@@ -139,7 +139,7 @@ const fetchProd = async (req, res) => {
     p.stock_count AS card_count ,IFNULL(s.cnt,0) AS sale_count, o.name AS outlet_name
     FROM product p 
     LEFT JOIN category c ON c.categ_id=p.pro_category
-    LEFT JOIN outlet o ON o.id = p.outlet
+    LEFT JOIN outlet o ON o.id = p.outletId
     LEFT JOIN image_path i ON i.pro_id=p.pro_id
     LEFT JOIN  (SELECT IFNULL(COUNT(pro_id),0) AS cnt,pro_id FROM card_sale GROUP BY pro_id ) s ON s.pro_id=p.pro_id 
     GROUP BY p.pro_id
@@ -195,7 +195,7 @@ ON
 LEFT JOIN category c ON
     c.categ_id = p.pro_category
 LEFT JOIN outlet o ON
-    o.id = p.outlet
+    o.id = p.outletId
 LEFT JOIN image_path i ON
     i.pro_id = p.pro_id
 WHERE p.isActive = true
@@ -216,7 +216,7 @@ const fetchProdMobile = async (req, res) => {
     p.stock_count AS card_count ,IFNULL(s.cnt,0) AS sale_count, o.name AS outlet_name
     FROM product p 
     LEFT JOIN category c ON c.categ_id=p.pro_category
-    LEFT JOIN outlet o ON o.id = p.outlet
+    LEFT JOIN outlet o ON o.id = p.outletId
     LEFT JOIN image_path i ON i.pro_id=p.pro_id
     LEFT JOIN  (SELECT IFNULL(COUNT(pro_id),0) AS cnt,pro_id FROM card_sale GROUP BY pro_id ) s ON s.pro_id=p.pro_id 
     GROUP BY p.pro_id

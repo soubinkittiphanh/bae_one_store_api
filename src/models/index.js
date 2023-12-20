@@ -52,6 +52,7 @@ const db = {}
 db.sequelize = sequelize;
 db.Sequelize = Sequelize
 db.centralSequelize = tutorialDB;
+db.product = require("../product/model")(sequelize, DataTypes);
 db.orderTable = require("../orderTable/model")(sequelize, DataTypes);
 db.menuHeader = require("../menu/model")(sequelize, DataTypes);
 db.menuLine = require("../menu/line/model")(sequelize, DataTypes);
@@ -65,7 +66,6 @@ db.customer = require("../dynamicCustomer/model")(sequelize, DataTypes);
 db.group = require("../group/model")(sequelize, DataTypes);
 db.authority = require("../authority/model")(sequelize, DataTypes);
 db.tuturial = require("../tutorial/model")(tutorialDB, DataTypes);
-db.product = require("../product/model")(sequelize, DataTypes);
 db.company = require("../company/model")(sequelize, DataTypes);
 db.saleHeader = require("../sales/model")(sequelize, DataTypes);
 db.shipping = require("../shipping/model")(sequelize, DataTypes);
@@ -364,8 +364,8 @@ db.outlet.hasMany(db.product, {
     as: 'products'
 })
 db.product.belongsTo(db.outlet, {
-    foreignKey: 'outlet',
-    as: 'outletObject'
+    foreignKey: 'outletId',
+    as: 'outlet'
 })
 db.poHeader.hasMany(db.poLine, {
     as: 'lines'
