@@ -363,9 +363,9 @@ db.product.belongsTo(db.category, {
 db.outlet.hasMany(db.product, {
     as: 'products'
 })
-db.product.belongsTo(db.outlet, {
-    foreignKey: 'outletId',
-    as: 'outlet'
+db.product.belongsTo(db.company, {
+    foreignKey: 'companyId',
+    as: 'company'
 })
 db.poHeader.hasMany(db.poLine, {
     as: 'lines'

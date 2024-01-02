@@ -132,10 +132,32 @@ exports.updateSaleHeader = async (req, res) => {
     res.status(500).send(`Cannot update data with ${error}`);
   }
 };
+exports.settlement = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { paymentId, codFee, customerId } = req.body;
+    const saleHeader = await SaleHeader.findByPk(id);
+
+    if (!saleHeader) {
+      logger.error("Order Id " + id + ' is not found')
+      return res.status(404).json({ success: false, message: 'Sale header not found' });
+    }
+    logger.info("Updating header")
+    await saleHeader.update({ paymentId, });
+    logger.info(`Update transaction completed ${saleHeader}`)
+    // ******* IF COD FEE IS THERE NEED TO UPDATE DY-CUS ********
+    const customer = await Customer.findByPk(customerId)
+    await customer.update({ cod_fee: codFee })
+    res.status(200).json(saleHeader);
+  } catch (error) {
+    logger.error("Cannot update data " + error)
+    res.status(500).send(`Cannot update data with ${error}`);
+  }
+};
 exports.reverseSaleHeader = async (req, res) => {
   try {
     const { id } = req.params;
-    const { isActive,remark } = req.body;
+    const { isActive, remark } = req.body;
     const saleHeader = await SaleHeader.findByPk(id, {
       include: [{
         model: Line,
@@ -164,7 +186,7 @@ exports.reverseSaleHeader = async (req, res) => {
     const cardIds = saleHeader['lines'].flatMap(iterator => iterator['cards'].map(card => card['id']));
 
     const result = await sequelize.transaction(async (t) => {
-      const updatedRecord = await saleHeader.update({ isActive,remark }, { transaction: t });
+      const updatedRecord = await saleHeader.update({ isActive, remark }, { transaction: t });
       const [numUpdated] = await Card.update(
         {
           card_isused: 0,
@@ -382,7 +404,7 @@ exports.getSaleHeadersByDate = async (req, res) => {
         },
         {
           model: Customer,
-          include: ['geography', 'shipping']
+          include: ['geography', 'shipping','rider']
         }
 
       ],
@@ -420,7 +442,7 @@ exports.getSaleHeadersByDateAndUser = async (req, res) => {
               model: SaleHeader,
               as: "header"
             },
-      
+
           ]
         },
         {

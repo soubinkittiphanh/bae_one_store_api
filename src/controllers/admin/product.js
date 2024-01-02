@@ -136,19 +136,18 @@ const fetchProd = async (req, res) => {
     const sqlCom = `
     SELECT DISTINCT p.id,p.pro_id,p.minStock,p.barCode,p.receiveUnitId,p.stockUnitId,p.pro_name,p.pro_category,
     p.pro_price,p.pro_status,p.cost_price,c.categ_name,IFNULL(i.img_name,'No image') AS img_name,i.img_path,
-    p.stock_count AS card_count ,IFNULL(s.cnt,0) AS sale_count, o.name AS outlet_name
+    p.stock_count AS card_count ,IFNULL(s.cnt,0) AS sale_count
     FROM product p 
     LEFT JOIN category c ON c.categ_id=p.pro_category
-    LEFT JOIN outlet o ON o.id = p.outletId
     LEFT JOIN image_path i ON i.pro_id=p.pro_id
     LEFT JOIN  (SELECT IFNULL(COUNT(pro_id),0) AS cnt,pro_id FROM card_sale GROUP BY pro_id ) s ON s.pro_id=p.pro_id 
     GROUP BY p.pro_id
     ORDER BY p.pro_price;`
     // const sqlCom = `SELECT DISTINCT p.*,c.categ_name,IFNULL(i.img_name,'No image') AS img_name,i.img_path,
-    // p.stock_count AS card_count ,IFNULL(s.cnt,0) AS sale_count, o.name AS outlet_name
+    // p.stock_count AS card_count ,IFNULL(s.cnt,0) AS sale_count
     // FROM product p 
     // LEFT JOIN category c ON c.categ_id=p.pro_category
-    // LEFT JOIN outlet o ON o.id = p.outlet
+
     // LEFT JOIN image_path i ON i.pro_id=p.pro_id
     // LEFT JOIN  (SELECT IFNULL(COUNT(pro_id),0) AS cnt,pro_id FROM card_sale GROUP BY pro_id ) s ON s.pro_id=p.pro_id ORDER BY p.pro_price;`
     Db.query(sqlCom, (er, re) => {
@@ -176,7 +175,6 @@ const fetchProductFromLocation = async (req, res) => {
     IFNULL(i.img_name, 'No image') AS img_name,
     i.img_path,
     IFNULL(c.stock, 0) AS card_count,
-    o.name AS outlet_name
 FROM
     product p
 LEFT JOIN(
@@ -194,8 +192,7 @@ ON
     c.productId = p.id
 LEFT JOIN category c ON
     c.categ_id = p.pro_category
-LEFT JOIN outlet o ON
-    o.id = p.outletId
+
 LEFT JOIN image_path i ON
     i.pro_id = p.pro_id
 WHERE p.isActive = true
@@ -213,12 +210,12 @@ const fetchProdMobile = async (req, res) => {
     logger.info("*************** FETCH PRODUCT ***************");
     logger.info(`*************Payload: *****************ss`);
     const sqlCom = `SELECT p.*,c.categ_name,IFNULL(i.img_name,'No image') AS img_name,i.img_path,
-    p.stock_count AS card_count ,IFNULL(s.cnt,0) AS sale_count, o.name AS outlet_name
+    p.stock_count AS card_count ,IFNULL(s.cnt,0) AS sale_count
     FROM product p 
     LEFT JOIN category c ON c.categ_id=p.pro_category
-    LEFT JOIN outlet o ON o.id = p.outletId
     LEFT JOIN image_path i ON i.pro_id=p.pro_id
     LEFT JOIN  (SELECT IFNULL(COUNT(pro_id),0) AS cnt,pro_id FROM card_sale GROUP BY pro_id ) s ON s.pro_id=p.pro_id 
+    where p.isActive=true
     GROUP BY p.pro_id
     ORDER BY p.pro_price;`;
     Db.query(sqlCom, (er, re) => {

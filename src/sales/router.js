@@ -11,6 +11,7 @@ router.use(validateToken)
 router
 .post("/create",validator.createSaleHeaderValidator, controller.createSaleHeader)
 .put("/update/:id",validator.updateSaleHeaderValidator, controller.updateSaleHeader)
+.put("/settle/:id", controller.settlement)
 .put("/reverse/:id", controller.reverseSaleHeader)
 .put("/postToInvoice/:id",validator.updateSaleHeaderValidator, controller.updateSaleHeaderPostToInvoice)
 .delete("/find/:id", controller.deleteSaleHeader)
