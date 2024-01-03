@@ -157,7 +157,7 @@ exports.settlement = async (req, res) => {
 exports.reverseSaleHeader = async (req, res) => {
   try {
     const { id } = req.params;
-    const { isActive, remark } = req.body;
+    const { isActive, remark, cancel_fee, customerId } = req.body;
     const saleHeader = await SaleHeader.findByPk(id, {
       include: [{
         model: Line,
@@ -214,7 +214,12 @@ exports.reverseSaleHeader = async (req, res) => {
     // ************* TAKE THE PRODUC ID FOR UPDATE STOCK COUNT IN PRODUCT TABLE *************//
     updateProductStockCount(saleHeader['lines'])
     // ************* TAKE THE PRODUC ID FOR UPDATE STOCK COUNT IN PRODUCT TABLE *************//
-
+    // *********** SET CANCELATION CHARGE ***********
+    if (cancel_fee > 0) {
+      logger.info(`CANCEL FEE SET ${cancel_fee} | ${customerId}`)
+      const customer = await Customer.findByPk(customerId)
+      await customer.update({ cancel_fee: cancel_fee })
+    }
     res.status(200).json(saleHeader);
   } catch (error) {
     logger.error("Cannot reverse data " + error)
@@ -404,7 +409,7 @@ exports.getSaleHeadersByDate = async (req, res) => {
         },
         {
           model: Customer,
-          include: ['geography', 'shipping','rider']
+          include: ['geography', 'shipping', 'rider']
         }
 
       ],

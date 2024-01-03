@@ -18,6 +18,10 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.DOUBLE,
             defaultValue: 0,
         },
+        cancel_fee: {
+            type: DataTypes.DOUBLE,
+            defaultValue: 0,
+        },
         rider_fee: {
             type: DataTypes.DOUBLE,
             defaultValue: 0,
