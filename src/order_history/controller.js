@@ -30,6 +30,7 @@ exports.create = async (req, res) => {
         bookingDate: req.body.bookingDate,
         name: req.body.name,
         note: req.body.note,
+        refNumber: req.body.refNumber,
         trackingNumber: req.body.trackingNumber,
         link: req.body.link,
         shippingFee: req.body.shippingFee,

@@ -13,6 +13,9 @@ module.exports = (sequelize, DataTypes) => {
         note: {
             type: DataTypes.STRING,
         },
+        refNumber: {
+            type: DataTypes.STRING,
+        },
         trackingNumber: {
             type: DataTypes.STRING,
         },
