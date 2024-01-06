@@ -22,7 +22,6 @@ const createProd = async (req, res) => {
     const pro_desc = body.pro_desc;
     const pro_status = +body.pro_status;
     const image_path = req.body.imagesObj;
-    const outlet = body.outlet
     const costPrice = body.pro_cost_price;
     const createdAt = body.createdAt;
     const barCode = body.barCode;
@@ -34,7 +33,6 @@ const createProd = async (req, res) => {
     const retail_percent = body.pro_retail_price || 0.0;
     const locking_session_id = Date.now()
     const isActive = body.isActive;
-    logger.info(" outlet: ", outlet);
     // return res.send("Okay")
     let sqlComImages = 'INSERT INTO image_path(pro_id, img_name, img_path)VALUES';
     logger.info("************* CREATE PRODUCT *****************");
@@ -54,9 +52,9 @@ const createProd = async (req, res) => {
             else sqlComImages += `(${pro_id},'${i.name}','${i.path}'),`;
 
         });
-        const sqlCom = `INSERT INTO product(pro_category, pro_id, pro_name, pro_price, pro_desc, pro_status,retail_cost_percent,outletId,cost_price,
+        const sqlCom = `INSERT INTO product(pro_category, pro_id, pro_name, pro_price, pro_desc, pro_status,retail_cost_percent,cost_price,
             locking_session_id,createdAt,updateTimestamp,minStock,barCode,receiveUnitId,stockUnitId,costCurrencyId,saleCurrencyId,isActive)
-        VALUES('${pro_cat}','${pro_id}','${pro_name}','${pro_price}','${pro_desc}','${pro_status}','${retail_percent}','${outlet}','${costPrice}',${locking_session_id},'${mysqlDateTime}','${mysqlDateTime}',${minStock},'${barCode}',${receiveUnitId},${stockUnitId},${costCurrencyId},${saleCurrencyId},${isActive});`
+        VALUES('${pro_cat}','${pro_id}','${pro_name}','${pro_price}','${pro_desc}','${pro_status}','${retail_percent}','${costPrice}',${locking_session_id},'${mysqlDateTime}','${mysqlDateTime}',${minStock},'${barCode}',${receiveUnitId},${stockUnitId},${costCurrencyId},${saleCurrencyId},${isActive});`
         //*****************  INSERT PRODUCT SQL  *****************//
         logger.info("SQL CREATE PRODUCT: " + sqlCom);
         Db.query(sqlCom, (er, re) => {
@@ -88,7 +86,6 @@ const updateProd = async (req, res) => {
     const pro_status = +body.pro_status;
     const image_path = req.body.imagesObj;
     const cost_price = body.pro_cost_price;
-    const outlet = body.outlet;
     const minStock = body.minStock;
     const barCode = body.barCode;
     const receiveUnitId = body.receiveUnitId;
@@ -96,14 +93,14 @@ const updateProd = async (req, res) => {
     const costCurrencyId = body.costCurrencyId;
     const saleCurrencyId = body.saleCurrencyId;
     const isActive = body.isActive;
+    const companyId = body.companyId;
     logger.info('cost ' + cost_price);
-    logger.info('outlet ' + outlet);
     const retail_percent = body.pro_retail_price || 0.0;
     let sqlComImages = 'INSERT INTO image_path(pro_id, img_name, img_path)VALUES';
     const sqlCom = `UPDATE product SET pro_category='${pro_cat}', pro_name='${pro_name}', pro_price='${pro_price}', 
     pro_desc='${pro_desc}', pro_status='${pro_status}',retail_cost_percent='${retail_percent}',isActive=${isActive},
-    cost_price='${cost_price}',outletId='${outlet}',minStock=${minStock},barCode='${barCode}',
-    receiveUnitId=${receiveUnitId},stockUnitId=${stockUnitId},saleCurrencyId=${saleCurrencyId},costCurrencyId=${costCurrencyId}
+    cost_price='${cost_price}',minStock=${minStock},barCode='${barCode}',
+    receiveUnitId=${receiveUnitId},stockUnitId=${stockUnitId},saleCurrencyId=${saleCurrencyId},costCurrencyId=${costCurrencyId},companyId=${companyId}
      WHERE pro_id='${pro_id}'`
     logger.info("************* UPDATE PRODUCT *****************");
     logger.info(`*************Payload: ${req.body.imagesObj} *****************`);
