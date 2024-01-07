@@ -33,6 +33,7 @@ const createProd = async (req, res) => {
     const retail_percent = body.pro_retail_price || 0.0;
     const locking_session_id = Date.now()
     const isActive = body.isActive;
+    const companyId = body.companyId;
     // return res.send("Okay")
     let sqlComImages = 'INSERT INTO image_path(pro_id, img_name, img_path)VALUES';
     logger.info("************* CREATE PRODUCT *****************");
@@ -53,8 +54,8 @@ const createProd = async (req, res) => {
 
         });
         const sqlCom = `INSERT INTO product(pro_category, pro_id, pro_name, pro_price, pro_desc, pro_status,retail_cost_percent,cost_price,
-            locking_session_id,createdAt,updateTimestamp,minStock,barCode,receiveUnitId,stockUnitId,costCurrencyId,saleCurrencyId,isActive)
-        VALUES('${pro_cat}','${pro_id}','${pro_name}','${pro_price}','${pro_desc}','${pro_status}','${retail_percent}','${costPrice}',${locking_session_id},'${mysqlDateTime}','${mysqlDateTime}',${minStock},'${barCode}',${receiveUnitId},${stockUnitId},${costCurrencyId},${saleCurrencyId},${isActive});`
+            locking_session_id,createdAt,updateTimestamp,minStock,barCode,receiveUnitId,stockUnitId,costCurrencyId,saleCurrencyId,isActive,companyId)
+        VALUES('${pro_cat}','${pro_id}','${pro_name}','${pro_price}','${pro_desc}','${pro_status}','${retail_percent}','${costPrice}',${locking_session_id},'${mysqlDateTime}','${mysqlDateTime}',${minStock},'${barCode}',${receiveUnitId},${stockUnitId},${costCurrencyId},${saleCurrencyId},${isActive},${companyId});`
         //*****************  INSERT PRODUCT SQL  *****************//
         logger.info("SQL CREATE PRODUCT: " + sqlCom);
         Db.query(sqlCom, (er, re) => {
