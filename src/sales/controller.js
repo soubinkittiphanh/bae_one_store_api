@@ -735,6 +735,7 @@ exports.sumSaleCurrentYear = async (req, res) => {
   const { startDate, endDate } = date // new Date('2022-01-01');
   try {
     const saleHeader = await SaleHeader.findAll({
+      include:[Customer],
       attributes: ['bookingDate', 'total', 'discount'],
       where: {
         bookingDate: {
