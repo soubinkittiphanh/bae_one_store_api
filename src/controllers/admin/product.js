@@ -170,11 +170,16 @@ const fetchProductFromLocation = async (req, res) => {
     p.saleCurrencyId,
     p.costCurrencyId,
     t.categ_name,
+    co.name as co_name,
+    co.id as companyId,
     IFNULL(i.img_name, 'No image') AS img_name,
     i.img_path,
     IFNULL(c.stock, 0) AS card_count
 FROM
     product p
+LEFT JOIN company co ON co.id = p.companyId
+
+
 LEFT JOIN(
     SELECT
         COUNT(c.card_number) AS stock,
