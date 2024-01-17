@@ -90,6 +90,13 @@ const clientDB = {
         "database": "dcommerce_pro_little_boutique",
         "port": 3306,
     },
+    "auto": {
+        "host": "150.95.31.23",
+        "user": "root",
+        "password": "sdat@3480",
+        "database": "dcommerce_pro_little_boutique",
+        "port": 3306,
+    },
 }
 
 module.exports = {
