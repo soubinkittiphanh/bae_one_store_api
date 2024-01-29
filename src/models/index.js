@@ -360,9 +360,9 @@ db.product.belongsTo(db.category, {
     as: 'category'
 })
 
-db.outlet.hasMany(db.product, {
-    as: 'products'
-})
+// db.outlet.hasMany(db.product, {
+//     as: 'products'
+// })
 db.product.belongsTo(db.company, {
     foreignKey: 'companyId',
     as: 'company'
