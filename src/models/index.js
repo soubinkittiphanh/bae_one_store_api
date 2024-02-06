@@ -52,6 +52,7 @@ const db = {}
 db.sequelize = sequelize;
 db.Sequelize = Sequelize
 db.centralSequelize = tutorialDB;
+db.reservation = require("../reservation/model")(sequelize, DataTypes);
 db.product = require("../product/model")(sequelize, DataTypes);
 db.orderTable = require("../orderTable/model")(sequelize, DataTypes);
 db.menuHeader = require("../menu/model")(sequelize, DataTypes);
@@ -95,10 +96,18 @@ db.payment = require("../paymentMethod/model")(sequelize, DataTypes);
 db.country = require("../country/model")(sequelize, DataTypes);
 // const UserTerminals = sequelize.define('user_terminals', {});
 
+db.reservation.belongsTo(db.payment, {
+    foreignKey: 'paymentId',
+    as: 'payment'
+})
+db.reservation.belongsToMany(db.product, { through: 'ProductReservation' })
+db.product.belongsToMany(db.reservation, { through: 'ProductReservation' })
+
 db.rider.hasMany(db.order, {
     as: 'shippingOrders'
 })
-db.orderTable.hasMany(db.saleHeader,{
+
+db.orderTable.hasMany(db.saleHeader, {
     as: 'saleHeader'
 })
 db.saleHeader.belongsTo(db.orderTable, {
@@ -159,9 +168,9 @@ db.orderHIS.belongsTo(db.payment, {
     foreignKey: 'paymentId',
     as: 'payment',
 })
-db.orderHIS.belongsTo(db.order,{
-    foreignKey:'originalId',
-    as:'original'
+db.orderHIS.belongsTo(db.order, {
+    foreignKey: 'originalId',
+    as: 'original'
 })
 db.orderHIS.belongsTo(db.rider, {
     foreignKey: 'riderId',
@@ -172,8 +181,8 @@ db.orderHIS.belongsTo(db.shipping, {
     as: 'shipping'
 })
 
-db.order.hasMany(db.orderHIS,{
-    as:'histories'
+db.order.hasMany(db.orderHIS, {
+    as: 'histories'
 })
 db.order.belongsTo(db.location, {
     foreignKey: 'locationId',
@@ -237,6 +246,9 @@ db.priceList.belongsTo(db.currency, {
 })
 db.product.hasMany(db.priceList, {
     as: 'priceLists'
+})
+db.product.hasMany(db.card, {
+    as: 'cards'
 })
 
 //***************Map order to delivery customer**************/

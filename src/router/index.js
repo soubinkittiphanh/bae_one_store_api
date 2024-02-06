@@ -39,6 +39,7 @@ const account = require("../account").router
 const priceList = require("../priceList").router
 const order = require("../order").router
 const vendor = require("../vendor").router
+const reservation = require("../reservation").router
 
 module.exports={
     orderRouter,
@@ -81,5 +82,6 @@ module.exports={
     order,
     vendor,
     menuHeader,
-    menuLine
+    menuLine,
+    reservation
 }
