@@ -1,5 +1,6 @@
 
 const Card = require("../models").card; // Import the users model
+const Product = require("../models").product; // Import the users model
 const { sequelize } = require('../models');
 const cardController = {
   // Create a new card
@@ -60,9 +61,13 @@ const cardController = {
           isActive: true,
         },
         group: ['product_id'],
-        raw: true, // To get raw data instead of instances
+        // raw: true, // To get raw data instead of instances
+        include: ['product'],
+        // include: [{
+        //   model: Product,
+        //   attributes: ['pro_name', 'pro_price'], // Include the attributes you need from the Product model
+        // }],
       });
-
       return res.status(200).json(cardStats);
     } catch (error) {
       return res.status(400).json({ message: error.message });

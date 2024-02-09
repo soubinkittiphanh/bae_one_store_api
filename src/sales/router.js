@@ -17,6 +17,7 @@ router
 .delete("/find/:id", controller.deleteSaleHeader)
 .get("/find", controller.getSaleHeaders)
 .get("/findByDate", controller.getSaleHeadersByDate)
+.get("/findDetailByDate", controller.getSaleHeadersDetailByDate)
 .get("/findByDateAndUser", controller.getSaleHeadersByDateAndUser)
 .get("/findByDateAndCustomer", controller.getSaleHeadersByDateAndCustomer)
 .get("/findByDateAndProduct", controller.getSaleHeadersByDateAndProduct)

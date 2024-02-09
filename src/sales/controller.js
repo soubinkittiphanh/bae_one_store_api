@@ -427,6 +427,44 @@ exports.getSaleHeadersByDate = async (req, res) => {
     res.status(500).send(error);
   }
 };
+exports.getSaleHeadersDetailByDate = async (req, res) => {
+  const date = JSON.parse(req.query.date);
+  logger.warn("Date " + date.startDate + " " + date.endDate)
+  logger.warn(`Request date ${date.startDate} userId ${req.user.id}`)
+  try {
+    const saleHeaders = await SaleHeader.findAll({
+      include: ['user', 'client', 'payment', 'currency', 'location',
+        {
+          model: Line,
+          as: "lines",
+          include: [
+            {
+              model: Product,
+              as: "product"
+            },
+            'cards'
+          ]
+        },
+        {
+          model: Customer,
+          include: ['geography', 'shipping', 'rider']
+        }
+
+      ],
+      where: {
+        bookingDate: {
+          [Op.between]: [date.startDate, date.endDate]
+        },
+        // isActive:true
+      }
+    });
+
+    res.status(200).send(saleHeaders);
+  } catch (error) {
+    logger.error("===> Filter by date error: " + error)
+    res.status(500).send(error);
+  }
+};
 
 exports.getSaleHeadersByDateAndUser = async (req, res) => {
   logger.warn("=============Loading saleHeader data=============")
