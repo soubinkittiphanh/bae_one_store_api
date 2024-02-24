@@ -17,5 +17,5 @@ router.post("/create", controller.create)
     .delete("/find/:id", controller.deleteById)
     .get("/find", controller.getAll)
     .get("/find/:id", controller.getById)
-    // .post("/bulkCreate",service.createHulkStockCard)
+    // .post("/bulkCreate",service.createHulkStockCard)//
 module.exports = router
