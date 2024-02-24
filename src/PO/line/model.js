@@ -1,7 +1,7 @@
 
 
 module.exports = (sequelize, DataTypes) => {
-    const PoLine = sequelize.define('po_line', {
+    const PoLine = sequelize.define('poLine', {
         rate: {
             type: DataTypes.DOUBLE,
             defaultValue: 1,
@@ -27,7 +27,6 @@ module.exports = (sequelize, DataTypes) => {
         },
         locking_session_id: {
             type: DataTypes.STRING,
-            allowNull: false,
         },
     }, {
         sequelize,

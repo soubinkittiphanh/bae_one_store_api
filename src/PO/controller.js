@@ -1,117 +1,110 @@
 
 const PoHeader = require('../models').poHeader;
-const { body, validationResult } = require('express-validator');
 const logger = require('../api/logger');
-const service = require('./line/service')
-
+const PoLine = require('../models').poLine;
+const headerService = require('./service')
+const lineService = require('./line/service')
+const { sequelize } = require('../models');
 // Create Payment Header
 function replaceAll(str, find, replace) {
   return str.replace(new RegExp(find, 'g'), replace);
 }
-// Get all PO headers
-const getAllPOHeaders = async (req, res) => {
-  try {
-    const poHeaders = await PoHeader.findAll();
-    res.status(200).json(poHeaders);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
-// Get a single PO header by ID
-const getPOHeaderById = async (req, res) => {
-  const { id } = req.params;
-  try {
-    const poHeader = await PoHeader.findOne({ where: { id } });
-    if (!poHeader) {
-      return res.status(404).json({ message: 'PO header not found' });
+const PoHeaderController = {
+  getAll: async (req, res) => {
+    try {
+      const poHeaders = await PoHeader.findAll({ include: ['lines', 'currency', 'vendor'] });
+      res.json(poHeaders);
+    } catch (error) {
+      logger.error(error);
+      res.status(500).send('Internal Server Error');
     }
-    res.status(200).json(poHeader);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Internal server error' });
-  }
-};
+  },
 
-//  Create a new PO header
-const createPOHeader = async (req, res) => {
-  // const errors = validationResult(req);
-  // if (!errors.isEmpty()) {
-  //   return res.status(400).json({ errors: errors.array() });
-  // }
-  let { bookingDate, deliveryDate, vendor, notes, locking_session_id, isActive,lines } = req.body;
-  locking_session_id = Date.now()
-  try {
-    const newPOHeader = await PoHeader.create({
-      bookingDate,
-      deliveryDate,
-      vendor,
-      notes,
-      locking_session_id,
-      isActive,
-    });
-    lines.locking_session_id = newPOHeader.locking_session_id
-    service.createBulk(req,res,lines,newPOHeader.id);
-    // res.status(200).json(newPOHeader);
-  } catch (error) {
-    logger.error(error)
-    res.status(500).json({ message: 'Internal server error' });
-  }
-};
+  getById: async (req, res) => {
+    try {
+      const poHeader = await PoHeader.findByPk(req.params.id,
+        {
+          include: ['currency', 'vendor', {
+            model: PoLine,
+            as: "lines",
+            include: ['product', 'unit'],
 
-// Update an existing PO header by ID
-const updatePOHeaderById = async (req, res) => {
-  // const errors = validationResult(req);
-  // if (!errors.isEmpty()) {
-  //   return res.status(400).json({ errors: errors.array() });
-  // }
-  const { id } = req.params;
-  const { bookingDate, deliveryDate, vendor, notes, locking_session_id, isActive,lines } = req.body;
-  try {
-    const poHeader = await PoHeader.findOne({ where: { id } });
-    if (!poHeader) {
-      return res.status(404).json({ message: 'PO header not found' });
+          }]
+        }
+      );
+      if (!poHeader) {
+        return res.status(404).send('PoHeader not found');
+      }
+      res.json(poHeader);
+    } catch (error) {
+      logger.error(`Cannot load data with error ${error}`);
+      res.status(500).send(`Cannot load data with error ${error}`);
     }
-    await PoHeader.update(
-      {
-        bookingDate,
-        deliveryDate,
-        vendor,
-        notes,
-        locking_session_id,
-        isActive,
-      },
-      { where: { id } }
-    );
-    service.updateBulk(req,res,lines,id)
-    // res.status(200).json({ message: 'PO header updated successfully' });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Internal server error' });
-  }
-};
+  },
 
-// Delete a PO header by ID
-const deletePOHeaderById = async (req, res) => {
-  const { id } = req.params;
-  try {
-    const poHeader = await PoHeader.findOne({ where: { id } });
-    if (!poHeader) {
-      return res.status(404).json({ message: 'PO header not found' });
+  create: async (req, res) => {
+    try {
+      const result = await sequelize.transaction(async (t) => {
+        const newPoHeader = await PoHeader.create(req.body, { transaction: t });
+        const polineWithHeader = headerService.assignLineHeaderId(newPoHeader.id, req.body.lines)
+        // res.json(newPoHeader);
+        const newPoLines = await PoLine.bulkCreate(polineWithHeader, { transaction: t });
+        return { newPoHeader, newPoLines };
+      });
+      return res.status(201).json(result)
+    } catch (error) {
+      logger.error(`Cannot create purchase order with error ${error}`);
+      res.status(500).send('Internal Server Error');
     }
-    await PoHeader.destroy({ where: { id } });
-    res.status(200).json({ message: 'PO header deleted successfully' });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Internal server error' });
-  }
+  },
+
+  updateById: async (req, res) => {
+    try {
+      const result = await sequelize.transaction(async (t) => {
+        const poHeader = await PoHeader.findByPk(req.params.id, { transaction: t });
+        if (!poHeader) {
+          return res.status(404).send('PoHeader not found');
+        }
+        await poHeader.update(req.body, { transaction: t });
+        const newLines = req.body.lines.filter(el => el.id == null)
+        let newLineWithHeader = []
+        if (newLines) {
+          // Assign line header
+          newLineWithHeader = headerService.assignLineHeaderId(req.params.id, newLines)
+          // const newLineCreated =  await PoLine.bulkCreate(newLineWithHeader, { transaction: t });
+        }
+        let oldLines = req.body.lines.filter(el => el.id != null)
+        const bothLines = oldLines.concat(newLineWithHeader)
+        await lineService.simpleUpdateBulk(bothLines, t)
+        return await PoHeader.findByPk(req.params.id, {
+          include: ['vendor', 'currency', {
+            model: PoLine,
+            as: "lines",
+            include: ['product', 'unit'],
+          }]
+        })
+      })
+      res.status(200).json(result)
+    } catch (error) {
+      logger.error(`Cannot update PO Header with error ${error}`);
+      res.status(500).send('Internal Server Error');
+    }
+  },
+
+  deleteById: async (req, res) => {
+    try {
+      const poHeader = await PoHeader.findByPk(req.params.id);
+      if (!poHeader) {
+        return res.status(404).send('PoHeader not found');
+      }
+
+      await poHeader.destroy();
+      res.json({ message: 'PoHeader deleted successfully' });
+    } catch (error) {
+      logger.error(error);
+      res.status(500).send('Internal Server Error');
+    }
+  },
 };
 
-module.exports = {
-  getAllPOHeaders,
-  getPOHeaderById,
-  createPOHeader,
-  updatePOHeaderById,
-  deletePOHeaderById,
-};
+module.exports = PoHeaderController;

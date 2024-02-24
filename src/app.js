@@ -54,6 +54,8 @@ const buildApp = async () => {
     app.use("/api/menuHeader",myRouter.menuHeader)
     app.use("/api/menuLine",myRouter.menuLine)
     app.use("/api/reservation",myRouter.reservation)
+    app.use("/api/receiving",myRouter.receiving)
+    app.use("/api/receiving/line",myRouter.receivingLine)
 
     Router.category(app);
     Router.product(app);

@@ -11,8 +11,8 @@ const campaignEntry = require("../controllers/admin/campaign/entry").router
 const card = require("../card").router
 const paymentHeadAP = require("../AP/payment/header").router
 const receiveHeadAR = require("../AR/receive/header").router
-const poheader = require("../PO").router
-const poLine = require("../PO/line").router
+const poheader = require("../po").router
+const poLine = require("../po/line").router
 const currency = require("../currency").router
 const geography = require("../geography").router
 const customer = require("../dynamicCustomer").router
@@ -40,6 +40,8 @@ const priceList = require("../priceList").router
 const order = require("../order").router
 const vendor = require("../vendor").router
 const reservation = require("../reservation").router
+const receiving = require("../receiving").router
+const receivingLine = require("../receiving/line").router
 
 module.exports={
     orderRouter,
@@ -83,5 +85,7 @@ module.exports={
     vendor,
     menuHeader,
     menuLine,
-    reservation
+    reservation,
+    receiving,
+    receivingLine
 }

@@ -1,25 +1,30 @@
 
 
 module.exports = (sequelize, DataTypes) => {
-    const PoHeader = sequelize.define('po_header', {
+    const PoHeader = sequelize.define('poHeader', {
         bookingDate: {
-            type: DataTypes.DATE,
+            type: DataTypes.DATEONLY,
             allowNull: false,
         },
         deliveryDate: {
-            type: DataTypes.DATE,
+            type: DataTypes.DATEONLY,
             allowNull: false,
-        },
-        vendor: {
-            type: DataTypes.STRING,
-            // allowNull: false,
         },
         notes: {
             type: DataTypes.STRING,
         },
-        locking_session_id: {
+        status: {
+            type: DataTypes.ENUM('PENDING', 'PARTIAL', 'COMPLETED'),
+            allowNull: false
+        },
+        exchangeRate: {
             type: DataTypes.STRING,
+            defaultValue: 1,
+        },
+        total: {
+            type: DataTypes.DOUBLE,
             allowNull: false,
+            defaultValue: 0,
         },
         isActive: {
             type: DataTypes.BOOLEAN,

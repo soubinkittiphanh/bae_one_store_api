@@ -52,6 +52,12 @@ const db = {}
 db.sequelize = sequelize;
 db.Sequelize = Sequelize
 db.centralSequelize = tutorialDB;
+db.receivingHeader = require("../receiving/model")(sequelize, DataTypes);
+db.receivingLine = require("../receiving/line/model")(sequelize, DataTypes);
+db.poHeader = require("../po/model")(sequelize, DataTypes);
+db.poLine = require("../po/line/model")(sequelize, DataTypes);
+db.poHeaderHIS = require("../po_history/model")(sequelize, DataTypes);
+db.poLineHIS = require("../po_history/line/model")(sequelize, DataTypes);
 db.reservation = require("../reservation/model")(sequelize, DataTypes);
 db.product = require("../product/model")(sequelize, DataTypes);
 db.orderTable = require("../orderTable/model")(sequelize, DataTypes);
@@ -85,8 +91,6 @@ db.campaignEntry = require("../controllers/admin/campaign/entry/model")(sequeliz
 db.rider = require("../rider/model")(sequelize, DataTypes);
 db.category = require("../category/model")(sequelize, DataTypes);
 db.outlet = require("../outlet/model")(sequelize, DataTypes);
-db.poHeader = require("../PO/model")(sequelize, DataTypes);
-db.poLine = require("../PO/line/model")(sequelize, DataTypes);
 db.currency = require("../currency/model")(sequelize, DataTypes);
 db.geography = require("../geography/model")(sequelize, DataTypes);
 db.client = require("../client/model")(sequelize, DataTypes);
@@ -103,6 +107,44 @@ db.reservation.belongsTo(db.payment, {
 db.reservation.belongsToMany(db.product, { through: 'ProductReservation' })
 db.product.belongsToMany(db.reservation, { through: 'ProductReservation' })
 
+db.receivingHeader.hasMany(db.receivingLine, {
+    as: 'lines'
+})
+db.receivingHeader.belongsTo(db.location, {
+    foreignKey: 'locationId',
+    as: 'location',
+})
+db.receivingHeader.belongsTo(db.poHeader, {
+    foreignKey: 'poHeaderId',
+    as: 'poHeader',
+})
+db.receivingHeader.belongsTo(db.currency, {
+    foreignKey: 'currencyId',
+    as: 'currency',
+})
+db.receivingHeader.belongsTo(db.vendor, {
+    foreignKey: 'vendorId',
+    as: 'vendor',
+})
+db.receivingLine.belongsTo(db.receivingHeader, {
+    foreignKey: 'headerId',
+    as: 'header',
+})
+db.receivingLine.belongsTo(db.poLine, {
+    foreignKey: 'poLineId',
+    as: 'poLine',
+})
+db.receivingLine.belongsTo(db.product, {
+    foreignKey: 'productId',
+    as: 'product',
+})
+db.receivingLine.belongsTo(db.unit, {
+    foreignKey: 'unitId',
+    as: 'unit',
+})
+db.receivingLine.hasMany(db.card, {
+    as: 'cards',
+})
 db.rider.hasMany(db.order, {
     as: 'shippingOrders'
 })
@@ -276,6 +318,10 @@ db.card.belongsTo(db.currency, {
     foreignKey: 'currencyId',
     as: 'currency'
 })
+db.card.belongsTo(db.receivingLine, {
+    foreignKey: 'receivingLineId',
+    as: 'receivingLine'
+})
 db.user.belongsToMany(db.terminal, { through: 'UserTerminals' })
 db.terminal.belongsToMany(db.user, { through: 'UserTerminals' })
 db.authority.belongsToMany(db.group, { through: 'GroupAuthorities' })
@@ -379,6 +425,24 @@ db.product.belongsTo(db.company, {
     foreignKey: 'companyId',
     as: 'company'
 })
+
+db.poHeader.hasMany(db.poHeaderHIS,{
+    as:'history'
+})
+db.poHeaderHIS.belongsTo(db.poHeader,{
+    foreignKey: 'ORGheaderId',
+    as: 'ORGheader'
+})
+db.poHeaderHIS.belongsTo(db.vendor, {
+    foreignKey: 'vendorId',
+    as: 'vendor'
+})
+db.poHeaderHIS.belongsTo(db.currency, {
+    foreignKey: 'currencyId',
+    as: 'currency'
+})
+
+
 db.poHeader.hasMany(db.poLine, {
     as: 'lines'
 })
@@ -386,16 +450,25 @@ db.poLine.belongsTo(db.poHeader, {
     foreignKey: 'headerId',
     as: 'header'
 })
+db.poHeader.belongsTo(db.vendor, {
+    foreignKey: 'vendorId',
+    as: 'vendor'
+})
+db.poHeader.belongsTo(db.currency, {
+    foreignKey: 'currencyId',
+    as: 'currency'
+})
 
 // db.poLine.hasOne(db.product)
 db.poLine.belongsTo(db.product, {
     foreignKey: 'productId',
     as: 'product'
 })
-db.poLine.belongsTo(db.currency, {
-    foreignKey: 'currencyId',
-    as: 'currency'
+db.poLine.belongsTo(db.unit, {
+    foreignKey: 'unitId',
+    as: 'unit'
 })
+
 db.rider.hasMany(db.customer, {
     as: 'orders'
 })
