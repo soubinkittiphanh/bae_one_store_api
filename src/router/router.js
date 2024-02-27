@@ -67,7 +67,8 @@ const product = async (app) => {
     // app.get('/product_f', ProdCtr.fetchProd);
     app.get('/product_f/:locationId', ProdCtr.fetchProductFromLocation);
     app.get('/product_mobile_f', ProdCtr.fetchProdMobile);
-    app.get('/product_f_id/:id', productController.getProductById);
+    app.post('/product_f_id', ProdCtr.fetchProdId);
+    app.get('/product/find/:id', productController.getProductById);
 }
 
 const sale = async (app) => {
