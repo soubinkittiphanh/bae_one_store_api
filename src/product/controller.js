@@ -9,7 +9,7 @@ const { literal, Op } = require('sequelize');
 const getAllProducts = async (req, res) => {
   try {
     const products = await Product.findAll({
-      include: ['costCurrency', 'saleCurrency'],
+      include: ['costCurrency', 'saleCurrency', 'images'],
     });
     res.status(200).json(products);
   } catch (error) {
@@ -22,7 +22,7 @@ const getAllProducts = async (req, res) => {
 const getProductById = async (req, res) => {
   const { id } = req.params;
   try {
-    const product = await Product.findOne({ include: ['costCurrency', 'saleCurrency'], where: { id } });
+    const product = await Product.findOne({ include: ['costCurrency', 'saleCurrency', 'images'], where: { id } });
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
     }

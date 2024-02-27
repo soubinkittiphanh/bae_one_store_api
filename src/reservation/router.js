@@ -15,6 +15,7 @@ router.post("/create",controller.createReservation)
     .put("/update/:id", controller.updateReservationById)
     .delete("/find/:id", controller.deleteReservationById)
     .get("/find", controller.getAllReservations)
+    .get("/findByDate", controller.findAllByDate)
     .get("/find/:id", controller.getReservationById)
     // .post("/bulkCreate",service.createHulkStockCard)
 module.exports = router

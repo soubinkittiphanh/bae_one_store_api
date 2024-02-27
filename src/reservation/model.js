@@ -15,6 +15,11 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: false,
             defaultValue: 0
         },
+        exchangeRate: {
+            type: DataTypes.DOUBLE,
+            allowNull: false,
+            defaultValue: 0
+        },
         total: {
             type: DataTypes.DOUBLE,
             allowNull: false,
@@ -34,7 +39,7 @@ module.exports = (sequelize, DataTypes) => {
         },
         remark: {
             type: DataTypes.STRING,
-            defaultValue: 0
+            // defaultValue: 0
             // allowNull: false,
         },
         status: {

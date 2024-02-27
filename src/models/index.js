@@ -52,6 +52,7 @@ const db = {}
 db.sequelize = sequelize;
 db.Sequelize = Sequelize
 db.centralSequelize = tutorialDB;
+db.image = require("../image/model")(sequelize, DataTypes);
 db.receivingHeader = require("../receiving/model")(sequelize, DataTypes);
 db.receivingLine = require("../receiving/line/model")(sequelize, DataTypes);
 db.poHeader = require("../purchasing/model")(sequelize, DataTypes);
@@ -59,6 +60,7 @@ db.poLine = require("../purchasing/line/model")(sequelize, DataTypes);
 db.poHeaderHIS = require("../po_history/model")(sequelize, DataTypes);
 db.poLineHIS = require("../po_history/line/model")(sequelize, DataTypes);
 db.reservation = require("../reservation/model")(sequelize, DataTypes);
+db.reservationLine = require("../reservation/line/model")(sequelize, DataTypes);
 db.product = require("../product/model")(sequelize, DataTypes);
 db.orderTable = require("../orderTable/model")(sequelize, DataTypes);
 db.menuHeader = require("../menu/model")(sequelize, DataTypes);
@@ -100,12 +102,38 @@ db.payment = require("../paymentMethod/model")(sequelize, DataTypes);
 db.country = require("../country/model")(sequelize, DataTypes);
 // const UserTerminals = sequelize.define('user_terminals', {});
 
+db.product.hasMany(db.image, {
+    as: 'images'
+})
+db.image.belongsTo(db.product, {
+    foreignKey: 'productId',
+    as: 'product'
+})
 db.reservation.belongsTo(db.payment, {
     foreignKey: 'paymentId',
     as: 'payment'
 })
-db.reservation.belongsToMany(db.product, { through: 'ProductReservation' })
-db.product.belongsToMany(db.reservation, { through: 'ProductReservation' })
+db.reservation.belongsTo(db.currency, {
+    foreignKey: 'currencyId',
+    as: 'currency'
+})
+db.reservationLine.belongsTo(db.reservation, {
+    foreignKey: 'reservationHeaderId',
+    as: 'reservationHeader'
+})
+db.reservationLine.belongsTo(db.product, {
+    foreignKey: 'productId',
+    as: 'product'
+})
+db.reservationLine.belongsTo(db.unit, {
+    foreignKey: 'unitId',
+    as: 'unit'
+})
+db.reservation.hasMany(db.reservationLine, {
+    as: 'lines'
+})
+// db.reservation.belongsToMany(db.product, { through: 'ProductReservation' })
+// db.product.belongsToMany(db.reservation, { through: 'ProductReservation' })
 
 db.receivingHeader.hasMany(db.receivingLine, {
     as: 'lines'
@@ -426,10 +454,10 @@ db.product.belongsTo(db.company, {
     as: 'company'
 })
 
-db.poHeader.hasMany(db.poHeaderHIS,{
-    as:'history'
+db.poHeader.hasMany(db.poHeaderHIS, {
+    as: 'history'
 })
-db.poHeaderHIS.belongsTo(db.poHeader,{
+db.poHeaderHIS.belongsTo(db.poHeader, {
     foreignKey: 'ORGheaderId',
     as: 'ORGheader'
 })

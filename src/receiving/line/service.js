@@ -1,6 +1,6 @@
 
 const logger = require('../../api/logger');
-
+const cardService = require('./../../card/service')
 
 const RECLine = require('../../models').receivingLine
 const createBulk = async (req, res, lines, headerId) => {
@@ -48,9 +48,11 @@ const updateBulk = async (req, res, lines, headerId) => {
     }
 }
 
-const simpleUpdateBulk = async (lines, t) => {
+const simpleUpdateBulk = async (lines, locationId, currencyId, t) => {
     let listOfNotFoundEntry = []
-    // ********************************************************* //
+    const listOfFoundEntry = lines.filter(el => el['id'] != null)
+    // --------- Update card info, cost, location, currency --------- //
+    await cardService.cardUtilityReceivingLineChangesReflect(listOfFoundEntry, locationId, currencyId, t)
     for (const iterator of lines) {
         try {
             if (iterator.id) {
@@ -77,6 +79,9 @@ const simpleUpdateBulk = async (lines, t) => {
     if (listOfNotFoundEntry.length > 0) {
         const newLine = await RECLine.bulkCreate(listOfNotFoundEntry, { transaction: t })
         logger.info(`New line created ${newLine.length}`)
+        // -------- create card for receiving line
+        const cardCreated = await cardService.cardUtility(newReceiveLineCreated, locationId, currencyId, t)
+        logger.info(`New card created   ${cardCreated.length} \n ${JSON.stringify(cardCreated)}`)
     }
 }
 

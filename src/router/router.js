@@ -32,6 +32,7 @@ const jwtUtil =require('../api/jwtApi');
 const Outlet = require("../controllers/admin/outlet")
 const Payment = require("../controllers/admin/payment");
 const Shipping = require("../controllers/admin/shipping");
+const productController = require('../product/controller')
 
 const fileFilter = (req, file, cb) => {
     const allowedTypes = ['image/img', 'image/png', 'image/jpeg', 'image/gif','image/jpg']
@@ -66,7 +67,7 @@ const product = async (app) => {
     // app.get('/product_f', ProdCtr.fetchProd);
     app.get('/product_f/:locationId', ProdCtr.fetchProductFromLocation);
     app.get('/product_mobile_f', ProdCtr.fetchProdMobile);
-    app.post('/product_f_id', ProdCtr.fetchProdId);
+    app.get('/product_f_id/:id', productController.getProductById);
 }
 
 const sale = async (app) => {

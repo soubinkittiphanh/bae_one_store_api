@@ -3,7 +3,7 @@ const dbAsync = require('../config/dbconAsync');
 const Card = require('../models').card
 const common = require('../common');
 const { Op } = require('sequelize');
-
+const productService = require('./../product/service')
 const createHulkStockCard = (req, res) => {
 
     const { inputter, product_id, totalCost, stockCardQty, productId, srcLocationId } = req.body;
@@ -77,7 +77,7 @@ const rebuildStockValue = async (req, res) => {
 }
 
 
-const createCardFromReceiving = async (receivingLines, locationId, t) => {
+const createCardFromReceiving = async (receivingLines, locationId, currencyId, t) => {
 
     // ----------- assign receivingLineId to card ------------
     logger.info(`Receving line ${JSON.stringify(receivingLines)}`)
@@ -112,7 +112,7 @@ const createCardFromReceiving = async (receivingLines, locationId, t) => {
             let newCardTemplate = { ...cardTemplate };
 
             newCardTemplate.cost = cost;
-            newCardTemplate.currencyId = iterator['currencyId'];
+            newCardTemplate.currencyId = currencyId;
             newCardTemplate.productId = productId;
             newCardTemplate.product_id = productCode;
             newCardTemplate.locking_session_id = lockingSessionId;
@@ -171,11 +171,104 @@ const deleteNotUseByIdList = async (cards, t) => {
     }
 }
 
+const cardUtility = async (receiveLines, locationId, currencyId, t) => {
+    const productIdList = receiveLines.map(el => el.productId);
+    const productIdAndCodeList = await productService.findProductCodeFromProductId(productIdList);
+    // ----------- Assign productCode to receiving line -----------
+    for (const iterator of receiveLines) {
+        iterator['productCode'] = productIdAndCodeList.find(el => el.id == iterator['productId'])['pro_id']
+    }
+    const cardCreated = await createCardFromReceiving(receiveLines, locationId, currencyId, t)
+    if (!cardCreated) {
+        throw new Error(`Cannot created cards`)
+    }
+    return cardCreated;
+}
+
+
+const cardUtilityReceivingLineChangesReflect = async (lines, locationId, currencyId, t) => {
+    //TODO: The cost is not correct, after card updated, please check logic 
+    const receivingIdList = lines.map(el => el['id'])
+    const oldCardList = await findCardsByReceivingLineIdList(receivingIdList)
+    const newRecevingLineList = []
+    for (const iterator of lines) {
+        // ---------- Need to compair if receivingLine qty has change or not, if change i will 
+        // ---------- impact card line, so we need to update card line qty base one receiving line
+        const newCardCount = iterator['rate'] * iterator['qty']
+        const oldCardCountList = oldCardList.filter(el => el.receivingLineId == iterator['id'])
+        const oldCardCount = oldCardCountList.length
+        const costPerCard = iterator['total'] / (iterator['qty'] * iterator['rate'])
+        // const currencyId = iterator['currencyId']
+        // --------- ReceivingLine qty increase case -----------
+        if (newCardCount > oldCardCount) {
+            // ------- check if the cost has change 
+            // ------- check how many increase
+            const additionalUpCount = newCardCount - oldCardCount
+            // ------- Update old cards -------//
+            const updatedCards = await updateCardByIdList(costPerCard, locationId, currencyId, oldCardCountList, t)
+            logger.info(`Update cards successfully ${JSON.stringify(updatedCards)}`)
+            // ------- Create additional cards -------//
+            let newRecevingLine = { ...iterator }
+            newRecevingLine.qty = additionalUpCount
+            // newRecevingLine.productCode = iterator[]
+            newRecevingLine.cost = 0 //costPerCard  * additionalUpCount
+            newRecevingLine.total = costPerCard  * additionalUpCount
+            newRecevingLine.rate = 1 // to ensure that new line card has exact number of new card need
+            newRecevingLineList.push(newRecevingLine)
+
+
+        }
+        else if (newCardCount < oldCardCount) {
+            // ------- check if the cost has change 
+            // ------- check how many decrease
+            const additionalDownCount = oldCardCount - newCardCount
+            // ------- the main senerio we have to know is, we cannot delete card already linke with saleLine
+            // const myList = []
+            // const aaList =  myList.slice(0,)
+            const cardTobeDelete = oldCardCountList.filter(el => el['card_isused'] == 0 && el['saleLineId'] == null).slice(0, additionalDownCount)
+
+            if (cardTobeDelete.length >= additionalDownCount) {
+                // -------- only this case we expect since all card to be delete not yet linked to saleLine
+                await deleteNotUseByIdList(cardTobeDelete, t)
+                // we also need to update cards, since the other field may changes like cost, location, currency
+                if (oldCardCount - newCardCount > 0) {
+                    // -------- that's mean, still some old card available --------//
+                    // ------- and we will update those cards any way weather any field has change or not
+                    // now no need to find card to be updated, since the rest of (those to be delete) is only there, we will update them all
+                    const idsInCardTobeDelete = cardTobeDelete.map(item => item.id);
+                    const updateCardList = oldCardCountList.filter(oldEl => !idsInCardTobeDelete.includes(oldEl['id']))
+                    const updatedCard = await updateCardByIdList(costPerCard, locationId, currencyId, updateCardList, t);
+                    logger.info(`Card decrease update successfully ${JSON.stringify(updatedCard)}`)
+                }
+            } else {
+                // -------- We cannot delete card which is already sole out, since those will lead error with stock mismatch 
+                logger.error(`Cannot delete cards which is already sold out ${JSON.stringify(cardTobeDelete)}`)
+                throw new Error(`Unable to delete card which already sold out !!!`)
+
+            }
+
+        }
+        else { // qty still same, need to check is also the cost has change ?
+            const updatedCardForce = await updateCardByIdList(costPerCard, locationId, currencyId, oldCardCountList, t);
+            logger.info(`receiving same qty update ${JSON.stringify(updatedCardForce)}`)
+        }
+        // --------- ReceivingLine qty decrease case -----------
+
+    }
+    if (newRecevingLineList.length > 0) {
+        // const createdCards = await createCardFromReceiving(newRecevingLineList, locationId,currencyId, t)
+        const createdCards = await cardUtility(newRecevingLineList, locationId,currencyId, t)
+        logger.info(`Create cards successfully ${JSON.stringify(createdCards)}`)
+    }
+}
+
 module.exports = {
     createHulkStockCard,
     rebuildStockValue,
     createCardFromReceiving,
     findCardsByReceivingLineIdList,
     updateCardByIdList,
-    deleteNotUseByIdList
+    deleteNotUseByIdList,
+    cardUtility,
+    cardUtilityReceivingLineChangesReflect
 }
