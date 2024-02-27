@@ -68,6 +68,8 @@ const createProd = async (req, res) => {
                 Db.query(sqlComImages, (er, re) => {
                     if (er) return res.status(201).send("Error: " + er);
                     res.status(200).send("Transaction completed");
+                    //-------- update image producId ----
+                    updateImageProductId()
                 });
             }
         })
@@ -122,6 +124,8 @@ const updateProd = async (req, res) => {
         Db.query(sqlComImages, (er, re) => {
             if (er) return res.send("Error: naja :-) ໂປແກມເມີ ກາກ.... " + er);
             res.send("Transaction completed");
+            //-------- update image producId ----
+            updateImageProductId()
         });
 
     })
@@ -154,7 +158,7 @@ const fetchProd = async (req, res) => {
     })
 }
 const fetchProductFromLocation = async (req, res) => {
-    const {locationId} = req.params
+    const { locationId } = req.params
     const sqlCom = `SELECT DISTINCT
     p.id,
     p.pro_id,
@@ -203,8 +207,8 @@ GROUP BY
     p.pro_id
 ORDER BY
     p.pro_price;`
-    Db.query(sqlCom,(er,re)=>{
-        if(er) return res.send('SQL '+er)
+    Db.query(sqlCom, (er, re) => {
+        if (er) return res.send('SQL ' + er)
         res.send(re)
     })
 
@@ -237,6 +241,19 @@ const fetchProdId = async (req, res) => {
         res.send(re)
     })
     //1635062891981300
+}
+
+const updateImageProductId = () => {
+    Db.query(`
+    UPDATE image_path
+    INNER JOIN product ON image_path.pro_id = product.pro_id
+    SET image_path.productId = product.id`, (er, re) => {
+        if (er) {
+            logger.error(`Cannot update image productId field with error ${er}`)
+        } else {
+            logger.info(`UPDATE image productId completed`)
+        }
+    })
 }
 
 module.exports = {
