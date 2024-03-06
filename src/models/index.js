@@ -53,6 +53,8 @@ db.sequelize = sequelize;
 db.Sequelize = Sequelize
 db.centralSequelize = tutorialDB;
 db.image = require("../image/model")(sequelize, DataTypes);
+db.webProductGroup = require("../web_product_group/model")(sequelize, DataTypes);
+db.webMenuHeader = require("../web_menu_header/model")(sequelize, DataTypes);
 db.receivingHeader = require("../receiving/model")(sequelize, DataTypes);
 db.receivingLine = require("../receiving/line/model")(sequelize, DataTypes);
 db.poHeader = require("../purchasing/model")(sequelize, DataTypes);
@@ -102,6 +104,15 @@ db.payment = require("../paymentMethod/model")(sequelize, DataTypes);
 db.country = require("../country/model")(sequelize, DataTypes);
 // const UserTerminals = sequelize.define('user_terminals', {});
 
+// db.webProductGroup.hasMany(db.product, {
+//     as: 'lines'
+// })
+db.webProductGroup.belongsToMany(db.product, { through: 'WebGroupProduct' })
+db.product.belongsToMany(db.webProductGroup, { through: 'WebGroupProduct' })
+
+db.webProductGroup.hasMany(db.product, {
+    as: 'lines'
+})
 db.product.hasMany(db.image, {
     as: 'images'
 })

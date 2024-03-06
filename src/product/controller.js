@@ -1,5 +1,6 @@
 
 const Product = require('../models').product;
+const WebGroup = require('../models').webProductGroup;
 const { body, validationResult } = require('express-validator');
 const logger = require('../api/logger');
 const { literal, Op } = require('sequelize');
@@ -9,7 +10,10 @@ const { literal, Op } = require('sequelize');
 const getAllProducts = async (req, res) => {
   try {
     const products = await Product.findAll({
-      include: ['costCurrency', 'saleCurrency', 'images'],
+      include: ['costCurrency', 'saleCurrency', 'images','company','category', {
+        model: WebGroup,
+        through: { attributes: [] }
+      }],
     });
     res.status(200).json(products);
   } catch (error) {
