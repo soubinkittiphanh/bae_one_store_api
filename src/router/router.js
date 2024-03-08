@@ -35,7 +35,7 @@ const Shipping = require("../controllers/admin/shipping");
 const productController = require('../product/controller')
 
 const fileFilter = (req, file, cb) => {
-    const allowedTypes = ['image/img', 'image/png', 'image/jpeg', 'image/gif','image/jpg']
+    const allowedTypes = ['image/img', 'image/png', 'image/jpeg', 'image/gif','image/jpg','image/webp']
     if (!allowedTypes.includes(file.mimetype)) {
         const error = new Error("Wrong file type");
         error.code = "LIMIT_FILE_TYPE"
