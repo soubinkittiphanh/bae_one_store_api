@@ -23,7 +23,8 @@ const createProd = async (req, res) => {
     const pro_status = +body.pro_status;
     const image_path = req.body.imagesObj;
     const costPrice = body.pro_cost_price;
-    const createdAt = body.createdAt;
+    const timestamps = new Date();
+    const mysqlDatetime = timestamps.toISOString().slice(0, 19).replace('T', ' ');
     const barCode = body.barCode;
     const receiveUnitId = body.receiveUnitId;
     const stockUnitId = body.stockUnitId;
@@ -36,7 +37,7 @@ const createProd = async (req, res) => {
     const companyId = body.companyId;
     // return res.send("Okay")
     // const timestamps = new Date();
-    let sqlComImages = 'INSERT INTO image_path(pro_id, img_name, img_path)VALUES';
+    let sqlComImages = 'INSERT INTO image_path(pro_id, img_name, img_path,createdAt,updateTimestamp,productId )VALUES';
     logger.info("************* CREATE PRODUCT *****************");
     logger.info(`*************Payload: ${image_path} *****************`);/// test upload
     //*****************  QUERY LAST PRODUCT ID SQL  *****************//
@@ -45,15 +46,6 @@ const createProd = async (req, res) => {
         if (er) return res.send("Error: " + er)
         if (re.length < 1) pro_id = 1000;
         else pro_id = parseInt(re[0]['ID']) + 1
-        image_path.forEach((i, idx, element) => {
-            logger.info("Element len: " + element.length);
-            logger.info("Element name: " + i.name);
-            logger.info("Element i: " + i);
-            logger.info("Element idx: " + idx);
-            if (idx === element.length - 1) sqlComImages += `(${pro_id},'${i.name}','${i.path}');`;
-            else sqlComImages += `(${pro_id},'${i.name}','${i.path}'),`;
-
-        });
         const sqlCom = `INSERT INTO product(pro_category, pro_id, pro_name, pro_price, pro_desc, pro_status,retail_cost_percent,cost_price,
             locking_session_id,createdAt,updateTimestamp,minStock,barCode,receiveUnitId,stockUnitId,costCurrencyId,saleCurrencyId,isActive,companyId)
         VALUES('${pro_cat}','${pro_id}','${pro_name}','${pro_price}','${pro_desc}','${pro_status}','${retail_percent}','${costPrice}',${locking_session_id},'${mysqlDateTime}','${mysqlDateTime}',${minStock},'${barCode}',${receiveUnitId},${stockUnitId},${costCurrencyId},${saleCurrencyId},${isActive},${companyId});`
@@ -65,6 +57,11 @@ const createProd = async (req, res) => {
                 // res.status(503).({"Error":er});
                 res.status(201).send('Error ' + er);
             } else if (re) {
+                const productId = re.insertId;
+                image_path.forEach((i, idx, element) => {
+                    if (idx === element.length - 1) sqlComImages += `(${pro_id},'${i.name}','${i.path}','${mysqlDatetime}','${mysqlDatetime}','${productId}');`;
+                    else sqlComImages += `(${pro_id},'${i.name}','${i.path}','${mysqlDatetime}','${mysqlDatetime}','${productId}'),`;
+                });
                 //*****************  INSERT IMAGES SQL  *****************//
                 Db.query(sqlComImages, (er, re) => {
                     if (er) return res.status(201).send("Error: " + er);
@@ -77,6 +74,7 @@ const createProd = async (req, res) => {
     })
 
 }
+
 const updateProd = async (req, res) => {
     logger.info("*************** UPDATE PRODUCT  ***************");
     logger.info(`*************Payload: *****************`);
@@ -84,6 +82,7 @@ const updateProd = async (req, res) => {
     const body = JSON.parse(req.body.FORM);
     const pro_cat = body.pro_category;
     let pro_id = body.pro_id;
+    const productId = body.productId;
     const pro_name = body.pro_name;
     const pro_price = body.pro_price;
     const pro_desc = body.pro_desc;
@@ -100,8 +99,11 @@ const updateProd = async (req, res) => {
     const companyId = body.companyId;
     logger.info('cost ' + cost_price);
     const timestamps = new Date();
+    const mysqlDatetime = timestamps.toISOString().slice(0, 19).replace('T', ' ');
+    console.log(mysqlDatetime);
+
     const retail_percent = body.pro_retail_price || 0.0;
-    let sqlComImages = 'INSERT INTO image_path(pro_id, img_name, img_path,createdAt,updatedAt)VALUES';
+    let sqlComImages = 'INSERT INTO image_path(pro_id, img_name, img_path,createdAt,updateTimestamp,productId)VALUES';
     const sqlCom = `UPDATE product SET pro_category='${pro_cat}', pro_name='${pro_name}', pro_price='${pro_price}', 
     pro_desc='${pro_desc}', pro_status='${pro_status}',retail_cost_percent='${retail_percent}',isActive=${isActive},
     cost_price='${cost_price}',minStock=${minStock},barCode='${barCode}',
@@ -118,10 +120,11 @@ const updateProd = async (req, res) => {
             logger.info("Element name: " + i.name);
             logger.info("Element i: " + i);
             logger.info("Element idx: " + idx);
-            if (idx === element.length - 1) sqlComImages += `(${pro_id},'${i.name}','${i.path}');`;
-            else sqlComImages += `(${pro_id},'${i.name}','${i.path}','${timestamps}','${timestamps}'),`;
+            if (idx === element.length - 1) sqlComImages += `(${pro_id},'${i.name}','${i.path}','${mysqlDatetime}','${mysqlDatetime}','${productId}');`;
+            else sqlComImages += `(${pro_id},'${i.name}','${i.path}','${mysqlDatetime}','${mysqlDatetime}','${productId}'),`;
 
         });
+        logger.warn(`IMAGE SQL: ${sqlComImages}`)
         //*****************  INSERT IMAGES SQL  *****************//
         Db.query(sqlComImages, (er, re) => {
             if (er) return res.send("Error: naja :-) ໂປແກມເມີ ກາກ.... " + er);
@@ -237,7 +240,7 @@ const fetchProdId = async (req, res) => {
     logger.info(`*************Payload: *****************`);
     const pro_id = req.body.proid;
     Db.query(`SELECT p.*,i.img_name,i.img_path FROM product p 
-    LEFT JOIN image_path i ON i.pro_id=p.pro_id 
+    LEFT JOIN image_path i ON i.productId=p.id 
     WHERE p.pro_id=${pro_id}`, (er, re) => {
         if (er) return res.send('SQL ' + er)
         res.send(re)

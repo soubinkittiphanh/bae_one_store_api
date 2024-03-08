@@ -3,6 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const Router = require('./router/router')
 const myRouter = require("./router")
+const controller = require("./web_product_group/controller")
 const buildApp = async () => {
     const app = express();
     app.use(cors());
@@ -12,6 +13,7 @@ const buildApp = async () => {
     app.get("/hello", (req, res) => {
         res.send("Succeed server is ready")
     })
+    app.use("/webproductgroup/find",controller.findActive)
     app.use("/api",myRouter.dymCustomerRouter)
     app.use("/api",myRouter.orderRouter);
     app.use("/api",myRouter.reportRouter);
