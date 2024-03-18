@@ -10,7 +10,7 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: false,
         },
         bookingDate: {
-            type: DataTypes.DATE,
+            type: DataTypes.DATEONLY,
             allowNull: false,
         },
         postingReference: {
@@ -31,10 +31,9 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING,
             allowNull: false,
         },
-        currency: {
-            type: DataTypes.STRING(3), // use ISO 4217 currency codes (e.g. USD, EUR, GBP)
-            allowNull: false,
-            defaultValue: 'LAK', // set a default currency if needed
+        localAmount: {
+            type: DataTypes.DOUBLE, // use ISO 4217 currency codes (e.g. USD, EUR, GBP)
+            defaultValue: 0, // set a default currency if needed
         }, 
         rate: {
             type: DataTypes.DECIMAL(10, 4),

@@ -120,6 +120,42 @@ db.image.belongsTo(db.product, {
     foreignKey: 'productId',
     as: 'product'
 })
+db.apPaymentHeader.belongsTo(db.currency, {
+    foreignKey: 'currencyId',
+    as: 'currency'
+})
+db.apPaymentHeader.belongsTo(db.receivingHeader, {
+    foreignKey: 'receivingId',
+    as: 'recevingHeader'
+})
+db.apPaymentHeader.belongsTo(db.chartAccount, {
+    foreignKey: 'drAccountId',
+    as: 'drAccount'
+})
+db.apPaymentHeader.belongsTo(db.chartAccount, {
+    foreignKey: 'crAccountId',
+    as: 'crAccount'
+})
+db.apPaymentHeader.belongsTo(db.payment, {
+    foreignKey: 'paymentId',
+    as: 'payment'
+})
+db.arReceiveHeader.belongsTo(db.currency, {
+    foreignKey: 'currencyId',
+    as: 'currency'
+})
+db.arReceiveHeader.belongsTo(db.payment, {
+    foreignKey: 'paymentId',
+    as: 'payment'
+})
+db.arReceiveHeader.belongsTo(db.chartAccount, {
+    foreignKey: 'drAccountId',
+    as: 'drAccount'
+})
+db.arReceiveHeader.belongsTo(db.chartAccount, {
+    foreignKey: 'crAccountId',
+    as: 'crAccount'
+})
 db.reservation.belongsTo(db.payment, {
     foreignKey: 'paymentId',
     as: 'payment'
@@ -442,8 +478,16 @@ db.chartAccount.hasMany(db.gl, {
     as: 'gls'
 })
 db.gl.belongsTo(db.chartAccount, {
-    foreignKey: 'account_id',
-    as: 'chart_of_account'
+    foreignKey: 'drAccountId',
+    as: 'drAcccount'
+})
+db.gl.belongsTo(db.chartAccount, {
+    foreignKey: 'crAccountId',
+    as: 'crAccount'
+})
+db.gl.belongsTo(db.currency, {
+    foreignKey: 'currencyId',
+    as: 'currency'
 })
 
 //********************************** */

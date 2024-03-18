@@ -1,7 +1,7 @@
 const orderRouter = require("./orderRouter")
 const dymCustomerRouter =require("./dymCustomerRouter")
 const reportRouter =  require("./reportRouter")
-const generalLedger = require("./generalLedger")
+const generalLedger = require("../GL").router
 const chartAccount = require("../account").router
 const upgrade = require("./upgrade")
 const rider = require("../rider").router

@@ -1,8 +1,9 @@
 
 const RECLine = require('../../models').receivingLine;
+const service = require('./service');
 const { body, validationResult } = require('express-validator');
 const logger = require('../../api/logger');
-
+const { sequelize } = require('../../models');
 const { Op } = require('sequelize');
 
 // Get all PO lines
@@ -85,7 +86,11 @@ const deletePOLineById = async (req, res) => {
     if (!poLine) {
       return res.status(404).json({ message: 'PO line not found' });
     }
-    await poLine.destroy({ where: { id } });
+    const result = await sequelize.transaction(async (t) => {
+      await service.removeCardsFromRecId(id, t)
+      await poLine.destroy({ where: { id }, transaction: t  });
+
+    })
     res.status(200).json({ message: 'PO line deleted successfully' });
   } catch (error) {
     console.error(error);

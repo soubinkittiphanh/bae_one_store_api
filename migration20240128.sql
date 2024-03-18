@@ -17,3 +17,24 @@ insert into menuLine SELECT * FROM dcommerce_pro_chithanh_migration.menuLine;
 UPDATE image_path
 INNER JOIN product ON image_path.pro_id = product.pro_id
 SET image_path.productId = product.id;
+
+-- Migrade accouting ap and ar
+alter table payment_header drop column paymentMethod;
+alter table payment_header drop column currency;
+alter table receive_header drop column paymentMethod;
+alter table receive_header drop column currency;
+
+alter table payment_header drop column drAccount;
+alter table payment_header drop column crAccount;
+alter table receive_header drop column drAccount;
+alter table receive_header drop column crAccount;
+
+-- Migrate GL transaction table 
+alter table general_ledger drop column currency;
+ALTER TABLE general_ledger DROP FOREIGN KEY general_ledger_ibfk_1; 
+ALTER TABLE general_ledger DROP FOREIGN KEY general_ledger_ibfk_2; 
+ALTER TABLE general_ledger DROP KEY chartOfAccountId;    
+alter table general_ledger drop column chartOfAccountId;
+
+ALTER TABLE general_ledger DROP KEY account_id;    
+alter table general_ledger drop column account_id;

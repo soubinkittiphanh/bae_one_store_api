@@ -42,7 +42,7 @@ const getAllReceiveHeadersByDate = async (req, res) => {
         bookingDate: {
           [Op.between]: [date.startDate, date.endDate]
         },
-      }
+      }, include: ['payment','currency']
     });
     res.status(200).json(receiveHeaders);
   } catch (error) {

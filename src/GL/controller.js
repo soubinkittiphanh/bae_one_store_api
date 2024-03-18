@@ -1,95 +1,119 @@
+const { Op } = require("sequelize");
+const GeneralLedger = require('../models').gl; // Adjust the path as needed
 
-const Card = require("../models").card; // Import the users model
+// Create a new general ledger entry
+exports.createGeneralLedger = async (req, res) => {
+  try {
+    const { sequenceNumber, bookingDate, postingReference, debit, credit, description, localAmount, rate, source } = req.body;
 
-const cardController = {
-  // Create a new card
-  async create(req, res) {
-    try {
-      const newCard = await Card.create({
-        card_type_code: req.body.card_type_code,
-        product_id: req.body.product_id,
-        cost: req.body.cost,
-        card_number: req.body.card_number,
-        card_isused: req.body.card_isused,
-        locking_session_id: req.body.locking_session_id,
-        card_input_date: req.body.card_input_date,
-        inputter: req.body.inputter,
-        update_user: req.body.update_user,
-        isActive: req.body.isActive,
-      });
-      return res.status(201).json(newCard);
-    } catch (error) {
-      return res.status(400).json({ message: error.message });
-    }
-  },
+    // Create a new entry in the general_ledger table
+    const newGeneralLedgerEntry = await GeneralLedger.create({
+      sequenceNumber,
+      bookingDate,
+      postingReference,
+      debit,
+      credit,
+      description,
+      localAmount,
+      rate,
+      source,
+    });
 
-  // Get all cards
-  async getAll(req, res) {
-    try {
-      const cards = await Card.findAll();
-      return res.status(200).json(cards);
-    } catch (error) {
-      return res.status(400).json({ message: error.message });
-    }
-  },
-
-  // Get a specific card by ID
-  async getById(req, res) {
-    try {
-      const cardId = req.params.id;
-      const cardById = await Card.findByPk(cardId);
-      if (!cardById) {
-        return res.status(404).json({ message: `Card with ID ${cardId} not found` });
-      }
-      return res.status(200).json(cardById);
-    } catch (error) {
-      return res.status(400).json({ message: error.message });
-    }
-  },
-
-  // Update a specific card by ID
-  async updateById(req, res) {
-    try {
-      const cardId = req.params.id;
-      const cardById = await Card.findByPk(cardId);
-      if (!cardById) {
-        return res.status(404).json({ message: `Card with ID ${cardId} not found` });
-      }
-      const updatedCard = await Card.update(
-        {
-          card_type_code: req.body.card_type_code,
-          product_id: req.body.product_id,
-          cost: req.body.cost,
-          card_number: req.body.card_number,
-          card_isused: req.body.card_isused,
-          locking_session_id: req.body.locking_session_id,
-          card_input_date: req.body.card_input_date,
-          inputter: req.body.inputter,
-          update_user: req.body.update_user,
-          isActive: req.body.isActive,
-        },
-        { where: { id: cardId } }
-      );
-      return res.status(200).json(updatedCard);
-    } catch (error) {
-      return res.status(400).json({ message: error.message });
-    }
-  },
-
-  // Delete a specific card by ID
-  async deleteById(req, res) {
-    try {
-      const cardId = req.params.id;
-      const cardById = await Card.findByPk(cardId);
-      if (!cardById) {
-        return res.status(404).json({ message: `Card with ID ${cardId} not found` });
-      }
-      await Card.destroy({ where: { id: cardId } });
-      return res.status(204).send();
-    } catch (error) {
-      return res.status(400).json({ message: error.message });
-    }
-  },
+    res.status(201).json({ message: 'General ledger entry created successfully', data: newGeneralLedgerEntry });
+  } catch (error) {
+    console.error('Error creating general ledger entry:', error);
+    res.status(500).json({ error: 'An error occurred while creating the general ledger entry' });
+  }
 };
 
-module.exports = cardController;
+// Get all general ledger entries
+exports.getAllGeneralLedgerEntries = async (req, res) => {
+  try {
+    const allGeneralLedgerEntries = await GeneralLedger.findAll();
+    res.status(200).json(allGeneralLedgerEntries);
+  } catch (error) {
+    console.error('Error fetching general ledger entries:', error);
+    res.status(500).json({ error: 'An error occurred while fetching general ledger entries' });
+  }
+};
+
+// Get a specific general ledger entry by ID
+exports.getGeneralLedgerEntryById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const generalLedgerEntry = await GeneralLedger.findByPk(id);
+
+    if (!generalLedgerEntry) {
+      return res.status(404).json({ error: 'General ledger entry not found' });
+    }
+
+    res.status(200).json(generalLedgerEntry);
+  } catch (error) {
+    console.error('Error fetching general ledger entry by ID:', error);
+    res.status(500).json({ error: 'An error occurred while fetching general ledger entry by ID' });
+  }
+};
+
+// Update a general ledger entry by ID
+exports.updateGeneralLedgerEntryById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { sequenceNumber, bookingDate, postingReference, debit, credit, description, localAmount, rate, source } = req.body;
+
+    const updatedGeneralLedgerEntry = await GeneralLedger.update({
+      sequenceNumber,
+      bookingDate,
+      postingReference,
+      debit,
+      credit,
+      description,
+      localAmount,
+      rate,
+      source,
+    }, {
+      where: { id },
+    });
+
+    res.status(200).json({ message: 'General ledger entry updated successfully' });
+  } catch (error) {
+    console.error('Error updating general ledger entry:', error);
+    res.status(500).json({ error: 'An error occurred while updating the general ledger entry' });
+  }
+};
+
+// Delete a general ledger entry by ID
+exports.deleteGeneralLedgerEntryById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deletedGeneralLedgerEntryCount = await GeneralLedger.destroy({ where: { id } });
+
+    if (deletedGeneralLedgerEntryCount === 0) {
+      return res.status(404).json({ error: 'General ledger entry not found' });
+    }
+
+    res.status(200).json({ message: 'General ledger entry deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting general ledger entry:', error);
+    res.status(500).json({ error: 'An error occurred while deleting the general ledger entry' });
+  }
+};
+
+
+
+exports.getAllByDate = async (req, res) => {
+  const date = JSON.parse(req.query.date)
+  try {
+    const cards = await GeneralLedger.findAll({
+      where: {
+        bookingDate: {
+          [Op.between]: [date.startDate, date.endDate]
+        }
+      },
+    });
+    return res.status(200).json(cards);
+  } catch (error) {
+    return res.status(400).json({ message: error.message });
+  }
+};
+
+

@@ -16,17 +16,7 @@ module.exports = (sequelize, DataTypes) => {
         payee: {
             type: DataTypes.STRING,
         },
-        paymentMethod: {
-            type: DataTypes.ENUM('Cash', 'Check', 'Credit Card','Bank transfer'),
-            allowNull: false,
-            defaultValue: 'Cash'
-
-        },
-        currency:{
-            type: DataTypes.ENUM('LAK', 'USD', 'THB'),
-            allowNull: false,
-            defaultValue: 'LAK'
-        },
+        
         rate:{
             type: DataTypes.DOUBLE,
             allowNull: false,
@@ -38,14 +28,6 @@ module.exports = (sequelize, DataTypes) => {
         },
         locking_session_id: {
             type: DataTypes.STRING,
-            allowNull: false,
-        },
-        drAccount: {
-            type: DataTypes.INTEGER,
-            allowNull: false,
-        },
-        crAccount: {
-            type: DataTypes.INTEGER,
             allowNull: false,
         },
         update_user: {

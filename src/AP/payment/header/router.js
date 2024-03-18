@@ -12,7 +12,9 @@ router.use(validateToken)
 // router.use((req,res,next)=>{
 //     next()
 // })
-router.post("/create", validator.create, controller.createPaymentHeader)
+router
+    .post("/create", validator.create, controller.createPaymentHeader)
+    .post("/api/create", validator.create, controller.createPaymentHeaderApi)
     .post("/upload", controller.upload)
     .put("/update/:id", validator.update, controller.updatePaymentHeaderById)
     .delete("/find/:id", controller.deletePaymentHeaderById)

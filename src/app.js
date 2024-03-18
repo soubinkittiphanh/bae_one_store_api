@@ -17,7 +17,7 @@ const buildApp = async () => {
     app.use("/api",myRouter.dymCustomerRouter)
     app.use("/api",myRouter.orderRouter);
     app.use("/api",myRouter.reportRouter);
-    app.use("/api/financial",myRouter.generalLedger)
+    app.use("/api/gl",myRouter.generalLedger)
     app.use("/api/accountChart",myRouter.chartAccount)
     app.use("/api/upgrade",myRouter.upgrade)
     app.use("/api/rider",myRouter.rider)

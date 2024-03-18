@@ -1,6 +1,8 @@
 
+const { Op } = require('sequelize');
 const logger = require('../../api/logger');
 const cardService = require('./../../card/service')
+const Card = require('../../models').card
 
 const RECLine = require('../../models').receivingLine
 const createBulk = async (req, res, lines, headerId) => {
@@ -77,8 +79,8 @@ const simpleUpdateBulk = async (lines, locationId, currencyId, t) => {
     }
     // ************ Create those  add new entry ************ //
     if (listOfNotFoundEntry.length > 0) {
-        const newLine = await RECLine.bulkCreate(listOfNotFoundEntry, { transaction: t })
-        logger.info(`New line created ${newLine.length}`)
+        const newReceiveLineCreated = await RECLine.bulkCreate(listOfNotFoundEntry, { transaction: t })
+        logger.info(`New line created ${newReceiveLineCreated.length}`)
         // -------- create card for receiving line
         const cardCreated = await cardService.cardUtility(newReceiveLineCreated, locationId, currencyId, t)
         logger.info(`New card created   ${cardCreated.length} \n ${JSON.stringify(cardCreated)}`)
@@ -93,8 +95,38 @@ const assignHeaderId = (entry, headerId) => {
     return entry
 }
 
+const removeCardsFromRecId = async (receiveId, t) => {
+    try {
+        const cards = await cardService.findCardsByReceivingLineIdList([receiveId])
+        if (cards) {
+            logger.info(`Cards founds: ${JSON.stringify(cards)}`)
+            const usedCard = validateUsedCards(cards)
+            if (usedCard.length > 0) {
+                throw new Error(`Already some cards is used, operation fail ${JSON.stringify(usedCard)}`)
+            } else {
+                logger.info(`Cards is being removed`)
+                const deleteResult = await Card.destroy({ where: { id: { [Op.in]: cards.map(card => card.id) } } }, { transaction: t });
+                logger.info(`Deleted ${deleteResult} cards`);
+            }
+        } else {
+            logger.error(`No cards found from this receiving line id ${receiveId}`)
+        }
+    } catch (error) {
+        logger.error(`Cannot load card by recieving id ${error}`)
+    }
+
+
+}
+
+const validateUsedCards = (cardList) => {
+
+    const usedCard = cardList.filter(card => card.saleLineId != null)
+    return usedCard;
+}
+
 module.exports = {
     createBulk,
     updateBulk,
-    simpleUpdateBulk
+    simpleUpdateBulk,
+    removeCardsFromRecId
 }

@@ -8,6 +8,7 @@ const cardService = require('./../card/service')
 const lineService = require('./line/service')
 const { sequelize } = require('../models');
 const { error } = require('winston');
+const { Op } = require('sequelize');
 
 // Create Payment Header
 function replaceAll(str, find, replace) {
@@ -17,6 +18,22 @@ const PoHeaderController = {
   getAll: async (req, res) => {
     try {
       const poHeaders = await RECHeader.findAll({ include: ['lines', 'currency', 'vendor', 'poHeader'] });
+      res.json(poHeaders);
+    } catch (error) {
+      logger.error(error);
+      res.status(500).send('Internal Server Error');
+    }
+  },
+  getAllByDate: async (req, res) => {
+    const date = JSON.parse(req.query.date)
+    try {
+      const poHeaders = await RECHeader.findAll({
+        where: {
+          bookingDate: {
+            [Op.between]: [date.startDate, date.endDate]
+          }
+        }, include: ['lines', 'currency', 'vendor', 'poHeader']
+      });
       res.json(poHeaders);
     } catch (error) {
       logger.error(error);

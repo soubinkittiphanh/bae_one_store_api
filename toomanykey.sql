@@ -276,3 +276,19 @@ ALTER TABLE `menuHeader` DROP INDEX `code_27`;
 ALTER TABLE `menuHeader` DROP INDEX `code_28`;
 ALTER TABLE `menuHeader` DROP INDEX `code_29`;
 
+
+  async getAllByDate(req, res) {
+    const date = JSON.parse(req.query.date)
+    try {
+      const cards = await Card.findAll({
+        where: {
+          bookingDate: {
+            [Op.between]: [date.startDate, date.endDate]
+          }
+        },
+      });
+      return res.status(200).json(cards);
+    } catch (error) {
+      return res.status(400).json({ message: error.message });
+    }
+  },

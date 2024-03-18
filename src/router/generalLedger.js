@@ -22,19 +22,6 @@ const validateTransaction = [
   body('rate').exists().isNumeric(),
   body('source').exists().isString()
 ];
-
-    // const txn = {
-    //     accountNumber: 3001,
-    //     bookingDate: new Date(),
-    //     postingReference: 'REF-001 N/A',
-    //     debit: 14625000.00,
-    //     credit: 0.00,
-    //     description: 'Investment',
-    //     descriptionLL: 'ລົງທຶນ ຊື້ ເຄື່ອງມາຂາຍ ແບ້ 40 ຕຸ້ຍ 30 ໂອບີ 30',
-    //     currency: 'LAK',
-    //     rate: 1,
-    //     source: 'GL',
-    //   }
 const createValidation = [
 body('accountNumber').notEmpty().withMessage('accountNumber is required'),
 body('bookingDate').notEmpty().withMessage('booking date is required'),
