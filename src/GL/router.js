@@ -7,6 +7,7 @@ const {validateToken} = require('../api').jwtApi
 router.use(validateToken)
 router
     .post("/create", controller.createGeneralLedger)
+    .post("/createMulti", controller.createMultiGeneralLedger)
     .put("/update/:id", controller.updateGeneralLedgerEntryById)
     .delete("/find/:id", controller.deleteGeneralLedgerEntryById)
     .get("/find", controller.getAllGeneralLedgerEntries)

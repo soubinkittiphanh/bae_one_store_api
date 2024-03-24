@@ -38,3 +38,6 @@ alter table general_ledger drop column chartOfAccountId;
 
 ALTER TABLE general_ledger DROP KEY account_id;    
 alter table general_ledger drop column account_id;
+
+alter table general_ledger drop column debit;
+alter table general_ledger drop column credit;

@@ -479,7 +479,7 @@ db.chartAccount.hasMany(db.gl, {
 })
 db.gl.belongsTo(db.chartAccount, {
     foreignKey: 'drAccountId',
-    as: 'drAcccount'
+    as: 'drAccount'
 })
 db.gl.belongsTo(db.chartAccount, {
     foreignKey: 'crAccountId',

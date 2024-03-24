@@ -1,14 +1,24 @@
 const { Op } = require("sequelize");
 const GeneralLedger = require('../models').gl; // Adjust the path as needed
-
+const service = require('./service')
 // Create a new general ledger entry
+exports.createMultiGeneralLedger = async (req, res) => {
+  try {
+    const { lines } = req.body;
+    // Create a new entry in the general_ledger table
+    const newGeneralLedgerEntry = await service.createMultiEntry(lines)
+    res.status(201).send(newGeneralLedgerEntry);
+  } catch (error) {
+    console.error('Error creating general ledger entry:', error);
+    res.status(500).json({ error: 'An error occurred while creating the general ledger entry' });
+  }
+};
 exports.createGeneralLedger = async (req, res) => {
   try {
-    const { sequenceNumber, bookingDate, postingReference, debit, credit, description, localAmount, rate, source } = req.body;
+    const { bookingDate, postingReference, debit, credit, description, localAmount, rate, source } = req.body;
 
     // Create a new entry in the general_ledger table
     const newGeneralLedgerEntry = await GeneralLedger.create({
-      sequenceNumber,
       bookingDate,
       postingReference,
       debit,
@@ -29,7 +39,7 @@ exports.createGeneralLedger = async (req, res) => {
 // Get all general ledger entries
 exports.getAllGeneralLedgerEntries = async (req, res) => {
   try {
-    const allGeneralLedgerEntries = await GeneralLedger.findAll();
+    const allGeneralLedgerEntries = await GeneralLedger.findAll({ include: ['currency', 'drAccount', 'crAccount'] });
     res.status(200).json(allGeneralLedgerEntries);
   } catch (error) {
     console.error('Error fetching general ledger entries:', error);
@@ -41,7 +51,7 @@ exports.getAllGeneralLedgerEntries = async (req, res) => {
 exports.getGeneralLedgerEntryById = async (req, res) => {
   try {
     const { id } = req.params;
-    const generalLedgerEntry = await GeneralLedger.findByPk(id);
+    const generalLedgerEntry = await GeneralLedger.findByPk(id, { include: ['currency', 'drAccount', 'crAccount'] });
 
     if (!generalLedgerEntry) {
       return res.status(404).json({ error: 'General ledger entry not found' });
@@ -58,23 +68,13 @@ exports.getGeneralLedgerEntryById = async (req, res) => {
 exports.updateGeneralLedgerEntryById = async (req, res) => {
   try {
     const { id } = req.params;
-    const { sequenceNumber, bookingDate, postingReference, debit, credit, description, localAmount, rate, source } = req.body;
+    const { bookingDate, postingReference, debit, credit, description, localAmount, rate, source } = req.body;
 
-    const updatedGeneralLedgerEntry = await GeneralLedger.update({
-      sequenceNumber,
-      bookingDate,
-      postingReference,
-      debit,
-      credit,
-      description,
-      localAmount,
-      rate,
-      source,
-    }, {
+    const updatedGeneralLedgerEntry = await GeneralLedger.update(req.body, {
       where: { id },
     });
 
-    res.status(200).json({ message: 'General ledger entry updated successfully' });
+    res.status(200).send(updatedGeneralLedgerEntry);
   } catch (error) {
     console.error('Error updating general ledger entry:', error);
     res.status(500).json({ error: 'An error occurred while updating the general ledger entry' });
@@ -109,6 +109,7 @@ exports.getAllByDate = async (req, res) => {
           [Op.between]: [date.startDate, date.endDate]
         }
       },
+      include: ['currency', 'drAccount', 'crAccount']
     });
     return res.status(200).json(cards);
   } catch (error) {
