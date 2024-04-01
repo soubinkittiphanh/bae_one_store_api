@@ -1,6 +1,6 @@
 SHOW CREATE TABLE product; -- check relation key in the table;
-ALTER TABLE product DROP FOREIGN KEY product_ibfk_3171; -- drop outletId key
-ALTER TABLE product DROP FOREIGN KEY product_ibfk_1955; -- drop outlet key
+ALTER TABLE product DROP FOREIGN KEY product_ibfk_31; -- drop outletId key
+ALTER TABLE product DROP FOREIGN KEY product_ibfk_32; -- drop outlet key
 ALTER TABLE product DROP KEY outletId;      -- drop key
 ALTER TABLE product DROP KEY outlet;      -- drop key
 ALTER TABLE product drop column outletId; -- drop this column to avoid error outletId key
@@ -41,3 +41,8 @@ alter table general_ledger drop column account_id;
 
 alter table general_ledger drop column debit;
 alter table general_ledger drop column credit;
+
+
+UPDATE card
+INNER JOIN product ON card.product_id = product.pro_id  -- This condition should be modified to match your specific case
+SET card.productId = product.id;
