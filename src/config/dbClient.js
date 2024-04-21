@@ -80,7 +80,7 @@ const clientDB = {
         "host": "150.95.31.23",
         "user": "root",
         "password": "sdat@3480",
-        "database": "dcommerce_pro_peeair4_2024_migr",
+        "database": "dcommerce_pro_chithanh_migration",
         "port": 3306,
     },
     "demo": {
