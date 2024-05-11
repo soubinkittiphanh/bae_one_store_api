@@ -1,5 +1,6 @@
 
 const SaleHeader = require('../models').saleHeader;
+const SaleLine = require('../models').saleLine;
 const Customer = require('../models').customer;
 const Line = require('../models').saleLine;
 const Shipping = require('../models').shipping;
@@ -184,9 +185,10 @@ exports.reverseSaleHeader = async (req, res) => {
     //   cardIds.concat(iterator['cards'].map(card => card['id']))
     // }
     const cardIds = saleHeader['lines'].flatMap(iterator => iterator['cards'].map(card => card['id']));
-
+    const lineIds = saleHeader['lines'].map(line => line.id)
     const result = await sequelize.transaction(async (t) => {
       const updatedRecord = await saleHeader.update({ isActive, remark }, { transaction: t });
+      const updatedSaleLineRecord = await SaleLine.update({ isActive }, { where: { 'id': { [Op.in]: lineIds } } }, { transaction: t });
       const [numUpdated] = await Card.update(
         {
           card_isused: 0,
@@ -582,6 +584,9 @@ exports.getSaleHeadersByDateAndProduct = async (req, res) => {
           },
         }
       ],
+      where: {
+        "isActive": true,
+      }
     });
 
     res.status(200).send(saleLines);
@@ -773,7 +778,7 @@ exports.sumSaleCurrentYear = async (req, res) => {
   const { startDate, endDate } = date // new Date('2022-01-01');
   try {
     const saleHeader = await SaleHeader.findAll({
-      include:[Customer],
+      include: [Customer],
       attributes: ['bookingDate', 'total', 'discount'],
       where: {
         bookingDate: {
