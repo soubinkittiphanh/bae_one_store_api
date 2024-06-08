@@ -132,6 +132,13 @@ const clientDB = {
         "database": "dcommerce_pro_tonoo",
         "port": 3306,
     },
+    "demo1": {
+        "host": "150.95.31.23",
+        "user": "root",
+        "password": "sdat@3480",
+        "database": "dcommerce_dem_1",
+        "port": 3306,
+    },
 }
 
 module.exports = {
