@@ -12,19 +12,26 @@ const startApp = async () => {
         logger.info("Dcommerce is up")
         logger.info("app is runing: " + env.port || 4000);
         logger.warn("env: " + env.db.database);
-        const dfUserId = env.db.database.split('_')[3]
-        const defaultUser = {
-            "cus_id": dfUserId,
-            "cus_pass": dfUserId,
-            "cus_name": "DC Auto user",
-            "isActive": true
-        }
-
-        userService.ensureDefaultUserExists(defaultUser)
-
     }).setTimeout(0)
 
 
 
 }
 startApp();
+const dfUserId = env.db.database.split('_')[3]
+const defaultUser = {
+    cus_id: dfUserId,                  // User ID (integer, required)
+    cus_pass: dfUserId,      // Password (string, required)
+    cus_name: "DC Auto",         // Full name (string, required)
+    cus_tel: "123456789",         // Telephone number (string, optional)
+    cus_email: "jane.doe@example.com", // Email address (string, optional)
+    cus_active: true,             // Customer active status (boolean, defaults to true)
+    village: "Village Name",      // Village name (string, optional)
+    district: "District Name",    // District name (string, optional)
+    province: "Province Name",    // Province name (string, optional)
+    remark: "New customer",       // Remark (string, optional)
+    isActive: true,               // Active status (boolean, defaults to true)
+};
+
+
+userService.ensureDefaultUserExists(defaultUser)

@@ -108,7 +108,7 @@ const clientDB = {
         "host": "150.95.31.23",
         "user": "root",
         "password": "sdat@3480",
-        "database": "dcommerce_pro_little_boutique",
+        "database": "dcommerce_pro_auto_051111407592",
         "port": 3306,
     },
     "migrate_test": {
@@ -143,7 +143,7 @@ const clientDB = {
         "host": "150.95.31.23",
         "user": "root",
         "password": "sdat@3480",
-        "database": "auto",
+        "database": "dcommerce_pro_auto_051111407592",
         "port": 3306,
     },
 }

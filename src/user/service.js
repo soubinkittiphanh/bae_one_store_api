@@ -52,27 +52,28 @@ const countUser = async () => {
     }
 };
 
-const createDefaultUser = async (user) => {
-    try {
+// const createDefaultUser = async (user) => {
+//     try {
 
 
-        const defaultUser = await User.create(user);
+//         const defaultUser = await User.create(user);
 
-        logger.info(`********** Default User Created: ${JSON.stringify(defaultUser)} **********`);
-        return defaultUser;
-    } catch (error) {
-        logger.error(`Cannot create default user with error: ${error}`);
-        return null;
-    }
-};
+//         logger.info(`********** Default User Created: ${JSON.stringify(defaultUser)} **********`);
+//         return defaultUser;
+//     } catch (error) {
+//         logger.error(`Cannot create default user with error: ${error}`);
+//         return null;
+//     }
+// };
 
-const ensureDefaultUserExists = async (user) => {
+const ensureDefaultUserExists = async (user_create) => {
     try {
         const users = await countUser();
 
         if (!users || users.length === 0) {
             logger.info('No users found. Creating default user...');
-            const defaultUser = await createDefaultUser(user);
+
+            const defaultUser = await User.create(user_create);
 
             if (defaultUser) {
                 logger.info('Default user created successfully.');
