@@ -2,11 +2,12 @@ const Helper = require('../../helper/');
 const fs = require('fs');
 const Db = require('../../config/dbcon')
 const env = require('../../config');
-const axios = require('axios').create({ baseURL: `http://localhost:${env.port || 4000}` });
-
+// const axios = require('axios').create({ baseURL: `http://localhost:${env.port || 4000}` });
+const productService = require('../../product/service'); ///Users/soubinkittiphanh/Desktop/Pro/dcommerce/dc_api/src/controllers/admin/product.js
+const logger = require('../../api/logger');
 const singleMasterUpdate = async (req, res) => {
-    console.log("*************** Single master UPADATE UploadImage ***************");
-    console.log(`*************Payload: ${req.body.ref} *****************`);
+    logger.info("*************** Single master UPADATE UploadImage ***************");
+    logger.info(`*************Payload: ${req.body.ref} *****************`);
     var tmp_path = req.file.path;
     const rndName = Date.now();
     const appId = req.body.app_id;
@@ -16,7 +17,7 @@ const singleMasterUpdate = async (req, res) => {
 
 
     let sqlCom = `SELECT login_id from user WHERE cus_id='${cusId}'`
-     Db.query(sqlCom, (er, re) => {
+    Db.query(sqlCom, (er, re) => {
         if (er) return res.send("Error: " + er)
         if (re.length < 1) return res.send("Error: user id not found")
         const logInId = re[0]["login_id"]
@@ -26,7 +27,7 @@ const singleMasterUpdate = async (req, res) => {
             var src = fs.createReadStream(tmp_path);
             var dest = fs.createWriteStream(target_path);
             if (re.length < 1) {
-                console.log("USER IMAGE IS NEVER UPLOAD YET");
+                logger.info("USER IMAGE IS NEVER UPLOAD YET");
                 src.pipe(dest);
                 src.on('end', async () => {
                     sqlCom = `INSERT INTO image_path_master(app_id,app_txn_id,img_path,img_name,img_remark)VALUES('${appId}','${logInId}','${target_path}','${rndName + req.file.originalname}','${remark}')`
@@ -37,7 +38,7 @@ const singleMasterUpdate = async (req, res) => {
                 })
                 src.on('error', (err) => { res.send('error'); });
             } else {
-                console.log("UPDATE USER IMAGE");
+                logger.info("UPDATE USER IMAGE");
                 src.pipe(dest);
                 src.on('end', async () => {
 
@@ -57,15 +58,15 @@ const singleMasterUpdate = async (req, res) => {
 }
 
 const singleMaster = async (req, res) => {
-    console.log("Single Master upload:");
-    console.log("*************** Single master UploadImage ***************");
-    console.log(`*************Payload: ${req.body.ref} *****************`);
-    console.log('=>   File: ' + req.file);
-    console.log('=>   remark: ' + req.body.remark);
-    console.log('=>   ref: ' + req.body.ref);
-    console.log('=>   app_id: ' + req.body.app_id);
-    console.log('=>   File name: ' + req.file.originalname);
-    console.log('=>   File path: ' + req.file.path);
+    logger.info("Single Master upload:");
+    logger.info("*************** Single master UploadImage ***************");
+    logger.info(`*************Payload: ${req.body.ref} *****************`);
+    logger.info('=>   File: ' + req.file);
+    logger.info('=>   remark: ' + req.body.remark);
+    logger.info('=>   ref: ' + req.body.ref);
+    logger.info('=>   app_id: ' + req.body.app_id);
+    logger.info('=>   File name: ' + req.file.originalname);
+    logger.info('=>   File path: ' + req.file.path);
     var tmp_path = req.file.path;
     const rndName = Date.now();
     const appId = req.body.app_id;
@@ -78,7 +79,7 @@ const singleMaster = async (req, res) => {
     src.pipe(dest);
     src.on('end', async () => {
         const sqlCom = `INSERT INTO image_path_master(app_id,app_txn_id,img_path,img_name,img_remark)VALUES('${appId}','${ref}','${target_path}','${rndName + req.file.originalname}','${remark}')`
-        await Db.query(sqlCom, (er, re) => {
+        Db.query(sqlCom, (er, re) => {
             if (er) return res.send("Error: " + er);
             return res.send("Transaction completed");
         })
@@ -90,20 +91,20 @@ const singleMaster = async (req, res) => {
 
 const single = async (req, res) => {
     // const body=req.FORM;
-    console.log('=>   File: ' + req.file);
-    console.log('=>   File name: ' + req.file.originalname);
-    console.log('=>   File path: ' + req.file.path);
+    logger.info('=>   File: ' + req.file);
+    logger.info('=>   File name: ' + req.file.originalname);
+    logger.info('=>   File path: ' + req.file.path);
     var tmp_path = req.file.path;
     const rndName = Date.now();
-    console.log("*************** Single UploadImage ***************");
-    console.log(`*************Payload: ${tmp_path} *****************`);
+    logger.info("*************** Single UploadImage ***************");
+    logger.info(`*************Payload: ${tmp_path} *****************`);
     /** The original name of the uploaded file
      stored in the variable "originalname". **/
     var target_path = 'uploads/' + rndName + req.file.originalname;
     //customize upload 
     // fs.rename(oldpath, newpath, function (err) {
     //     if (err) {
-    //         console.log('Error: ' + err);
+    //         logger.info('Error: ' + err);
     //         return res.send('Error: ' + err)
     //         // throw err;
     //     }
@@ -115,7 +116,7 @@ const single = async (req, res) => {
     src.pipe(dest);
     src.on('end', async () => {
         const sqlCom = `INSERT INTO image_path_ad(img_name,img_path,remark)VALUES('${rndName + req.file.originalname}','${target_path}','')`
-         Db.query(sqlCom, (er, re) => {
+        Db.query(sqlCom, (er, re) => {
             if (er) return res.send("Error: " + er);
             return res.send("Transaction completed");
         })
@@ -125,11 +126,11 @@ const single = async (req, res) => {
 }
 
 const multi = async (req, res) => {
-    console.log("*************** Single UploadImage ***************");
-    console.log(`*************Payload: ${req.files}} *****************`);
+    logger.info("*************** Single UploadImage ***************");
+    logger.info(`*************Payload: ${req.files}} *****************`);
     const files = req.files;
-    console.log('jSON: ' + req.body.FORM);
-    console.log('Files: ' + files.length);
+    logger.info('jSON: ' + req.body.FORM);
+    logger.info('Files: ' + files.length);
     const rndName = Date.now();
     let imagesObj = [];
 
@@ -139,43 +140,63 @@ const multi = async (req, res) => {
         var newpath = target_path + rndName + el.originalname;
         fs.rename(oldpath, newpath, function (err) {
             if (err) {
-                console.log('Error: ' + err);
+                logger.info('Error: ' + err);
                 return res.send('Error: ' + err)
                 // throw err;
             }
         });
         imagesObj.push({ 'name': rndName + el.originalname, 'path': newpath })
-        console.log('Loop len: ' + imagesObj.length);
-        console.log("Inside loop");
+        logger.info('Loop len: ' + imagesObj.length);
+        logger.info("Inside loop");
     });
-    console.log("Outside loop");
-    let sqlComMessage;
+    logger.info("Outside loop");
+    try {
+
+        await productService.createProd(req, imagesObj )
+        res.status(201).send('Transaction completed');
+    } catch (error) {
+        logger.info("False and removing files... ");
+        logger.error(`Error by productService.createProd method ${error}`)
+        imagesObj.forEach(el => {
+            fs.unlinkSync(el.path, er => {
+                logger.info("Error: cannot remove file " + er);
+            })
+        })
+        logger.info("False and removing files...completed ");
+        res.status(501).send('Error: ');
+    }
+    /*
     const commandResult = await axios.post("/product_i", { ...req.body, imagesObj }).then((res) => {
-        console.log("AXIOS Succeed: " + res.data);
+        logger.info("AXIOS Succeed: " + res.data);
         sqlComMessage = res.data
-        console.log("REQUEST STATUS CODE: " + res.data);
-        console.log("REQUEST STATUS CODE DATA: " + res.status);
+        logger.info("REQUEST STATUS CODE: " + res.data);
+        logger.info("REQUEST STATUS CODE DATA: " + res.status);
         return res.data === 'Transaction completed' ? true : false;
     }).catch(er => {
         sqlComMessage = er;
-        console.log("AXIOS Error: " + er);
+        logger.info("AXIOS Error: " + er);
         return false;
     })
-    console.log("Return client: " + commandResult);
+    logger.info("Return client: " + commandResult);
+    */
     //*****************  REMOVE FILE IF THERE IS ERROR  *****************//
+    /*
     if (commandResult === false) {
-        console.log("False and removing files... ");
+        logger.info("False and removing files... ");
         imagesObj.forEach(el => {
             fs.unlinkSync(el.path, er => {
-                console.log("Error: cannot remove file " + er);
+                logger.info("Error: cannot remove file " + er);
             })
         })
-        console.log("False and removing files...completed ");
+        logger.info("False and removing files...completed ");
     }
     res.send(commandResult ? 'Transaction completed' : 'Error: ' + sqlComMessage);
+    */
+
+
 }
 const remove_file = async (req, res) => {
-    console.log("IMAGE NAME: " + req.body.img_name);
+    logger.info("IMAGE NAME: " + req.body.img_name);
     const imageName = req.body.img_name
     fs.existsSync(`uploads/${imageName}`) && fs.unlinkSync(`uploads/${imageName}`, er => {
         if (er) return res.send('Error: cannot remove file ' + er)
@@ -184,8 +205,8 @@ const remove_file = async (req, res) => {
 }
 const multiUpdate = async (req, res) => {
     const files = req.files;
-    console.log('jSON: ' + req.body.FORM);
-    console.log('Files: ' + files.length);
+    logger.info('jSON: ' + req.body.FORM);
+    logger.info('Files: ' + files.length);
     const rndName = Date.now();
     let imagesObj = [];
 
@@ -196,43 +217,50 @@ const multiUpdate = async (req, res) => {
         !(fs.existsSync(`${target_path}${el.originalname}`)) &&
             fs.rename(oldpath, newpath, function (err) {
                 if (err) {
-                    console.log('Error: ' + err);
+                    logger.info('Error: ' + err);
                     return res.send('Error: ' + err)
                     // throw err;
                 }
 
             });
         imagesObj.push({ 'name': rndName + el.originalname, 'path': newpath })
-        console.log('Loop len: ' + imagesObj.length);
-        console.log("Inside loop");
+        logger.info('Loop len: ' + imagesObj.length);
+        logger.info("Inside loop");
     });
-    console.log("Outside loop");
-    let sqlComMessage;
-    const commandResult = await axios.put("/product_e", { ...req.body, imagesObj }).then((res) => {
-        console.log("AXIOS Succeed: " + res.data);
-        sqlComMessage = res.data
-        console.log("REQUEST STATUS CODE update: " + res.data);
-        console.log("REQUEST STATUS CODE DATA update: " + res.status);
-        return res.data === 'Transaction completed' ? true : false;
-    }).catch(er => {
-        sqlComMessage = er;
-        console.log("AXIOS Error: " + er.data.Error);
-        console.log("AXIOS Error: " + er.Error);
-        console.log("AXIOS Error: " + er);
-        return false;
-    })
-    console.log("Return client update: " + commandResult);
-    //*****************  REMOVE FILE IF THERE IS ERROR  *****************//
-    if (!commandResult) {
-        console.log("False and removing files... ");
+    logger.info("Outside loop");
+    try {
+        await productService.updateProd(req, imagesObj)
+        res.status(200).send('Transaction completed');
+    } catch (error) {
+        logger.error(`Upload fail: ${error}`)
+        //*****************  REMOVE FILE IF THERE IS ERROR  *****************//
+        logger.info("False and removing files... ");
         imagesObj.forEach(el => {
             fs.unlinkSync(el.path, er => {
-                console.log("Error: cannot remove file " + er);
+                logger.info("Error: cannot remove file " + er);
             })
         })
-        console.log("False and removing files...completed ");
+        logger.info("False and removing files...completed ");
+        res.status(401).send(`Error: ${error}`);
     }
-    res.send(commandResult ? 'Transaction completed' : 'Error: ' + sqlComMessage);
+
+    /*
+        const commandResult = await axios.put("/product_e", { ...req.body, imagesObj }).then((res) => {
+            logger.info("AXIOS Succeed: " + res.data);
+            sqlComMessage = res.data
+            logger.info("REQUEST STATUS CODE update: " + res.data);
+            logger.info("REQUEST STATUS CODE DATA update: " + res.status);
+            return res.data === 'Transaction completed' ? true : false;
+        }).catch(er => {
+            sqlComMessage = er;
+            logger.info("AXIOS Error: " + er.data.Error);
+            logger.info("AXIOS Error: " + er.Error);
+            logger.info("AXIOS Error: " + er);
+            return false;
+        })
+    
+        */
+
 }
 
 module.exports = {

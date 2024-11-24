@@ -1,5 +1,6 @@
 const logger = require('../../api/logger');
 const Db = require('../../config/dbcon');
+
 const createProd = async (req, res) => {
     // Get the current date and time
     let date = new Date();

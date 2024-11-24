@@ -33,9 +33,11 @@ const Outlet = require("../controllers/admin/outlet")
 const Payment = require("../controllers/admin/payment");
 const Shipping = require("../controllers/admin/shipping");
 const productController = require('../product/controller')
+const logger = require('../api/logger')
 
 const fileFilter = (req, file, cb) => {
     const allowedTypes = ['image/img', 'image/png', 'image/jpeg', 'image/gif','image/jpg','image/webp']
+    logger.info(`FILE TYPE: ${file.mimetype}`)
     if (!allowedTypes.includes(file.mimetype)) {
         const error = new Error("Wrong file type");
         error.code = "LIMIT_FILE_TYPE"

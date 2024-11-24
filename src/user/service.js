@@ -41,7 +41,54 @@ const getUserById = async (cus_id, cus_pass) => {
         return null
     }
 };
+const countUser = async () => {
+    try {
+        const allUser = await User.findAll();
+        logger.info(`********** Found Users: ${JSON.stringify(allUser)} **********`);
+        return allUser;
+    } catch (error) {
+        logger.error(`Cannot get user with error: ${error}`);
+        return null;
+    }
+};
+
+const createDefaultUser = async (user) => {
+    try {
+
+
+        const defaultUser = await User.create(user);
+
+        logger.info(`********** Default User Created: ${JSON.stringify(defaultUser)} **********`);
+        return defaultUser;
+    } catch (error) {
+        logger.error(`Cannot create default user with error: ${error}`);
+        return null;
+    }
+};
+
+const ensureDefaultUserExists = async (user) => {
+    try {
+        const users = await countUser();
+
+        if (!users || users.length === 0) {
+            logger.info('No users found. Creating default user...');
+            const defaultUser = await createDefaultUser(user);
+
+            if (defaultUser) {
+                logger.info('Default user created successfully.');
+            } else {
+                logger.error('Failed to create default user.');
+            }
+        } else {
+            logger.info('Users already exist. No need to create a default user.');
+        }
+    } catch (error) {
+        logger.error(`Error ensuring default user exists: ${error}`);
+    }
+};
+
 
 module.exports = {
     getUserById,
+    ensureDefaultUserExists,
 }
