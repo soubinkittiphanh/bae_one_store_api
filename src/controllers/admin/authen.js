@@ -1,27 +1,25 @@
 const { jwtApi } = require('../../api');
 const logger = require('../../api/logger');
 const Db = require('../../config/dbcon')
+const userService = require('../../user/service')
 const authenticate = async (req, res) => {
     const body = req.body;
-    console.log("************* User auth  *****************");
-    console.log(`*************Payload: ${body} *****************`);
+    logger.info("************* User auth  *****************");
     const { mem_id, mem_pwd } = body;
-    const sqlLogin = `SELECT * FROM user WHERE cus_id='${mem_id}' AND cus_pass='${mem_pwd}'`
-    logger.info("SQL COMMAND "+sqlLogin)
-    Db.query(sqlLogin, (er, re) => {
-        if (er) return res.send("Error: " + er)
-        if (re[0]) {
-            const { id, cus_id, cus_name, cus_tel } = re[0]
-            // const user = re[0]
-            const user = {id,cus_id,cus_name,cus_tel}
-            res.send(jwtApi.generateToken(user))
-
-        } else {
-            res.send({ "accessToken": "", "error": "ລະຫັດຜ່ານ ຫລື ໄອດີບໍ່ຖືກຕ້ອງ" })
-        }
-
-
-    })
+    const user = await userService.getUserById(mem_id,mem_pwd)
+    if(!user) return  res.send({ "accessToken": "", "error": "ລະຫັດຜ່ານ ຫລື ໄອດີບໍ່ຖືກຕ້ອງ" })
+    logger.info(`**********${user.cus_name}**********`)
+    const plainPayload = { 
+        id:user.id,
+        cus_id:user.cus_id,
+        cus_name:user.cus_name,
+        cus_tel:user.cus_tel,
+        userGroup: user.userGroup,
+        terminal: user.terminals
+    };
+    const token = jwtApi.generateToken(plainPayload)
+    logger.info(`Token generated succeed ${token}`)
+    return res.send(token)
 }
 const Authcustomer = async (req, res) => {
     console.log("*************** user AUTH  ***************");

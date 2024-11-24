@@ -1,6 +1,10 @@
 
 const SaleHeader = require('../models').saleHeader;
+const SaleLine = require('../models').saleLine;
+const Customer = require('../models').customer;
 const Line = require('../models').saleLine;
+const Shipping = require('../models').shipping;
+const Geo = require('../models').geography;
 const Product = require('../models').product;
 const Card = require('../models').card;
 const Unit = require('../models').unit;
@@ -10,7 +14,8 @@ const lineService = require("./line/service");
 const headerService = require("./service");
 const common = require('../common')
 const { Op, where, literal } = require('sequelize');
-const productService = require('../product/service')
+const productService = require('../product/service');
+const { sequelize } = require('../models');
 
 // 1. 200 OK - The request has succeeded and the server has returned the requested data.
 
@@ -31,26 +36,67 @@ const productService = require('../product/service')
 // 9. 502 Bad Gateway - The server received an invalid response from an upstream server while trying to fulfill the request.
 exports.createSaleHeader = async (req, res) => {
   try {
-    let { bookingDate, remark, discount, total, exchangeRate, isActive, lines, clientId, paymentId, currencyId, userId, referenceNo, locationId } = req.body;
-    const saleHeader = await SaleHeader.create({ bookingDate, remark, discount, total, exchangeRate, isActive, clientId, paymentId, currencyId, userId, referenceNo, locationId });
-    logger.info('Sale header ' + saleHeader.id)
+    // try {
+    //   const { customerData, orderData } = req.body;
+
+    //   const result = await sequelize.transaction(async (t) => {
+    //     const customer = await Customer.create(customerData, { transaction: t });
+    //     const order = await Order.create(
+    //       { ...orderData, customerId: customer.id },
+    //       { transaction: t }
+    //     );
+
+    //     return { customer, order };
+    //   });
+
+    //   return res.status(201).json(result);
+    // } catch (error) {
+    //   console.error(error);
+    //   return res.status(500).json({ message: 'Internal server error' });
+    // }
+    let { bookingDate, remark, discount, total, exchangeRate, isActive, lines, clientId, paymentId, currencyId, userId, referenceNo, locationId, customerForm } = req.body;
     logger.info("===== Create Sale Header =====" + req.body)
-    // **********************
-    //  Line with headerId
-    // **********************
-    const lockingSessionId = common.generateLockingSessionId()
-    try {
-      const linesWithHeaderId = await assignHeaderId(lines, saleHeader.id, lockingSessionId, false, locationId)
-      lineService.createBulkSaleLine(res, linesWithHeaderId, lockingSessionId)
-    } catch (error) {
-      // ********************************************
-      //  Reverse SaleHeader just created
-      // ********************************************
-      logger.error("Something wrong need to reverse header " + error)
-      await headerService.saleHeaderReversal(saleHeader.id)
-      res.status(500).send("Unfortunately " + error)
+    const result = await sequelize.transaction(async (t) => {
+      logger.warn(`SALE HEADER: ${JSON.stringify(req.body)}`)
+      const saleHeader = await SaleHeader.create({ bookingDate, remark, discount, total, exchangeRate, isActive, clientId, paymentId, currencyId, userId, referenceNo, locationId }, { transaction: t });
+      let customer = null
+
+      if (customerForm) {
+        logger.info(`********** Customer form ${customerForm}***********`)
+        logger.info(`********** Customer form ${customerForm.name}***********`)
+        delete customerForm.discount
+        customerForm.saleHeaderId = saleHeader.id
+        customer = await Customer.create(customerForm, { transaction: t })
+
+      }
+      logger.info(`*************Sale header ${saleHeader.id} *************`)
+      // **********************
+      //  Line with headerId
+      // **********************
+      const lockingSessionId = common.generateLockingSessionId()
+      const errorList = []
+      try {
+        const linesWithHeaderId = await assignHeaderId(lines, saleHeader.id, lockingSessionId, false, locationId)
+        lineService.createBulkSaleLine(res, linesWithHeaderId, lockingSessionId)
+      } catch (error) {
+        // ********************************************
+        //  Reverse SaleHeader just created
+        // ********************************************
+        logger.error("Something wrong need to reverse header " + error)
+        res.status(500).send("Unfortunately " + error)
+        // throw new Error(error)
+        errorList.push(error)
+      }
+      const reversalRequire = errorList.length > 0 ? true : false
+      return { customer, saleHeader, reversalRequire };
+    })
+    if (result.reversalRequire) {
+      await headerService.saleHeaderReversal(result.saleHeader.id)
+      return logger.warn(`Transaction reversed`)
     }
+    logger.info(`Transaction compleate ${result}`)
   } catch (error) {
+    logger.error(`Error occurs ${error}`)
     res.status(500).send(error)
   }
 };
@@ -85,6 +131,101 @@ exports.updateSaleHeader = async (req, res) => {
   } catch (error) {
     logger.error("Cannot update data " + error)
     res.status(500).send(`Cannot update data with ${error}`);
+  }
+};
+exports.settlement = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { paymentId, codFee, customerId } = req.body;
+    const saleHeader = await SaleHeader.findByPk(id);
+
+    if (!saleHeader) {
+      logger.error("Order Id " + id + ' is not found')
+      return res.status(404).json({ success: false, message: 'Sale header not found' });
+    }
+    logger.info("Updating header")
+    await saleHeader.update({ paymentId, });
+    logger.info(`Update transaction completed ${saleHeader}`)
+    // ******* IF COD FEE IS THERE NEED TO UPDATE DY-CUS ********
+    const customer = await Customer.findByPk(customerId)
+    await customer.update({ cod_fee: codFee })
+    res.status(200).json(saleHeader);
+  } catch (error) {
+    logger.error("Cannot update data " + error)
+    res.status(500).send(`Cannot update data with ${error}`);
+  }
+};
+exports.reverseSaleHeader = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { isActive, remark, cancel_fee, customerId } = req.body;
+    const saleHeader = await SaleHeader.findByPk(id, {
+      include: [{
+        model: Line,
+        as: "lines",
+        include: [
+          {
+            model: Product,
+            as: "product"
+          },
+          'cards'
+        ]
+      }]
+    });
+    if (!saleHeader) {
+      logger.error("Order Id " + id + ' is not found')
+      return res.status(404).json({ success: false, message: 'Sale header not found' });
+    }
+    logger.info(`SaleLine len: ${saleHeader['lines'].length}`)
+    logger.info(`SaleLine product len: ${saleHeader['lines'].length}`)
+    // Collect card id to reverse back
+    // const cardIds = [];
+    // for (const iterator of saleHeader['lines']) {
+    //   logger.info(`product id ${iterator['product']['id']}`)
+    //   cardIds.concat(iterator['cards'].map(card => card['id']))
+    // }
+    const cardIds = saleHeader['lines'].flatMap(iterator => iterator['cards'].map(card => card['id']));
+    const lineIds = saleHeader['lines'].map(line => line.id)
+    const result = await sequelize.transaction(async (t) => {
+      const updatedRecord = await saleHeader.update({ isActive, remark }, { transaction: t });
+      const updatedSaleLineRecord = await SaleLine.update({ isActive }, { where: { 'id': { [Op.in]: lineIds } } }, { transaction: t });
+      const [numUpdated] = await Card.update(
+        {
+          card_isused: 0,
+          saleLineId: null,
+          isActive: true,
+        },
+        {
+          where: {
+            id: {
+              [Op.in]: cardIds,
+            },
+          },
+        }, { transaction: t }
+      );
+      return { updatedRecord, numUpdated };
+    })
+
+
+
+
+    logger.info("Reversal is on going...")
+    // ********** Clasify new or old saleLine ********** //
+    logger.info(`Reversal transaction completed ${saleHeader}`)
+
+    // ************* TAKE THE PRODUC ID FOR UPDATE STOCK COUNT IN PRODUCT TABLE *************//
+    updateProductStockCount(saleHeader['lines'])
+    // ************* TAKE THE PRODUC ID FOR UPDATE STOCK COUNT IN PRODUCT TABLE *************//
+    // *********** SET CANCELATION CHARGE ***********
+    if (cancel_fee > 0) {
+      logger.info(`CANCEL FEE SET ${cancel_fee} | ${customerId}`)
+      const customer = await Customer.findByPk(customerId)
+      await customer.update({ cancel_fee: cancel_fee })
+    }
+    res.status(200).json(saleHeader);
+  } catch (error) {
+    logger.error("Cannot reverse data " + error)
+    res.status(500).send(`Cannot reverse data with ${error}`);
   }
 };
 const assignHeaderId = async (line, id, lockingSessionId, isUpdate, locationId) => {
@@ -242,7 +383,7 @@ const reserveCard = async (line, lockingSessionId, qty, locationId) => {
 
 exports.getSaleHeaders = async (req, res) => {
   try {
-    const saleHeaders = await SaleHeader.findAll({ include: ['lines', 'user', 'client', 'payment', 'currency', 'location'], });
+    const saleHeaders = await SaleHeader.findAll({ include: ['lines', 'user', 'client', 'payment', 'currency', 'location', Customer], });
 
     res.status(200).json({ success: true, data: saleHeaders });
   } catch (error) {
@@ -254,8 +395,7 @@ exports.getSaleHeaders = async (req, res) => {
 exports.getSaleHeadersByDate = async (req, res) => {
   const date = JSON.parse(req.query.date);
   logger.warn("Date " + date.startDate + " " + date.endDate)
-  //   const startDate = new Date('2023-07-01');
-  // const endDate = new Date('2023-12-31');
+  logger.warn(`Request date ${date.startDate} userId ${req.user.id}`)
   try {
     const saleHeaders = await SaleHeader.findAll({
       include: ['user', 'client', 'payment', 'currency', 'location',
@@ -268,6 +408,10 @@ exports.getSaleHeadersByDate = async (req, res) => {
               as: "product"
             }
           ]
+        },
+        {
+          model: Customer,
+          include: ['geography', 'shipping', 'rider']
         }
 
       ],
@@ -285,12 +429,178 @@ exports.getSaleHeadersByDate = async (req, res) => {
     res.status(500).send(error);
   }
 };
+exports.getSaleHeadersDetailByDate = async (req, res) => {
+  const date = JSON.parse(req.query.date);
+  logger.warn("Date " + date.startDate + " " + date.endDate)
+  logger.warn(`Request date ${date.startDate} userId ${req.user.id}`)
+  try {
+    const saleHeaders = await SaleHeader.findAll({
+      include: ['user', 'client', 'payment', 'currency', 'location',
+        {
+          model: Line,
+          as: "lines",
+          include: [
+            {
+              model: Product,
+              as: "product"
+            },
+            'cards'
+          ]
+        },
+        {
+          model: Customer,
+          include: ['geography', 'shipping', 'rider']
+        }
+
+      ],
+      where: {
+        bookingDate: {
+          [Op.between]: [date.startDate, date.endDate]
+        },
+        // isActive:true
+      }
+    });
+
+    res.status(200).send(saleHeaders);
+  } catch (error) {
+    logger.error("===> Filter by date error: " + error)
+    res.status(500).send(error);
+  }
+};
+
+exports.getSaleHeadersByDateAndUser = async (req, res) => {
+  logger.warn("=============Loading saleHeader data=============")
+  const date = JSON.parse(req.query.date);
+  logger.warn(`Request date ${date.startDate} userId ${date.userId}`)
+  try {
+    const saleHeaders = await SaleHeader.findAll({
+      include: ['user', 'client', 'payment', 'currency', 'location', Customer,
+        {
+          model: Line,
+          as: "lines",
+          include: [
+            {
+              model: Product,
+              as: "product"
+            },
+            {
+              model: SaleHeader,
+              as: "header"
+            },
+
+          ]
+        },
+        {
+          model: Customer,
+          include: ['geography', 'shipping']
+        }
+
+      ],
+      where: {
+        bookingDate: {
+          [Op.between]: [date.startDate, date.endDate]
+        },
+        userId: {
+          [date.userId < 1 ? Op.ne : Op.eq]: date.userId,
+        }
+      }
+    });
+
+    res.status(200).send(saleHeaders);
+  } catch (error) {
+    logger.error("===> Filter by date error: " + error)
+    res.status(500).send(error);
+  }
+};
+exports.getSaleHeadersByDateAndCustomer = async (req, res) => {
+  const date = JSON.parse(req.query.date);
+  logger.warn(`Request date ${date.startDate} customerId ${date.clientId}`)
+  try {
+    const saleHeaders = await SaleHeader.findAll({
+      include: ['user', 'client', 'payment', 'currency', 'location', Customer,
+        {
+          model: Line,
+          as: "lines",
+          include: [
+            {
+              model: Product,
+              as: "product"
+            },
+            {
+              model: SaleHeader,
+              as: "header"
+            }
+          ]
+        }
+
+      ],
+      where: {
+        bookingDate: {
+          [Op.between]: [date.startDate, date.endDate]
+        },
+        clientId: {
+          [date.clientId < 1 ? Op.ne : Op.eq]: date.clientId,
+        }
+      }
+    });
+
+    res.status(200).send(saleHeaders);
+  } catch (error) {
+    logger.error("===> Filter by date error: " + error)
+    res.status(500).send(error);
+  }
+};
+exports.getSaleHeadersByDateAndProduct = async (req, res) => {
+  const date = JSON.parse(req.query.date);
+  const productId = date.productId;
+  logger.warn(`Request date ${date.startDate} customerId ${date.productId}`)
+  try {
+    const saleLines = await Line.findAll({
+      attributes: [
+        ['productId', 'product_id'], // Aliasing product.id as product_id
+        ['headerId', 'header_id'],   // Aliasing header.id as header_id
+        [sequelize.fn('SUM', sequelize.col('price')), 'totalPrice'],
+        [sequelize.fn('SUM', sequelize.col('saleLine.total')), 'totalAmount'],
+        [sequelize.fn('SUM', sequelize.col('quantity')), 'totalQTY'],
+        [sequelize.fn('SUM', sequelize.col('header.discount')), 'totalDiscount'],
+      ],
+      group: ['productId'],
+      include: [
+        {
+          model: Product,
+          as: "product"
+        },
+        {
+          model: SaleHeader,
+          as: "header",
+          include: ['user', 'client', 'payment', 'currency', 'location', Customer],
+          where: {
+            '$header.bookingDate$': {
+              [Op.between]: [date.startDate, date.endDate]
+            },
+            '$saleLine.productId$': { // Assuming `productId` is the correct field name
+              [productId < 1 ? Op.ne : Op.eq]: productId,
+            },
+          },
+        }
+      ],
+      where: {
+        "isActive": true,
+      }
+    });
+
+    res.status(200).send(saleLines);
+  } catch (error) {
+    logger.error("===> Filter by date error: " + error)
+    res.status(500).send(error);
+  }
+};
 
 exports.getSaleHeaderById = async (req, res) => {
   try {
     const { id } = req.params;
     const saleHeader = await SaleHeader.findByPk(id, {
-      include: ['lines', 'user', 'location', 'client', 'payment', 'currency', 'location', {
+      include: ['lines', 'user', 'location', 'client', 'payment', 'currency', 'location', Customer, {
         model: Line,
         as: "lines",
         include: [
@@ -468,6 +778,7 @@ exports.sumSaleCurrentYear = async (req, res) => {
   const { startDate, endDate } = date // new Date('2022-01-01');
   try {
     const saleHeader = await SaleHeader.findAll({
+      include: [Customer],
       attributes: ['bookingDate', 'total', 'discount'],
       where: {
         bookingDate: {

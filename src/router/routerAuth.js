@@ -15,7 +15,7 @@ const Auth = require('../controllers/admin/authen')
 const multer = require('multer')
 
 const fileFilter = (req, file, cb) => {
-    const allowedTypes = ['image/img', 'image/png', 'image/jpeg', 'image/gif','image/jpg']
+    const allowedTypes = ['image/img', 'image/png', 'image/jpeg', 'image/gif','image/jpg','image/webp']
     if (!allowedTypes.includes(file.mimetype)) {
         const error = new Error("Wrong file type");
         error.code = "LIMIT_FILE_TYPE"
@@ -76,13 +76,6 @@ const txnHis = async (app) => {
     app.put('/txn_his_e',authentication, TxnHis.updateTxnHis)
     app.get('/txn_his_f',authentication, TxnHis.fetchTxnHis)
 }
-// const authenticate = async (app) => {
-//     app.post('/userLogin', Auth.authenticate)
-//     app.post('/cus_auth', Auth.Authcustomer)
-// }
-// const login = async (app) => {
-//     app.get('/login',authentication, Login.login)
-// }
 function authentication(req, res, next) {
     console.log("Middleware");
     const authHeader = req.headers['authorization']

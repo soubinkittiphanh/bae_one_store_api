@@ -1,93 +1,94 @@
 const logger = require('../api/logger');
-const Unit = require('../models').unit
-// function generateRandomString(length) {
-//     let result = '';
-//     const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-//     const charactersLength = characters.length;
-//     for (let i = 0; i < length; i++) {
-//       result += characters.charAt(Math.floor(Math.random() * charactersLength));
-//     }
+const User = require('../models').user;
+const Terminal = require('../models').terminal;
+const Group = require('../models').group;
+const Authority = require('../models').menuHeader;
+const MenuLine = require('../models').menuLine;
+const getUserById = async (cus_id, cus_pass) => {
 
-//     return result;
-//   }
-
-const createHulkUnit = (req, res) => {
-    const rowsToInsert =
-        [
-            {
-                name: 'each',
-                unitRate: 1,
-                isActive: true
-            },
-            {
-                name: 'dozen',
-                unitRate: 12,
-                isActive: true
-            },
-            {
-                name: 'pound',
-                unitRate: 16,
-                isActive: true
-            },
-            {
-                name: 'gallon',
-                unitRate: 128,
-                isActive: true
-            },
-            {
-                name: 'bottle',
-                unitRate: 1,
-                isActive: true
-            },
-            {
-                name: 'case',
-                unitRate: 12,
-                isActive: true
-            },
-            {
-                name: 'can',
-                unitRate: 1,
-                isActive: true
-            },
-            {
-                name: 'pack',
-                unitRate: 6,
-                isActive: true
-            },
-            {
-                name: 'piece',
-                unitRate: 1,
-                isActive: true
-            },
-            {
-                name: "meter",
-                unitRate: 1.0,
-                isActive: true
-            },
-            {
-                name: "liter",
-                unitRate: 0.001,
-                isActive: true
-            },
-            {
-                name: "kilogram",
-                unitRate: 1.0,
-                isActive: false
-            },
-
-        ]
-
-    Unit.bulkCreate(rowsToInsert)
-        .then(() => {
-            logger.info('Rows inserted successfully')
-            return res.status(200).send("Transction completed")
+    try {
+        const user = await User.findOne({
+            where: {
+                cus_id, cus_pass
+            }, include: [
+                {
+                    model: Terminal,
+                    through: { attributes: [] }
+                },
+                {
+                    model: Group,
+                    as: 'userGroup',
+                    attributes: ['code', 'name', 'id'],
+                    // include: [
+                    //     {
+                    //         model: Authority,
+                    //         attributes: ['name', 'llname', 'icon', 'expand'],
+                    //         include: [
+                    //             {
+                    //                 model: MenuLine,
+                    //                 attributes: ['name', 'llname', 'icon', 'path'],
+                    //             }
+                    //         ]
+                    //     }
+                    // ]
+                }
+            ]
         })
-        .catch((error) => {
-            logger.error('Error inserting rows:', error)
-            return res.status(403).send("Server error " + error)
-        });
-}
+        logger.info(`**********${user}**********`)
+        return user;
+    } catch (error) {
+        logger.error(`Cannot get user with error ${error}`)
+        return null
+    }
+};
+const countUser = async () => {
+    try {
+        const allUser = await User.findAll();
+        logger.info(`********** Found Users: ${JSON.stringify(allUser)} **********`);
+        return allUser;
+    } catch (error) {
+        logger.error(`Cannot get user with error: ${error}`);
+        return null;
+    }
+};
+
+const createDefaultUser = async (user) => {
+    try {
+
+
+        const defaultUser = await User.create(user);
+
+        logger.info(`********** Default User Created: ${JSON.stringify(defaultUser)} **********`);
+        return defaultUser;
+    } catch (error) {
+        logger.error(`Cannot create default user with error: ${error}`);
+        return null;
+    }
+};
+
+const ensureDefaultUserExists = async (user) => {
+    try {
+        const users = await countUser();
+
+        if (!users || users.length === 0) {
+            logger.info('No users found. Creating default user...');
+            const defaultUser = await createDefaultUser(user);
+
+            if (defaultUser) {
+                logger.info('Default user created successfully.');
+            } else {
+                logger.error('Failed to create default user.');
+            }
+        } else {
+            logger.info('Users already exist. No need to create a default user.');
+        }
+    } catch (error) {
+        logger.error(`Error ensuring default user exists: ${error}`);
+    }
+};
+
 
 module.exports = {
-    createHulkUnit,
+    getUserById,
+    ensureDefaultUserExists,
 }

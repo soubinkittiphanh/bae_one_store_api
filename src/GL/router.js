@@ -3,16 +3,15 @@ const controller = require("./controller")
 const service = require("./service")
 const express = require("express")
 const router = express.Router()
-const validateToken = require('../api').jwtApi
+const {validateToken} = require('../api').jwtApi
 router.use(validateToken)
-// No auth 
-// router.use((req,res,next)=>{
-//     next()
-// })
-router.post("/create", controller.create)
-    .put("/update/:id", controller.updateById)
-    .delete("/find/:id", controller.deleteById)
-    .get("/find", controller.getAll)
-    .get("/find/:id", controller.getById)
-    .post("/bulkCreate",service.createHulkStockCard)
+router
+    .post("/create", controller.createGeneralLedger)
+    .post("/createMulti", controller.createMultiGeneralLedger)
+    .put("/update/:id", controller.updateGeneralLedgerEntryById)
+    .delete("/find/:id", controller.deleteGeneralLedgerEntryById)
+    .get("/find", controller.getAllGeneralLedgerEntries)
+    .get("/findByDate", controller.getAllByDate)
+    .get("/find/:id", controller.getGeneralLedgerEntryById)
+    // .post("/bulkCreate",service.createHulkStockCard)
 module.exports = router

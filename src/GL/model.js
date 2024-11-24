@@ -7,23 +7,17 @@ module.exports = (sequelize, DataTypes) => {
 
         sequenceNumber:{
             type: DataTypes.STRING,
-            allowNull: false,
         },
         bookingDate: {
-            type: DataTypes.DATE,
+            type: DataTypes.DATEONLY,
             allowNull: false,
         },
         postingReference: {
             type: DataTypes.STRING,
             allowNull: false,
         },
-        debit: {
-            type: DataTypes.DECIMAL(10, 2),
-            allowNull: false,
-            defaultValue: 0.00,
-        },
-        credit: {
-            type: DataTypes.DECIMAL(10, 2),
+        amount: {
+            type: DataTypes.DECIMAL(15, 2),
             allowNull: false,
             defaultValue: 0.00,
         },
@@ -31,13 +25,12 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING,
             allowNull: false,
         },
-        currency: {
-            type: DataTypes.STRING(3), // use ISO 4217 currency codes (e.g. USD, EUR, GBP)
-            allowNull: false,
-            defaultValue: 'LAK', // set a default currency if needed
+        localAmount: {
+            type: DataTypes.DOUBLE, // use ISO 4217 currency codes (e.g. USD, EUR, GBP)
+            defaultValue: 0, // set a default currency if needed
         }, 
         rate: {
-            type: DataTypes.DECIMAL(10, 4),
+            type: DataTypes.DECIMAL(15, 4),
             allowNull: false,
             defaultValue: 1.0000, // set a default rate if needed
         },

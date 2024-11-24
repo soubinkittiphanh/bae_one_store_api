@@ -27,14 +27,17 @@ const Chat=require('../controllers/client/chats')
 const RegisterCustomer=require('../controllers/client/register')
 const Report=require("../controllers/admin/report")
 const multer = require('multer')
-const tokenHook=require('../middleware/auth').validateToken;
-const jwtUtil =require('../middleware/auth');
+const tokenHook=require('../api/jwtApi').validateToken;
+const jwtUtil =require('../api/jwtApi');
 const Outlet = require("../controllers/admin/outlet")
 const Payment = require("../controllers/admin/payment");
 const Shipping = require("../controllers/admin/shipping");
+const productController = require('../product/controller')
+const logger = require('../api/logger')
 
 const fileFilter = (req, file, cb) => {
-    const allowedTypes = ['image/img', 'image/png', 'image/jpeg', 'image/gif','image/jpg']
+    const allowedTypes = ['image/img', 'image/png', 'image/jpeg', 'image/gif','image/jpg','image/webp']
+    logger.info(`FILE TYPE: ${file.mimetype}`)
     if (!allowedTypes.includes(file.mimetype)) {
         const error = new Error("Wrong file type");
         error.code = "LIMIT_FILE_TYPE"
@@ -67,6 +70,7 @@ const product = async (app) => {
     app.get('/product_f/:locationId', ProdCtr.fetchProductFromLocation);
     app.get('/product_mobile_f', ProdCtr.fetchProdMobile);
     app.post('/product_f_id', ProdCtr.fetchProdId);
+    app.get('/product/find/:id', productController.getProductById);
 }
 
 const sale = async (app) => {

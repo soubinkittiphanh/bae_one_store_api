@@ -11,7 +11,6 @@ module.exports = (sequelize, DataTypes) => {
         },
         accountLLName: {
             type: DataTypes.STRING,
-            allowNull: true
         },
         accountType: {
             type: DataTypes.ENUM('Asset', 'Liability', 'Equity', 'Revenue', 'Expense'),

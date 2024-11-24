@@ -1,0 +1,38 @@
+{
+    "bookingDate": "2023-12-06",
+    "remark": "",
+    "total": 5000,
+    "exchangeRate": 1,
+    "isActive": true,
+    "customerForm": {
+        "name": "ຫັດສະໃນ",
+        "tel": "0207897789",
+        "address": "ດົງຄຳຊ້າງ",
+        "rider_fee": "10000",
+        "txn_date": "2023-12-06",
+        "shipping_fee_by": "destination",
+        "shippingId": 1,
+        "riderId": 2,
+        "geoId": 1,
+        "discount": 0
+    },
+    "discount": 0,
+    "clientId": 1,
+    "paymentId": 1,
+    "currencyId": 1,
+    "lines": [
+        {
+            "quantity": 1,
+            "unitRate": 1,
+            "price": 5000,
+            "discount": 0,
+            "productId": 619,
+            "productKey": 619,
+            "unitId": 1,
+            "total": 5000,
+            "isActive": true
+        }
+    ],
+    "userId": 1,
+    "locationId": 1
+}

@@ -21,7 +21,6 @@ const findDynamicCustomerByBookingDate = async(req,res)=>{
         LEFT JOIN geography g ON g.id=d.geoId
         LEFT JOIN rider r ON r.id = d.riderId
         WHERE d.txn_date BETWEEN '${fdate} 00:00:00' AND '${tdate} 23:59:59' 
-        AND d.record_status = 1
         AND d.locking_session_id NOT IN(SELECT locking_session_id FROM order_payment)
         GROUP BY d.locking_session_id
     `
@@ -69,8 +68,7 @@ const findDynamicCustomerByCODPayment = async(req,res)=>{
     LEFT JOIN geography g ON g.id=d.geoId
     LEFT JOIN rider r ON r.id = d.riderId
     WHERE d.txn_date BETWEEN '${fdate} 00:00:00' AND '${tdate} 23:59:59' 
-    AND d.record_status = 1
-    AND d.payment_code IN('RIDER_COD','COD') AND d.locking_session_id NOT IN(SELECT locking_session_id FROM order_payment)
+    AND d.locking_session_id NOT IN(SELECT locking_session_id FROM order_payment)
     GROUP BY d.locking_session_id
     `
     console.log( sql);

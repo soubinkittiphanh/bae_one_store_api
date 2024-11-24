@@ -43,7 +43,7 @@ module.exports = (sequelize, DataTypes) => {
         },
         locking_session_id: {
             type: DataTypes.STRING,
-            allowNull: false,
+            // allowNull: false,
         },
         barCode: {
             type: DataTypes.STRING(40),

@@ -13,7 +13,8 @@ router
 .put("/update/:id", controller.updatePayment)
 .delete("/find/:id", controller.deletePayment)
 .get("/find", controller.getPayments)
-.get("/find/id", controller.getPaymentById)
+.get("/findAll", controller.getActivePayments)
+.get("/find/:id", controller.getPaymentById)
 // .post("/generate", service.createHulkPayment)
 // .post("/bulkCreate",service.createHulkStockCard)
 module.exports = router

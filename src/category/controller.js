@@ -14,6 +14,16 @@ const getAllCategories = async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 };
+// Get all categories
+const getAllActiveCategories = async (req, res) => {
+  try {
+    const categories = await Category.findAll({where: {isActive:true}});
+    res.status(200).json(categories);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
 
 // Get a single category by ID
 const getCategoryById = async (req, res) => {
@@ -41,6 +51,50 @@ const createCategory = async (req, res) => {
       categ_desc,
       isActive,
     });
+    res.status(200).json(newCategory);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+// Create a new category
+const generate = async (req, res) => {
+
+  const categoryList =
+    [
+      {
+        "categ_name": "ກາເຟ",
+        "isActive": true
+      },
+      {
+        "categ_name": "ເຄື່ອງຫອມ",
+        "isActive": true
+      },
+      {
+        "categ_name": "ເຄື່ອງຝາກ",
+        "isActive": true
+      },
+      {
+        "categ_name": "ຜ້າ",
+        "isActive": true
+      },
+      {
+        "categ_name": "ໄມ້",
+        "isActive": true
+      },
+      {
+        "categ_name": "ເຂົ້າ",
+        "isActive": true
+      },
+      {
+        "categ_name": "ນ້ຳເຜິ້ງ",
+        "isActive": true
+      }
+    ]
+
+
+  try {
+    const newCategory = await Category.bulkCreate(categoryList);
     res.status(200).json(newCategory);
   } catch (error) {
     console.error(error);
@@ -95,4 +149,6 @@ module.exports = {
   createCategory,
   updateCategoryById,
   deleteCategoryById,
+  generate,
+  getAllActiveCategories
 };

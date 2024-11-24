@@ -1,6 +1,7 @@
 
 const Card = require("../models").card; // Import the users model
-
+const Product = require("../models").product; // Import the users model
+const { sequelize } = require('../models');
 const cardController = {
   // Create a new card
   async create(req, res) {
@@ -32,7 +33,46 @@ const cardController = {
       return res.status(400).json({ message: error.message });
     }
   },
+  // Get all count cards group by product
+  // async getAllCountCardGroupByProduct(req, res) {
+  //   try {
+  //     const cards = await Card.findAll({
+  //       where: {
+  //         isActive: true,
+  //       }
+  //     });
+  //     return res.status(200).json(cards);
+  //   } catch (error) {
+  //     return res.status(400).json({ message: error.message });
+  //   }
+  // },
 
+  // Get count of cards and sum of card values grouped by product
+  async getAllCountAndSumGroupByProduct(req, res) {
+    try {
+      const cardStats = await Card.findAll({
+        attributes: [
+          'product_id',
+          [sequelize.fn('COUNT', sequelize.literal('DISTINCT card_number')), 'cardCount'],
+          [sequelize.fn('SUM', sequelize.col('cost')), 'totalCardValue'],
+        ],
+        where: {
+          card_isused: 0,
+          isActive: true,
+        },
+        group: ['product_id'],
+        // raw: true, // To get raw data instead of instances
+        include: ['product'],
+        // include: [{
+        //   model: Product,
+        //   attributes: ['pro_name', 'pro_price'], // Include the attributes you need from the Product model
+        // }],
+      });
+      return res.status(200).json(cardStats);
+    } catch (error) {
+      return res.status(400).json({ message: error.message });
+    }
+  },
   // Get a specific card by ID
   async getById(req, res) {
     try {

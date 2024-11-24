@@ -1,9 +1,22 @@
 
-const  Terminal  = require('../models').terminal;
+const Terminal = require('../models').terminal;
+const Location = require('../models').location;
+const Company = require('../models').company;
 
 async function getAllTerminals(req, res) {
   try {
-    const terminals = await Terminal.findAll();
+    const terminals = await Terminal.findAll({
+      include: [{
+        model: Location,
+        as: "location",
+        include: [
+          {
+            model: Company,
+            as: "company"
+          },
+        ]
+      }]
+    });
     res.status(200).json(terminals);
   } catch (error) {
     console.error(error);
@@ -13,7 +26,18 @@ async function getAllTerminals(req, res) {
 
 async function getTerminalById(req, res) {
   try {
-    const terminal = await Terminal.findByPk(req.params.id);
+    const terminal = await Terminal.findByPk(req.params.id,{
+      include: [{
+        model: Location,
+        as: "location",
+        include: [
+          {
+            model: Company,
+            as: "company"
+          },
+        ]
+      }]
+    });
     if (!terminal) {
       res.status(404).json({ message: 'Terminal not found' });
     } else {
@@ -27,8 +51,8 @@ async function getTerminalById(req, res) {
 
 async function createTerminal(req, res) {
   try {
-    const { code, name, description, saleRate, isActive,locationId } = req.body;
-    const terminal = await Terminal.create({ code, name, description, saleRate, isActive,locationId });
+    const { code, name, description, saleRate, isActive, locationId } = req.body;
+    const terminal = await Terminal.create({ code, name, description, saleRate, isActive, locationId });
     res.status(201).json(terminal);
   } catch (error) {
     console.error(error);
@@ -42,8 +66,8 @@ async function updateTerminal(req, res) {
     if (!terminal) {
       res.status(404).json({ message: 'Terminal not found' });
     } else {
-      const { code, name, description, saleRate, isActive,locationId } = req.body;
-      await terminal.update({ code, name, description, saleRate, isActive,locationId });
+      const { code, name, description, saleRate, isActive, locationId } = req.body;
+      await terminal.update({ code, name, description, saleRate, isActive, locationId });
       res.status(200).json(terminal);
     }
   } catch (error) {

@@ -11,10 +11,10 @@ const topSaleByMonth = async (req, res) => {
     const sql = `SELECT o.product_id,SUM(o.product_amount) AS sale_count,
     o.product_price,SUM(o.order_price_total) as total_sale,
     o.txn_date,o.record_status, 
-    p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name
+    p.companyId,p.pro_name ,p.name, p.pro_category,p.categ_name
     FROM user_order o 
-    LEFT JOIN (SELECT p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p 
-        LEFT JOIN outlet u ON u.id = p.outlet
+    LEFT JOIN (SELECT p.pro_id,p.companyId,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p 
+        LEFT JOIN company u ON u.id = p.companyId
         LEFT JOIN category c on c.categ_id=p.pro_category
         ) p 
     ON p.pro_id = o.product_id 
@@ -36,10 +36,10 @@ const topSaleMinimartByMonth = async (req, res) => {
 
     const { beginningOfMonthString, lastDayOfMonthString } = common.getBetweenDateInCurrentMonth()
     const sql = `SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, 
-    o.createdAt,o.isActive, p.outlet,p.pro_name ,p.name, p.pro_category,p.categ_name 
+    o.createdAt,o.isActive, p.companyId,p.pro_name ,p.name, p.pro_category,p.categ_name 
     FROM saleLine o 
-    LEFT JOIN (SELECT p.id,p.pro_id,p.outlet,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p 
-        LEFT JOIN outlet u ON u.id = p.outlet LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId 
+    LEFT JOIN (SELECT p.id,p.pro_id,p.companyId,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p 
+        LEFT JOIN company u ON u.id = p.companyId LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId 
         WHERE o.createdAt BETWEEN '${beginningOfMonthString} 00:00:00' AND '${lastDayOfMonthString} 23:59:59' AND o.isActive = 1 
         GROUP BY p.pro_category LIMIT ${top} `
     logger.info(sql)
@@ -55,20 +55,10 @@ const codAndCash = async (req, res) => {
     let { month, top } = req.query;
     if (!top) top = 10
     const { beginningOfMonthString, lastDayOfMonthString } = common.getBetweenDateInCurrentMonth()
-    const sqlCmd = `SELECT d.*,SUM(o.order_price_total) AS cart_total,
-    d.payment_code,
-    p.payment_status,
-    o.order_id,
-    d.record_status
+    const sqlCmd = `SELECT d.*,0 AS cart_total
     FROM dynamic_customer d
-    LEFT JOIN user_order o ON o.locking_session_id = d.locking_session_id
-    LEFT JOIN order_payment p ON p.locking_session_id = d.locking_session_id
     WHERE d.txn_date BETWEEN '${beginningOfMonthString} 00:00:00' AND '${lastDayOfMonthString} 23:59:59' 
-    
-    GROUP BY d.locking_session_id
     `
-    // AND d.record_status = 1
-
     logger.info(sqlCmd)
     try {
         const [rows, fields] = await dbAsync.query(sqlCmd);

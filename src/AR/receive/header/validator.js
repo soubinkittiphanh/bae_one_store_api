@@ -6,12 +6,12 @@ const createReceiveHeaderValidation = [
   body('receiveNumber').optional({ nullable: true }).isString(),
   body('notes').optional({ nullable: true }).isString(),
   body('payee').optional({ nullable: true }).isString(),
-  body('paymentMethod').notEmpty().withMessage('Payment method is required').isIn(['Cash', 'Check', 'Credit Card','Bank transfer']).withMessage('Payment method must be Cash, Check, Credit Card, or Bank transfer'),
-  body('currency').notEmpty().withMessage('Currency is required').isIn(['LAK', 'USD', 'THB']).withMessage('Currency must be LAK, USD, or THB'),
+  body('paymentId').notEmpty().withMessage('Payment method is required'),
+  body('currencyId').notEmpty().withMessage('Currency is required'),
   body('rate').notEmpty().withMessage('Rate is required').isNumeric().withMessage('Rate must be a number'),
   body('totalAmount').notEmpty().withMessage('Total amount is required'),
-  body('drAccount').notEmpty().withMessage('DR account is required').isInt().withMessage('DR account must be an integer'),
-  body('crAccount').notEmpty().withMessage('CR account is required').isInt().withMessage('CR account must be an integer'),
+  body('drAccountId').notEmpty().withMessage('DR account is required').isInt().withMessage('DR account must be an integer'),
+  body('crAccountId').notEmpty().withMessage('CR account is required').isInt().withMessage('CR account must be an integer'),
 ];
 
 const updateReceiveHeaderValidation = [
@@ -23,8 +23,8 @@ const updateReceiveHeaderValidation = [
   body('currency').optional({ nullable: true }).isIn(['LAK', 'USD', 'THB']).withMessage('Currency must be LAK, USD, or THB'),
   body('rate').optional({ nullable: true }).isNumeric().withMessage('Rate must be a number'),
   body('totalAmount').notEmpty().withMessage('Total amount is required'),
-  body('drAccount').optional({ nullable: true }).isInt().withMessage('DR account must be an integer'),
-  body('crAccount').optional({ nullable: true }).isInt().withMessage('CR account must be an integer'),
+  body('drAccountId').optional({ nullable: true }).isInt().withMessage('DR account must be an integer'),
+  body('crAccountId').optional({ nullable: true }).isInt().withMessage('CR account must be an integer'),
 ];
 
 module.exports = {

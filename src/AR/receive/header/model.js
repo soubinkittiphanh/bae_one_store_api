@@ -3,7 +3,7 @@
 module.exports = (sequelize, DataTypes) => {
     const ArHeader = sequelize.define('receive_header', {
         bookingDate: {
-            type: DataTypes.DATE,
+            type: DataTypes.DATEONLY,
             allowNull: false,
         },
         receiveNumber: {
@@ -15,17 +15,6 @@ module.exports = (sequelize, DataTypes) => {
         },
         payee: {
             type: DataTypes.STRING,
-        },
-        paymentMethod: {
-            type: DataTypes.ENUM('Cash', 'Check', 'Credit Card','Bank transfer'),
-            allowNull: false,
-            defaultValue: 'Cash'
-
-        },
-        currency:{
-            type: DataTypes.ENUM('LAK', 'USD', 'THB'),
-            allowNull: false,
-            defaultValue: 'LAK'
         },
         rate:{
             type: DataTypes.DOUBLE,
@@ -40,14 +29,7 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING,
             allowNull: false,
         },
-        drAccount: {
-            type: DataTypes.INTEGER,
-            allowNull: false,
-        },
-        crAccount: {
-            type: DataTypes.INTEGER,
-            allowNull: false,
-        },
+     
         update_user: {
             type: DataTypes.INTEGER,
         },

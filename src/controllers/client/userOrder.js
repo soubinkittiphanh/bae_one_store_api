@@ -477,7 +477,7 @@ const findCancelOrder=async(req,res)=>{
     const {fDate,tDate} = req.query;
     const sql = `SELECT d.*,o.order_id,o.cancel_reason,SUM(o.order_price_total) AS cart_total FROM dynamic_customer d 
     LEFT JOIN user_order o ON o.locking_session_id = d.locking_session_id
-    WHERE d.record_status != 1 AND d.txn_date BETWEEN '${fDate} 00:00:00' AND '${tDate} 23:59:59'
+    WHERE  d.txn_date BETWEEN '${fDate} 00:00:00' AND '${tDate} 23:59:59'
     GROUP BY d.locking_session_id
     `
     logger.info(sql)

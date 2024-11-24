@@ -1,0 +1,13 @@
+delete from card; 
+delete from saleLine; 
+delete from saleHeader;  
+delete from product where id !=628;    
+ delete from terminal where id !=1;         
+  delete from location where id !=1;
+  delete from quotationHeader;  
+   delete from quotationLine;   
+   delete from client where id !=1;    
+   delete from transferHeader; 
+    delete from transferLine; 
+    delete from category;
+    delete from shipping where id !=1;

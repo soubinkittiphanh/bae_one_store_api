@@ -12,8 +12,9 @@ router
 .post("/create", controller.createUnitModel)
 .put("/update/:id", controller.updateUnitModel)
 .delete("/find/:id", controller.deleteUnitModel)
-.get("/find", controller.getUnitModels)
-.get("/find/id", controller.getUnitModelById)
+.get("/find", controller.getUnitActiveModels)
+.get("/findAll", controller.getUnitModels)
+.get("/find/:id", controller.getUnitModelById)
 .post("/generate", service.createHulkUnit)
 // .post("/bulkCreate",service.createHulkStockCard)
 module.exports = router

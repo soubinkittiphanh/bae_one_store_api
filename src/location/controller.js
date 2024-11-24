@@ -13,6 +13,7 @@ exports.create = (req, res) => {
   const location = {
     name: req.body.name,
     description: req.body.description,
+    companyId: req.body.companyId,
     isActive: req.body.isActive ? req.body.isActive : true
   };
 
@@ -32,7 +33,7 @@ exports.create = (req, res) => {
 // Retrieve all Locations from the database.
 exports.findAll = (req, res) => {
 
-  Location.findAll()
+  Location.findAll({inlude:['company']})
     .then(data => {
       res.status(200).send(data);
     })
@@ -48,7 +49,7 @@ exports.findAll = (req, res) => {
 exports.findOne = (req, res) => {
   const id = req.params.id;
 
-  Location.findByPk(id)
+  Location.findByPk(id,{inlude:['company']})
     .then(data => {
       res.status(200).send(data);
     })

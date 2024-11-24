@@ -3,6 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const Router = require('./router/router')
 const myRouter = require("./router")
+const controller = require("./web_product_group/controller")
 const buildApp = async () => {
     const app = express();
     app.use(cors());
@@ -12,11 +13,12 @@ const buildApp = async () => {
     app.get("/hello", (req, res) => {
         res.send("Succeed server is ready")
     })
+    app.use("/webproductgroup/find",controller.findActive)
     app.use("/api",myRouter.dymCustomerRouter)
     app.use("/api",myRouter.orderRouter);
     app.use("/api",myRouter.reportRouter);
-    app.use("/api/financial",myRouter.generalLedger)
-    app.use("/api/financial",myRouter.chartAccount)
+    app.use("/api/gl",myRouter.generalLedger)
+    app.use("/api/accountChart",myRouter.chartAccount)
     app.use("/api/upgrade",myRouter.upgrade)
     app.use("/api/rider",myRouter.rider)
     app.use("/api/location",myRouter.location)
@@ -26,8 +28,8 @@ const buildApp = async () => {
     app.use("/api/finanicial/ap/header",myRouter.paymentHeadAP)
     app.use("/api/finanicial/ar/header",myRouter.receiveHeadAR)
     app.use("/api/currency",myRouter.currency)
-    app.use("/api/po",myRouter.poheader)
-    app.use("/api/po/line",myRouter.poLine)
+    app.use("/api/purchasing",myRouter.poheader)
+    app.use("/api/purchasing/line",myRouter.poLine)
     app.use("/api/category",myRouter.category)
     app.use("/api/customer",myRouter.dymCustomerRouter)
     app.use("/api/geography",myRouter.geography)
@@ -42,6 +44,21 @@ const buildApp = async () => {
     app.use("/api/transfer",myRouter.transfer)
     app.use("/api/terminal",myRouter.terminal)
     app.use("/api/user",myRouter.user)
+    app.use("/api/shipping",myRouter.shipping)
+    app.use("/api/company",myRouter.company)
+    app.use("/api/tutorial",myRouter.tutorial)
+    app.use("/api/group",myRouter.group)
+    app.use("/api/authority",myRouter.authority)
+    app.use("/api/account",myRouter.account)
+    app.use("/api/priceList",myRouter.priceList)
+    app.use("/api/order",myRouter.order)
+    app.use("/api/vendor",myRouter.vendor)
+    app.use("/api/menuHeader",myRouter.menuHeader)
+    app.use("/api/menuLine",myRouter.menuLine)
+    app.use("/api/reservation",myRouter.reservation)
+    app.use("/api/receiving",myRouter.receiving)
+    app.use("/api/receiving/line",myRouter.receivingLine)
+    app.use("/api/webproductgroup",myRouter.webProductGroup)
 
     Router.category(app);
     Router.product(app);

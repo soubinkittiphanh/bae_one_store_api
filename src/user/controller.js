@@ -7,8 +7,8 @@ const { Op } = require('sequelize');
 
 const createCustomer = async (req, res) => {
   try {
-    const { cus_id, cus_pass, cus_name, cus_tel, cus_email, cus_active, village, district, province,terminals } = req.body;
-    const customer = await User.create({ cus_id, cus_pass, cus_name, cus_tel, cus_email, cus_active, village, district, province });
+    const { cus_id, cus_pass, cus_name, cus_tel, cus_email, cus_active, village, district, province,terminals,groupId } = req.body;
+    const customer = await User.create({ cus_id, cus_pass, cus_name, cus_tel, cus_email, cus_active, village, district, province,groupId });
     await setTerminals(customer['id'],terminals,res)
     // res.status(201).json(customer);
   } catch (error) {
@@ -130,7 +130,7 @@ const unlinkTerminal = async (req, res) => {
 const updateCustomer = async (req, res) => {
   const { id } = req.params;
   try {
-    const { cus_id, cus_pass, cus_name, cus_tel, cus_email, cus_active, village, district, province,terminals } = req.body;
+    const { cus_id, cus_pass, cus_name, cus_tel, cus_email, cus_active, village, district, province,terminals,groupId } = req.body;
     const customer = await User.findByPk(id);
     logger.warn(`TERMINAL LEN ${terminals.length} `)
     if (!customer) {
@@ -145,6 +145,7 @@ const updateCustomer = async (req, res) => {
     customer.village = village;
     customer.district = district;
     customer.province = province;
+    customer.groupId = groupId;
     await customer.save();
     await setTerminals(customer['id'],terminals,res)
     // res.json(customer);

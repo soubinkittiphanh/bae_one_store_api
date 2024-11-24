@@ -23,6 +23,20 @@ exports.createPayment = async (req, res) => {
 
 exports.getPayments = async (req, res) => {
   try {
+    const payments = await Payment.findAll({
+      where: {
+        isActive: true
+      }
+    });
+
+    res.json(payments);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+exports.getActivePayments = async (req, res) => {
+  try {
     const payments = await Payment.findAll();
 
     res.json(payments);
