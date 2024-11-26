@@ -1,6 +1,7 @@
 const { Sequelize, DataTypes } = require('sequelize')
 const logger = require('../api/logger')
 const env = require('../config/env').db
+
 const sequelize = new Sequelize(
     env.database,
     env.user,
@@ -377,9 +378,25 @@ db.customer.belongsTo(db.saleHeader, {
 })
 db.saleHeader.hasOne(db.customer)
 
-db.sequelize.sync({ force: false, alter: true }).then(() => {
-    logger.info("Datatase client is synchronize")
-})
+// db.sequelize.sync({ force: false, alter: true }).then(() => {
+//     logger.info("Datatase client is synchronize")
+//     const userService = require('../user/service')
+//     userService.ensureDefaultUserExists();
+
+// })
+
+db.sequelize.sync({ force: false, alter: true }).then(async () => {
+    logger.info("Database client is synchronized");
+    const userService = require('../user/service');
+    try {
+        const brandNewDB = await userService.ensureDefaultUserExists(); // Ensure it's awaited
+        logger.info("Default user check complete.");
+       
+    } catch (error) {
+        logger.error("Error ensuring default user exists:", error);
+    }
+});
+
 db.centralSequelize.sync({ force: false, alter: true }).then(() => {
     logger.info("Datatase central is synchronize")
 })
@@ -667,5 +684,6 @@ db.saleHeader.belongsTo(db.customer, {
 
 // User.hasMany(Post, { onUpdate: 'CASCADE' });
 // User.hasMany(Post, { onDelete: 'CASCADE' });
+
 
 module.exports = db
