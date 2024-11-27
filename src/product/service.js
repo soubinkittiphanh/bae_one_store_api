@@ -180,7 +180,10 @@ const updateProd = async (req, imagesObj) => {
     const timestamps = new Date();
     const mysqlDatetime = timestamps.toISOString().slice(0, 19).replace('T', ' ');
     const retail_percent = body.pro_retail_price || 0.0;
-    let serverImageIds = body.server_images.map(el => el.id);
+    let serverImageIds = []
+    if(body.server_images){
+         serverImageIds = body.server_images.map(el => el.id);
+    }
 
 
     // If there are no images on the server, you can avoid using NOT IN altogether
