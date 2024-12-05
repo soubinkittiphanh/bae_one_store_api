@@ -1,11 +1,11 @@
 const logger = require('../api/logger');
-const User = require('../models').user;
-const Terminal = require('../models').terminal;
-const Group = require('../models').group;
-const Authority = require('../models').menuHeader;
-const MenuLine = require('../models').menuLine;
+const User = require('../models/index.js').user;
+const Terminal = require('../models/index.js').terminal;
+const Group = require('../models/index.js').group;
+const Authority = require('../models/index.js').menuHeader;
+const MenuLine = require('../models/index.js').menuLine;
 const env = require("../config");
-const db = require('../models')
+const db = require('../models/index.js')
 const getUserById = async (cus_id, cus_pass) => {
 
     try {

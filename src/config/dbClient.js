@@ -104,13 +104,6 @@ const clientDB = {
         "database": "dcommerce_pro_woody3",
         "port": 3306,
     },
-    "auto": {
-        "host": "150.95.31.23",
-        "user": "root",
-        "password": "sdat@3480",
-        "database": "dcommerce_pro_auto_051111407592",
-        "port": 3306,
-    },
     "migrate_test": {
         "host": "150.95.31.23",
         "user": "root",
@@ -143,7 +136,7 @@ const clientDB = {
         "host": "150.95.31.23",
         "user": "root",
         "password": "sdat@3480",
-        "database": "dcommerce_pro_auto_051111407592",
+        "database": "dcommerce_pro_auto_036000291452",
         "port": 3306,
     },
     "the_corners": {

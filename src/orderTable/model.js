@@ -1,6 +1,6 @@
 
 
-const db =  require('../models')
+const db =  require('../models/index.js')
 module.exports = (sequelize, DataTypes) => {
     const OrderTable = sequelize.define('orderTable', {
         name: {
