@@ -42,6 +42,7 @@ const vendor = require("../vendor").router
 const reservation = require("../reservation").router
 const receiving = require("../receiving").router
 const receivingLine = require("../receiving/line").router
+const spf = require("../spf").router
 const webProductGroup = require("../web_product_group").router
 
 module.exports={
@@ -90,4 +91,5 @@ module.exports={
     receiving,
     receivingLine,
     webProductGroup,
+    spf,
 }

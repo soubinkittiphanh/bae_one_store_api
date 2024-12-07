@@ -16,7 +16,8 @@ const common = require('../common')
 const { Op, where, literal } = require('sequelize');
 const productService = require('../product/service');
 const { sequelize } = require('../models');
-
+const spfService = require('../spf/service')
+const cardService = require('../card/service')
 // 1. 200 OK - The request has succeeded and the server has returned the requested data.
 
 // 2. 201 Created - The request has been fulfilled and a new resource has been created.
@@ -34,6 +35,23 @@ const { sequelize } = require('../models');
 // 8. 500 Internal Server Error - The server encountered an unexpected condition that prevented it from fulfilling the request.
 
 // 9. 502 Bad Gateway - The server received an invalid response from an upstream server while trying to fulfill the request.
+
+const autoCreateStock = async(lines)=>{
+
+  const spfStockCheckParam = await  spfService.getSPFByCode('STOCK.VAL');
+  if (spfStockCheckParam){
+    if(spfStockCheckParam.value == 'N'){
+      for (const line in lines) {
+        logger.info(`LINE OBJECT DATA ${JSON.stringify(line)}`)
+        // const { inputter, product_id, totalCost, stockCardQty, productId, srcLocationId } = line
+        //const autoCardCreate = await cardService.createAutoHulkStockCard(lines)
+      }
+    }
+  }
+
+}
+
+
 exports.createSaleHeader = async (req, res) => {
   try {
     // try {
@@ -56,6 +74,9 @@ exports.createSaleHeader = async (req, res) => {
     // }
     let { bookingDate, remark, discount, total, exchangeRate, isActive, lines, clientId, paymentId, currencyId, userId, referenceNo, locationId, customerForm } = req.body;
     logger.info("===== Create Sale Header =====" + req.body)
+    //------------ Check if stock check is require before sale process
+    
+    await autoCreateStock(lines);
     const result = await sequelize.transaction(async (t) => {
       logger.warn(`SALE HEADER: ${JSON.stringify(req.body)}`)
       const saleHeader = await SaleHeader.create({ bookingDate, remark, discount, total, exchangeRate, isActive, clientId, paymentId, currencyId, userId, referenceNo, locationId }, { transaction: t });

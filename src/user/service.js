@@ -106,6 +106,16 @@ const basicParameterInitialise = async () => {
             const query6 = `INSERT INTO GroupAuthorities SELECT * FROM dcommerce_pro_draft.GroupAuthorities;`;
             const query7 = `CREATE TABLE card_sale AS SELECT * FROM dcommerce_pro_draft.card_sale;`;
             const query8 = `INSERT INTO company SELECT * FROM dcommerce_pro_draft.company;`;
+            const query9 = `INSERT INTO shipping SELECT * FROM dcommerce_pro_draft.shipping;`;
+            const query10 = `INSERT INTO geography SELECT * FROM dcommerce_pro_draft.geography;`;
+            const query11 = `INSERT INTO rider SELECT * FROM dcommerce_pro_draft.rider;`;
+            const query12 = `INSERT INTO payment SELECT * FROM dcommerce_pro_draft.payment;`;
+            const query13 = `INSERT INTO client (id, name, company, email, address, telephone, credit, lateChargePercent, grade, isActive, createdAt, updateTimestamp)
+            SELECT id, name, company, email, address, telephone, credit, lateChargePercent, grade,
+            IF(isActive NOT IN (0, 1), 1, isActive), createdAt, updateTimestamp
+            FROM dcommerce_pro_draft.client;
+            `;
+            const query14 = `INSERT INTO currency SELECT * FROM dcommerce_pro_draft.currency;`;
 
             await db.sequelize.query(query8, { type: db.sequelize.QueryTypes.INSERT, transaction });
             await db.sequelize.query(query0, { type: db.sequelize.QueryTypes.INSERT, transaction });
@@ -115,6 +125,12 @@ const basicParameterInitialise = async () => {
             await db.sequelize.query(query4, { type: db.sequelize.QueryTypes.INSERT, transaction });
             await db.sequelize.query(query5, { type: db.sequelize.QueryTypes.INSERT, transaction });
             await db.sequelize.query(query6, { type: db.sequelize.QueryTypes.INSERT, transaction });
+            await db.sequelize.query(query9, { type: db.sequelize.QueryTypes.INSERT, transaction });
+            await db.sequelize.query(query10, { type: db.sequelize.QueryTypes.INSERT, transaction });
+            await db.sequelize.query(query11, { type: db.sequelize.QueryTypes.INSERT, transaction });
+            await db.sequelize.query(query12, { type: db.sequelize.QueryTypes.INSERT, transaction });
+            await db.sequelize.query(query13, { type: db.sequelize.QueryTypes.INSERT, transaction });
+            await db.sequelize.query(query14, { type: db.sequelize.QueryTypes.INSERT, transaction });
             await db.sequelize.query(query7, { transaction });
         });
 

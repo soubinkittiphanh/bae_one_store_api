@@ -941,3 +941,153 @@
 {"level":"info","message":"All data copied successfully in a single transaction.","timestamp":"2024-12-05T02:10:05.865Z"}
 {"level":"info","message":"Default user created successfully.","timestamp":"2024-12-05T02:10:05.916Z"}
 {"level":"info","message":"Default user check complete.","timestamp":"2024-12-05T02:10:05.917Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2024-12-05T11:37:22.543Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2024-12-05T11:38:21.145Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2024-12-05T11:38:21.147Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2024-12-05T11:38:21.148Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2024-12-05T11:38:21.149Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2024-12-05T11:38:21.150Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2024-12-05T11:38:21.997Z"}
+{"level":"info","message":"app is runing: 8888","timestamp":"2024-12-05T11:38:21.998Z"}
+{"level":"warn","message":"env: dcommerce_pro_auto_036000291452","timestamp":"2024-12-05T11:38:21.999Z"}
+{"level":"info","message":"client_db Connection established","timestamp":"2024-12-05T11:38:22.588Z"}
+{"level":"info","message":"tutorial_db Connection established","timestamp":"2024-12-05T11:38:22.596Z"}
+{"level":"info","message":"Datatase central is synchronize","timestamp":"2024-12-05T11:38:23.174Z"}
+{"level":"info","message":"Database client is synchronized","timestamp":"2024-12-05T11:39:27.567Z"}
+{"level":"info","message":"********** Found Users: [{\"id\":1,\"cus_id\":36000291452,\"cus_pass\":\"036000291452\",\"cus_name\":\"DC Auto\",\"cus_tel\":\"123456789\",\"cus_email\":\"jane.doe@example.com\",\"cus_active\":true,\"village\":\"Village Name\",\"district\":\"District Name\",\"province\":\"Province Name\",\"remark\":\"New customer\",\"isActive\":true,\"createdAt\":\"2024-12-05T02:22:58.000Z\",\"updateTimestamp\":\"2024-12-05T02:22:58.000Z\",\"groupId\":1}] **********","timestamp":"2024-12-05T11:39:27.623Z"}
+{"level":"info","message":"Users already exist. No need to create a default user.","timestamp":"2024-12-05T11:39:27.625Z"}
+{"level":"info","message":"Default user check complete.","timestamp":"2024-12-05T11:39:27.628Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2024-12-05T12:00:31.745Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2024-12-05T12:02:01.001Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2024-12-05T12:02:01.003Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2024-12-05T12:02:01.004Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2024-12-05T12:02:01.004Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2024-12-05T12:02:01.005Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2024-12-05T12:02:01.799Z"}
+{"level":"info","message":"app is runing: 8888","timestamp":"2024-12-05T12:02:01.800Z"}
+{"level":"warn","message":"env: dcommerce_pro_auto_036000291452","timestamp":"2024-12-05T12:02:01.800Z"}
+{"level":"info","message":"client_db Connection established","timestamp":"2024-12-05T12:02:02.388Z"}
+{"level":"info","message":"tutorial_db Connection established","timestamp":"2024-12-05T12:02:02.413Z"}
+{"level":"info","message":"Datatase central is synchronize","timestamp":"2024-12-05T12:02:02.699Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2024-12-06T12:05:11.513Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2024-12-06T12:05:11.515Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2024-12-06T12:05:11.516Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2024-12-06T12:05:11.517Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2024-12-06T12:05:11.518Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2024-12-06T12:05:12.477Z"}
+{"level":"info","message":"app is runing: 8888","timestamp":"2024-12-06T12:05:12.478Z"}
+{"level":"warn","message":"env: dcommerce_pro_auto_036000291001","timestamp":"2024-12-06T12:05:12.478Z"}
+{"level":"info","message":"client_db Connection established","timestamp":"2024-12-06T12:05:12.696Z"}
+{"level":"info","message":"tutorial_db Connection established","timestamp":"2024-12-06T12:05:12.699Z"}
+{"level":"info","message":"Datatase central is synchronize","timestamp":"2024-12-06T12:05:12.873Z"}
+{"level":"info","message":"Database client is synchronized","timestamp":"2024-12-06T12:05:55.203Z"}
+{"level":"info","message":"********** Found Users: [{\"id\":1,\"cus_id\":36000291001,\"cus_pass\":\"036000291001\",\"cus_name\":\"DC Auto\",\"cus_tel\":\"123456789\",\"cus_email\":\"jane.doe@example.com\",\"cus_active\":true,\"village\":\"Village Name\",\"district\":\"District Name\",\"province\":\"Province Name\",\"remark\":\"New customer\",\"isActive\":true,\"createdAt\":\"2024-12-05T11:06:54.000Z\",\"updateTimestamp\":\"2024-12-05T11:06:54.000Z\",\"groupId\":1}] **********","timestamp":"2024-12-06T12:05:55.244Z"}
+{"level":"info","message":"Users already exist. No need to create a default user.","timestamp":"2024-12-06T12:05:55.246Z"}
+{"level":"info","message":"Default user check complete.","timestamp":"2024-12-06T12:05:55.248Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2024-12-07T01:19:33.633Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2024-12-07T01:19:33.636Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2024-12-07T01:19:33.636Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2024-12-07T01:19:33.637Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2024-12-07T01:19:33.638Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2024-12-07T01:19:34.690Z"}
+{"level":"info","message":"app is runing: 8888","timestamp":"2024-12-07T01:19:34.691Z"}
+{"level":"warn","message":"env: dcommerce_pro_auto_036000291001","timestamp":"2024-12-07T01:19:34.691Z"}
+{"level":"info","message":"tutorial_db Connection established","timestamp":"2024-12-07T01:19:34.924Z"}
+{"level":"info","message":"client_db Connection established","timestamp":"2024-12-07T01:19:34.929Z"}
+{"level":"info","message":"Datatase central is synchronize","timestamp":"2024-12-07T01:19:35.125Z"}
+{"level":"info","message":"Database client is synchronized","timestamp":"2024-12-07T01:20:19.421Z"}
+{"level":"info","message":"********** Found Users: [{\"id\":1,\"cus_id\":36000291001,\"cus_pass\":\"036000291001\",\"cus_name\":\"DC Auto\",\"cus_tel\":\"123456789\",\"cus_email\":\"jane.doe@example.com\",\"cus_active\":true,\"village\":\"Village Name\",\"district\":\"District Name\",\"province\":\"Province Name\",\"remark\":\"New customer\",\"isActive\":true,\"createdAt\":\"2024-12-05T11:06:54.000Z\",\"updateTimestamp\":\"2024-12-05T11:06:54.000Z\",\"groupId\":1}] **********","timestamp":"2024-12-07T01:20:19.456Z"}
+{"level":"info","message":"Users already exist. No need to create a default user.","timestamp":"2024-12-07T01:20:19.457Z"}
+{"level":"info","message":"Default user check complete.","timestamp":"2024-12-07T01:20:19.458Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2024-12-07T01:20:47.601Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2024-12-07T01:20:47.603Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2024-12-07T01:20:47.604Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2024-12-07T01:20:47.604Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2024-12-07T01:20:47.605Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2024-12-07T01:20:48.509Z"}
+{"level":"info","message":"app is runing: 8888","timestamp":"2024-12-07T01:20:48.509Z"}
+{"level":"warn","message":"env: dcommerce_pro_auto_036000291001","timestamp":"2024-12-07T01:20:48.510Z"}
+{"level":"info","message":"client_db Connection established","timestamp":"2024-12-07T01:20:48.746Z"}
+{"level":"info","message":"tutorial_db Connection established","timestamp":"2024-12-07T01:20:48.756Z"}
+{"level":"info","message":"Datatase central is synchronize","timestamp":"2024-12-07T01:20:48.932Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2024-12-07T01:22:49.180Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2024-12-07T01:22:49.181Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2024-12-07T01:22:49.182Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2024-12-07T01:22:49.183Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2024-12-07T01:22:49.184Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2024-12-07T01:22:50.769Z"}
+{"level":"info","message":"app is runing: 8888","timestamp":"2024-12-07T01:22:50.770Z"}
+{"level":"warn","message":"env: dcommerce_pro_auto_036000291001","timestamp":"2024-12-07T01:22:50.770Z"}
+{"level":"info","message":"tutorial_db Connection established","timestamp":"2024-12-07T01:22:51.038Z"}
+{"level":"info","message":"client_db Connection established","timestamp":"2024-12-07T01:22:51.069Z"}
+{"level":"info","message":"Datatase central is synchronize","timestamp":"2024-12-07T01:22:51.228Z"}
+{"level":"info","message":"Database client is synchronized","timestamp":"2024-12-07T01:23:36.642Z"}
+{"level":"info","message":"********** Found Users: [{\"id\":1,\"cus_id\":36000291001,\"cus_pass\":\"036000291001\",\"cus_name\":\"DC Auto\",\"cus_tel\":\"123456789\",\"cus_email\":\"jane.doe@example.com\",\"cus_active\":true,\"village\":\"Village Name\",\"district\":\"District Name\",\"province\":\"Province Name\",\"remark\":\"New customer\",\"isActive\":true,\"createdAt\":\"2024-12-05T11:06:54.000Z\",\"updateTimestamp\":\"2024-12-05T11:06:54.000Z\",\"groupId\":1}] **********","timestamp":"2024-12-07T01:23:36.757Z"}
+{"level":"info","message":"Users already exist. No need to create a default user.","timestamp":"2024-12-07T01:23:36.758Z"}
+{"level":"info","message":"Default user check complete.","timestamp":"2024-12-07T01:23:36.760Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2024-12-07T01:33:16.751Z"}
+{"level":"error","message":"Something wrong in token JsonWebTokenError: jwt malformed","timestamp":"2024-12-07T01:33:16.764Z"}
+{"level":"info","message":"************* User auth  *****************","timestamp":"2024-12-07T01:35:51.456Z"}
+{"level":"error","message":"Cannot get user with error SequelizeDatabaseError: read ETIMEDOUT","timestamp":"2024-12-07T01:36:09.696Z"}
+{"level":"info","message":"************* User auth  *****************","timestamp":"2024-12-07T01:36:11.992Z"}
+{"level":"error","message":"Cannot get user with error SequelizeDatabaseError: read ETIMEDOUT","timestamp":"2024-12-07T01:36:30.159Z"}
+{"level":"info","message":"************* User auth  *****************","timestamp":"2024-12-07T01:37:02.453Z"}
+{"level":"info","message":"**********[object SequelizeInstance:user]**********","timestamp":"2024-12-07T01:37:02.511Z"}
+{"level":"info","message":"**********DC Auto**********","timestamp":"2024-12-07T01:37:02.511Z"}
+{"level":"warn","message":"Token ===> send to client eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiY3VzX2lkIjozNjAwMDI5MTAwMSwiY3VzX25hbWUiOiJEQyBBdXRvIiwiY3VzX3RlbCI6IjEyMzQ1Njc4OSIsInVzZXJHcm91cCI6eyJjb2RlIjoiU1VQRVIgVVNFUiIsIm5hbWUiOiLgupfgurXguqHguofgurLgupkg4Lqq4Lqx4Lqa4Lqe4Lqt4LqU4Lql4Lqw4Lqa4Lq74LqaIiwiaWQiOjF9LCJ0ZXJtaW5hbCI6W10sImlhdCI6MTczMzUzNTQyMiwiZXhwIjoxNzMzNTUzNDIyfQ.MAYY8PW1xN7E1g7SQZXZdeDIfHTULyx5BRx9Qc3yrSc","timestamp":"2024-12-07T01:37:02.526Z"}
+{"level":"info","message":"Token generated succeed [object Object]","timestamp":"2024-12-07T01:37:02.527Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2024-12-07T01:37:48.052Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2024-12-07T01:37:48.052Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2024-12-07T01:37:48.054Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2024-12-07T01:37:48.054Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2024-12-07T01:37:48.055Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2024-12-07T01:37:48.055Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2024-12-07T01:37:48.058Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2024-12-07T01:37:48.059Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2024-12-07T01:46:57.048Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2024-12-07T01:46:57.050Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2024-12-07T01:46:57.050Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2024-12-07T01:46:57.051Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2024-12-07T01:46:57.052Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2024-12-07T01:46:58.080Z"}
+{"level":"info","message":"app is runing: 8888","timestamp":"2024-12-07T01:46:58.081Z"}
+{"level":"warn","message":"env: dcommerce_pro_auto_036000291001","timestamp":"2024-12-07T01:46:58.081Z"}
+{"level":"info","message":"tutorial_db Connection established","timestamp":"2024-12-07T01:46:58.319Z"}
+{"level":"info","message":"client_db Connection established","timestamp":"2024-12-07T01:46:58.324Z"}
+{"level":"info","message":"Datatase central is synchronize","timestamp":"2024-12-07T01:46:58.528Z"}
+{"level":"info","message":"Database client is synchronized","timestamp":"2024-12-07T01:47:42.780Z"}
+{"level":"info","message":"********** Found Users: [{\"id\":1,\"cus_id\":36000291001,\"cus_pass\":\"036000291001\",\"cus_name\":\"DC Auto\",\"cus_tel\":\"123456789\",\"cus_email\":\"jane.doe@example.com\",\"cus_active\":true,\"village\":\"Village Name\",\"district\":\"District Name\",\"province\":\"Province Name\",\"remark\":\"New customer\",\"isActive\":true,\"createdAt\":\"2024-12-05T11:06:54.000Z\",\"updateTimestamp\":\"2024-12-05T11:06:54.000Z\",\"groupId\":1}] **********","timestamp":"2024-12-07T01:47:42.901Z"}
+{"level":"info","message":"Users already exist. No need to create a default user.","timestamp":"2024-12-07T01:47:42.905Z"}
+{"level":"info","message":"Default user check complete.","timestamp":"2024-12-07T01:47:42.914Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2024-12-07T01:51:21.985Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2024-12-07T01:51:21.987Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2024-12-07T01:51:21.987Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2024-12-07T01:51:21.988Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2024-12-07T01:51:21.989Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2024-12-07T01:51:22.931Z"}
+{"level":"info","message":"app is runing: 8888","timestamp":"2024-12-07T01:51:22.932Z"}
+{"level":"warn","message":"env: dcommerce_pro_auto_036000291001","timestamp":"2024-12-07T01:51:22.933Z"}
+{"level":"error","message":"tutorial_db Connection error: SequelizeConnectionError: (conn=-1, no: 45012, SQLState: 08S01) Connection timeout: failed to create socket after 1001ms","timestamp":"2024-12-07T01:51:23.932Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2024-12-07T01:54:13.502Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2024-12-07T01:54:13.504Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2024-12-07T01:54:13.505Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2024-12-07T01:54:13.506Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2024-12-07T01:54:13.508Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2024-12-07T01:54:14.747Z"}
+{"level":"info","message":"app is runing: 8888","timestamp":"2024-12-07T01:54:14.747Z"}
+{"level":"warn","message":"env: dcommerce_pro_auto_036000291001","timestamp":"2024-12-07T01:54:14.748Z"}
+{"level":"info","message":"client_db Connection established","timestamp":"2024-12-07T01:54:14.984Z"}
+{"level":"info","message":"tutorial_db Connection established","timestamp":"2024-12-07T01:54:14.992Z"}
+{"level":"info","message":"Datatase central is synchronize","timestamp":"2024-12-07T01:54:15.171Z"}
+{"level":"info","message":"Database client is synchronized","timestamp":"2024-12-07T01:55:00.759Z"}
+{"level":"info","message":"********** Found Users: [{\"id\":1,\"cus_id\":36000291001,\"cus_pass\":\"036000291001\",\"cus_name\":\"DC Auto\",\"cus_tel\":\"123456789\",\"cus_email\":\"jane.doe@example.com\",\"cus_active\":true,\"village\":\"Village Name\",\"district\":\"District Name\",\"province\":\"Province Name\",\"remark\":\"New customer\",\"isActive\":true,\"createdAt\":\"2024-12-05T11:06:54.000Z\",\"updateTimestamp\":\"2024-12-05T11:06:54.000Z\",\"groupId\":1}] **********","timestamp":"2024-12-07T01:55:00.852Z"}
+{"level":"info","message":"Users already exist. No need to create a default user.","timestamp":"2024-12-07T01:55:00.855Z"}
+{"level":"info","message":"Default user check complete.","timestamp":"2024-12-07T01:55:00.858Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2024-12-07T01:55:11.069Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2024-12-07T01:55:11.070Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2024-12-07T01:55:11.073Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2024-12-07T01:55:11.075Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2024-12-07T01:55:11.077Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2024-12-07T01:55:11.078Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2024-12-07T01:55:11.081Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2024-12-07T01:55:11.082Z"}

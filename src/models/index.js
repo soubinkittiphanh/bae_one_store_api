@@ -53,6 +53,7 @@ const db = {}
 db.sequelize = sequelize;
 db.Sequelize = Sequelize
 db.centralSequelize = tutorialDB;
+db.spf = require("../spf/model")(sequelize, DataTypes);
 db.client = require("../client/model")(sequelize, DataTypes);
 db.group = require("../group/model")(sequelize, DataTypes);
 db.user = require("../user/model")(sequelize, DataTypes);
