@@ -3,6 +3,7 @@ const logger = require('../api/logger');
 const SaleHeader = require('../models').saleHeader
 const SaleLine = require('../models').saleLine
 const Card = require('../models').card
+const cardService = require('../card/service')
 
 const saleHeaderReversal = async (headerId) => {
     logger.info("Reversal sale header " + headerId)
@@ -113,6 +114,10 @@ const cardReversalByLockingSessionId = async (lockingSessionId) => {
             throw new Error("Cannot reverse card id " + updatedCard.id + " with error " + error)
         }
     }
+}
+
+const autoCreateStock = async ()=>{
+
 }
 
 // const assignHeaderIdToLineByUpdate = async (line, id, lockingSessionId, isUpdate) => {

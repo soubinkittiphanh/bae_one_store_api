@@ -6,7 +6,7 @@ const SPF = require('../models').spf;
 const service = {
     getSPFByCode: async (code) => {
         try {
-            const spfRecord = await SPF.findAll({ where: { code } });
+            const spfRecord = await SPF.findOne({ where: { code } });
             if (!spfRecord) {
                 return { message: 'SPF not found' };
             }

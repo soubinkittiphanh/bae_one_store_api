@@ -36,15 +36,28 @@ const cardService = require('../card/service')
 
 // 9. 502 Bad Gateway - The server received an invalid response from an upstream server while trying to fulfill the request.
 
-const autoCreateStock = async(lines)=>{
+const autoCreateStock = async (lines, locationId) => {
 
-  const spfStockCheckParam = await  spfService.getSPFByCode('STOCK.VAL');
-  if (spfStockCheckParam){
-    if(spfStockCheckParam.value == 'N'){
-      for (const line in lines) {
+  const spfStockCheckParam = await spfService.getSPFByCode('STOCK.VAL');
+  logger.warn(`PARAMETER CHECK SPF: ${JSON.stringify(spfStockCheckParam)}`)
+  logger.warn(`LINE HERE: ${JSON.stringify(lines)}`)
+  logger.warn(`LINE HERE: ${lines.length}`)
+
+  if (spfStockCheckParam) {
+    if (spfStockCheckParam.value == 'N') {
+      for (const line of lines) {
         logger.info(`LINE OBJECT DATA ${JSON.stringify(line)}`)
-        // const { inputter, product_id, totalCost, stockCardQty, productId, srcLocationId } = line
-        //const autoCardCreate = await cardService.createAutoHulkStockCard(lines)
+        const cardTemp = {
+          inputter: 1,
+          product_id: line.productId,
+          totalCost: 0,
+          stockCardQty: line.quantity,
+          productId: line.productId,
+          srcLocationId: locationId
+        }
+        const autoCardCreate = await cardService.createAutoHulkStockCard(cardTemp)
+        logger.info(`CARD HAS BEEN CREATED :${autoCardCreate.length} || ${JSON.stringify(autoCardCreate)}`)
+
       }
     }
   }
@@ -54,29 +67,11 @@ const autoCreateStock = async(lines)=>{
 
 exports.createSaleHeader = async (req, res) => {
   try {
-    // try {
-    //   const { customerData, orderData } = req.body;
-
-    //   const result = await sequelize.transaction(async (t) => {
-    //     const customer = await Customer.create(customerData, { transaction: t });
-    //     const order = await Order.create(
-    //       { ...orderData, customerId: customer.id },
-    //       { transaction: t }
-    //     );
-
-    //     return { customer, order };
-    //   });
-
-    //   return res.status(201).json(result);
-    // } catch (error) {
-    //   console.error(error);
-    //   return res.status(500).json({ message: 'Internal server error' });
-    // }
     let { bookingDate, remark, discount, total, exchangeRate, isActive, lines, clientId, paymentId, currencyId, userId, referenceNo, locationId, customerForm } = req.body;
     logger.info("===== Create Sale Header =====" + req.body)
     //------------ Check if stock check is require before sale process
-    
-    await autoCreateStock(lines);
+    logger.warn(`====>  lines     ${JSON.stringify(lines)}`)
+    const checking = await autoCreateStock(lines, locationId);
     const result = await sequelize.transaction(async (t) => {
       logger.warn(`SALE HEADER: ${JSON.stringify(req.body)}`)
       const saleHeader = await SaleHeader.create({ bookingDate, remark, discount, total, exchangeRate, isActive, clientId, paymentId, currencyId, userId, referenceNo, locationId }, { transaction: t });
