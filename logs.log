@@ -1599,3 +1599,18 @@
 {"level":"warn","message":"Validating token...","timestamp":"2024-12-07T10:06:43.832Z"}
 {"level":"warn","message":"User name from token: DC Auto","timestamp":"2024-12-07T10:06:43.833Z"}
 {"level":"info","message":"rider[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider]","timestamp":"2024-12-07T10:06:43.854Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2024-12-22T14:03:48.865Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2024-12-22T14:03:48.867Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2024-12-22T14:03:48.867Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2024-12-22T14:03:48.868Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2024-12-22T14:03:48.869Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2024-12-22T14:03:49.753Z"}
+{"level":"info","message":"app is runing: 8888","timestamp":"2024-12-22T14:03:49.753Z"}
+{"level":"warn","message":"env: dcommerce_dem_1","timestamp":"2024-12-22T14:03:49.754Z"}
+{"level":"info","message":"tutorial_db Connection established","timestamp":"2024-12-22T14:03:50.264Z"}
+{"level":"info","message":"client_db Connection established","timestamp":"2024-12-22T14:03:50.286Z"}
+{"level":"info","message":"Datatase central is synchronize","timestamp":"2024-12-22T14:03:50.487Z"}
+{"level":"info","message":"Database client is synchronized","timestamp":"2024-12-22T14:05:21.443Z"}
+{"level":"info","message":"********** Found Users: [{\"id\":1,\"cus_id\":1000,\"cus_pass\":\"dcommerce@2023!\",\"cus_name\":\"support\",\"cus_tel\":\"02077150008\",\"cus_email\":\"soubin@gmail.com\",\"cus_active\":false,\"village\":null,\"district\":null,\"province\":null,\"remark\":null,\"isActive\":true,\"createdAt\":null,\"updateTimestamp\":null,\"groupId\":1},{\"id\":140,\"cus_id\":1001,\"cus_pass\":\"782230\",\"cus_name\":\"ວັນນິດາ\",\"cus_tel\":\"02077775660\",\"cus_email\":\"\",\"cus_active\":true,\"village\":\"\",\"district\":\"\",\"province\":\"\",\"remark\":\"undefined\",\"isActive\":true,\"createdAt\":null,\"updateTimestamp\":null,\"groupId\":1},{\"id\":141,\"cus_id\":1002,\"cus_pass\":\"975541\",\"cus_name\":\"Timmothy\",\"cus_tel\":\"02028653388\",\"cus_email\":\"\",\"cus_active\":true,\"village\":\"\",\"district\":\"\",\"province\":\"\",\"remark\":\"undefined\",\"isActive\":true,\"createdAt\":null,\"updateTimestamp\":null,\"groupId\":1}] **********","timestamp":"2024-12-22T14:05:21.498Z"}
+{"level":"info","message":"Users already exist. No need to create a default user.","timestamp":"2024-12-22T14:05:21.501Z"}
+{"level":"info","message":"Default user check complete.","timestamp":"2024-12-22T14:05:21.503Z"}
