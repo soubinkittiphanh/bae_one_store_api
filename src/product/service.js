@@ -136,15 +136,19 @@ const createProd = async (req, imagesObj) => {
                     throw new Error(`productservice create product fail #####0002 ${er}`);
                 } else if (re) {
                     const productId = re.insertId;
-                    image_path.forEach((i, idx, element) => {
-                        if (idx === element.length - 1) sqlComImages += `(${pro_id},'${i.name}','${i.path}','${mysqlDatetime}','${mysqlDatetime}','${productId}');`;
-                        else sqlComImages += `(${pro_id},'${i.name}','${i.path}','${mysqlDatetime}','${mysqlDatetime}','${productId}'),`;
-                    });
-                    //*****************  INSERT IMAGES SQL  *****************//
-                    Db.query(sqlComImages, (er, re) => {
-                        if (er) throw new Error(`productservice create product fail #####0003 ${er}`);
-                        updateImageProductId()
-                    });
+                    logger.warn(`Image len ${image_path.length}`)
+                    if(image_path.length>0){
+                        image_path.forEach((i, idx, element) => {
+                            if (idx === element.length - 1) sqlComImages += `(${pro_id},'${i.name}','${i.path}','${mysqlDatetime}','${mysqlDatetime}','${productId}');`;
+                            else sqlComImages += `(${pro_id},'${i.name}','${i.path}','${mysqlDatetime}','${mysqlDatetime}','${productId}'),`;
+                        });
+                        //*****************  INSERT IMAGES SQL  *****************//
+                        Db.query(sqlComImages, (er, re) => {
+                            logger.warn(`sql command ${sqlComImages}`)
+                            if (er) throw new Error(`productservice create product fail #####0003 ${er}`);
+                            updateImageProductId()
+                        });
+                    }
                 }
             })
         })
