@@ -875,3 +875,29 @@
 {"level":"warn","message":"User name from token: support","timestamp":"2024-12-26T12:08:57.036Z"}
 {"level":"warn","message":"Validating token...","timestamp":"2024-12-26T12:08:57.036Z"}
 {"level":"warn","message":"User name from token: support","timestamp":"2024-12-26T12:08:57.036Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2024-12-26T12:16:31.916Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2024-12-26T12:16:31.918Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2024-12-26T12:16:31.919Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2024-12-26T12:16:31.919Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2024-12-26T12:16:31.920Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2024-12-26T12:16:32.794Z"}
+{"level":"info","message":"app is runing: 8888","timestamp":"2024-12-26T12:16:32.795Z"}
+{"level":"warn","message":"env: dcommerce_pro_the_corners","timestamp":"2024-12-26T12:16:32.795Z"}
+{"level":"info","message":"tutorial_db Connection established","timestamp":"2024-12-26T12:16:32.981Z"}
+{"level":"info","message":"Datatase central is synchronize","timestamp":"2024-12-26T12:16:33.150Z"}
+{"level":"error","message":"client_db Connection error: SequelizeConnectionError: (conn=-1, no: 45012, SQLState: 08S01) Connection timeout: failed to create socket after 1002ms","timestamp":"2024-12-26T12:16:33.795Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2024-12-26T12:16:37.592Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2024-12-26T12:16:37.594Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2024-12-26T12:16:37.595Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2024-12-26T12:16:37.596Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2024-12-26T12:16:37.597Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2024-12-26T12:16:38.509Z"}
+{"level":"info","message":"app is runing: 8888","timestamp":"2024-12-26T12:16:38.509Z"}
+{"level":"warn","message":"env: dcommerce_pro_the_corners","timestamp":"2024-12-26T12:16:38.510Z"}
+{"level":"info","message":"tutorial_db Connection established","timestamp":"2024-12-26T12:16:38.695Z"}
+{"level":"info","message":"client_db Connection established","timestamp":"2024-12-26T12:16:38.707Z"}
+{"level":"info","message":"Datatase central is synchronize","timestamp":"2024-12-26T12:16:38.866Z"}
+{"level":"info","message":"Database client is synchronized","timestamp":"2024-12-26T12:17:25.160Z"}
+{"level":"info","message":"********** Found Users: [{\"id\":1,\"cus_id\":1000,\"cus_pass\":\"dcommerce@2023!\",\"cus_name\":\"support\",\"cus_tel\":\"02077150008\",\"cus_email\":\"soubin@gmail.com\",\"cus_active\":false,\"village\":null,\"district\":null,\"province\":null,\"remark\":null,\"isActive\":true,\"createdAt\":null,\"updateTimestamp\":null,\"groupId\":1},{\"id\":140,\"cus_id\":1001,\"cus_pass\":\"782230\",\"cus_name\":\"ວັນນິດາ\",\"cus_tel\":\"02077775660\",\"cus_email\":\"\",\"cus_active\":true,\"village\":\"\",\"district\":\"\",\"province\":\"\",\"remark\":\"undefined\",\"isActive\":true,\"createdAt\":null,\"updateTimestamp\":null,\"groupId\":1},{\"id\":141,\"cus_id\":1002,\"cus_pass\":\"975541\",\"cus_name\":\"Timmothy\",\"cus_tel\":\"02028653388\",\"cus_email\":\"\",\"cus_active\":true,\"village\":\"\",\"district\":\"\",\"province\":\"\",\"remark\":\"undefined\",\"isActive\":true,\"createdAt\":null,\"updateTimestamp\":null,\"groupId\":1},{\"id\":142,\"cus_id\":1003,\"cus_pass\":\"1111\",\"cus_name\":\"VANMANY\",\"cus_tel\":\"TELEPHONE\",\"cus_email\":\"EMAIL\",\"cus_active\":true,\"village\":null,\"district\":null,\"province\":null,\"remark\":null,\"isActive\":true,\"createdAt\":\"2024-11-26T14:44:44.000Z\",\"updateTimestamp\":\"2024-11-26T14:44:44.000Z\",\"groupId\":1},{\"id\":143,\"cus_id\":1004,\"cus_pass\":\"1111\",\"cus_name\":\"STAFF\",\"cus_tel\":\"TELEPHONE\",\"cus_email\":\"EMAIL\",\"cus_active\":true,\"village\":null,\"district\":null,\"province\":null,\"remark\":null,\"isActive\":true,\"createdAt\":\"2024-11-26T14:45:03.000Z\",\"updateTimestamp\":\"2024-11-26T14:45:03.000Z\",\"groupId\":1}] **********","timestamp":"2024-12-26T12:17:25.214Z"}
+{"level":"info","message":"Users already exist. No need to create a default user.","timestamp":"2024-12-26T12:17:25.216Z"}
+{"level":"info","message":"Default user check complete.","timestamp":"2024-12-26T12:17:25.216Z"}
