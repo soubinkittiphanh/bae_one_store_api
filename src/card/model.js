@@ -14,6 +14,11 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.DOUBLE,
             allowNull: false,
         },
+        costLCY: {
+            type: DataTypes.DOUBLE,
+            // allowNull: false,
+            defaultValue: 1
+        },
         exchangeRate: {
             type: DataTypes.DOUBLE,
             allowNull: false,

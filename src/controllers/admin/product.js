@@ -223,7 +223,8 @@ const fetchProdMobile = async (req, res) => {
     logger.info("*************** FETCH PRODUCT ***************");
     logger.info(`*************Payload: *****************ss`);
     const sqlCom = `SELECT p.*,c.categ_name,IFNULL(i.img_name,'No image') AS img_name,i.img_path,
-    p.stock_count AS card_count ,IFNULL(s.cnt,0) AS sale_count
+    p.stock_count AS card_count ,IFNULL(s.cnt,0) AS sale_count,
+    p.cost_price
     FROM product p 
     LEFT JOIN category c ON c.categ_id=p.pro_category
     LEFT JOIN image_path i ON i.pro_id=p.pro_id

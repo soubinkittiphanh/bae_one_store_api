@@ -4,10 +4,19 @@ const Card = require('../models').card
 const common = require('../common');
 const { Op } = require('sequelize');
 const productService = require('./../product/service')
-const createHulkStockCard = (req, res) => {
+const createHulkStockCard = async (req, res) => {
 
-    const { inputter, product_id, totalCost, stockCardQty, productId, srcLocationId } = req.body;
-    const costPerUnit = totalCost;
+    let { inputter, product_id, totalCost, stockCardQty, productId, srcLocationId, currencyId, exchangeRate, costLCY } = req.body;
+    if (stockCardQty < 0) {
+        const whereCondition = {
+            productId,
+            card_isused: 0,
+        }
+        await adjustStock(whereCondition, stockCardQty)
+        return res.status(200).send("Transction completed")
+    }
+    const costPerUnit = totalCost / stockCardQty;
+    costLCY = costPerUnit * exchangeRate
     const lockingSessionId = Date.now();
     logger.info("Product ID ===> " + productId)
     const rowsToInsert = [
@@ -22,6 +31,7 @@ const createHulkStockCard = (req, res) => {
             product_id: product_id,
             productId: productId,
             cost: costPerUnit, // 50.99,
+            costLCY: costPerUnit, // 50.99,
             card_number: cardSequenceNumber, //'1234-5678-9012-3456',
             card_isused: 0,
             locking_session_id: lockingSessionId,
@@ -31,7 +41,10 @@ const createHulkStockCard = (req, res) => {
             update_time: new Date(),
             update_time_new: new Date(),
             isActive: true,
+            currencyId: currencyId ?? 1,
+            exchangeRate: exchangeRate ?? 1,
             locationId: srcLocationId,
+            costLCY: costLCY ?? 0,
         })
         logger.warn("Row insert productId ===> " + rowsToInsert[0]['productId'])
     }
@@ -44,6 +57,36 @@ const createHulkStockCard = (req, res) => {
             logger.error('Error inserting rows:', error)
             return res.status(403).send("Server error " + error)
         });
+}
+const adjustStock = async (whereCondition, stockCardQty) => {
+    try {
+        // Step 1: Find the rows to delete
+        const limit = Math.abs(stockCardQty);
+        const rowsToDelete = await Card.findAll({
+            where: whereCondition,
+            order: [['createdAt', 'ASC']], // Adjust the column for sorting
+            limit: limit,
+        });
+
+        // Step 2: Extract IDs of rows to delete
+        const idsToDelete = rowsToDelete.map(row => row.id); // Assuming 'id' is the primary key
+
+        if (idsToDelete.length > 0) {
+            // Step 3: Perform the deletion
+            await Card.destroy({
+                where: {
+                    id: {
+                        [Op.in]: idsToDelete,
+                    },
+                },
+            });
+            logger.info(`Deleted ${idsToDelete.length} rows.`);
+        } else {
+            logger.error('No rows found to delete.');
+        }
+    } catch (error) {
+        logger.error('Error deleting rows:', error);
+    }
 }
 const rebuildStockValue = async (req, res) => {
     logger.warn("****** Rebuild stock is on going ******")
@@ -70,7 +113,7 @@ const rebuildStockValue = async (req, res) => {
         logger.info(`*********** ${new Date()} PROCESSED RECORD: ${rows.affectedRows}`);
         return res.status(200).send("Transaction completed")
     } catch (error) {
-        logger.error("Cannot get product sale count");
+        logger.error(`Cannot get product sale count ${error}`);
         return res.status(401).send(error);
     }
 
@@ -212,7 +255,7 @@ const cardUtilityReceivingLineChangesReflect = async (lines, locationId, currenc
             newRecevingLine.qty = additionalUpCount
             // newRecevingLine.productCode = iterator[]
             newRecevingLine.cost = 0 //costPerCard  * additionalUpCount
-            newRecevingLine.total = costPerCard  * additionalUpCount
+            newRecevingLine.total = costPerCard * additionalUpCount
             newRecevingLine.rate = 1 // to ensure that new line card has exact number of new card need
             newRecevingLineList.push(newRecevingLine)
 
@@ -257,7 +300,7 @@ const cardUtilityReceivingLineChangesReflect = async (lines, locationId, currenc
     }
     if (newRecevingLineList.length > 0) {
         // const createdCards = await createCardFromReceiving(newRecevingLineList, locationId,currencyId, t)
-        const createdCards = await cardUtility(newRecevingLineList, locationId,currencyId, t)
+        const createdCards = await cardUtility(newRecevingLineList, locationId, currencyId, t)
         logger.info(`Create cards successfully ${JSON.stringify(createdCards)}`)
     }
 }
@@ -315,5 +358,6 @@ module.exports = {
     deleteNotUseByIdList,
     cardUtility,
     cardUtilityReceivingLineChangesReflect,
-    createAutoHulkStockCard
+    createAutoHulkStockCard,
+    adjustStock,
 }

@@ -125,19 +125,52 @@ const createProd = async (req, imagesObj) => {
 
             if (re.length < 1) pro_id = 1000;
             else pro_id = parseInt(re[0]['ID']) + 1
-            const sqlCom = `INSERT INTO product(pro_category, pro_id, pro_name, pro_price, pro_desc, pro_status,retail_cost_percent,cost_price,
-            locking_session_id,createdAt,updateTimestamp,minStock,barCode,receiveUnitId,stockUnitId,costCurrencyId,saleCurrencyId,isActive,companyId)
-        VALUES('${pro_cat}','${pro_id}',"${pro_name}",'${pro_price}',"${pro_desc}",'${pro_status}','${retail_percent}','${costPrice}',${locking_session_id},'${mysqlDateTime}','${mysqlDateTime}',${minStock},'${barCode}',${receiveUnitId},${stockUnitId},${costCurrencyId},${saleCurrencyId},${isActive},${companyId});`
+            //     const sqlCom = `INSERT INTO product(pro_category, pro_id, pro_name, pro_price, pro_desc, pro_status,retail_cost_percent,cost_price,
+            //     locking_session_id,createdAt,updateTimestamp,minStock,barCode,receiveUnitId,stockUnitId,costCurrencyId,saleCurrencyId,isActive,companyId)
+            // VALUES('${pro_cat}','${pro_id}',"${pro_name}",'${pro_price}',"${pro_desc}",'${pro_status}','${retail_percent}','${costPrice}',${locking_session_id},'${mysqlDateTime}','${mysqlDateTime}',${minStock},'${barCode}',${receiveUnitId},${stockUnitId},${costCurrencyId},${saleCurrencyId},${isActive},${companyId});`
+
+            const sqlCom = `
+  INSERT INTO product (
+    pro_category, pro_id, pro_name, pro_price, pro_desc, pro_status, 
+    retail_cost_percent, cost_price, locking_session_id, createdAt, 
+    updateTimestamp, minStock, barCode, receiveUnitId, stockUnitId, 
+    costCurrencyId, saleCurrencyId, isActive, companyId
+  )
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+`;
+
+            // Values array to pass into the query
+            const values = [
+                pro_cat,
+                pro_id,
+                pro_name,
+                pro_price,
+                pro_desc,
+                pro_status,
+                retail_percent,
+                costPrice,
+                locking_session_id,
+                mysqlDateTime,
+                mysqlDateTime,
+                minStock,
+                barCode,
+                receiveUnitId,
+                stockUnitId,
+                costCurrencyId,
+                saleCurrencyId,
+                isActive,
+                companyId
+            ];
             //*****************  INSERT PRODUCT SQL  *****************//
             logger.info("SQL CREATE PRODUCT: " + sqlCom);
-            Db.query(sqlCom, (er, re) => {
+            Db.query(sqlCom, values, (er, re) => {
                 logger.info("Execute:=>");
                 if (er) {
                     throw new Error(`productservice create product fail #####0002 ${er}`);
                 } else if (re) {
                     const productId = re.insertId;
                     logger.warn(`Image len ${image_path.length}`)
-                    if(image_path.length>0){
+                    if (image_path.length > 0) {
                         image_path.forEach((i, idx, element) => {
                             if (idx === element.length - 1) sqlComImages += `(${pro_id},'${i.name}','${i.path}','${mysqlDatetime}','${mysqlDatetime}','${productId}');`;
                             else sqlComImages += `(${pro_id},'${i.name}','${i.path}','${mysqlDatetime}','${mysqlDatetime}','${productId}'),`;
@@ -185,8 +218,8 @@ const updateProd = async (req, imagesObj) => {
     const mysqlDatetime = timestamps.toISOString().slice(0, 19).replace('T', ' ');
     const retail_percent = body.pro_retail_price || 0.0;
     let serverImageIds = []
-    if(body.server_images){
-         serverImageIds = body.server_images.map(el => el.id);
+    if (body.server_images) {
+        serverImageIds = body.server_images.map(el => el.id);
     }
 
 
@@ -208,15 +241,56 @@ const updateProd = async (req, imagesObj) => {
 
 
     let sqlComImages = 'INSERT INTO image_path(pro_id, img_name, img_path,createdAt,updateTimestamp,productId)VALUES';
-    const sqlCom = `UPDATE product SET pro_category='${pro_cat}', pro_name="${pro_name}", pro_price='${pro_price}', 
-    pro_desc="${pro_desc}", pro_status='${pro_status}',retail_cost_percent='${retail_percent}',isActive=${isActive},
-    cost_price='${cost_price}',minStock=${minStock},barCode='${barCode}',
-    receiveUnitId=${receiveUnitId},stockUnitId=${stockUnitId},saleCurrencyId=${saleCurrencyId},costCurrencyId=${costCurrencyId},companyId=${companyId}
-     WHERE pro_id='${pro_id}'`
+    // const sqlCom = `UPDATE product SET pro_category='${pro_cat}', pro_name="${pro_name}", pro_price='${pro_price}', 
+    // pro_desc="${pro_desc}", pro_status='${pro_status}',retail_cost_percent='${retail_percent}',isActive=${isActive},
+    // cost_price='${cost_price}',minStock=${minStock},barCode='${barCode}',
+    // receiveUnitId=${receiveUnitId},stockUnitId=${stockUnitId},saleCurrencyId=${saleCurrencyId},costCurrencyId=${costCurrencyId},companyId=${companyId}
+    //  WHERE pro_id='${pro_id}'`
+    const sqlCom = `
+  UPDATE product 
+  SET 
+    pro_category = ?, 
+    pro_name = ?, 
+    pro_price = ?, 
+    pro_desc = ?, 
+    pro_status = ?, 
+    retail_cost_percent = ?, 
+    isActive = ?, 
+    cost_price = ?, 
+    minStock = ?, 
+    barCode = ?, 
+    receiveUnitId = ?, 
+    stockUnitId = ?, 
+    saleCurrencyId = ?, 
+    costCurrencyId = ?, 
+    companyId = ? 
+  WHERE pro_id = ?;
+`;
+
+    // Values array for parameterized query
+    const values = [
+        pro_cat,
+        pro_name,
+        pro_price,
+        pro_desc,
+        pro_status,
+        retail_percent,
+        isActive,
+        cost_price,
+        minStock,
+        barCode,
+        receiveUnitId,
+        stockUnitId,
+        saleCurrencyId,
+        costCurrencyId,
+        companyId,
+        pro_id
+    ];
+
     logger.info(`************* UPDATE PRODUCT ${sqlCom} *****************`);
     logger.info(`************* COMMAND ${sqlComImages} *****************`);
     logger.info(`*************Payload: ${imagesObj} *****************`);
-    Db.query(sqlCom, (er, re) => {
+    Db.query(sqlCom,values, (er, re) => {
         if (er) throw new Error("Cannot update product code ####0001 ");
         if (image_path.length < 1) return // Nothing to do
         image_path.forEach((i, idx, element) => {

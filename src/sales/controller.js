@@ -371,7 +371,7 @@ const reserveCard = async (line, lockingSessionId, qty, locationId) => {
     }
 
   })
-  logger.info("Product Id ===>: " + line.productId)
+  logger.info("Product Id ===>: " + line.productId+" location id: "+locationId)
   logger.info("Cards available len ===>: " + cards.length + " sale qty needed " + qty)
   if (!cards || cards.length < qty) {
     throw new Error(`Stock not enought #${line.productId}`);
