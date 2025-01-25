@@ -3,8 +3,6 @@ const SaleHeader = require('../models').saleHeader;
 const SaleLine = require('../models').saleLine;
 const Customer = require('../models').customer;
 const Line = require('../models').saleLine;
-const Shipping = require('../models').shipping;
-const Geo = require('../models').geography;
 const Product = require('../models').product;
 const Card = require('../models').card;
 const Unit = require('../models').unit;
@@ -371,7 +369,7 @@ const reserveCard = async (line, lockingSessionId, qty, locationId) => {
     }
 
   })
-  logger.info("Product Id ===>: " + line.productId+" location id: "+locationId)
+  logger.info("Product Id ===>: " + line.productId + " location id: " + locationId)
   logger.info("Cards available len ===>: " + cards.length + " sale qty needed " + qty)
   if (!cards || cards.length < qty) {
     throw new Error(`Stock not enought #${line.productId}`);
@@ -794,8 +792,12 @@ exports.sumSaleCurrentYear = async (req, res) => {
   const { startDate, endDate } = date // new Date('2022-01-01');
   try {
     const saleHeader = await SaleHeader.findAll({
-      include: [Customer],
-      attributes: ['bookingDate', 'total', 'discount'],
+      include: [Customer, 'payment', 'lines', {
+        model: SaleLine,
+        as: "lines",
+        include:['cards']
+      },],
+      attributes: ['id', 'discount', 'total', 'bookingDate'],
       where: {
         bookingDate: {
           [Op.between]: [startDate, endDate]
