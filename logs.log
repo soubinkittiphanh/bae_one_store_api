@@ -15248,3 +15248,194 @@
 {"level":"info","message":"All data copied successfully in a single transaction.","timestamp":"2025-01-25T01:26:51.018Z"}
 {"level":"error","message":"Error ensuring default user exists: SequelizeValidationError: notNull Violation: user.cus_id cannot be null,\nnotNull Violation: user.cus_pass cannot be null","timestamp":"2025-01-25T01:26:51.026Z"}
 {"level":"info","message":"Default user check complete.","timestamp":"2025-01-25T01:26:51.027Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2025-01-25T01:43:54.095Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2025-01-25T01:43:54.097Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2025-01-25T01:43:54.098Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2025-01-25T01:43:54.099Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2025-01-25T01:43:54.100Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2025-01-25T01:43:54.996Z"}
+{"level":"info","message":"app is runing: 8888","timestamp":"2025-01-25T01:43:54.997Z"}
+{"level":"warn","message":"env: dcommerce_pro_bmart","timestamp":"2025-01-25T01:43:54.997Z"}
+{"level":"info","message":"tutorial_db Connection established","timestamp":"2025-01-25T01:43:55.218Z"}
+{"level":"info","message":"client_db Connection established","timestamp":"2025-01-25T01:43:55.230Z"}
+{"level":"info","message":"Datatase central is synchronize","timestamp":"2025-01-25T01:43:55.418Z"}
+{"level":"info","message":"Database client is synchronized","timestamp":"2025-01-25T01:44:37.898Z"}
+{"level":"info","message":"********** Found Users: [] **********","timestamp":"2025-01-25T01:44:37.949Z"}
+{"level":"info","message":"No users found. Creating default user...","timestamp":"2025-01-25T01:44:37.951Z"}
+{"level":"error","message":"Error copying data: SequelizeUniqueConstraintError: Validation error","timestamp":"2025-01-25T01:44:38.020Z"}
+{"level":"info","message":"Default user created successfully.","timestamp":"2025-01-25T01:44:38.062Z"}
+{"level":"info","message":"Default user check complete.","timestamp":"2025-01-25T01:44:38.063Z"}
+{"level":"info","message":"************* User auth  *****************","timestamp":"2025-01-25T01:46:43.303Z"}
+{"level":"info","message":"**********[object SequelizeInstance:user]**********","timestamp":"2025-01-25T01:46:43.408Z"}
+{"level":"info","message":"**********DC Auto**********","timestamp":"2025-01-25T01:46:43.409Z"}
+{"level":"warn","message":"Token ===> send to client eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiY3VzX2lkIjoxMDAwLCJjdXNfbmFtZSI6IkRDIEF1dG8iLCJjdXNfdGVsIjoiMTIzNDU2Nzg5IiwidXNlckdyb3VwIjp7ImNvZGUiOiJTVVBFUiBVU0VSIiwibmFtZSI6IuC6l-C6teC6oeC6h-C6suC6mSDguqrgurHguprgup7guq3gupTguqXgurDguprgurvgupoiLCJpZCI6MX0sInRlcm1pbmFsIjpbXSwiaWF0IjoxNzM3NzY5NjAzLCJleHAiOjE3Mzc3ODc2MDN9.ZeG_fYpzB0WDe0SXgtij9MG6J6Glxc2McpfRJb89-MA","timestamp":"2025-01-25T01:46:43.440Z"}
+{"level":"info","message":"Token generated succeed [object Object]","timestamp":"2025-01-25T01:46:43.441Z"}
+{"level":"info","message":"Decrypted user request header: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiY3VzX2lkIjoxMDAwLCJjdXNfbmFtZSI6IkRDIEF1dG8iLCJjdXNfdGVsIjoiMTIzNDU2Nzg5IiwidXNlckdyb3VwIjp7ImNvZGUiOiJTVVBFUiBVU0VSIiwibmFtZSI6IuC6l-C6teC6oeC6h-C6suC6mSDguqrgurHguprgup7guq3gupTguqXgurDguprgurvgupoiLCJpZCI6MX0sInRlcm1pbmFsIjpbXSwiaWF0IjoxNzM3NzY5NjAzLCJleHAiOjE3Mzc3ODc2MDN9.ZeG_fYpzB0WDe0SXgtij9MG6J6Glxc2McpfRJb89-MA","timestamp":"2025-01-25T01:46:43.489Z"}
+{"level":"warn","message":"user decrypted DC Auto","timestamp":"2025-01-25T01:46:43.492Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:46:43.549Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:46:43.549Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:46:43.550Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:46:43.550Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:46:43.551Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:46:43.551Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:46:43.552Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:46:43.552Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:46:43.590Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:46:43.590Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:46:43.592Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:46:43.592Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:46:43.594Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:46:43.594Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:46:43.598Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:46:43.598Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:46:43.617Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:46:43.617Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:46:43.620Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:46:43.620Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:46:43.622Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:46:43.622Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:46:43.623Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:46:43.623Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:46:43.663Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:46:43.663Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:46:43.664Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:46:43.664Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:46:43.664Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:46:43.664Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:46:43.665Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:46:43.665Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:46:43.679Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:46:43.680Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:46:43.682Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:46:43.682Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:46:43.683Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:46:43.683Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:46:43.683Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:46:43.683Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:46:43.717Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:46:43.723Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:46:43.724Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:46:43.725Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:46:43.725Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:46:43.725Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:46:43.725Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:46:43.726Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:46:43.733Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:46:43.733Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:46:43.734Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:46:43.734Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:46:43.734Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:46:43.734Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:46:43.735Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:46:43.735Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:46:46.243Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:46:46.247Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:46:46.248Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:46:46.248Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:46:46.249Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:46:46.249Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:46:46.251Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:46:46.251Z"}
+{"level":"warn","message":"Date 2025-01-01 2025-12-31","timestamp":"2025-01-25T01:46:46.252Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:46:46.282Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:46:46.283Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:46:46.283Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:46:46.283Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:46:46.283Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:46:46.283Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.companyId,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.companyId,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN company u ON u.id = p.companyId LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2025-01-01 00:00:00' AND '2025-01-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2025-01-25T01:46:46.284Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:46:46.289Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:46:46.289Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:46:46.290Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:46:46.290Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:46:46.290Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:46:46.290Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:46:46.292Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:46:46.292Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:46:46.927Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:46:46.928Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:46:46.931Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:46:46.931Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:46:46.934Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:46:46.935Z"}
+{"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2025-01-01 00:00:00' AND '2025-01-30 23:59:59' \n    ","timestamp":"2025-01-25T01:46:46.936Z"}
+{"level":"info","message":"Record count => 0","timestamp":"2025-01-25T01:46:46.957Z"}
+{"level":"info","message":"Cal finish","timestamp":"2025-01-25T01:46:46.958Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:47:17.501Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:47:17.505Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:47:17.505Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:47:17.505Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:47:17.505Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:47:17.505Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:47:17.506Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:47:17.506Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:47:17.516Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:47:17.516Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:47:17.516Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:47:17.516Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:47:17.516Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:47:17.516Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:47:17.516Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:47:17.516Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:47:17.518Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:47:17.518Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:47:17.518Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:47:17.518Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:47:17.518Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:47:17.518Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:47:17.519Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:47:17.519Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:47:17.584Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:47:17.585Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:47:17.585Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:47:17.585Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:47:17.585Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:47:17.585Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:47:17.585Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:47:17.585Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:58:10.532Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:58:10.536Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:58:10.538Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:58:10.538Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:58:10.539Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:58:10.539Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:58:10.560Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:58:10.560Z"}
+{"level":"warn","message":"Date 2025-01-01 2025-12-31","timestamp":"2025-01-25T01:58:10.618Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:58:10.797Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:58:10.798Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:58:10.798Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:58:10.799Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:58:10.799Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:58:10.799Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:58:10.799Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:58:10.799Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:58:10.831Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:58:10.832Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:58:10.832Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:58:10.832Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:58:10.833Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:58:10.833Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.companyId,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.companyId,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN company u ON u.id = p.companyId LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2025-01-01 00:00:00' AND '2025-01-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2025-01-25T01:58:10.837Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:58:10.966Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:58:10.966Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:58:10.966Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:58:10.966Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-25T01:58:10.967Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-01-25T01:58:10.969Z"}
+{"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2025-01-01 00:00:00' AND '2025-01-30 23:59:59' \n    ","timestamp":"2025-01-25T01:58:10.969Z"}
+{"level":"info","message":"Record count => 0","timestamp":"2025-01-25T01:58:10.991Z"}
+{"level":"info","message":"Cal finish","timestamp":"2025-01-25T01:58:10.992Z"}
+{"level":"error","name":"SequelizeDatabaseError","original":{"code":"ETIMEDOUT","errno":-60,"fatal":true,"sql":"SELECT `userGroup`.`id`, `userGroup`.`name`, `userGroup`.`code`, `userGroup`.`isActive`, `userGroup`.`createdAt`, `userGroup`.`updateTimestamp`, `menuHeaders`.`id` AS `menuHeaders.id`, `menuHeaders`.`code` AS `menuHeaders.code`, `menuHeaders`.`icon` AS `menuHeaders.icon`, `menuHeaders`.`name` AS `menuHeaders.name`, `menuHeaders`.`llname` AS `menuHeaders.llname`, `menuHeaders`.`remark` AS `menuHeaders.remark`, `menuHeaders`.`expand` AS `menuHeaders.expand`, `menuHeaders`.`isActive` AS `menuHeaders.isActive`, `menuHeaders`.`createdAt` AS `menuHeaders.createdAt`, `menuHeaders`.`updateTimestamp` AS `menuHeaders.updateTimestamp`, `menuHeaders->menuLines`.`id` AS `menuHeaders.menuLines.id`, `menuHeaders->menuLines`.`name` AS `menuHeaders.menuLines.name`, `menuHeaders->menuLines`.`llname` AS `menuHeaders.menuLines.llname`, `menuHeaders->menuLines`.`icon` AS `menuHeaders.menuLines.icon`, `menuHeaders->menuLines`.`path` AS `menuHeaders.menuLines.path`, `menuHeaders->menuLines->MenuHeaderLines`.`createdAt` AS `menuHeaders.menuLines.MenuHeaderLines.createdAt`, `menuHeaders->menuLines->MenuHeaderLines`.`updateTimestamp` AS `menuHeaders.menuLines.MenuHeaderLines.updateTimestamp`, `menuHeaders->menuLines->MenuHeaderLines`.`menuHeaderId` AS `menuHeaders.menuLines.MenuHeaderLines.menuHeaderId`, `menuHeaders->menuLines->MenuHeaderLines`.`menuLineId` AS `menuHeaders.menuLines.MenuHeaderLines.menuLineId` FROM `userGroup` AS `userGroup` LEFT OUTER JOIN ( `GroupMenuHeader` AS `menuHeaders->GroupMenuHeader` INNER JOIN `menuHeader` AS `menuHeaders` ON `menuHeaders`.`id` = `menuHeaders->GroupMenuHeader`.`menuHeaderId`) ON `userGroup`.`id` = `menuHeaders->GroupMenuHeader`.`userGroupId` LEFT OUTER JOIN ( `MenuHeaderLines` AS `menuHeaders->menuLines->MenuHeaderLines` INNER JOIN `menuLine` AS `menuHeaders->menuLines` ON `menuHeaders->menuLines`.`id` = `menuHeaders->menuLines->MenuHeaderLines`.`menuLineId`) ON `menuHeaders`.`id` = `menuHeaders->menuLines->MenuHeaderLines`.`menuHeaderId` WHERE `userGroup`.`id` = '1';","sqlState":"HY000","syscall":"read"},"parameters":{},"parent":{"code":"ETIMEDOUT","errno":-60,"fatal":true,"sql":"SELECT `userGroup`.`id`, `userGroup`.`name`, `userGroup`.`code`, `userGroup`.`isActive`, `userGroup`.`createdAt`, `userGroup`.`updateTimestamp`, `menuHeaders`.`id` AS `menuHeaders.id`, `menuHeaders`.`code` AS `menuHeaders.code`, `menuHeaders`.`icon` AS `menuHeaders.icon`, `menuHeaders`.`name` AS `menuHeaders.name`, `menuHeaders`.`llname` AS `menuHeaders.llname`, `menuHeaders`.`remark` AS `menuHeaders.remark`, `menuHeaders`.`expand` AS `menuHeaders.expand`, `menuHeaders`.`isActive` AS `menuHeaders.isActive`, `menuHeaders`.`createdAt` AS `menuHeaders.createdAt`, `menuHeaders`.`updateTimestamp` AS `menuHeaders.updateTimestamp`, `menuHeaders->menuLines`.`id` AS `menuHeaders.menuLines.id`, `menuHeaders->menuLines`.`name` AS `menuHeaders.menuLines.name`, `menuHeaders->menuLines`.`llname` AS `menuHeaders.menuLines.llname`, `menuHeaders->menuLines`.`icon` AS `menuHeaders.menuLines.icon`, `menuHeaders->menuLines`.`path` AS `menuHeaders.menuLines.path`, `menuHeaders->menuLines->MenuHeaderLines`.`createdAt` AS `menuHeaders.menuLines.MenuHeaderLines.createdAt`, `menuHeaders->menuLines->MenuHeaderLines`.`updateTimestamp` AS `menuHeaders.menuLines.MenuHeaderLines.updateTimestamp`, `menuHeaders->menuLines->MenuHeaderLines`.`menuHeaderId` AS `menuHeaders.menuLines.MenuHeaderLines.menuHeaderId`, `menuHeaders->menuLines->MenuHeaderLines`.`menuLineId` AS `menuHeaders.menuLines.MenuHeaderLines.menuLineId` FROM `userGroup` AS `userGroup` LEFT OUTER JOIN ( `GroupMenuHeader` AS `menuHeaders->GroupMenuHeader` INNER JOIN `menuHeader` AS `menuHeaders` ON `menuHeaders`.`id` = `menuHeaders->GroupMenuHeader`.`menuHeaderId`) ON `userGroup`.`id` = `menuHeaders->GroupMenuHeader`.`userGroupId` LEFT OUTER JOIN ( `MenuHeaderLines` AS `menuHeaders->menuLines->MenuHeaderLines` INNER JOIN `menuLine` AS `menuHeaders->menuLines` ON `menuHeaders->menuLines`.`id` = `menuHeaders->menuLines->MenuHeaderLines`.`menuLineId`) ON `menuHeaders`.`id` = `menuHeaders->menuLines->MenuHeaderLines`.`menuHeaderId` WHERE `userGroup`.`id` = '1';","sqlState":"HY000","syscall":"read"},"sql":"SELECT `userGroup`.`id`, `userGroup`.`name`, `userGroup`.`code`, `userGroup`.`isActive`, `userGroup`.`createdAt`, `userGroup`.`updateTimestamp`, `menuHeaders`.`id` AS `menuHeaders.id`, `menuHeaders`.`code` AS `menuHeaders.code`, `menuHeaders`.`icon` AS `menuHeaders.icon`, `menuHeaders`.`name` AS `menuHeaders.name`, `menuHeaders`.`llname` AS `menuHeaders.llname`, `menuHeaders`.`remark` AS `menuHeaders.remark`, `menuHeaders`.`expand` AS `menuHeaders.expand`, `menuHeaders`.`isActive` AS `menuHeaders.isActive`, `menuHeaders`.`createdAt` AS `menuHeaders.createdAt`, `menuHeaders`.`updateTimestamp` AS `menuHeaders.updateTimestamp`, `menuHeaders->menuLines`.`id` AS `menuHeaders.menuLines.id`, `menuHeaders->menuLines`.`name` AS `menuHeaders.menuLines.name`, `menuHeaders->menuLines`.`llname` AS `menuHeaders.menuLines.llname`, `menuHeaders->menuLines`.`icon` AS `menuHeaders.menuLines.icon`, `menuHeaders->menuLines`.`path` AS `menuHeaders.menuLines.path`, `menuHeaders->menuLines->MenuHeaderLines`.`createdAt` AS `menuHeaders.menuLines.MenuHeaderLines.createdAt`, `menuHeaders->menuLines->MenuHeaderLines`.`updateTimestamp` AS `menuHeaders.menuLines.MenuHeaderLines.updateTimestamp`, `menuHeaders->menuLines->MenuHeaderLines`.`menuHeaderId` AS `menuHeaders.menuLines.MenuHeaderLines.menuHeaderId`, `menuHeaders->menuLines->MenuHeaderLines`.`menuLineId` AS `menuHeaders.menuLines.MenuHeaderLines.menuLineId` FROM `userGroup` AS `userGroup` LEFT OUTER JOIN ( `GroupMenuHeader` AS `menuHeaders->GroupMenuHeader` INNER JOIN `menuHeader` AS `menuHeaders` ON `menuHeaders`.`id` = `menuHeaders->GroupMenuHeader`.`menuHeaderId`) ON `userGroup`.`id` = `menuHeaders->GroupMenuHeader`.`userGroupId` LEFT OUTER JOIN ( `MenuHeaderLines` AS `menuHeaders->menuLines->MenuHeaderLines` INNER JOIN `menuLine` AS `menuHeaders->menuLines` ON `menuHeaders->menuLines`.`id` = `menuHeaders->menuLines->MenuHeaderLines`.`menuLineId`) ON `menuHeaders`.`id` = `menuHeaders->menuLines->MenuHeaderLines`.`menuHeaderId` WHERE `userGroup`.`id` = '1';","timestamp":"2025-01-25T01:58:28.852Z"}
+{"level":"error","message":"Something went wrong with error SequelizeDatabaseError: read ETIMEDOUT","timestamp":"2025-01-25T01:58:28.859Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2025-01-25T02:59:21.583Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2025-01-25T02:59:21.585Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2025-01-25T02:59:21.586Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2025-01-25T02:59:21.586Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2025-01-25T02:59:21.588Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2025-01-25T02:59:22.453Z"}
+{"level":"info","message":"app is runing: 8888","timestamp":"2025-01-25T02:59:22.454Z"}
+{"level":"warn","message":"env: dcommerce_pro_onphet","timestamp":"2025-01-25T02:59:22.455Z"}
+{"level":"info","message":"tutorial_db Connection established","timestamp":"2025-01-25T02:59:22.666Z"}
+{"level":"info","message":"client_db Connection established","timestamp":"2025-01-25T02:59:22.669Z"}
+{"level":"info","message":"Datatase central is synchronize","timestamp":"2025-01-25T02:59:22.882Z"}

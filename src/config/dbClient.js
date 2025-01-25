@@ -160,6 +160,13 @@ const clientDB = {
         "database": "dcommerce_pro_bmart",
         "port": 3306,
     },
+    "onphet": {
+        "host": "150.95.31.23",
+        "user": "root",
+        "password": "sdat@3480",
+        "database": "dcommerce_pro_onphet",
+        "port": 3306,
+    },
 }
 
 module.exports = {

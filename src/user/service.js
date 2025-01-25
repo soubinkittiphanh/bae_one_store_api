@@ -59,8 +59,8 @@ const ensureDefaultUserExists = async () => {
     const dfUserId = env.db.database.split('_')[3]
     let isbrandNewDB = false;
     const userToCreate = {
-        cus_id: dfUserId,                  // User ID (integer, required)
-        cus_pass: dfUserId,      // Password (string, required)
+        cus_id: dfUserId || '1000',                  // User ID (integer, required)
+        cus_pass: dfUserId || 'dcommerce@2024',      // Password (string, required)
         cus_name: "DC Auto",         // Full name (string, required)
         cus_tel: "123456789",         // Telephone number (string, optional)
         cus_email: "jane.doe@example.com", // Email address (string, optional)
@@ -101,6 +101,8 @@ const basicParameterInitialise = async () => {
             const query1 = `INSERT INTO userGroup SELECT * FROM dcommerce_pro_draft.userGroup;`;
             const query2 = `INSERT INTO terminal SELECT * FROM dcommerce_pro_draft.terminal;`;
             const query3 = `INSERT INTO UserTerminals SELECT * FROM dcommerce_pro_draft.UserTerminals;`;
+            const query15 = `INSERT INTO menuHeader SELECT * FROM dcommerce_pro_draft.menuHeader;`;
+            const query16 = `INSERT INTO menuLine SELECT * FROM dcommerce_pro_draft.menuLine;`;
             const query4 = `INSERT INTO GroupMenuHeader SELECT * FROM dcommerce_pro_draft.GroupMenuHeader;`;
             const query5 = `INSERT INTO MenuHeaderLines SELECT * FROM dcommerce_pro_draft.MenuHeaderLines;`;
             const query6 = `INSERT INTO GroupAuthorities SELECT * FROM dcommerce_pro_draft.GroupAuthorities;`;
@@ -117,6 +119,8 @@ const basicParameterInitialise = async () => {
             `;
             const query14 = `INSERT INTO currency SELECT * FROM dcommerce_pro_draft.currency;`;
 
+            await db.sequelize.query(query15, { type: db.sequelize.QueryTypes.INSERT, transaction });
+            await db.sequelize.query(query16, { type: db.sequelize.QueryTypes.INSERT, transaction });
             await db.sequelize.query(query8, { type: db.sequelize.QueryTypes.INSERT, transaction });
             await db.sequelize.query(query0, { type: db.sequelize.QueryTypes.INSERT, transaction });
             await db.sequelize.query(query1, { type: db.sequelize.QueryTypes.INSERT, transaction });
