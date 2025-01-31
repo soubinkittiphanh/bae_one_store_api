@@ -10,7 +10,7 @@ const { literal, Op } = require('sequelize');
 const getAllProducts = async (req, res) => {
   try {
     const products = await Product.findAll({
-      include: ['costCurrency', 'saleCurrency', 'images','company','category', {
+      include: ['priceLists','costCurrency', 'saleCurrency', 'images','company','category', {
         model: WebGroup,
         through: { attributes: [] }
       }],

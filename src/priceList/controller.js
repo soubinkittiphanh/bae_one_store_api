@@ -4,8 +4,8 @@ const PriceList = require('../models').priceList;
 const priceListController = {
   createPriceList: async (req, res) => {
     try {
-      const { name, type, isActive, amount, productId, currencyId } = req.body;
-      const newPriceList = await PriceList.create({ name, type, isActive, amount, productId, currencyId });
+      const { name, type, isActive, amount, productId, currencyId,grade } = req.body;
+      const newPriceList = await PriceList.create({ name, type, isActive, amount, productId, currencyId,grade });
       res.status(201).json(newPriceList);
     } catch (error) {
       logger.error(error);
@@ -62,12 +62,12 @@ const priceListController = {
   updatePriceListById: async (req, res) => {
     try {
       const { id } = req.params;
-      const { name, type, isActive, amount, productId, currencyId } = req.body;
+      const { name, type, isActive, amount, productId, currencyId,grade } = req.body;
       const priceListToUpdate = await PriceList.findBy(id);
       if (!priceListToUpdate) {
         return res.status(404).json({ message: 'Price list not found' });
       }
-      const updatedPriceList = await priceListToUpdate.update({ name, type, isActive, amount, productId, currencyId });
+      const updatedPriceList = await priceListToUpdate.update({ name, type, isActive, amount, productId, currencyId,grade });
       res.status(200).json(updatedPriceList);
     } catch (error) {
       logger.error(error);

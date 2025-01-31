@@ -541,6 +541,10 @@ exports.getSaleHeadersByDateAndCustomer = async (req, res) => {
               as: "product"
             },
             {
+              model: Card,
+              as: "cards"
+            },
+            {
               model: SaleHeader,
               as: "header"
             }

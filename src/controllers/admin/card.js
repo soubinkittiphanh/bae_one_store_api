@@ -35,7 +35,7 @@ const fetchCard = async (req, res) => {
         sqlComCon += ` AND inputter ='${userId}'`
     }
     console.log("SQL Con: " + sqlComCon);
-    const sqlCom = `SELECT c.*,u.user_name FROM card c LEFT JOIN user_account u ON u.user_id = c.inputter WHERE c.product_id='${proId}' ${sqlComCon} ORDER BY c.card_input_date DESC`
+    const sqlCom = `SELECT c.*,u.cus_name FROM card c LEFT JOIN user u ON u.id = c.inputter WHERE c.product_id='${proId}' ${sqlComCon} ORDER BY c.card_input_date DESC`
 
     Db.query(sqlCom, (er, re) => {
         if (er) return res.send("Error: " + er)
@@ -49,7 +49,7 @@ const fetchDeletedCard = async (req, res) => {
 
     console.log("SELECT DEL CARD: "+fdate+" tdate: "+tdate);
 
-    let sqlCom = `select c.*,p.pro_name,p.pro_price,u.user_name from card c LEFT JOIN product p ON p.pro_id=c.product_id LEFT JOIN user_account u ON u.user_id=c.update_user WHERE c.card_isused=2 AND c.update_time BETWEEN '${fdate} 00:00:00' AND '${tdate} 23:59:59' `
+    let sqlCom = `select c.*,p.pro_name,p.pro_price,u.cus_name from card c LEFT JOIN product p ON p.pro_id=c.product_id LEFT JOIN user u ON u.id=c.update_user WHERE c.card_isused=2 AND c.update_time BETWEEN '${fdate} 00:00:00' AND '${tdate} 23:59:59' `
     if (userId) {
         sqlCom += ` AND update_user ='${userId}'`
     }
@@ -64,7 +64,7 @@ const fetchDeletedCardToday = async (req, res) => {
     const tdate=sqlDatetimeNow.substring(0,11);
     console.log("SELECT DEL CARD: "+fdate+" tdate: "+tdate);
 
-    let sqlCom = `select c.*,p.pro_name,p.pro_price,u.user_name from card c LEFT JOIN product p ON p.pro_id=c.product_id LEFT JOIN user_account u ON u.user_id=c.update_user WHERE c.card_isused=2 AND c.update_time BETWEEN '${fdate} 00:00:00' AND '${tdate} 23:59:59'`
+    let sqlCom = `select c.*,p.pro_name,p.pro_price,u.cus_name from card c LEFT JOIN product p ON p.pro_id=c.product_id LEFT JOIN user u ON u.id=c.update_user WHERE c.card_isused=2 AND c.update_time BETWEEN '${fdate} 00:00:00' AND '${tdate} 23:59:59'`
     Db.query(sqlCom, (er, re) => {
         if (er) return res.send("Error: " + er);
         res.send(re);

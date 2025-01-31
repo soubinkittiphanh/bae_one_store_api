@@ -7,6 +7,10 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: false,
             defaultValue: 0
         },
+        grade: {
+            type: DataTypes.STRING,
+            defaultValue: 'A'
+        },
         amount: {
             type: DataTypes.DOUBLE,
             allowNull: false,
