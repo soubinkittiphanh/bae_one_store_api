@@ -32242,3 +32242,786 @@
 {"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2025-01-01 00:00:00' AND '2025-01-30 23:59:59' \n    ","timestamp":"2025-01-31T02:56:56.804Z"}
 {"level":"info","message":"Record count => 0","timestamp":"2025-01-31T02:56:56.823Z"}
 {"level":"info","message":"Cal finish","timestamp":"2025-01-31T02:56:56.824Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2025-01-31T03:28:07.289Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2025-01-31T03:28:07.291Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2025-01-31T03:28:07.292Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2025-01-31T03:28:07.293Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2025-01-31T03:28:07.294Z","username":"johndoe"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2025-01-31T03:28:08.225Z"}
+{"level":"info","message":"app is runing: 8888","timestamp":"2025-01-31T03:28:08.226Z"}
+{"level":"warn","message":"env: dcommerce_pro_phayvanh","timestamp":"2025-01-31T03:28:08.227Z"}
+{"level":"info","message":"tutorial_db Connection established","timestamp":"2025-01-31T03:28:08.424Z"}
+{"level":"info","message":"client_db Connection established","timestamp":"2025-01-31T03:28:08.540Z"}
+{"level":"info","message":"Datatase central is synchronize","timestamp":"2025-01-31T03:28:08.660Z"}
+{"level":"info","message":"Database client is synchronized","timestamp":"2025-01-31T03:31:05.187Z"}
+{"level":"info","message":"********** Found Users: [{\"id\":1,\"cus_id\":1000,\"cus_pass\":\"dcommerce@2023!\",\"cus_name\":\"support\",\"cus_tel\":\"02077150008\",\"cus_email\":\"soubin@gmail.com\",\"cus_active\":false,\"village\":null,\"district\":null,\"province\":null,\"remark\":null,\"isActive\":true,\"createdAt\":null,\"updateTimestamp\":null,\"groupId\":1},{\"id\":140,\"cus_id\":1001,\"cus_pass\":\"782230\",\"cus_name\":\"USER 01\",\"cus_tel\":\"02077775660\",\"cus_email\":\"\",\"cus_active\":true,\"village\":\"\",\"district\":\"\",\"province\":\"\",\"remark\":\"undefined\",\"isActive\":true,\"createdAt\":null,\"updateTimestamp\":\"2024-12-26T03:08:59.000Z\",\"groupId\":1},{\"id\":141,\"cus_id\":1002,\"cus_pass\":\"975541\",\"cus_name\":\"USER 02\",\"cus_tel\":\"02028653388\",\"cus_email\":\"\",\"cus_active\":true,\"village\":\"\",\"district\":\"\",\"province\":\"\",\"remark\":\"undefined\",\"isActive\":true,\"createdAt\":null,\"updateTimestamp\":\"2024-12-26T03:09:07.000Z\",\"groupId\":1},{\"id\":142,\"cus_id\":1003,\"cus_pass\":\"1111\",\"cus_name\":\"USER 03\",\"cus_tel\":\"TELEPHONE\",\"cus_email\":\"EMAIL\",\"cus_active\":true,\"village\":null,\"district\":null,\"province\":null,\"remark\":null,\"isActive\":true,\"createdAt\":\"2024-11-26T14:44:44.000Z\",\"updateTimestamp\":\"2024-12-26T03:09:15.000Z\",\"groupId\":1},{\"id\":143,\"cus_id\":1004,\"cus_pass\":\"1111\",\"cus_name\":\"USER 04\",\"cus_tel\":\"TELEPHONE\",\"cus_email\":\"EMAIL\",\"cus_active\":true,\"village\":null,\"district\":null,\"province\":null,\"remark\":null,\"isActive\":true,\"createdAt\":\"2024-11-26T14:45:03.000Z\",\"updateTimestamp\":\"2024-12-26T03:09:23.000Z\",\"groupId\":1},{\"id\":144,\"cus_id\":1005,\"cus_pass\":\"1111\",\"cus_name\":\"USER 05\",\"cus_tel\":\"TELEPHONE\",\"cus_email\":\"EMAIL\",\"cus_active\":true,\"village\":null,\"district\":null,\"province\":null,\"remark\":null,\"isActive\":true,\"createdAt\":\"2024-12-26T03:09:57.000Z\",\"updateTimestamp\":\"2024-12-26T03:09:57.000Z\",\"groupId\":1},{\"id\":145,\"cus_id\":1006,\"cus_pass\":\"123123\",\"cus_name\":\"CASHIER01\",\"cus_tel\":\"TELEPHONE\",\"cus_email\":\"EMAIL\",\"cus_active\":true,\"village\":null,\"district\":null,\"province\":null,\"remark\":null,\"isActive\":true,\"createdAt\":\"2024-12-28T02:45:41.000Z\",\"updateTimestamp\":\"2024-12-28T02:45:41.000Z\",\"groupId\":2},{\"id\":146,\"cus_id\":1007,\"cus_pass\":\"2222\",\"cus_name\":\"Cashier001\",\"cus_tel\":\"TELEPHONE\",\"cus_email\":\"EMAIL\",\"cus_active\":true,\"village\":null,\"district\":null,\"province\":null,\"remark\":null,\"isActive\":true,\"createdAt\":\"2025-01-03T16:25:56.000Z\",\"updateTimestamp\":\"2025-01-03T16:25:56.000Z\",\"groupId\":2}] **********","timestamp":"2025-01-31T03:31:05.246Z"}
+{"level":"info","message":"Users already exist. No need to create a default user.","timestamp":"2025-01-31T03:31:05.248Z"}
+{"level":"info","message":"Default user check complete.","timestamp":"2025-01-31T03:31:05.249Z"}
+{"level":"info","message":"Decrypted user request header: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiY3VzX2lkIjoxMDAwLCJjdXNfbmFtZSI6InN1cHBvcnQiLCJjdXNfdGVsIjoiMDIwNzcxNTAwMDgiLCJ1c2VyR3JvdXAiOnsiY29kZSI6IlNVUEVSIiwibmFtZSI6IkFkbWluaXN0cmF0b3IiLCJpZCI6MX0sInRlcm1pbmFsIjpbXSwiaWF0IjoxNzM4Mjk0MzM5LCJleHAiOjE3MzgzMTIzMzl9.-WTO45JxHnfs7QyJob_7kjS-d4GiSWbAXYBGiXHSs2A","timestamp":"2025-01-31T03:33:40.695Z"}
+{"level":"warn","message":"user decrypted support","timestamp":"2025-01-31T03:33:40.714Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:40.967Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:40.968Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:40.970Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:40.971Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:40.972Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:40.974Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:40.990Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:40.991Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:41.047Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:41.049Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:41.053Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:41.054Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:41.058Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:41.059Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:41.065Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:41.066Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:41.079Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:41.081Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:41.081Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:41.081Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:41.083Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:41.084Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:41.088Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:41.088Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:41.150Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:41.153Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:41.154Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:41.154Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:41.155Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:41.155Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:41.156Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:41.157Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:41.166Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:41.166Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:41.167Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:41.167Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:41.167Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:41.171Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:41.171Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:41.171Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:41.175Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:41.175Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:41.175Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:41.175Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:41.175Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:41.175Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:41.176Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:41.176Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:41.208Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:41.209Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:41.209Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:41.209Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:41.209Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:41.209Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:41.210Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:41.210Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:41.216Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:41.216Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:41.217Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:41.217Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:41.217Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:41.217Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:41.220Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:41.220Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:41.231Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:41.232Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:41.233Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:41.233Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:41.238Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:41.238Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:41.238Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:41.238Z"}
+{"level":"warn","message":"Date 2025-01-01 2025-12-31","timestamp":"2025-01-31T03:33:41.242Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:44.449Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:44.453Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:44.454Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:44.454Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:44.455Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:44.455Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:44.457Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:44.457Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:44.485Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:44.485Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:44.485Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:44.485Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:44.486Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:44.486Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:44.486Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:44.486Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:44.491Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:44.491Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:44.491Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:44.491Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:44.492Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:44.492Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:44.492Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:44.492Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:44.498Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:44.498Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:44.498Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:44.498Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:44.499Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:44.499Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:44.499Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:44.499Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:44.513Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:44.513Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:44.514Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:44.514Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:44.514Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:44.514Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:44.515Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:44.515Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:44.630Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:44.630Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:44.630Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:44.630Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:44.630Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:44.630Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:44.630Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:44.630Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:44.633Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:44.633Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:44.633Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:44.633Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:44.634Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:44.634Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:44.634Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:44.634Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:44.637Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:44.637Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:44.637Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:44.638Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:44.638Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:44.638Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:44.638Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:44.638Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:44.647Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:44.647Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:44.647Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:44.647Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:44.647Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:44.647Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:44.648Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:44.648Z"}
+{"level":"warn","message":"Date 2025-01-01 2025-12-31","timestamp":"2025-01-31T03:33:44.649Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:44.936Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:44.936Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:44.936Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:44.936Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:44.936Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:44.936Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.companyId,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.companyId,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN company u ON u.id = p.companyId LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2025-01-01 00:00:00' AND '2025-01-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2025-01-31T03:33:44.937Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:44.949Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:44.949Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:44.949Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:44.949Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:44.949Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:44.949Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:44.949Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:44.949Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:46.091Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:46.092Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:46.092Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:46.092Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:46.092Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:46.092Z"}
+{"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2025-01-01 00:00:00' AND '2025-01-30 23:59:59' \n    ","timestamp":"2025-01-31T03:33:46.093Z"}
+{"level":"info","message":"Record count => 0","timestamp":"2025-01-31T03:33:46.117Z"}
+{"level":"info","message":"Cal finish","timestamp":"2025-01-31T03:33:46.118Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:47.186Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:47.187Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:47.189Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:47.190Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:47.192Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:47.192Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:47.193Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:47.193Z"}
+{"level":"warn","message":"Date 2025-01-01 2025-12-31","timestamp":"2025-01-31T03:33:47.194Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:47.216Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:47.216Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:47.217Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:47.217Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:47.217Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:47.217Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.companyId,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.companyId,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN company u ON u.id = p.companyId LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2025-01-01 00:00:00' AND '2025-01-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2025-01-31T03:33:47.217Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:47.339Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:47.340Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:47.340Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:47.340Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:33:47.340Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:33:47.340Z"}
+{"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2025-01-01 00:00:00' AND '2025-01-30 23:59:59' \n    ","timestamp":"2025-01-31T03:33:47.340Z"}
+{"level":"info","message":"Record count => 0","timestamp":"2025-01-31T03:33:47.382Z"}
+{"level":"info","message":"Cal finish","timestamp":"2025-01-31T03:33:47.383Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:35:39.961Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:35:39.967Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:35:39.967Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:35:39.967Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:35:39.967Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:35:39.968Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:35:39.969Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:35:39.969Z"}
+{"level":"warn","message":"Date 2025-01-01 2025-12-31","timestamp":"2025-01-31T03:35:39.971Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:35:40.011Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:35:40.012Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:35:40.012Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:35:40.012Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:35:40.012Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:35:40.012Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.companyId,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.companyId,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN company u ON u.id = p.companyId LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2025-01-01 00:00:00' AND '2025-01-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2025-01-31T03:35:40.013Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:35:40.017Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:35:40.017Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:35:40.017Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:35:40.017Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:35:40.017Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:35:40.017Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:35:40.018Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:35:40.018Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:35:40.125Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:35:40.125Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:35:40.126Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:35:40.126Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:35:40.126Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:35:40.126Z"}
+{"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2025-01-01 00:00:00' AND '2025-01-30 23:59:59' \n    ","timestamp":"2025-01-31T03:35:40.126Z"}
+{"level":"info","message":"Record count => 0","timestamp":"2025-01-31T03:35:40.319Z"}
+{"level":"info","message":"Cal finish","timestamp":"2025-01-31T03:35:40.323Z"}
+{"level":"info","message":"Decrypted user request header: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiY3VzX2lkIjoxMDAwLCJjdXNfbmFtZSI6InN1cHBvcnQiLCJjdXNfdGVsIjoiMDIwNzcxNTAwMDgiLCJ1c2VyR3JvdXAiOnsiY29kZSI6IlNVUEVSIiwibmFtZSI6IkFkbWluaXN0cmF0b3IiLCJpZCI6MX0sInRlcm1pbmFsIjpbXSwiaWF0IjoxNzM4Mjk0MzM5LCJleHAiOjE3MzgzMTIzMzl9.-WTO45JxHnfs7QyJob_7kjS-d4GiSWbAXYBGiXHSs2A","timestamp":"2025-01-31T03:40:07.881Z"}
+{"level":"warn","message":"user decrypted support","timestamp":"2025-01-31T03:40:07.893Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:40:08.962Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:40:08.963Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:40:08.965Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:40:08.965Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:40:08.968Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:40:08.969Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:40:08.971Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:40:08.972Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:40:09.070Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:40:09.072Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:40:09.073Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:40:09.073Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:40:09.078Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:40:09.079Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:40:09.083Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:40:09.094Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:40:09.209Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:40:09.210Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:40:09.218Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:40:09.225Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:40:09.225Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:40:09.226Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:40:09.243Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:40:09.243Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:40:09.360Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:40:09.361Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:40:09.361Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:40:09.362Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:40:09.362Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:40:09.363Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:40:09.363Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:40:09.363Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:40:09.373Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:40:09.373Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:40:09.374Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:40:09.374Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:40:09.375Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:40:09.375Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:40:09.375Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:40:09.375Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:40:09.382Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:40:09.383Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:40:09.383Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:40:09.383Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:40:09.383Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:40:09.383Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:40:09.383Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:40:09.383Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:40:09.404Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:40:09.404Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:40:09.404Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:40:09.405Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:40:09.405Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:40:09.405Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:40:09.405Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:40:09.405Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:40:09.417Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:40:09.418Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:40:09.420Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:40:09.420Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:40:09.427Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:40:09.427Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:40:09.427Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:40:09.427Z"}
+{"level":"info","message":"Decrypted user request header: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiY3VzX2lkIjoxMDAwLCJjdXNfbmFtZSI6InN1cHBvcnQiLCJjdXNfdGVsIjoiMDIwNzcxNTAwMDgiLCJ1c2VyR3JvdXAiOnsiY29kZSI6IlNVUEVSIiwibmFtZSI6IkFkbWluaXN0cmF0b3IiLCJpZCI6MX0sInRlcm1pbmFsIjpbXSwiaWF0IjoxNzM4Mjk0MzM5LCJleHAiOjE3MzgzMTIzMzl9.-WTO45JxHnfs7QyJob_7kjS-d4GiSWbAXYBGiXHSs2A","timestamp":"2025-01-31T03:59:38.670Z"}
+{"level":"warn","message":"user decrypted support","timestamp":"2025-01-31T03:59:38.702Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:59:38.945Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:59:38.946Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:59:38.947Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:59:38.947Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:59:38.949Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:59:38.949Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:59:38.952Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:59:38.952Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:59:39.084Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:59:39.084Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:59:39.084Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:59:39.084Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:59:39.087Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:59:39.087Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:59:39.087Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:59:39.087Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:59:39.103Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:59:39.103Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:59:39.103Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:59:39.103Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:59:39.103Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:59:39.103Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:59:39.104Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:59:39.104Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:59:39.106Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:59:39.106Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:59:39.108Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:59:39.109Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:59:39.110Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:59:39.110Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:59:39.112Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:59:39.112Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:59:39.132Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:59:39.132Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:59:39.132Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:59:39.132Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:59:39.132Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:59:39.133Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:59:39.134Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:59:39.134Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:59:39.135Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:59:39.135Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:59:39.137Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:59:39.137Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:59:39.139Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:59:39.139Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:59:39.141Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:59:39.141Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:59:39.146Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:59:39.146Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:59:39.146Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:59:39.146Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:59:39.146Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:59:39.147Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:59:39.147Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:59:39.147Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:59:39.152Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:59:39.154Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:59:39.154Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:59:39.154Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:59:39.154Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:59:39.154Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T03:59:39.154Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T03:59:39.154Z"}
+{"level":"info","message":"Decrypted user request header: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiY3VzX2lkIjoxMDAwLCJjdXNfbmFtZSI6InN1cHBvcnQiLCJjdXNfdGVsIjoiMDIwNzcxNTAwMDgiLCJ1c2VyR3JvdXAiOnsiY29kZSI6IlNVUEVSIiwibmFtZSI6IkFkbWluaXN0cmF0b3IiLCJpZCI6MX0sInRlcm1pbmFsIjpbXSwiaWF0IjoxNzM4Mjk0MzM5LCJleHAiOjE3MzgzMTIzMzl9.-WTO45JxHnfs7QyJob_7kjS-d4GiSWbAXYBGiXHSs2A","timestamp":"2025-01-31T04:01:53.762Z"}
+{"level":"warn","message":"user decrypted support","timestamp":"2025-01-31T04:01:53.774Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:01:54.015Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:01:54.016Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:01:54.017Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:01:54.017Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:01:54.018Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:01:54.018Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:01:54.019Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:01:54.019Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:01:54.058Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:01:54.058Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:01:54.059Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:01:54.059Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:01:54.063Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:01:54.063Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:01:54.064Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:01:54.064Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:01:54.071Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:01:54.071Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:01:54.071Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:01:54.071Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:01:54.072Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:01:54.072Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:01:54.073Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:01:54.073Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:01:54.087Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:01:54.088Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:01:54.088Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:01:54.088Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:01:54.088Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:01:54.088Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:01:54.088Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:01:54.088Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:01:54.092Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:01:54.092Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:01:54.092Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:01:54.092Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:01:54.092Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:01:54.092Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:01:54.092Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:01:54.092Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:01:54.097Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:01:54.097Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:01:54.098Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:01:54.098Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:01:54.098Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:01:54.098Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:01:54.098Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:01:54.098Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:01:54.101Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:01:54.101Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:01:54.103Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:01:54.104Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:01:54.105Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:01:54.105Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:01:54.105Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:01:54.108Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:01:54.115Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:01:54.115Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:01:54.115Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:01:54.116Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:01:54.116Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:01:54.116Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:01:54.117Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:01:54.118Z"}
+{"level":"info","message":"Decrypted user request header: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiY3VzX2lkIjoxMDAwLCJjdXNfbmFtZSI6InN1cHBvcnQiLCJjdXNfdGVsIjoiMDIwNzcxNTAwMDgiLCJ1c2VyR3JvdXAiOnsiY29kZSI6IlNVUEVSIiwibmFtZSI6IkFkbWluaXN0cmF0b3IiLCJpZCI6MX0sInRlcm1pbmFsIjpbXSwiaWF0IjoxNzM4Mjk0MzM5LCJleHAiOjE3MzgzMTIzMzl9.-WTO45JxHnfs7QyJob_7kjS-d4GiSWbAXYBGiXHSs2A","timestamp":"2025-01-31T04:03:27.269Z"}
+{"level":"warn","message":"user decrypted support","timestamp":"2025-01-31T04:03:27.280Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:27.594Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:27.594Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:27.596Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:27.596Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:27.598Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:27.599Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:27.603Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:27.604Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:27.659Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:27.660Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:27.660Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:27.661Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:27.661Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:27.661Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:27.661Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:27.661Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:27.677Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:27.678Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:27.678Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:27.678Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:27.679Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:27.679Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:27.679Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:27.680Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:27.703Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:27.704Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:27.704Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:27.704Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:27.705Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:27.705Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:27.705Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:27.705Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:27.725Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:27.726Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:27.726Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:27.726Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:27.727Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:27.728Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:27.728Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:27.729Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:27.743Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:27.743Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:27.744Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:27.745Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:27.745Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:27.745Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:27.746Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:27.746Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:27.749Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:27.749Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:27.749Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:27.749Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:27.749Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:27.749Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:27.749Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:27.750Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:27.754Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:27.760Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:27.761Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:27.761Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:27.761Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:27.761Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:27.762Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:27.762Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:27.788Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:27.788Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:27.790Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:27.791Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:27.807Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:27.808Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:27.809Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:27.811Z"}
+{"level":"warn","message":"Date 2025-01-01 2025-12-31","timestamp":"2025-01-31T04:03:27.812Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:31.976Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:31.985Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:31.986Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:31.986Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:31.987Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:31.987Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:31.990Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:31.990Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:32.014Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:32.015Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:32.016Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:32.016Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:32.016Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:32.016Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:32.016Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:32.016Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:32.023Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:32.023Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:32.024Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:32.024Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:32.024Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:32.024Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:32.024Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:32.024Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:32.041Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:32.041Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:32.042Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:32.042Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:32.042Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:32.043Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:32.043Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:32.043Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:32.049Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:32.049Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:32.049Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:32.049Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:32.050Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:32.050Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:32.050Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:32.050Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:32.369Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:32.369Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:32.370Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:32.370Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:32.370Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:32.370Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:32.370Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:32.370Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:32.371Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:32.371Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:32.371Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:32.371Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:32.371Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:32.371Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:32.371Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:32.371Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:32.372Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:32.372Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:32.372Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:32.373Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:32.373Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:32.373Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:32.373Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:32.373Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:32.385Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:32.385Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:32.385Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:32.385Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:32.385Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:32.385Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:32.385Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:32.386Z"}
+{"level":"warn","message":"Date 2025-01-01 2025-12-31","timestamp":"2025-01-31T04:03:32.386Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:32.392Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:32.393Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:32.393Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:32.393Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:32.393Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:32.393Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.companyId,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.companyId,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN company u ON u.id = p.companyId LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2025-01-01 00:00:00' AND '2025-01-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2025-01-31T04:03:32.393Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:32.395Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:32.395Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:32.395Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:32.395Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:32.395Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:32.395Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:32.396Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:32.396Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:33.351Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:33.351Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:33.351Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:33.351Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:33.351Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:33.351Z"}
+{"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2025-01-01 00:00:00' AND '2025-01-30 23:59:59' \n    ","timestamp":"2025-01-31T04:03:33.354Z"}
+{"level":"info","message":"Record count => 0","timestamp":"2025-01-31T04:03:33.370Z"}
+{"level":"info","message":"Cal finish","timestamp":"2025-01-31T04:03:33.370Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:35.236Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:35.236Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:35.237Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:35.237Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:35.237Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:35.237Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:35.237Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:35.238Z"}
+{"level":"warn","message":"Date 2025-01-01 2025-12-31","timestamp":"2025-01-31T04:03:35.238Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:35.247Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:35.247Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:35.248Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:35.248Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:35.248Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:35.248Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.companyId,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.companyId,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN company u ON u.id = p.companyId LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2025-01-01 00:00:00' AND '2025-01-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2025-01-31T04:03:35.248Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:35.320Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:35.320Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:35.320Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:35.320Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:03:35.320Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:03:35.320Z"}
+{"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2025-01-01 00:00:00' AND '2025-01-30 23:59:59' \n    ","timestamp":"2025-01-31T04:03:35.320Z"}
+{"level":"info","message":"Record count => 0","timestamp":"2025-01-31T04:03:35.359Z"}
+{"level":"info","message":"Cal finish","timestamp":"2025-01-31T04:03:35.359Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:04:50.843Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:04:50.848Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:04:50.849Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:04:50.849Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:04:50.852Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:04:50.852Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:04:50.858Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:04:50.858Z"}
+{"level":"warn","message":"Date 2025-01-01 2025-01-31","timestamp":"2025-01-31T04:04:50.866Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:04:51.969Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:04:51.970Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:04:51.970Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:04:51.970Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:04:51.971Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:04:51.971Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:04:51.971Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:04:51.971Z"}
+{"level":"warn","message":"Date 2025-01-01 2025-01-31","timestamp":"2025-01-31T04:04:51.972Z"}
+{"level":"warn","message":"Request date 2025-01-01 userId 1","timestamp":"2025-01-31T04:04:51.972Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:04:56.157Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:04:56.160Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:04:56.161Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:04:56.161Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:04:56.161Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:04:56.161Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:04:56.163Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:04:56.163Z"}
+{"level":"info","message":"Decrypted user request header: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiY3VzX2lkIjoxMDAwLCJjdXNfbmFtZSI6InN1cHBvcnQiLCJjdXNfdGVsIjoiMDIwNzcxNTAwMDgiLCJ1c2VyR3JvdXAiOnsiY29kZSI6IlNVUEVSIiwibmFtZSI6IkFkbWluaXN0cmF0b3IiLCJpZCI6MX0sInRlcm1pbmFsIjpbXSwiaWF0IjoxNzM4Mjk0MzM5LCJleHAiOjE3MzgzMTIzMzl9.-WTO45JxHnfs7QyJob_7kjS-d4GiSWbAXYBGiXHSs2A","timestamp":"2025-01-31T04:04:58.138Z"}
+{"level":"warn","message":"user decrypted support","timestamp":"2025-01-31T04:04:58.139Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:04:58.255Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:04:58.255Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:04:58.255Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:04:58.255Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:04:58.255Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:04:58.255Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:04:58.255Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:04:58.255Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:05:00.007Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:05:00.007Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:05:00.009Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:05:00.009Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:05:00.009Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:05:00.009Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:05:00.009Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:05:00.009Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:05:15.156Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:05:15.158Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:05:15.159Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:05:15.159Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:05:15.159Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:05:15.159Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:05:15.161Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:05:15.161Z"}
+{"level":"warn","message":"Date 2025-01-01 2025-12-31","timestamp":"2025-01-31T04:05:15.162Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:05:15.196Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:05:15.196Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:05:15.196Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:05:15.196Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:05:15.196Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:05:15.196Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.companyId,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.companyId,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN company u ON u.id = p.companyId LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2025-01-01 00:00:00' AND '2025-01-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2025-01-31T04:05:15.197Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:05:15.293Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:05:15.293Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:05:15.293Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:05:15.293Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:05:15.294Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:05:15.294Z"}
+{"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2025-01-01 00:00:00' AND '2025-01-30 23:59:59' \n    ","timestamp":"2025-01-31T04:05:15.294Z"}
+{"level":"info","message":"Record count => 0","timestamp":"2025-01-31T04:05:15.398Z"}
+{"level":"info","message":"Cal finish","timestamp":"2025-01-31T04:05:15.402Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:05:15.956Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:05:15.960Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:05:15.961Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:05:15.961Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:05:15.962Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:05:15.962Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:05:15.963Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:05:15.964Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:05:15.982Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:05:15.983Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:05:15.984Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:05:15.984Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:05:15.984Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:05:15.984Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:05:15.985Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:05:15.985Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:05:15.989Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:05:15.989Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:05:15.989Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:05:15.989Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:05:15.990Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:05:15.990Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:05:15.990Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:05:15.990Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:05:18.019Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:05:18.020Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:05:18.020Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:05:18.020Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:05:18.021Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:05:18.021Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:05:18.021Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:05:18.021Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:05:18.699Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:05:18.699Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:05:18.700Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:05:18.700Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:05:18.700Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:05:18.700Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:05:18.700Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:05:18.700Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:05:50.072Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:05:50.075Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:05:50.076Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:05:50.076Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:05:50.076Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:05:50.076Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:05:50.077Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:05:50.077Z"}
+{"level":"warn","message":"Date 2025-01-01 2025-12-31","timestamp":"2025-01-31T04:05:50.077Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:05:50.112Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:05:50.113Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:05:50.113Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:05:50.113Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:05:50.113Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:05:50.113Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.companyId,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.companyId,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN company u ON u.id = p.companyId LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2025-01-01 00:00:00' AND '2025-01-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2025-01-31T04:05:50.114Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:05:50.120Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:05:50.120Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:05:50.120Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:05:50.120Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:05:50.120Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:05:50.120Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:05:50.120Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:05:50.120Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:05:50.302Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:05:50.305Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:05:50.305Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:05:50.305Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-01-31T04:05:50.306Z"}
+{"level":"warn","message":"User name from token: support","timestamp":"2025-01-31T04:05:50.306Z"}
+{"level":"info","message":"SELECT d.*,0 AS cart_total\n    FROM dynamic_customer d\n    WHERE d.txn_date BETWEEN '2025-01-01 00:00:00' AND '2025-01-30 23:59:59' \n    ","timestamp":"2025-01-31T04:05:50.308Z"}
+{"level":"info","message":"Record count => 0","timestamp":"2025-01-31T04:05:50.343Z"}
+{"level":"info","message":"Cal finish","timestamp":"2025-01-31T04:05:50.343Z"}
