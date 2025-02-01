@@ -152,8 +152,8 @@ const multi = async (req, res) => {
     logger.info("Outside loop");
     try {
 
-        await productService.createProd(req, imagesObj )
-        res.status(201).send('Transaction completed');
+        const producId = await productService.createProdV1(req, imagesObj )
+        res.status(201).send(`Transaction completed |${producId}`);
     } catch (error) {
         logger.info("False and removing files... ");
         logger.error(`Error by productService.createProd method ${error}`)

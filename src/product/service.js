@@ -162,13 +162,15 @@ const createProd = async (req, imagesObj) => {
                 companyId
             ];
             //*****************  INSERT PRODUCT SQL  *****************//
-            logger.info("SQL CREATE PRODUCT: " + sqlCom);
+            logger.info("SQL CREATE PRODUCT SERVICE: " + sqlCom);
             Db.query(sqlCom, values, (er, re) => {
                 logger.info("Execute:=>");
                 if (er) {
                     throw new Error(`productservice create product fail #####0002 ${er}`);
                 } else if (re) {
+
                     const productId = re.insertId;
+                    logger.warn(`${productId} create product response ${JSON.stringify(re)}`)
                     logger.warn(`Image len ${image_path.length}`)
                     if (image_path.length > 0) {
                         image_path.forEach((i, idx, element) => {
@@ -191,6 +193,128 @@ const createProd = async (req, imagesObj) => {
     }
 
 }
+
+// ======================= for image upload operation ================
+const createProdV1 = async (req, imagesObj) => {
+    return new Promise((resolve, reject) => {
+        // Get the current date and time
+        let date = new Date();
+        // Convert the date and time to format
+        let mysqlDateTime = date.getFullYear() + '-' +
+            ('00' + (date.getMonth() + 1)).slice(-2) + '-' +
+            ('00' + date.getDate()).slice(-2) + ' ' +
+            ('00' + date.getHours()).slice(-2) + ':' +
+            ('00' + date.getMinutes()).slice(-2) + ':' +
+            ('00' + date.getSeconds()).slice(-2);
+        logger.info("===> sql time " + mysqlDateTime); // Outputs: YYYY-MM-DD HH:MM:SS
+        logger.info("*************** CREATE PRODUCT  ***************");
+        logger.info(`*************** CREATE PRODUCT SERVICE 1 ${req} ***************`);
+        logger.info(`*************** CREATE PRODUCT SERVICE 2 ${JSON.stringify(req.body)} ***************`);
+        logger.info(`*************Payload: ${req.body.FORM}*****************`);
+        logger.info(req.body.FORM);
+        const body = JSON.parse(req.body.FORM);
+        const pro_cat = body.pro_category;
+        let pro_id = body.pro_id;
+        const pro_name = body.pro_name;
+        const pro_price = body.pro_price;
+        const pro_desc = body.pro_desc;
+        const pro_status = +body.pro_status;
+        const image_path = imagesObj;
+        const costPrice = body.pro_cost_price;
+        const timestamps = new Date();
+        const mysqlDatetime = timestamps.toISOString().slice(0, 19).replace('T', ' ');
+        const barCode = body.barCode;
+        const receiveUnitId = body.receiveUnitId;
+        const stockUnitId = body.stockUnitId;
+        const minStock = body.minStock;
+        const costCurrencyId = body.costCurrencyId;
+        const saleCurrencyId = body.saleCurrencyId;
+        const retail_percent = body.pro_retail_price || 0.0;
+        const locking_session_id = Date.now()
+        const isActive = body.isActive;
+        const companyId = body.companyId;
+        let sqlComImages = 'INSERT INTO image_path(pro_id, img_name, img_path, createdAt, updateTimestamp, productId) VALUES';
+
+        //*****************  QUERY LAST PRODUCT ID SQL  *****************//
+        try {
+            Db.query('SELECT MAX(pro_id) AS ID FROM product HAVING MAX(pro_id) IS NOT NULL', (er, re) => {
+                logger.info("=====> Processing product db");
+                if (er) {
+                    reject(`productservice create product fail #####0001 ${er}`);
+                }
+
+                if (re.length < 1) pro_id = 1000;
+                else pro_id = parseInt(re[0]['ID']) + 1;
+
+                const sqlCom = `
+                    INSERT INTO product (
+                        pro_category, pro_id, pro_name, pro_price, pro_desc, pro_status, 
+                        retail_cost_percent, cost_price, locking_session_id, createdAt, 
+                        updateTimestamp, minStock, barCode, receiveUnitId, stockUnitId, 
+                        costCurrencyId, saleCurrencyId, isActive, companyId
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+                `;
+
+                // Values array to pass into the query
+                const values = [
+                    pro_cat,
+                    pro_id,
+                    pro_name,
+                    pro_price,
+                    pro_desc,
+                    pro_status,
+                    retail_percent,
+                    costPrice,
+                    locking_session_id,
+                    mysqlDateTime,
+                    mysqlDateTime,
+                    minStock,
+                    barCode,
+                    receiveUnitId,
+                    stockUnitId,
+                    costCurrencyId,
+                    saleCurrencyId,
+                    isActive,
+                    companyId
+                ];
+
+                //*****************  INSERT PRODUCT SQL  *****************//
+                logger.info("SQL CREATE PRODUCT SERVICE: " + sqlCom);
+                Db.query(sqlCom, values, (er, re) => {
+                    if (er) {
+                        reject(`productservice create product fail #####0002 ${er}`);
+                    } else if (re) {
+                        const productId = re.insertId;
+                        logger.warn(`${productId} create product response ${JSON.stringify(re)}`)
+                        logger.warn(`Image len ${image_path.length}`)
+                        
+                        if (image_path.length > 0) {
+                            image_path.forEach((i, idx, element) => {
+                                if (idx === element.length - 1) 
+                                    sqlComImages += `(${pro_id},'${i.name}','${i.path}','${mysqlDatetime}','${mysqlDatetime}','${productId}');`;
+                                else 
+                                    sqlComImages += `(${pro_id},'${i.name}','${i.path}','${mysqlDatetime}','${mysqlDatetime}','${productId}'),`;
+                            });
+                            //*****************  INSERT IMAGES SQL  *****************//
+                            Db.query(sqlComImages, (er, re) => {
+                                if (er) reject(`productservice create product fail #####0003 ${er}`);
+                                else updateImageProductId();
+                            });
+                        }
+
+                        // Resolve with the productId
+                        resolve(productId);
+                    }
+                })
+            })
+        } catch (error) {
+            logger.error(`Create product service error ${error}`)
+            reject(`productservice create product fail 0001 ${error}`);
+        }
+    });
+}
+
 
 const updateProd = async (req, imagesObj) => {
     logger.info("*************** UPDATE PRODUCT  ***************");
@@ -337,5 +461,6 @@ module.exports = {
     updateProductCountGroup,
     findProductCodeFromProductId,
     updateProd,
-    createProd
+    createProd,
+    createProdV1
 }

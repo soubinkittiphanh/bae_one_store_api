@@ -51,7 +51,7 @@ const createProd = async (req, res) => {
             locking_session_id,createdAt,updateTimestamp,minStock,barCode,receiveUnitId,stockUnitId,costCurrencyId,saleCurrencyId,isActive,companyId)
         VALUES('${pro_cat}','${pro_id}','${pro_name}','${pro_price}','${pro_desc}','${pro_status}','${retail_percent}','${costPrice}',${locking_session_id},'${mysqlDateTime}','${mysqlDateTime}',${minStock},'${barCode}',${receiveUnitId},${stockUnitId},${costCurrencyId},${saleCurrencyId},${isActive},${companyId});`
         //*****************  INSERT PRODUCT SQL  *****************//
-        logger.info("SQL CREATE PRODUCT: " + sqlCom);
+        logger.info("SQL CREATE PRODUCT CONTROLLER: " + sqlCom);
         Db.query(sqlCom, (er, re) => {
             logger.info("Execute:=>");
             if (er) {
