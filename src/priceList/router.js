@@ -2,7 +2,7 @@
 const controller = require("./controller")
 const express = require("express")
 const router = express.Router()
-const {validateToken} = require('../api').jwtApi
+const { validateToken } = require('../api').jwtApi
 const { body } = require('express-validator');
 router.use(validateToken);
 
@@ -15,7 +15,9 @@ router.use(validateToken);
 //     // body('isActive').isBoolean().withMessage('isActive must be a boolean value'),
 //   ];
 // TODO: PRINCE ADD MORE FIELD IN CONTROLLER [ amount ]
-router.post("/create", controller.createPriceList)
+router
+    .post("/create", controller.createPriceList)
+    .post("/upload", controller.createPriceList)
     .put("/update/:id", controller.updatePriceListById)
     .delete("/find/:id", controller.deletePriceListById)
     .get("/find", controller.getActivePriceLists)

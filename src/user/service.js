@@ -97,27 +97,27 @@ const ensureDefaultUserExists = async () => {
 const basicParameterInitialise = async () => {
     try {
         await db.sequelize.transaction(async (transaction) => {
-            const query0 = `INSERT INTO location SELECT * FROM dcommerce_pro_draft.location;`;
-            const query1 = `INSERT INTO userGroup SELECT * FROM dcommerce_pro_draft.userGroup;`;
-            const query2 = `INSERT INTO terminal SELECT * FROM dcommerce_pro_draft.terminal;`;
-            const query3 = `INSERT INTO UserTerminals SELECT * FROM dcommerce_pro_draft.UserTerminals;`;
-            const query15 = `INSERT INTO menuHeader SELECT * FROM dcommerce_pro_draft.menuHeader;`;
-            const query16 = `INSERT INTO menuLine SELECT * FROM dcommerce_pro_draft.menuLine;`;
-            const query4 = `INSERT INTO GroupMenuHeader SELECT * FROM dcommerce_pro_draft.GroupMenuHeader;`;
-            const query5 = `INSERT INTO MenuHeaderLines SELECT * FROM dcommerce_pro_draft.MenuHeaderLines;`;
-            const query6 = `INSERT INTO GroupAuthorities SELECT * FROM dcommerce_pro_draft.GroupAuthorities;`;
-            const query7 = `CREATE TABLE card_sale AS SELECT * FROM dcommerce_pro_draft.card_sale;`;
-            const query8 = `INSERT INTO company SELECT * FROM dcommerce_pro_draft.company;`;
-            const query9 = `INSERT INTO shipping SELECT * FROM dcommerce_pro_draft.shipping;`;
-            const query10 = `INSERT INTO geography SELECT * FROM dcommerce_pro_draft.geography;`;
-            const query11 = `INSERT INTO rider SELECT * FROM dcommerce_pro_draft.rider;`;
-            const query12 = `INSERT INTO payment SELECT * FROM dcommerce_pro_draft.payment;`;
+            const query0 = `INSERT INTO location SELECT * FROM dcommerce_pro_init.location;`;
+            const query1 = `INSERT INTO userGroup SELECT * FROM dcommerce_pro_init.userGroup;`;
+            const query2 = `INSERT INTO terminal SELECT * FROM dcommerce_pro_init.terminal;`;
+            const query3 = `INSERT INTO UserTerminals SELECT * FROM dcommerce_pro_init.UserTerminals;`;
+            const query15 = `INSERT INTO menuHeader SELECT * FROM dcommerce_pro_init.menuHeader;`;
+            const query16 = `INSERT INTO menuLine SELECT * FROM dcommerce_pro_init.menuLine;`;
+            const query4 = `INSERT INTO GroupMenuHeader SELECT * FROM dcommerce_pro_init.GroupMenuHeader;`;
+            const query5 = `INSERT INTO MenuHeaderLines SELECT * FROM dcommerce_pro_init.MenuHeaderLines;`;
+            const query6 = `INSERT INTO GroupAuthorities SELECT * FROM dcommerce_pro_init.GroupAuthorities;`;
+            const query7 = `CREATE TABLE card_sale AS SELECT * FROM dcommerce_pro_init.card_sale;`;
+            const query8 = `INSERT INTO company SELECT * FROM dcommerce_pro_init.company;`;
+            const query9 = `INSERT INTO shipping SELECT * FROM dcommerce_pro_init.shipping;`;
+            const query10 = `INSERT INTO geography SELECT * FROM dcommerce_pro_init.geography;`;
+            const query11 = `INSERT INTO rider SELECT * FROM dcommerce_pro_init.rider;`;
+            const query12 = `INSERT INTO payment SELECT * FROM dcommerce_pro_init.payment;`;
             const query13 = `INSERT INTO client (id, name, company, email, address, telephone, credit, lateChargePercent, grade, isActive, createdAt, updateTimestamp)
             SELECT id, name, company, email, address, telephone, credit, lateChargePercent, grade,
             IF(isActive NOT IN (0, 1), 1, isActive), createdAt, updateTimestamp
-            FROM dcommerce_pro_draft.client;
+            FROM dcommerce_pro_init.client;
             `;
-            const query14 = `INSERT INTO currency SELECT * FROM dcommerce_pro_draft.currency;`;
+            const query14 = `INSERT INTO currency SELECT * FROM dcommerce_pro_init.currency;`;
 
             await db.sequelize.query(query15, { type: db.sequelize.QueryTypes.INSERT, transaction });
             await db.sequelize.query(query16, { type: db.sequelize.QueryTypes.INSERT, transaction });
