@@ -26,6 +26,15 @@ module.exports = (sequelize, DataTypes) => {
         district: {
             type: DataTypes.STRING,
         },
+        bank: {
+            type: DataTypes.STRING,
+        },
+        accountName: {
+            type: DataTypes.STRING,
+        },
+        accounts: {
+            type: DataTypes.STRING,
+        },
         village: {
             type: DataTypes.STRING,
         },
