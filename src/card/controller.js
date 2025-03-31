@@ -1,6 +1,8 @@
 
 const Card = require("../models").card; // Import the users model
 const Product = require("../models").product; // Import the users model
+const Currency = require("../models").currency; // Import the users model
+const { Op } = require("sequelize");
 const { sequelize } = require('../models');
 const cardController = {
   // Create a new card
@@ -27,25 +29,96 @@ const cardController = {
   // Get all cards
   async getAll(req, res) {
     try {
-      const cards = await Card.findAll();
+      const cards = await Card.findAll({ include: 'product' });
       return res.status(200).json(cards);
     } catch (error) {
       return res.status(400).json({ message: error.message });
     }
   },
-  // Get all count cards group by product
-  // async getAllCountCardGroupByProduct(req, res) {
+  // Get all cards
+
+  async getAllByDate(req, res) {
+    try {
+      const { startDate, endDate } = req.query;
+  
+      // Validate date input
+      if (!startDate || !endDate) {
+        return res.status(400).json({ message: "Start date and end date are required." });
+      }
+  
+      // Query to group by product and aggregate cost and card count
+      const cards = await Card.findAll({
+        attributes: [
+          'productId',  // Group by productId
+          [sequelize.fn('COUNT', sequelize.col('card.id')), 'cardCount'],  // Count the cards (reference `card.id`)
+          [sequelize.fn('SUM', sequelize.col('card.cost')), 'totalCost'],  // Sum the cost (reference `card.cost`)
+          [sequelize.col('product.pro_name'), 'pro_name'],  // Product name (fix alias reference)
+        ],
+        where: {
+          createdAt: {
+            [Op.between]: [new Date(startDate), new Date(endDate)]
+          }
+        },
+        include: [
+          {
+            model: Product,
+            as: 'product', // This is where you specify the alias for the association
+            attributes: []  // No need to select all columns of Product, just the name is enough
+          },
+          {
+            model: Currency,
+            as: 'currency',
+            attributes: ['code']  // Assuming you need the currency code too
+          }
+        ],
+        group: ['productId', 'product.pro_name'],  // Group by productId and product name
+        raw: true, // To get raw data and not Sequelize instances
+      });
+  
+      return res.status(200).json(cards);
+    } catch (error) {
+      return res.status(400).json({ message: error.message });
+    }
+  },
+  
+
+  // async getAllByDate(req, res) {
   //   try {
+  //     const { startDate, endDate } = req.query;
+
+  //     // Validate date input
+  //     if (!startDate || !endDate) {
+  //       return res.status(400).json({ message: "Start date and end date are required." });
+  //     }
+
   //     const cards = await Card.findAll({
   //       where: {
-  //         isActive: true,
-  //       }
+  //         createdAt: {
+  //           [Op.between]: [new Date(startDate), new Date(endDate)]
+  //         }
+  //       },
+  //       include: ['product','currency']
   //     });
+
   //     return res.status(200).json(cards);
   //   } catch (error) {
   //     return res.status(400).json({ message: error.message });
   //   }
   // },
+
+  // Get all count cards group by product
+  async getAllCountCardGroupByProduct(req, res) {
+    try {
+      const cards = await Card.findAll({
+        where: {
+          isActive: true,
+        }
+      });
+      return res.status(200).json(cards);
+    } catch (error) {
+      return res.status(400).json({ message: error.message });
+    }
+  },
 
   // Get count of cards and sum of card values grouped by product
   async getAllCountAndSumGroupByProduct(req, res) {
