@@ -9,5 +9,5 @@ const config = {
     rfTkSecret: 'Jacke3848b9bd2e3eee522325953aafc118ed017c811cc93fae99a4b2f5ba3506e0e217636b3b509055900cb1da7',
     db: dbClient.uat
 }
-// 28800290
+// 28800290 ssss
 module.exports = config;
