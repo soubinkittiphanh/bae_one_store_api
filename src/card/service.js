@@ -58,6 +58,7 @@ const createHulkStockCard = async (req, res) => {
             return res.status(403).send("Server error " + error)
         });
 }
+// TODO: Lets continues here for stock adjustment 
 const adjustStock = async (whereCondition, stockCardQty) => {
     try {
         // Step 1: Find the rows to delete
@@ -347,6 +348,33 @@ const createAutoHulkStockCard = async (line) => {
     }
 
 }
+
+
+const adjustStockCard = async (productId, stockCount, product_code) => {
+    try {
+        // Count current stock where card_isused = 0
+        const currentStock = await Card.count({
+            where: { productId, card_isused: 0 }
+        });
+
+        // If the current stock is greater than the desired stock count, delete excess entries
+        if (currentStock > stockCount) {
+            const excess = currentStock - stockCount;
+
+            await Card.destroy({
+                where: { productId, card_isused: 0 },
+                order: [['id', 'ASC']], // Ensuring older records are deleted first
+                limit: excess // Deleting only the excess amount
+            });
+
+            console.log(`Deleted ${excess} excess stock entries for productId ${productId}`);
+        } else {
+            console.log(`No adjustment needed for productId ${productId}`);
+        }
+    } catch (error) {
+        console.error('Error adjusting stock:', error);
+    }
+};
 
 
 module.exports = {
