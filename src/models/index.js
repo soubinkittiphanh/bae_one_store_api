@@ -82,6 +82,7 @@ db.menuHeader = require("../menu/model")(sequelize, DataTypes);
 db.menuLine = require("../menu/line/model")(sequelize, DataTypes);
 db.orderHIS = require("../order_history/model")(sequelize, DataTypes);
 db.order = require("../order/model")(sequelize, DataTypes);
+db.service = require("../service/model")(sequelize, DataTypes);
 db.priceList = require("../priceList/model")(sequelize, DataTypes);
 db.quotationHeader = require("../quotation/model")(sequelize, DataTypes);
 db.quotationLine = require("../quotation/line/model")(sequelize, DataTypes);

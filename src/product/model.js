@@ -15,12 +15,17 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.DOUBLE,
             defaultValue: 0
         },
+        duration_minutes: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            defaultValue: 0,
+        },
         pro_desc: {
             type: DataTypes.STRING,
         },
         pro_status: {
             type: DataTypes.BOOLEAN,
-            defaultValue:false
+            defaultValue: false
         },
         pro_image_path: {
             type: DataTypes.STRING,
@@ -49,10 +54,19 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING(40),
             // allowNull: false,
         },
+        vendorName: {
+            type: DataTypes.STRING(100),
+            // allowNull: false,
+        },
         isActive: {
             type: DataTypes.BOOLEAN,
             allowNull: false,
             defaultValue: true,
+        },
+        _category: {
+            type: DataTypes.ENUM('product', 'service'),
+            allowNull: false,
+            defaultValue: 'product',
         },
     }, {
         sequelize,
@@ -69,11 +83,11 @@ module.exports = (sequelize, DataTypes) => {
     })
     Product.associate = (models) => {
         Product.belongsToMany(models.WashJob, {
-          through: models.WashJobServiceProduct,
-          foreignKey: 'productId',
-          as: 'washJobs',
+            through: models.WashJobServiceProduct,
+            foreignKey: 'productId',
+            as: 'washJobs',
         });
-      };
+    };
 
     return Product;
 };

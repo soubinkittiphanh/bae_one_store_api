@@ -233,6 +233,10 @@ const createProdV1 = async (req, imagesObj) => {
         const locking_session_id = Date.now()
         const isActive = body.isActive;
         const companyId = body.companyId;
+        const vendorName = body.vendorName;
+        const category = body._category; // 'product' or 'service'
+        const durationMinutes = body.duration_minutes || 0; // default to 0 if not provided
+
         let sqlComImages = 'INSERT INTO image_path(pro_id, img_name, img_path, createdAt, updateTimestamp, productId) VALUES';
 
         //*****************  QUERY LAST PRODUCT ID SQL  *****************//
@@ -251,9 +255,9 @@ const createProdV1 = async (req, imagesObj) => {
                         pro_category, pro_id, pro_name, pro_price, pro_desc, pro_status, 
                         retail_cost_percent, cost_price, locking_session_id, createdAt, 
                         updateTimestamp, minStock, barCode, receiveUnitId, stockUnitId, 
-                        costCurrencyId, saleCurrencyId, isActive, companyId
+                        costCurrencyId, saleCurrencyId, isActive, companyId,vendorName,_category,duration_minutes
                     )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
                 `;
 
                 // Values array to pass into the query
@@ -276,7 +280,10 @@ const createProdV1 = async (req, imagesObj) => {
                     costCurrencyId,
                     saleCurrencyId,
                     isActive,
-                    companyId
+                    companyId,
+                    vendorName,
+                    category,
+                    durationMinutes
                 ];
 
                 //*****************  INSERT PRODUCT SQL  *****************//
@@ -288,12 +295,12 @@ const createProdV1 = async (req, imagesObj) => {
                         const productId = re.insertId;
                         logger.warn(`${productId} create product response ${JSON.stringify(re)}`)
                         logger.warn(`Image len ${image_path.length}`)
-                        
+
                         if (image_path.length > 0) {
                             image_path.forEach((i, idx, element) => {
-                                if (idx === element.length - 1) 
+                                if (idx === element.length - 1)
                                     sqlComImages += `(${pro_id},'${i.name}','${i.path}','${mysqlDatetime}','${mysqlDatetime}','${productId}');`;
-                                else 
+                                else
                                     sqlComImages += `(${pro_id},'${i.name}','${i.path}','${mysqlDatetime}','${mysqlDatetime}','${productId}'),`;
                             });
                             //*****************  INSERT IMAGES SQL  *****************//
@@ -338,9 +345,13 @@ const updateProd = async (req, imagesObj) => {
     const saleCurrencyId = body.saleCurrencyId;
     const isActive = body.isActive;
     const companyId = body.companyId;
+    const vendorName = body.vendorName;
     const timestamps = new Date();
     const mysqlDatetime = timestamps.toISOString().slice(0, 19).replace('T', ' ');
     const retail_percent = body.pro_retail_price || 0.0;
+    const category = body._category; // 'product' or 'service'
+    const durationMinutes = body.duration_minutes || 0; // default to 0 if not provided
+    logger.warn(`PRODUCT ${JSON.stringify(body)}`);
     let serverImageIds = []
     if (body.server_images) {
         serverImageIds = body.server_images.map(el => el.id);
@@ -371,25 +382,29 @@ const updateProd = async (req, imagesObj) => {
     // receiveUnitId=${receiveUnitId},stockUnitId=${stockUnitId},saleCurrencyId=${saleCurrencyId},costCurrencyId=${costCurrencyId},companyId=${companyId}
     //  WHERE pro_id='${pro_id}'`
     const sqlCom = `
-  UPDATE product 
-  SET 
-    pro_category = ?, 
-    pro_name = ?, 
-    pro_price = ?, 
-    pro_desc = ?, 
-    pro_status = ?, 
-    retail_cost_percent = ?, 
-    isActive = ?, 
-    cost_price = ?, 
-    minStock = ?, 
-    barCode = ?, 
-    receiveUnitId = ?, 
-    stockUnitId = ?, 
-    saleCurrencyId = ?, 
-    costCurrencyId = ?, 
-    companyId = ? 
-  WHERE pro_id = ?;
-`;
+    UPDATE product 
+    SET 
+      pro_category = ?, 
+      pro_name = ?, 
+      pro_price = ?, 
+      pro_desc = ?, 
+      pro_status = ?, 
+      retail_cost_percent = ?, 
+      isActive = ?, 
+      cost_price = ?, 
+      minStock = ?, 
+      barCode = ?, 
+      receiveUnitId = ?, 
+      stockUnitId = ?, 
+      saleCurrencyId = ?, 
+      costCurrencyId = ?, 
+      companyId = ?,
+      vendorName = ?,
+      _category = ?,
+      duration_minutes = ?
+    WHERE pro_id = ?;
+  `;
+
 
     // Values array for parameterized query
     const values = [
@@ -408,14 +423,18 @@ const updateProd = async (req, imagesObj) => {
         saleCurrencyId,
         costCurrencyId,
         companyId,
+        vendorName,
+        category,
+        durationMinutes,
         pro_id
     ];
 
     logger.info(`************* UPDATE PRODUCT ${sqlCom} *****************`);
+    logger.info("Values array:", values);
     logger.info(`************* COMMAND ${sqlComImages} *****************`);
     logger.info(`*************Payload: ${imagesObj} *****************`);
-    Db.query(sqlCom,values, (er, re) => {
-        if (er) throw new Error("Cannot update product code ####0001 ");
+    Db.query(sqlCom, values, (er, re) => {
+        if (er) throw new Error(`Cannot update product code ####0001 ${er} `);
         if (image_path.length < 1) return // Nothing to do
         image_path.forEach((i, idx, element) => {
             if (idx === element.length - 1) sqlComImages += `(${pro_id},'${i.name}','${i.path}','${mysqlDatetime}','${mysqlDatetime}','${productId}');`;

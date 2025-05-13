@@ -60,6 +60,7 @@ const buildApp = async () => {
     app.use("/api/receiving/line",myRouter.receivingLine)
     app.use("/api/webproductgroup",myRouter.webProductGroup)
     app.use("/api/spf",myRouter.spf)
+    app.use("/api/service",myRouter.service)
 
     Router.category(app);
     Router.product(app);

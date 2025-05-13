@@ -81,7 +81,7 @@ const createProduct = async (req, res) => {
   }
   let { pro_id, pro_name, pro_price, pro_desc, pro_status,
     pro_image_path, retail_cost_percent, cost_price,
-    stock_count, locking_session_id, isActive, minStock, barCode, saleCurrencyId, costCurrencyId, companyId } = req.body;
+    stock_count, locking_session_id, isActive, minStock, barCode, saleCurrencyId, costCurrencyId, companyId,vendorName } = req.body;
   locking_session_id = Date.now()
   try {
     const newProduct = await Product.create({
@@ -97,7 +97,11 @@ const createProduct = async (req, res) => {
       locking_session_id,
       minStock,
       isActive,
-      barCode, saleCurrencyId, costCurrencyId, companyId
+      barCode, 
+      saleCurrencyId, 
+      costCurrencyId, 
+      companyId,
+      vendorName,
     });
     res.status(200).json(newProduct);
   } catch (error) {
@@ -115,7 +119,7 @@ const updateProductById = async (req, res) => {
   const { id } = req.params;
   const { pro_id, pro_name, pro_price, pro_desc, pro_status,
     pro_image_path, retail_cost_percent, cost_price, stock_count,
-    isActive, minStock, barCode, saleCurrencyId, costCurrencyId, companyId } = req.body;
+    isActive, minStock, barCode, saleCurrencyId, costCurrencyId, companyId,vendorName } = req.body;
   try {
     const product = await Product.findOne({ where: { id } });
     if (!product) {
@@ -135,7 +139,7 @@ const updateProductById = async (req, res) => {
         locking_session_id,
         minStock,
         isActive,
-        barCode, saleCurrencyId, costCurrencyId, companyId
+        barCode, saleCurrencyId, costCurrencyId, companyId,vendorName
       },
       { where: { id } }
     );

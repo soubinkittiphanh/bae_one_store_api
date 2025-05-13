@@ -44,6 +44,7 @@ const receiving = require("../receiving").router
 const receivingLine = require("../receiving/line").router
 const spf = require("../spf").router
 const webProductGroup = require("../web_product_group").router
+const service = require("../service").router
 
 module.exports={
     orderRouter,
@@ -92,4 +93,5 @@ module.exports={
     receivingLine,
     webProductGroup,
     spf,
+    service
 }

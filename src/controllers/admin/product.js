@@ -173,6 +173,7 @@ const fetchProductFromLocation = async (req, res) => {
     p.receiveUnitId,
     p.stockUnitId,
     p.pro_name,
+    p.vendorName,
     p.pro_category,
     p.pro_price,
     p.pro_status,
@@ -224,7 +225,9 @@ const fetchProdMobile = async (req, res) => {
     logger.info(`*************Payload: *****************ss`);
     const sqlCom = `SELECT p.*,c.categ_name,IFNULL(i.img_name,'No image') AS img_name,i.img_path,
     p.stock_count AS card_count ,IFNULL(s.cnt,0) AS sale_count,
-    p.cost_price
+    p.cost_price,
+    p._category,
+    p.duration_minutes
     FROM product p 
     LEFT JOIN category c ON c.categ_id=p.pro_category
     LEFT JOIN image_path i ON i.pro_id=p.pro_id
