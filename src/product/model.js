@@ -81,13 +81,7 @@ module.exports = (sequelize, DataTypes) => {
         // if you don't want that, set the following
         freezeTableName: true,
     })
-    Product.associate = (models) => {
-        Product.belongsToMany(models.WashJob, {
-            through: models.WashJobServiceProduct,
-            foreignKey: 'productId',
-            as: 'washJobs',
-        });
-    };
+
 
     return Product;
 };

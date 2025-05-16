@@ -61,6 +61,7 @@ const buildApp = async () => {
     app.use("/api/webproductgroup",myRouter.webProductGroup)
     app.use("/api/spf",myRouter.spf)
     app.use("/api/service",myRouter.service)
+    app.use("/api/washjob",myRouter.washJob)
 
     Router.category(app);
     Router.product(app);

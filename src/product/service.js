@@ -282,7 +282,7 @@ const createProdV1 = async (req, imagesObj) => {
                     isActive,
                     companyId,
                     vendorName,
-                    category,
+                    category??'product',
                     durationMinutes
                 ];
 

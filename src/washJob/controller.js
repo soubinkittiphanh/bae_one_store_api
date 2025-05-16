@@ -1,48 +1,40 @@
 // const WashJob = require('../models').washJob;
 const { body, validationResult } = require('express-validator');
 const logger = require('../api/logger');
-const { WashJob, Product, Service, WashJobServiceProduct, WashJobHistory } = require('../models');
+const  WashJob  = require('../models').washjob;
+const  WashJobLine  = require('../models').washjobline;
+const  Product  = require('../models').product;
 
 // Create a new wash job with products and services
 exports.createWashJob = async (req, res) => {
+  logger.info(`Request creating washJob body ${JSON.stringify(req.body)}`);
   try {
-    const { vehicleId, status, notes, totalAmount, startedAt, completedAt, products, services } = req.body;
-
-    const washJob = await WashJob.create({
-      vehicleId,
+    const {
       status,
       notes,
       totalAmount,
       startedAt,
       completedAt,
-    });
+      lines // <-- use this key from frontend
+    } = req.body;
 
-    if (products && products.length > 0) {
-      for (let item of products) {
-        await WashJobServiceProduct.create({
-          washJobId: washJob.id,
-          productId: item.productId,
-          price: item.price,
-          cost: item.cost,
-          quantity: item.quantity,
-        });
+    const washJob = await WashJob.create(
+      {
+        status,
+        notes,
+        totalAmount,
+        startedAt,
+        completedAt,
+        lines // <-- use the same alias as defined in association
+      },
+      {
+        include: [{ model: WashJobLine, as: 'lines' }]
       }
-    }
-
-    if (services && services.length > 0) {
-      for (let item of services) {
-        await WashJobServiceProduct.create({
-          washJobId: washJob.id,
-          serviceId: item.serviceId,
-          price: item.price,
-          cost: item.cost,
-          quantity: item.quantity,
-        });
-      }
-    }
+    );
 
     res.status(201).json({ message: 'WashJob created successfully', data: washJob });
   } catch (err) {
+    logger.error(`Error occurred create washJob ${err}`);
     res.status(400).json({ error: err.message });
   }
 };
@@ -52,15 +44,27 @@ exports.getAllWashJobs = async (req, res) => {
   try {
     const washJobs = await WashJob.findAll({
       include: [
-        { model: Product, as: 'products' },
-        { model: Service, as: 'services' },
-      ],
+        {
+          model: WashJobLine,
+          as: 'lines',
+          include: [
+            {
+              model: Product,
+              as: 'product'
+            }
+          ]
+        }
+      ]
     });
+
+    logger.info(`Fetched WashJob data ${washJobs}`);
     res.status(200).json(washJobs);
   } catch (err) {
+    logger.error(`Fail to fetch washJob: ${err}`);
     res.status(500).json({ error: err.message });
   }
 };
+
 
 // Get a wash job by ID with associated products and services
 exports.getWashJobById = async (req, res) => {

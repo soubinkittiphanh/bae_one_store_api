@@ -58,6 +58,8 @@ db.client = require("../client/model")(sequelize, DataTypes);
 db.group = require("../group/model")(sequelize, DataTypes);
 db.user = require("../user/model")(sequelize, DataTypes);
 db.customer = require("../dynamicCustomer/model")(sequelize, DataTypes);
+db.washjob = require("../washJob/model")(sequelize, DataTypes);
+db.washjobline = require("../washJobLine/model")(sequelize, DataTypes);
 db.shipping = require("../shipping/model")(sequelize, DataTypes);
 db.saleHeader = require("../sales/model")(sequelize, DataTypes);
 db.unit = require("../unit/model")(sequelize, DataTypes);
@@ -107,6 +109,17 @@ db.geography = require("../geography/model")(sequelize, DataTypes);
 db.saleLine = require("../sales/line/model")(sequelize, DataTypes);
 db.payment = require("../paymentMethod/model")(sequelize, DataTypes);
 db.country = require("../country/model")(sequelize, DataTypes);
+db.village = require("../district/model")(sequelize, DataTypes);
+db.district = require("../district-village/model")(sequelize, DataTypes);
+
+
+Object.keys(db).forEach(modelName => {
+    logger.info(`Model name ${modelName}`)
+    if (db[modelName].associate) {
+        db[modelName].associate(db);
+    }
+});
+
 // const UserTerminals = sequelize.define('user_terminals', {});
 
 // db.webProductGroup.hasMany(db.product, {
@@ -393,7 +406,7 @@ db.sequelize.sync({ force: false, alter: true }).then(async () => {
     try {
         const brandNewDB = await userService.ensureDefaultUserExists(); // Ensure it's awaited
         logger.info("Default user check complete.");
-       
+
     } catch (error) {
         logger.error("Error ensuring default user exists:", error);
     }
@@ -426,6 +439,17 @@ db.group.belongsToMany(db.authority, { through: 'GroupAuthorities' })
 db.menuHeader.belongsToMany(db.group, { through: 'GroupMenuHeader' })
 db.group.belongsToMany(db.menuHeader, { through: 'GroupMenuHeader' })
 
+db.washjob.hasMany(db.washjobline, {
+    as: 'lines'
+})
+db.washjobline.belongsTo(db.washjob, {
+    foreignKey: 'washJobId',
+    as: 'washjob'
+})
+db.washjobline.belongsTo(db.product, {
+    foreignKey: 'productId',
+    as: 'product'
+})
 
 db.terminal.belongsTo(db.location, {
     foreignKey: 'locationId',
