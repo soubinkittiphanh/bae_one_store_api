@@ -1,5 +1,6 @@
 const logger = require('../api/logger');
-const { WashJob } = require('../models')
+const WashJob = require('../models').washjob
+const WashJobHistory = require('../models').washjobHis
 
 exports.createVersion = async () => {
     const washJob = await WashJob.findByPk(id);

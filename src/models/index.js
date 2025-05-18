@@ -59,6 +59,7 @@ db.group = require("../group/model")(sequelize, DataTypes);
 db.user = require("../user/model")(sequelize, DataTypes);
 db.customer = require("../dynamicCustomer/model")(sequelize, DataTypes);
 db.washjob = require("../washJob/model")(sequelize, DataTypes);
+db.washjobHis = require("../washJob-history/model")(sequelize, DataTypes);
 db.washjobline = require("../washJobLine/model")(sequelize, DataTypes);
 db.shipping = require("../shipping/model")(sequelize, DataTypes);
 db.saleHeader = require("../sales/model")(sequelize, DataTypes);

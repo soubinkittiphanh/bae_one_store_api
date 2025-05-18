@@ -1,153 +1,91 @@
 // const WashJob = require('../models').washJob;
 const { body, validationResult } = require('express-validator');
 const logger = require('../api/logger');
-const { WashJob, Product, Service, WashJobServiceProduct, WashJobHistory } = require('../models');
+const  WashJob = require('../models').washjob;
+const  Product = require('../models').product;
 
-// Create a new wash job with products and services
-exports.createWashJob = async (req, res) => {
+// Create a new WashJob with lines
+exports.create = async (req, res) => {
   try {
-    const { vehicleId, status, notes, totalAmount, startedAt, completedAt, products, services } = req.body;
+    const { notes, startedAt, completedAt, lines } = req.body;
 
-    const washJob = await WashJob.create({
-      vehicleId,
-      status,
-      notes,
-      totalAmount,
-      startedAt,
-      completedAt,
-    });
+    const totalAmount = lines.reduce((sum, line) => sum + (line.total || (line.price * line.quantity)), 0);
 
-    if (products && products.length > 0) {
-      for (let item of products) {
-        await WashJobServiceProduct.create({
-          washJobId: washJob.id,
-          productId: item.productId,
-          price: item.price,
-          cost: item.cost,
-          quantity: item.quantity,
-        });
+    const washJob = await WashJob.create(
+      {
+        notes,
+        startedAt,
+        completedAt,
+        totalAmount,
+        washJobLines: lines
+      },
+      {
+        include: [{ model: WashJobLine, as: 'washJobLines' }]
       }
-    }
+    );
 
-    if (services && services.length > 0) {
-      for (let item of services) {
-        await WashJobServiceProduct.create({
-          washJobId: washJob.id,
-          serviceId: item.serviceId,
-          price: item.price,
-          cost: item.cost,
-          quantity: item.quantity,
-        });
-      }
-    }
-
-    res.status(201).json({ message: 'WashJob created successfully', data: washJob });
+    res.status(201).json(washJob);
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    console.error('Create WashJob Error:', err);
+    res.status(500).json({ error: 'Failed to create wash job' });
   }
 };
 
-// Get all wash jobs with associated products and services
-exports.getAllWashJobs = async (req, res) => {
+// Get all wash jobs with lines
+exports.getAll = async (req, res) => {
   try {
-    const washJobs = await WashJob.findAll({
-      include: [
-        { model: Product, as: 'products' },
-        { model: Service, as: 'services' },
-      ],
+    const jobs = await WashJob.findAll({
+      include: [{ model: WashJobLine, as: 'washJobLines' }]
     });
-    res.status(200).json(washJobs);
+    res.json(jobs);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Fetch All WashJobs Error:', err);
+    res.status(500).json({ error: 'Failed to fetch wash jobs' });
   }
 };
 
-// Get a wash job by ID with associated products and services
-exports.getWashJobById = async (req, res) => {
+// Get a single wash job by ID
+exports.getOne = async (req, res) => {
   try {
-    const washJob = await WashJob.findByPk(req.params.id, {
-      include: [
-        { model: Product, as: 'products' },
-        { model: Service, as: 'services' },
-      ],
+    const job = await WashJob.findByPk(req.params.id, {
+      include: [{ model: WashJobLine, as: 'washJobLines' }]
     });
-
-    if (!washJob) return res.status(404).json({ message: 'WashJob not found' });
-
-    res.status(200).json(washJob);
+    if (!job) return res.status(404).json({ error: 'Wash job not found' });
+    res.json(job);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Fetch WashJob Error:', err);
+    res.status(500).json({ error: 'Failed to fetch wash job' });
   }
 };
 
-// Update wash job by ID
-exports.updateWashJob = async (req, res) => {
+// Update wash job
+exports.update = async (req, res) => {
   try {
-    const { status, notes, totalAmount, startedAt, completedAt, products, services } = req.body;
+    const { notes, status, startedAt, completedAt } = req.body;
 
-    const existingWashJob = await WashJob.findByPk(req.params.id);
-    if (!existingWashJob) return res.status(404).json({ message: 'WashJob not found' });
+    const job = await WashJob.findByPk(req.params.id);
+    if (!job) return res.status(404).json({ error: 'Wash job not found' });
 
-    // Save current state to history
-    await WashJobHistory.create({
-      washJobId: existingWashJob.id,
-      version: existingWashJob.version,
-      data: existingWashJob.toJSON(),
-      modifiedBy: req.user?.username ?? 'system', // optional
-    });
-
-    // Increment version and update main WashJob
-    await existingWashJob.update({
-      status,
-      notes,
-      totalAmount,
-      startedAt,
-      completedAt,
-      version: existingWashJob.version + 1,
-    });
-
-    // Replace service-product mapping
-    await WashJobServiceProduct.destroy({ where: { washJobId: req.params.id } });
-
-    if (products && products.length > 0) {
-      for (let item of products) {
-        await WashJobServiceProduct.create({
-          washJobId: req.params.id,
-          productId: item.productId,
-          price: item.price,
-          cost: item.cost,
-          quantity: item.quantity,
-        });
-      }
-    }
-
-    if (services && services.length > 0) {
-      for (let item of services) {
-        await WashJobServiceProduct.create({
-          washJobId: req.params.id,
-          serviceId: item.serviceId,
-          price: item.price,
-          cost: item.cost,
-          quantity: item.quantity,
-        });
-      }
-    }
-
-    const updatedWashJob = await WashJob.findByPk(req.params.id);
-    res.status(200).json(updatedWashJob);
+    await job.update({ notes, status, startedAt, completedAt });
+    res.json(job);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Update WashJob Error:', err);
+    res.status(500).json({ error: 'Failed to update wash job' });
   }
 };
-// Delete wash job by ID
-exports.deleteWashJob = async (req, res) => {
+
+// Delete wash job and its lines
+exports.remove = async (req, res) => {
   try {
-    const deleted = await WashJob.destroy({ where: { id: req.params.id } });
+    const job = await WashJob.findByPk(req.params.id);
+    if (!job) return res.status(404).json({ error: 'Wash job not found' });
 
-    if (!deleted) return res.status(404).json({ message: 'WashJob not found' });
+    await WashJobLine.destroy({ where: { washJobId: job.id } });
+    await job.destroy();
 
-    res.status(200).json({ message: 'WashJob deleted successfully' });
+    res.json({ message: 'Wash job deleted' });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Delete WashJob Error:', err);
+    res.status(500).json({ error: 'Failed to delete wash job' });
   }
 };

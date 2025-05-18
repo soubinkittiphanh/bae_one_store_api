@@ -11,6 +11,7 @@ router.use(validateToken)
 router
 .post("/create", controller.createWashJob)
 .put("/update/:id", controller.updateWashJob)
+.put("/checkout/:id", controller.createSaleFromWashJob)
 .delete("/find/:id", controller.deleteWashJob)
 .get("/find", controller.getAllWashJobs)
 .get("/findAll", controller.getAllWashJobs)
