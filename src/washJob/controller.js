@@ -9,6 +9,8 @@ const SaleHeader = require('../models').saleHeader;
 const SaleLine = require('../models').saleLine;
 const Currency = require('../models').currency;
 const Location = require('../models').location;
+const Payment = require('../models').payment;
+const Unit = require('../models').unit;
 const { sequelize } = require('../models');
 // Create a new wash job with products and services
 exports.createWashJob = async (req, res) => {
@@ -175,7 +177,12 @@ exports.createSaleFromWashJob = async (req, res) => {
 
   const dfCurrency = await Currency.findOne({ where: { isLocalCCY: true } });
   const dfLocation = await Location.findOne({ where: { isActive: true } });
-  logger.info(`DF Currency ${dfCurrency}`)
+  const dfPayment = await Payment.findOne({ where: { isActive: true } });
+  const dfUnit = await Unit.findOne({ where: { isActive: true } });
+  logger.info(`DF Currency ${JSON.stringify(dfCurrency)}`)
+  logger.info(`DF dfLocation ${JSON.stringify(dfLocation)}`)
+  logger.info(`DF dfPayment ${JSON.stringify(dfPayment)}`)
+
   const washJob = await WashJob.findByPk(washJobId, {
     include: [{ model: WashJobLine, as: 'lines' }],
   });
@@ -197,7 +204,7 @@ exports.createSaleFromWashJob = async (req, res) => {
       isActive: true,
       // createdAt: new Date(),
       // updateTimestamp: new Date(),
-      paymentId: paymentId || null,
+      paymentId: paymentId || dfPayment.id,
       clientId: washJob.clientId || null,
       currencyId: dfCurrency.id,
       userId: userId,
@@ -214,6 +221,7 @@ exports.createSaleFromWashJob = async (req, res) => {
         productId: line.productId,
         quantity: line.quantity ?? 1,
         price: line.price,
+        unitId: line.unitId || dfUnit.id,
         total: (line.price || 0) * (line.quantity ?? 1),
       }, { transaction: t });
     }

@@ -282,7 +282,7 @@ const createProdV1 = async (req, imagesObj) => {
                     isActive,
                     companyId,
                     vendorName,
-                    category??'product',
+                    category ?? 'product',
                     durationMinutes
                 ];
 
@@ -349,7 +349,7 @@ const updateProd = async (req, imagesObj) => {
     const timestamps = new Date();
     const mysqlDatetime = timestamps.toISOString().slice(0, 19).replace('T', ' ');
     const retail_percent = body.pro_retail_price || 0.0;
-    const category = body._category; // 'product' or 'service'
+    const category = body._category || 'product'; // 'product' or 'service'
     const durationMinutes = body.duration_minutes || 0; // default to 0 if not provided
     logger.warn(`PRODUCT ${JSON.stringify(body)}`);
     let serverImageIds = []
