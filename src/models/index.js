@@ -89,6 +89,7 @@ db.service = require("../service/model")(sequelize, DataTypes);
 db.priceList = require("../priceList/model")(sequelize, DataTypes);
 db.quotationHeader = require("../quotation/model")(sequelize, DataTypes);
 db.quotationLine = require("../quotation/line/model")(sequelize, DataTypes);
+db.productSize = require("../product_size/model")(sequelize, DataTypes);
 
 db.authority = require("../authority/model")(sequelize, DataTypes);
 db.tuturial = require("../tutorial/model")(tutorialDB, DataTypes);
@@ -229,6 +230,10 @@ db.receivingLine.belongsTo(db.poLine, {
     as: 'poLine',
 })
 db.receivingLine.belongsTo(db.product, {
+    foreignKey: 'productId',
+    as: 'product',
+})
+db.productSize.belongsTo(db.product, {
     foreignKey: 'productId',
     as: 'product',
 })
@@ -382,6 +387,9 @@ db.priceList.belongsTo(db.currency, {
 })
 db.product.hasMany(db.priceList, {
     as: 'priceLists'
+})
+db.product.hasMany(db.productSize, {
+    as: 'sizeLists'
 })
 db.product.hasMany(db.card, {
     as: 'cards'

@@ -220,7 +220,7 @@ ORDER BY
     })
 
 }
-const fetchProdMobile = async (req, res) => {
+const fetchProdMobileV0 = async (req, res) => {
     logger.info("*************** FETCH PRODUCT ***************");
     logger.info(`*************Payload: *****************ss`);
     const sqlCom = `SELECT p.*,c.categ_name,IFNULL(i.img_name,'No image') AS img_name,i.img_path,
@@ -235,6 +235,48 @@ const fetchProdMobile = async (req, res) => {
     where p.isActive=true
     GROUP BY p.pro_id
     ORDER BY p.pro_price;`;
+    Db.query(sqlCom, (er, re) => {
+        if (er) return res.send('SQL ' + er)
+        res.send(re)
+    })
+}
+const fetchProdMobile = async (req, res) => {
+    logger.info("*************** FETCH PRODUCT ***************");
+    logger.info(`*************Payload: *****************ss`);
+    const sqlCom = `SELECT 
+  p.*,
+  c.categ_name,
+  IFNULL(i.img_name, 'No image') AS img_name,
+  i.img_path,
+  p.stock_count AS card_count,
+  IFNULL(s.cnt, 0) AS sale_count,
+  p.cost_price,
+  p._category,
+  p.duration_minutes,
+  -- Aggregate price list as JSON array:
+  COALESCE(
+    JSON_ARRAYAGG(
+      JSON_OBJECT(
+        'id', pl.id,
+        'name', pl.name,
+        'grade', pl.grade,
+        'amount', pl.amount,
+        'type', pl.type,
+        'isActive', pl.isActive
+      )
+    ), JSON_ARRAY()
+  ) AS priceList
+FROM product p
+LEFT JOIN category c ON c.categ_id = p.pro_category
+LEFT JOIN image_path i ON i.pro_id = p.pro_id
+LEFT JOIN (
+  SELECT IFNULL(COUNT(pro_id),0) AS cnt, pro_id FROM card_sale GROUP BY pro_id
+) s ON s.pro_id = p.pro_id
+LEFT JOIN priceList pl ON pl.productId = p.id AND pl.isActive = TRUE
+WHERE p.isActive = TRUE
+GROUP BY p.pro_id
+ORDER BY p.pro_price;
+`;
     Db.query(sqlCom, (er, re) => {
         if (er) return res.send('SQL ' + er)
         res.send(re)

@@ -4,8 +4,8 @@ const PriceList = require('../models').priceList;
 const priceListController = {
   createPriceList: async (req, res) => {
     try {
-      const { name, type, isActive, amount, productId, currencyId,grade } = req.body;
-      const newPriceList = await PriceList.create({ name, type, isActive, amount, productId, currencyId,grade });
+      const { name, type, isActive, amount, productId, currencyId, grade } = req.body;
+      const newPriceList = await PriceList.create({ name, type, isActive, amount, productId, currencyId, grade });
       res.status(201).json(newPriceList);
     } catch (error) {
       logger.error(error);
@@ -45,6 +45,7 @@ const priceListController = {
       res.status(500).json({ message: 'Server error' });
     }
   },
+
   getPriceListByProductId: async (req, res) => {
     try {
       const { id } = req.params;
@@ -58,23 +59,38 @@ const priceListController = {
       res.status(500).json({ message: 'Server error' });
     }
   },
-
   updatePriceListById: async (req, res) => {
     try {
       const { id } = req.params;
-      const { name, type, isActive, amount, productId, currencyId,grade } = req.body;
-      const priceListToUpdate = await PriceList.findBy(id);
+      const { name, type, isActive, amount, productId, currencyId, grade } = req.body;
+
+      logger.info(`Updating price list with ID: ${id}`);
+      logger.info(`Request body: ${JSON.stringify(req.body)}`);
+
+      // Make sure you use the correct ORM method here
+      const priceListToUpdate = await PriceList.findByPk(id);  // if using Sequelize
+      // const priceListToUpdate = await PriceList.query().findById(id); // if using Objection.js
+
       if (!priceListToUpdate) {
         return res.status(404).json({ message: 'Price list not found' });
       }
-      const updatedPriceList = await priceListToUpdate.update({ name, type, isActive, amount, productId, currencyId,grade });
+
+      const updatedPriceList = await priceListToUpdate.update({
+        name, type, isActive, amount, productId, currencyId, grade
+      });
+
       res.status(200).json(updatedPriceList);
     } catch (error) {
+      // Log error for debugging
+      console.error('Update price list error:', error);
+      // Use your logger.error as requested
       logger.error(error);
-      res.status(500).json({ message: 'Server error' });
-    }
-  },
 
+      // Send a detailed error message if available
+      res.status(500).json({ message: error?.message || 'Server error' });
+    }
+  }
+  ,
   deletePriceListById: async (req, res) => {
     try {
       const { id } = req.params;
