@@ -11,7 +11,8 @@ const Currency = require('../models').currency;
 const Location = require('../models').location;
 const Payment = require('../models').payment;
 const Unit = require('../models').unit;
-const { sequelize } = require('../models');
+const { sequelize, priceList } = require('../models');
+const PriceList = require('../models').priceList;
 // Create a new wash job with products and services
 exports.createWashJob = async (req, res) => {
   logger.info(`Request creating washJob body ${JSON.stringify(req.body)}`);
@@ -22,6 +23,8 @@ exports.createWashJob = async (req, res) => {
       totalAmount,
       startedAt,
       completedAt,
+      manualDiscountAmount,
+      manualExtraChargeAmount,
       lines // <-- use this key from frontend
     } = req.body;
 
@@ -32,6 +35,8 @@ exports.createWashJob = async (req, res) => {
         totalAmount,
         startedAt,
         completedAt,
+        manualDiscountAmount,
+        manualExtraChargeAmount,
         lines // <-- use the same alias as defined in association
       },
       {
@@ -46,6 +51,7 @@ exports.createWashJob = async (req, res) => {
   }
 };
 
+
 // Get all wash jobs with associated products and services
 exports.getAllWashJobs = async (req, res) => {
   try {
@@ -57,7 +63,17 @@ exports.getAllWashJobs = async (req, res) => {
           include: [
             {
               model: Product,
-              as: 'product'
+              as: 'product',
+              include: [
+                {
+                  model: PriceList,
+                  as: 'priceLists'
+                }
+              ]
+            },
+            {
+              model: PriceList,
+              as: 'priceList'
             }
           ]
         }
@@ -65,6 +81,61 @@ exports.getAllWashJobs = async (req, res) => {
     });
 
     logger.info(`Fetched WashJob data ${washJobs}`);
+    res.status(200).json(washJobs);
+  } catch (err) {
+    logger.error(`Fail to fetch washJob: ${err}`);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getAllWashJobsByDate = async (req, res) => {
+  try {
+    const { fromDate, toDate } = req.query;
+
+    // Build date filter condition
+    const whereCondition = {};
+    if (fromDate && toDate) {
+      whereCondition.startedAt = {
+        [Op.between]: [new Date(fromDate), new Date(toDate)]
+      };
+    } else if (fromDate) {
+      whereCondition.startedAt = {
+        [Op.gte]: new Date(fromDate)
+      };
+    } else if (toDate) {
+      whereCondition.startedAt = {
+        [Op.lte]: new Date(toDate)
+      };
+    }
+
+    const washJobs = await WashJob.findAll({
+      where: whereCondition,
+      include: [
+        {
+          model: WashJobLine,
+          as: 'lines',
+          include: [
+            {
+              model: Product,
+              as: 'product',
+              include: [
+                {
+                  model: PriceList,
+                  as: 'priceLists'
+                }
+              ]
+            },
+            {
+              model: PriceList,
+              as: 'priceList'
+            }
+          ]
+        }
+      ],
+      order: [['startedAt', 'DESC']]
+    });
+
+    logger.info(`Fetched WashJob data count: ${washJobs.length}`);
     res.status(200).json(washJobs);
   } catch (err) {
     logger.error(`Fail to fetch washJob: ${err}`);
@@ -94,7 +165,19 @@ exports.getWashJobById = async (req, res) => {
 // Update wash job by ID
 exports.updateWashJob = async (req, res) => {
   try {
-    const { status, notes, totalAmount, startedAt, completedAt, lines } = req.body;
+    const {
+      status,
+      notes,
+      totalAmount,
+      startedAt,
+      completedAt,
+      manualDiscountAmount,
+      manualExtraChargeAmount,
+      lines,
+    } = req.body;
+
+    logger.info(`Job ${JSON.stringify(req.body)}`);
+    logger.info(`Line ${JSON.stringify(lines)}`);
 
     const existingWashJob = await WashJob.findByPk(req.params.id, {
       include: [{ model: WashJobLine, as: 'lines' }],
@@ -119,6 +202,8 @@ exports.updateWashJob = async (req, res) => {
       totalAmount,
       startedAt,
       completedAt,
+      manualDiscountAmount,
+      manualExtraChargeAmount,
       version: existingWashJob.version + 1,
     });
 
@@ -138,6 +223,7 @@ exports.updateWashJob = async (req, res) => {
           status: line.status || 'ACTIVE',
           productId: line.productId ?? null,
           serviceId: line.serviceId ?? null,
+          priceListId: line.priceListId ?? null,
         });
       }
     }
@@ -198,8 +284,8 @@ exports.createSaleFromWashJob = async (req, res) => {
     const saleHeader = await SaleHeader.create({
       bookingDate: new Date(),
       remark: `From WashJob #${washJob.id}`,
-      discount: washJob.discount || 0,
-      total: washJob.totalAmount,
+      discount: washJob.manualDiscountAmount || 0,
+      total: washJob.totalAmount+washJob.manualDiscountAmount,
       exchangeRate: dfCurrency.rate,
       isActive: true,
       // createdAt: new Date(),
@@ -211,7 +297,8 @@ exports.createSaleFromWashJob = async (req, res) => {
       referenceNo: `WJ-${washJob.id}`,
       locationId: washJob.locationId || dfLocation.id,
       customerId: washJob.customerId || null,
-      orderTableId: null
+      orderTableId: null,
+      washJobId: washJob.id,
     }, { transaction: t });
 
     // 2. Create SaleLines
@@ -227,7 +314,8 @@ exports.createSaleFromWashJob = async (req, res) => {
     }
 
     // 3. Update WashJob status to "complete"
-    washJob.status = 'COMPLETED'; // Make sure "status" column exists in DB
+    washJob.status = 'SETTLED'; // Make sure "status" column exists in DB
+    washJob.saleHeaderId = saleHeader.id;
     await washJob.save({ transaction: t });
 
     await t.commit();

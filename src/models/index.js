@@ -6,6 +6,7 @@ const sequelize = new Sequelize(
     env.database,
     env.user,
     env.password,
+
     {
         host: env.host,
         dialect: 'mariadb',
@@ -15,7 +16,9 @@ const sequelize = new Sequelize(
             min: 10,
             acquire: 30000,
             idle: 10000
-        }
+        },
+         timezone: '+07:00', // ✅ Add this line,
+
     }, {
     define: {
         indexes: false,
@@ -381,6 +384,10 @@ db.priceList.belongsTo(db.product, {
     foreignKey: 'productId',
     as: 'product'
 })
+db.saleLine.belongsTo(db.priceList, {
+    foreignKey: 'priceListId',
+    as: 'priceList'
+})
 db.priceList.belongsTo(db.currency, {
     foreignKey: 'currencyId',
     as: 'currency'
@@ -401,6 +408,10 @@ db.customer.belongsTo(db.saleHeader, {
     as: 'saleHeader'
 })
 db.saleHeader.hasOne(db.customer)
+db.saleHeader.belongsTo(db.washjob, {
+    foreignKey: 'washJobId',
+    as: 'washJob'
+})
 
 // db.sequelize.sync({ force: false, alter: true }).then(() => {
 //     logger.info("Datatase client is synchronize")
@@ -454,6 +465,14 @@ db.washjob.hasMany(db.washjobline, {
 db.washjobline.belongsTo(db.washjob, {
     foreignKey: 'washJobId',
     as: 'washjob'
+})
+db.washjob.belongsTo(db.saleHeader, {
+    foreignKey: 'saleHeaderId',
+    as: 'saleHeader'
+})
+db.washjobline.belongsTo(db.priceList, {
+    foreignKey: 'priceListId',
+    as: 'priceList'
 })
 db.washjobline.belongsTo(db.product, {
     foreignKey: 'productId',

@@ -1,37 +1,49 @@
 
 
 module.exports = (sequelize, DataTypes) => {
-    const WashJob = sequelize.define('washJob', {
-        status: {
-          type: DataTypes.ENUM('PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'),
-          defaultValue: 'PENDING',
-        },
-        notes: {
-          type: DataTypes.STRING,
-          allowNull: false,
-        },
-        startedAt: DataTypes.DATE,
-        completedAt: DataTypes.DATE,
-        totalAmount: {
-          type: DataTypes.DOUBLE,
-          allowNull: false,
-        },
-        version: {
-          type: DataTypes.INTEGER,
-          allowNull: false,
-          defaultValue: 1,
-        }
-      }, {
-        sequelize,
-        timestamps: true,
-        createdAt: true,
-        updatedAt: 'updateTimestamp',
-        freezeTableName: true,
-      });
-      
+  const WashJob = sequelize.define('washJob', {
+    status: {
+      type: DataTypes.ENUM('PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'SETTLED'),
+      defaultValue: 'PENDING',
+    },
+    notes: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    startedAt: DataTypes.DATE,
+    completedAt: DataTypes.DATE,
+    
+    totalAmount: {
+      type: DataTypes.DOUBLE,
+      allowNull: false,
+    },
 
-      
-    return WashJob;
+    manualDiscountAmount: {
+      type: DataTypes.DOUBLE,
+      allowNull: true,
+      defaultValue: 0,
+    },
+
+    manualExtraChargeAmount: {
+      type: DataTypes.DOUBLE,
+      allowNull: true,
+      defaultValue: 0,
+    },
+
+    version: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 1,
+    }
+  }, {
+    sequelize,
+    timestamps: true,
+    createdAt: true,
+    updatedAt: 'updateTimestamp',
+    freezeTableName: true,
+  });
+
+  return WashJob;
 };
 
 // 1. STRING: A variable length string.
