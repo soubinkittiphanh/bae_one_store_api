@@ -165,6 +165,22 @@ const deleteProductById = async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 };
+// Diable a product by ID
+const disableProductById = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const product = await Product.findOne({ where: { id } });
+    product.isActive = false;
+    await product.save()
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+    res.status(200).json({ message: 'Product deleted successfully' });
+  } catch (error) {
+    console.error(`cannot disable product with error ${error}`);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
 
 module.exports = {
   getAllProducts,
@@ -173,7 +189,8 @@ module.exports = {
   updateProductById,
   deleteProductById,
   updateProductCountById,
-  updateProductCountAll
+  updateProductCountAll,
+  disableProductById
 };
 
 
