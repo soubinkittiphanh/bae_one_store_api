@@ -433,6 +433,8 @@ const updateProd = async (req, imagesObj) => {
     logger.info("Values array:", values);
     logger.info(`************* COMMAND ${sqlComImages} *****************`);
     logger.info(`*************Payload: ${imagesObj} *****************`);
+    logger.info("Final category:", category);
+
     Db.query(sqlCom, values, (er, re) => {
         if (er) throw new Error(`Cannot update product code ####0001 ${er} `);
         if (image_path.length < 1) return // Nothing to do

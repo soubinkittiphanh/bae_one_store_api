@@ -188,6 +188,13 @@ const clientDB = {
         "database": "dcommerce_pro_onphet",
         "port": 3306,
     },
+    "carcare_sokpaluang": {
+        "host": "150.95.31.23",
+        "user": "root",
+        "password": "sdat@3480",
+        "database": "dcommerce_pro_carcare_sokpaluang",
+        "port": 3306,
+    },
 }
 
 module.exports = {
