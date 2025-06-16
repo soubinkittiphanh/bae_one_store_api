@@ -56,11 +56,12 @@ const countUser = async () => {
 
 
 const ensureDefaultUserExists = async () => {
-    const dfUserId = env.db.database.split('_')[3]
+    const dbSuffix = env.db.database.split('_')[3];
+    const dfUserId = Number(dbSuffix) || 1000;
     let isbrandNewDB = false;
     const userToCreate = {
         cus_id: dfUserId || '1000',                  // User ID (integer, required)
-        cus_pass: dfUserId || 'dcommerce@2024',      // Password (string, required)
+        cus_pass: dfUserId || '1111',      // Password (string, required)
         cus_name: "DC Auto",         // Full name (string, required)
         cus_tel: "123456789",         // Telephone number (string, optional)
         cus_email: "jane.doe@example.com", // Email address (string, optional)
@@ -107,7 +108,7 @@ const basicParameterInitialise = async () => {
             const query5 = `INSERT INTO MenuHeaderLines SELECT * FROM dcommerce_pro_init.MenuHeaderLines;`;
             const query6 = `INSERT INTO GroupAuthorities SELECT * FROM dcommerce_pro_init.GroupAuthorities;`;
             const query7 = `CREATE TABLE card_sale AS SELECT * FROM dcommerce_pro_init.card_sale;`;
-            const query8 = `INSERT INTO company (
+            const query8 = `INSERT INTO company (id,
     mnemonic,
     name,
     tel,
@@ -125,6 +126,7 @@ const basicParameterInitialise = async () => {
     updateTimestamp
 )
 SELECT
+id,
     mnemonic,
     name,
     tel,
@@ -151,7 +153,13 @@ FROM
             IF(isActive NOT IN (0, 1), 1, isActive), createdAt, updateTimestamp
             FROM dcommerce_pro_init.client;
             `;
-            const query14 = `INSERT INTO currency SELECT * FROM dcommerce_pro_init.currency;`;
+            const query14 = `INSERT INTO currency (
+  id, code, name, rate, isActive, isLocalCCY, createdAt, updateTimestamp
+)
+SELECT
+  id, code, name, rate, isActive, isLocalCCY, createdAt, updateTimestamp
+FROM dcommerce_pro_init.currency;
+;`;
 
             await db.sequelize.query(query15, { type: db.sequelize.QueryTypes.INSERT, transaction });
             await db.sequelize.query(query16, { type: db.sequelize.QueryTypes.INSERT, transaction });
