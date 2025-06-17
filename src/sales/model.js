@@ -44,6 +44,10 @@ module.exports = (sequelize, DataTypes) => {
         // transform all passed model names (first parameter of define) into plural.
         // if you don't want that, set the following
         freezeTableName: true,
+        sync: {
+            alter: false,
+            force: false
+        }
     })
 
     return SaleHeader;
