@@ -1,6 +1,6 @@
 
 
-const {validateToken} = require("../api/jwtApi")
+const {validateToken} = require("../../api/jwtApi")
 const ticketController = require("./controller")
 const service = require("./service")
 const express = require("express")
@@ -12,13 +12,24 @@ router.use(validateToken)
 // router.use((req,res,next)=>{
 //     next()
 // })
+// Basic CRUD - GET ALL (must be first)
+router.get('/', ticketController.getAllTickets);
 
-router.post('/tickets', ticketController.createTicket);
-router.get('/tickets', ticketController.getAllTickets);
-router.get('/tickets/:id', ticketController.getTicketById);
-router.put('/tickets/:id', ticketController.updateTicket);
-router.put('/tickets/:id/close', ticketController.closeTicket); // Specific route for closing tickets
-router.delete('/tickets/:id', ticketController.deleteTicket);
+// Special query routes (BEFORE /:id)
+router.get('/table/:tableId', ticketController.getTicketsByTable);
+router.get('/table/:tableId/pending', ticketController.getTicketsByTableAndStatus);
+router.get('/table/:tableId/current', ticketController.getCurrentTicketByTable);
+router.get('/filter/pending', ticketController.getPendingTickets);
+router.get('/reports/sales', ticketController.getSalesReport);
 
-    // .post("/bulkCreate",service.createHulkStockCard)
+// Basic CRUD - Specific ID routes (AFTER specific routes)
+router.get('/:id', ticketController.getTicketById);
+router.post('/', ticketController.createTicket);
+router.put('/:id', ticketController.updateTicket);
+router.delete('/:id', ticketController.deleteTicket);
+
+// Status management routes
+router.patch('/:id/status', ticketController.updateTicketStatus);
+router.patch('/:id/payment-status', ticketController.updatePaymentStatus);
+
 module.exports = router

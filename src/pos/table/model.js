@@ -1,26 +1,35 @@
 
 
 module.exports = (sequelize, DataTypes) => {
-    const Table = sequelize.define('table', {
-        mnemonic: {
-            type: DataTypes.STRING,
-            allowNull: false,
-            unique:true
-        },
+    const Table = sequelize.define('Table', {
         name: {
             type: DataTypes.STRING,
-            allowNull: false,
         },
-        isActive: {
-            type: DataTypes.BOOLEAN,
+        number: {
+            type: DataTypes.STRING,
             allowNull: false,
-            defaultValue: true,
+            unique: true
+        },
+        capacity: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            validate: {
+                min: 1,
+                max: 20
+            }
         },
         status: {
-            type: DataTypes.ENUM('occupied', 'reserved', 'open'),
-            allowNull: false,
-            defaultValue: 'open', // Set a default value if required
+            type: DataTypes.ENUM('available', 'occupied', 'cleaning', 'reserved'),
+            defaultValue: 'available'
         },
+        timeOccupied: {
+            type: DataTypes.DATE,
+            allowNull: true
+        },
+        currentOrderId: {
+            type: DataTypes.INTEGER,
+            allowNull: true
+        }
     }, {
         sequelize,
         // don't forget to enable timestamps!
@@ -34,6 +43,14 @@ module.exports = (sequelize, DataTypes) => {
         // if you don't want that, set the following
         freezeTableName: true,
     })
+    Table.associate = models => {
+        // Table -> Ticket (One-to-Many)
+        Table.hasMany(models.ticket, {
+            foreignKey: 'tableId',
+            as: 'tickets',
+        });
+    };
+
 
     return Table;
 };

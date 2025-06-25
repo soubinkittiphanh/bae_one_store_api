@@ -13,11 +13,13 @@ router.use(validateToken)
 //     next()
 // })
 
-router.post('/ticket-lines', ticketLineController.createTicketLine);
-router.get('/ticket-lines', ticketLineController.getAllTicketLines);
-router.get('/ticket-lines/:id', ticketLineController.getTicketLineById);
-router.put('/ticket-lines/:id', ticketLineController.updateTicketLine);
-router.delete('/ticket-lines/:id', ticketLineController.deleteTicketLine);
+router.post('/ticket-lines', ticketLineController.create);
+router.get('/ticket/:ticketId', ticketLineController.getByTicketId);
+router.get('/:id', ticketLineController.getById);
+router.get('/ticket-lines', ticketLineController.getAll);
+router.get('/ticket-lines/:id', ticketLineController.getById);
+router.put('/ticket-lines/:id', ticketLineController.update);
+router.delete('/ticket-lines/:id', ticketLineController.delete);
 
     // .post("/bulkCreate",service.createHulkStockCard)
 module.exports = router

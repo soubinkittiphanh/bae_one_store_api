@@ -17,7 +17,7 @@ const sequelize = new Sequelize(
             acquire: 30000,
             idle: 10000
         },
-         timezone: '+07:00', // ✅ Add this line,
+        timezone: '+07:00', // ✅ Add this line,
 
     }, {
     define: {
@@ -116,6 +116,9 @@ db.payment = require("../paymentMethod/model")(sequelize, DataTypes);
 db.country = require("../country/model")(sequelize, DataTypes);
 db.village = require("../district/model")(sequelize, DataTypes);
 db.district = require("../district-village/model")(sequelize, DataTypes);
+db.table = require("../pos/table/model")(sequelize, DataTypes);
+db.ticket = require("../pos/ticket/model")(sequelize, DataTypes);
+db.ticketLine = require("../pos/ticketLine/model")(sequelize, DataTypes);
 
 
 Object.keys(db).forEach(modelName => {
@@ -124,6 +127,17 @@ Object.keys(db).forEach(modelName => {
         db[modelName].associate(db);
     }
 });
+
+
+// Define relationships based on your description
+
+
+// Product -> TicketLine (One-to-Many)
+db.product.hasMany(db.ticketLine, {
+    foreignKey: 'productId',
+    as: 'ticketLines',
+});
+
 
 // const UserTerminals = sequelize.define('user_terminals', {});
 

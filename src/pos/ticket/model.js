@@ -2,37 +2,30 @@
 
 module.exports = (sequelize, DataTypes) => {
     const Ticket = sequelize.define('ticket', {
-        id: {
-            type: DataTypes.BIGINT,
-            allowNull: false,
-            primaryKey: true,
-            autoIncrement: true, //ine the column as unique
-        },
-        remark: {
-            type: DataTypes.STRING,
-            allowNull: false,
-        },
-        isActive: {
-            type: DataTypes.BOOLEAN,
-            allowNull: false,
-            defaultValue: true,
-        },
         status: {
-            type: DataTypes.ENUM('open', 'closed', 'pending'), // Include relevant statuses
-            allowNull: false,
-            defaultValue: 'open',
+            type: DataTypes.ENUM('pending', 'preparing', 'ready', 'served', 'paid'),
+            defaultValue: 'pending'
         },
-        openedAt: {
-            type: DataTypes.DATE,
-            allowNull: false,
-            defaultValue: DataTypes.NOW, // Automatically sets current timestamp
-            comment: 'The time the ticket was opened',
+        subtotal: {
+            type: DataTypes.DECIMAL(10, 2),
+            defaultValue: 0.00
         },
-        closedAt: {
-            type: DataTypes.DATE,
-            allowNull: true, // Optional as the ticket may not yet be closed
-            comment: 'The time the ticket was closed',
+        tax: {
+            type: DataTypes.DECIMAL(10, 2),
+            defaultValue: 0.00
         },
+        total: {
+            type: DataTypes.DECIMAL(10, 2),
+            defaultValue: 0.00
+        },
+        paymentStatus: {
+            type: DataTypes.ENUM('pending', 'paid', 'refunded'),
+            defaultValue: 'pending'
+        },
+        notes: {
+            type: DataTypes.TEXT,
+            allowNull: true
+        }
     }, {
         sequelize,
         // don't forget to enable timestamps!
@@ -46,6 +39,28 @@ module.exports = (sequelize, DataTypes) => {
         // if you don't want that, set the following
         freezeTableName: true,
     });
+    Ticket.associate = models => {
+        Ticket.belongsTo(models.table, {
+            foreignKey: 'tableId',
+            as: 'table',
+        });
+        Ticket.belongsTo(models.payment, {
+            foreignKey: 'paymentId',
+            as: 'payment',
+        });
+        Ticket.belongsTo(models.client, {
+            foreignKey: 'clientId',
+            as: 'client',
+        });
+
+        // Ticket -> TicketLine (One-to-Many)
+        Ticket.hasMany(models.ticketLine, {
+            foreignKey: 'ticketId',
+            as: 'ticketLines',
+        });
+    };
+
+
 
     return Ticket;
 };

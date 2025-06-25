@@ -2,41 +2,31 @@
 
 module.exports = (sequelize, DataTypes) => {
     const TicketLine = sequelize.define('ticketLine', {
-        id: {
-            type: DataTypes.BIGINT,
-            allowNull: false,
-            primaryKey: true,
-            autoIncrement: true, //ine the column as unique
-        },
-        remark: {
-            type: DataTypes.STRING,
-            allowNull: false,
-        },
-        qty: {
-            type: DataTypes.NUMBER,
+
+        quantity: {
+            type: DataTypes.INTEGER,
             allowNull: false,
             defaultValue: 1,
+            validate: {
+                min: 1
+            }
         },
-        amount: {
-            type: DataTypes.DOUBLE,
-            allowNull: false,
-            defaultValue: 1,
+        unitPrice: {
+            type: DataTypes.DECIMAL(10, 2),
+            allowNull: false
         },
-        total: {
-            type: DataTypes.DOUBLE,
-            allowNull: false,
-            defaultValue: 1,
+        totalPrice: {
+            type: DataTypes.DECIMAL(10, 2),
+            allowNull: false
         },
-        isActive: {
-            type: DataTypes.BOOLEAN,
-            allowNull: false,
-            defaultValue: true,
+        specialInstructions: {
+            type: DataTypes.TEXT,
+            allowNull: true
         },
         status: {
-            type: DataTypes.ENUM('cancel', 'complete', 'pending'), // Include relevant statuses
-            allowNull: false,
-            defaultValue: 'open',
-        },
+            type: DataTypes.ENUM('ordered', 'preparing', 'ready', 'served'),
+            defaultValue: 'ordered'
+        }
     }, {
         sequelize,
         // don't forget to enable timestamps!
@@ -50,6 +40,18 @@ module.exports = (sequelize, DataTypes) => {
         // if you don't want that, set the following
         freezeTableName: true,
     });
+
+    TicketLine.associate = models => {
+
+        TicketLine.belongsTo(models.ticket, {
+            foreignKey: 'ticketId',
+            as: 'ticket',
+        });
+        TicketLine.belongsTo(models.product, {
+            foreignKey: 'productId',
+            as: 'product',
+        });
+    };
 
     return TicketLine;
 };

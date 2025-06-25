@@ -46,6 +46,9 @@ const spf = require("../spf").router
 const webProductGroup = require("../web_product_group").router
 const service = require("../service").router
 const washJob = require("../washJob").router
+const table = require("../pos/table").router
+const ticket = require("../pos/ticket").router
+const ticketLine = require("../pos/ticketLine").router
 
 module.exports={
     orderRouter,
@@ -95,5 +98,8 @@ module.exports={
     webProductGroup,
     spf,
     service,
+    table,
+    ticket,
+    ticketLine,
     washJob
 }

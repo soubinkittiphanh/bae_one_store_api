@@ -1,6 +1,6 @@
 
 
-const {validateToken} = require("../api/jwtApi")
+const {validateToken} = require("../../api/jwtApi")
 const tableController = require("./controller")
 const service = require("./service")
 const express = require("express")
@@ -13,12 +13,19 @@ router.use(validateToken)
 //     next()
 // })
 
+// Basic CRUD routes
+router.get('/', tableController.getAllTables);
+router.get('/:id', tableController.getTableById);
+router.post('/', tableController.createTable);
+router.put('/:id', tableController.updateTable);
+router.delete('/:id', tableController.deleteTable);
 
-router.post('/tables', tableController.createTable);
-router.get('/tables', tableController.getAllTables);
-router.get('/tables/:id', tableController.getTableById);
-router.put('/tables/:id', tableController.updateTable);
-router.delete('/tables/:id', tableController.deleteTable);
+// Special routes
+router.get('/number/:number', tableController.getTableByNumber);
+router.patch('/:id/status', tableController.updateTableStatus);
+router.get('/filter/available', tableController.getAvailableTables);
+router.get('/filter/occupied', tableController.getOccupiedTables);
+router.patch('/bulk/status', tableController.bulkUpdateStatus);
 
 
     // .post("/bulkCreate",service.createHulkStockCard)
