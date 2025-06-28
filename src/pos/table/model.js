@@ -29,6 +29,12 @@ module.exports = (sequelize, DataTypes) => {
         currentOrderId: {
             type: DataTypes.INTEGER,
             allowNull: true
+        },
+        // New field for storing customer name for display purposes
+        customerName: {
+            type: DataTypes.STRING(100),
+            allowNull: true,
+            comment: 'Name of the customer currently seated at this table'
         }
     }, {
         sequelize,

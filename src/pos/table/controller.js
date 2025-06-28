@@ -6,7 +6,7 @@ const { Op } = require('sequelize');
 
 
 const tableController = {
-  // Get all tables
+  // Get all tables (existing method - no changes needed)
   getAllTables: async (req, res) => {
     try {
       const { status, capacity, page = 1, limit = 10 } = req.query;
@@ -40,6 +40,7 @@ const tableController = {
         }
       });
     } catch (error) {
+      logger.error('Error fetching tables:', error);
       res.status(500).json({
         success: false,
         message: 'Error fetching tables',
@@ -48,7 +49,256 @@ const tableController = {
     }
   },
 
-  // Get table by ID
+  // Seat customer at table (new method)
+  seatCustomer: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { 
+        customerName, 
+        partySize = 1
+      } = req.body;
+
+      // Validation
+      if (!customerName || !customerName.trim()) {
+        return res.status(400).json({
+          success: false,
+          message: 'Customer name is required'
+        });
+      }
+
+      if (partySize < 1 || partySize > 20) {
+        return res.status(400).json({
+          success: false,
+          message: 'Party size must be between 1 and 20'
+        });
+      }
+
+      const table = await Table.findByPk(id);
+      
+      if (!table) {
+        return res.status(404).json({
+          success: false,
+          message: 'Table not found'
+        });
+      }
+
+      // Check if table is available
+      if (table.status !== 'available') {
+        return res.status(400).json({
+          success: false,
+          message: `Table is currently ${table.status} and cannot be occupied`
+        });
+      }
+
+      // Check table capacity
+      if (partySize > table.capacity) {
+        return res.status(400).json({
+          success: false,
+          message: `Party size (${partySize}) exceeds table capacity (${table.capacity})`
+        });
+      }
+
+      // Update table with customer information
+      const updateData = {
+        status: 'occupied',
+        timeOccupied: new Date(),
+        capacity: partySize,
+        customerName: customerName.trim()
+      };
+
+      await table.update(updateData);
+
+      // Log the seating event
+      logger.info(`Customer "${customerName}" seated at table ${table.number}`, {
+        tableId: id,
+        customerName,
+        partySize
+      });
+
+      res.status(200).json({
+        success: true,
+        message: `${customerName} has been seated at Table ${table.number}`,
+        data: table
+      });
+
+    } catch (error) {
+      logger.error('Error seating customer:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error seating customer',
+        error: error.message
+      });
+    }
+  },
+
+  // Update table status with enhanced customer handling
+  updateTableStatus: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { 
+        status, 
+        currentOrderId = null,
+        customerName = null,
+        timeOccupied = null
+      } = req.body;
+
+      if (!status) {
+        return res.status(400).json({
+          success: false,
+          message: 'Status is required'
+        });
+      }
+
+      const validStatuses = ['available', 'occupied', 'cleaning', 'reserved'];
+      if (!validStatuses.includes(status)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid status. Must be one of: ' + validStatuses.join(', ')
+        });
+      }
+
+      const table = await Table.findByPk(id);
+      
+      if (!table) {
+        return res.status(404).json({
+          success: false,
+          message: 'Table not found'
+        });
+      }
+
+      const updateData = { status };
+      
+      // Handle different status transitions
+      switch (status) {
+        case 'occupied':
+          updateData.timeOccupied = timeOccupied || new Date();
+          if (currentOrderId) updateData.currentOrderId = currentOrderId;
+          if (customerName) updateData.customerName = customerName.trim();
+          break;
+          
+        case 'available':
+          updateData.timeOccupied = null;
+          updateData.currentOrderId = null;
+          updateData.customerName = null;
+          break;
+          
+        case 'cleaning':
+          // Keep customer name during cleaning, clear order
+          updateData.currentOrderId = null;
+          break;
+          
+        case 'reserved':
+          updateData.timeOccupied = null;
+          updateData.currentOrderId = null;
+          // Keep customer name for reservations if provided
+          if (customerName) {
+            updateData.customerName = customerName.trim();
+          }
+          break;
+      }
+
+      await table.update(updateData);
+
+      res.status(200).json({
+        success: true,
+        message: 'Table status updated successfully',
+        data: table
+      });
+
+    } catch (error) {
+      logger.error('Error updating table status:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error updating table status',
+        error: error.message
+      });
+    }
+  },
+
+  // Clear table when customer leaves
+  clearTable: async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      const table = await Table.findByPk(id);
+      
+      if (!table) {
+        return res.status(404).json({
+          success: false,
+          message: 'Table not found'
+        });
+      }
+
+      // Check if table has active order
+      if (table.currentOrderId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Cannot clear table with active order. Complete or cancel the order first.'
+        });
+      }
+
+      const previousCustomer = table.customerName;
+
+      // Clear table data
+      const updateData = {
+        status: 'cleaning',
+        timeOccupied: null,
+        customerName: null,
+        currentOrderId: null
+      };
+
+      await table.update(updateData);
+
+      // Log the clearing event
+      logger.info(`Table ${table.number} cleared`, {
+        tableId: id,
+        previousCustomer
+      });
+
+      res.status(200).json({
+        success: true,
+        message: `Table ${table.number} has been cleared and is ready for cleaning`,
+        data: table
+      });
+
+    } catch (error) {
+      logger.error('Error clearing table:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error clearing table',
+        error: error.message
+      });
+    }
+  },
+
+  // Get tables with current customers
+  getTablesWithCustomers: async (req, res) => {
+    try {
+      const tables = await Table.findAll({
+        where: {
+          status: ['occupied', 'reserved'],
+          customerName: { [Op.ne]: null }
+        },
+        order: [['timeOccupied', 'ASC']]
+      });
+
+      res.status(200).json({
+        success: true,
+        data: tables,
+        count: tables.length
+      });
+
+    } catch (error) {
+      logger.error('Error fetching tables with customers:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error fetching tables with customers',
+        error: error.message
+      });
+    }
+  },
+
+  // Keep all your existing methods unchanged
   getTableById: async (req, res) => {
     try {
       const { id } = req.params;
@@ -75,7 +325,6 @@ const tableController = {
     }
   },
 
-  // Get table by number
   getTableByNumber: async (req, res) => {
     try {
       const { number } = req.params;
@@ -104,7 +353,6 @@ const tableController = {
     }
   },
 
-  // Create new table
   createTable: async (req, res) => {
     try {
       const { name, number, capacity, status = 'available' } = req.body;
@@ -165,7 +413,6 @@ const tableController = {
     }
   },
 
-  // Update table
   updateTable: async (req, res) => {
     try {
       const { id } = req.params;
@@ -224,7 +471,6 @@ const tableController = {
     }
   },
 
-  // Delete table
   deleteTable: async (req, res) => {
     try {
       const { id } = req.params;
@@ -261,66 +507,6 @@ const tableController = {
     }
   },
 
-  // Update table status
-  updateTableStatus: async (req, res) => {
-    try {
-      const { id } = req.params;
-      const { status, currentOrderId = null } = req.body;
-
-      if (!status) {
-        return res.status(400).json({
-          success: false,
-          message: 'Status is required'
-        });
-      }
-
-      const validStatuses = ['available', 'occupied', 'cleaning', 'reserved'];
-      if (!validStatuses.includes(status)) {
-        return res.status(400).json({
-          success: false,
-          message: 'Invalid status. Must be one of: ' + validStatuses.join(', ')
-        });
-      }
-
-      const table = await Table.findByPk(id);
-      
-      if (!table) {
-        return res.status(404).json({
-          success: false,
-          message: 'Table not found'
-        });
-      }
-
-      const updateData = { status };
-      
-      // Handle time tracking and order assignment
-      if (status === 'occupied') {
-        updateData.timeOccupied = new Date();
-        if (currentOrderId) {
-          updateData.currentOrderId = currentOrderId;
-        }
-      } else if (status === 'available') {
-        updateData.timeOccupied = null;
-        updateData.currentOrderId = null;
-      }
-
-      await table.update(updateData);
-
-      res.status(200).json({
-        success: true,
-        message: 'Table status updated successfully',
-        data: table
-      });
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: 'Error updating table status',
-        error: error.message
-      });
-    }
-  },
-
-  // Get available tables
   getAvailableTables: async (req, res) => {
     try {
       const { capacity } = req.query;
@@ -350,7 +536,6 @@ const tableController = {
     }
   },
 
-  // Get occupied tables
   getOccupiedTables: async (req, res) => {
     try {
       const tables = await Table.findAll({
@@ -372,7 +557,6 @@ const tableController = {
     }
   },
 
-  // Bulk update table statuses
   bulkUpdateStatus: async (req, res) => {
     try {
       const { tableIds, status } = req.body;
@@ -403,6 +587,7 @@ const tableController = {
       if (status === 'available') {
         updateData.timeOccupied = null;
         updateData.currentOrderId = null;
+        updateData.customerName = null;
       }
 
       const [updatedCount] = await Table.update(updateData, {
@@ -423,6 +608,5 @@ const tableController = {
     }
   }
 };
-
 module.exports = tableController;
 

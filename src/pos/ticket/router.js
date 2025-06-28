@@ -13,7 +13,7 @@ router.use(validateToken)
 //     next()
 // })
 // Basic CRUD - GET ALL (must be first)
-router.get('/', ticketController.getAllTickets);
+router.get('/find', ticketController.getAllTickets);
 
 // Special query routes (BEFORE /:id)
 router.get('/table/:tableId', ticketController.getTicketsByTable);

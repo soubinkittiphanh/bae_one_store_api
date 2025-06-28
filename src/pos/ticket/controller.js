@@ -11,7 +11,8 @@ const Payment = require('../../models').payment;
 const Client = require('../../models').client;
 
 const ticketController = {
-    // Get all tickets with pagination and filtering
+
+    // Fixed getAllTickets method
     getAllTickets: async (req, res) => {
         try {
             const {
@@ -22,13 +23,13 @@ const ticketController = {
                 startDate,
                 endDate,
                 page = 1,
-                limit = 10,
-                includeLines = false
+                limit = 20, // Changed to match frontend default
+                include, // Handle include as sent from frontend
+                sort = 'createdAt:desc' // Handle sort parameter
             } = req.query;
 
             // Build where condition
             const whereCondition = {};
-
             if (status) whereCondition.status = status;
             if (paymentStatus) whereCondition.paymentStatus = paymentStatus;
             if (tableId) whereCondition.tableId = tableId;
@@ -43,19 +44,71 @@ const ticketController = {
 
             const offset = (page - 1) * limit;
 
-            // Build include array
-            const includeArray = [
-                { model: Table, as: 'table', attributes: ['id', 'name', 'number'] },
-                { model: Client, as: 'client', attributes: ['id', 'name', 'email', 'phone'] },
-                { model: Payment, as: 'payment', attributes: ['id', 'method', 'amount', 'status'] }
-            ];
+            // Build include array based on frontend request
+            const includeArray = [];
 
-            if (includeLines === 'true') {
+            // Parse include parameter (can be string or array)
+            let includeParams = [];
+            if (include) {
+                if (typeof include === 'string') {
+                    includeParams = include.split(',');
+                } else if (Array.isArray(include)) {
+                    includeParams = include;
+                }
+            }
+
+            // Always include basic associations or based on include parameter
+            if (includeParams.length === 0 || includeParams.includes('client')) {
+                includeArray.push({
+                    model: Client,
+                    as: 'client',
+                    // attributes: ['id', 'name', 'email', 'phone'],
+                    required: false
+                });
+            }
+
+            if (includeParams.length === 0 || includeParams.includes('table')) {
+                includeArray.push({
+                    model: Table,
+                    as: 'table',
+                    attributes: ['id', 'name', 'number', 'capacity'],
+                    required: false
+                });
+            }
+
+            if (includeParams.length === 0 || includeParams.includes('payment')) {
+                includeArray.push({
+                    model: Payment,
+                    as: 'payment',
+                    // attributes: ['id', 'method', 'amount', 'status', 'transactionId'],
+                    required: false
+                });
+            }
+
+            if (includeParams.includes('ticketLines')) {
                 includeArray.push({
                     model: TicketLine,
                     as: 'ticketLines',
-                    attributes: ['id', 'quantity', 'unitPrice', 'subtotal', 'productId']
+                    // attributes: ['id', 'quantity', 'unitPrice', 'total', 'notes', 'productId'],
+                    include: [
+                        {
+                            model: require('../../models').product, // Adjust based on your models
+                            as: 'product',
+                            // attributes: ['id', 'name', 'price'],
+                            required: false
+                        }
+                    ],
+                    required: false
                 });
+            }
+
+            // Handle sort parameter
+            let orderArray = [['createdAt', 'DESC']]; // default
+            if (sort) {
+                const [sortField, sortDirection] = sort.split(':');
+                if (sortField && sortDirection) {
+                    orderArray = [[sortField, sortDirection.toUpperCase()]];
+                }
             }
 
             const tickets = await Ticket.findAndCountAll({
@@ -63,24 +116,35 @@ const ticketController = {
                 include: includeArray,
                 limit: parseInt(limit),
                 offset: parseInt(offset),
-                order: [['createdAt', 'DESC']]
+                order: orderArray,
+                distinct: true // Important when using includes to get correct count
             });
 
+            // Format response to match frontend expectations
             res.status(200).json({
                 success: true,
+                tickets: tickets.rows, // Frontend expects 'tickets' property
+                totalPages: Math.ceil(tickets.count / limit),
+                currentPage: parseInt(page),
+                totalItems: tickets.count,
+                limit: parseInt(limit),
+                // Alternative format that also works
                 data: tickets.rows,
                 pagination: {
                     total: tickets.count,
-                    page: parseInt(page),
-                    pages: Math.ceil(tickets.count / limit),
+                    currentPage: parseInt(page),
+                    totalPages: Math.ceil(tickets.count / limit),
                     limit: parseInt(limit)
                 }
             });
+
         } catch (error) {
+            console.error('Error fetching tickets:', error); // Add logging
             res.status(500).json({
                 success: false,
                 message: 'Error fetching tickets',
-                error: error.message
+                error: error.message,
+                stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
             });
         }
     },

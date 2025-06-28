@@ -26,7 +26,9 @@ router.patch('/:id/status', tableController.updateTableStatus);
 router.get('/filter/available', tableController.getAvailableTables);
 router.get('/filter/occupied', tableController.getOccupiedTables);
 router.patch('/bulk/status', tableController.bulkUpdateStatus);
-
+// New routes for customer seating
+router.post('/:id/seat-customer', tableController.seatCustomer);
+router.post('/:id/clear', tableController.clearTable);
 
     // .post("/bulkCreate",service.createHulkStockCard)
 module.exports = router
