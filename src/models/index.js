@@ -119,6 +119,9 @@ db.district = require("../district-village/model")(sequelize, DataTypes);
 db.table = require("../pos/table/model")(sequelize, DataTypes);
 db.ticket = require("../pos/ticket/model")(sequelize, DataTypes);
 db.ticketLine = require("../pos/ticketLine/model")(sequelize, DataTypes);
+db.tax = require("../tax/model")(sequelize, DataTypes);
+db.moneyAdvance = require("../moneyAdvance/model")(sequelize, DataTypes);
+db.moneySettlement = require("../moneySettlement/model")(sequelize, DataTypes);
 
 
 Object.keys(db).forEach(modelName => {
@@ -452,6 +455,10 @@ db.centralSequelize.sync({ force: false, alter: true }).then(() => {
 db.product.belongsTo(db.currency, {
     foreignKey: 'costCurrencyId',
     as: 'costCurrency'
+})
+db.product.belongsTo(db.tax, {
+    foreignKey: 'taxId',
+    as: 'tax'
 })
 db.product.belongsTo(db.currency, {
     foreignKey: 'saleCurrencyId',

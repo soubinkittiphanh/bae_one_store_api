@@ -346,6 +346,7 @@ const updateProd = async (req, imagesObj) => {
     const isActive = body.isActive;
     const companyId = body.companyId;
     const vendorName = body.vendorName;
+    const taxId = body.taxId;
     const timestamps = new Date();
     const mysqlDatetime = timestamps.toISOString().slice(0, 19).replace('T', ' ');
     const retail_percent = body.pro_retail_price || 0.0;
@@ -401,7 +402,8 @@ const updateProd = async (req, imagesObj) => {
       companyId = ?,
       vendorName = ?,
       _category = ?,
-      duration_minutes = ?
+      duration_minutes = ?,
+      taxId = ?
     WHERE pro_id = ?;
   `;
 
@@ -426,6 +428,7 @@ const updateProd = async (req, imagesObj) => {
         vendorName,
         category,
         durationMinutes,
+        taxId,
         pro_id
     ];
 

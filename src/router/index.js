@@ -49,6 +49,9 @@ const washJob = require("../washJob").router
 const table = require("../pos/table").router
 const ticket = require("../pos/ticket").router
 const ticketLine = require("../pos/ticketLine").router
+const tax = require("../tax/router")
+const moneyAdvance = require("../moneyAdvance/router")
+const moneySettlement = require("../moneySettlement/router")
 
 module.exports={
     orderRouter,
@@ -101,5 +104,8 @@ module.exports={
     table,
     ticket,
     ticketLine,
-    washJob
+    washJob,
+    moneyAdvance,
+    moneySettlement,
+    tax
 }

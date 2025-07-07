@@ -65,6 +65,9 @@ const buildApp = async () => {
     app.use("/api/tables",myRouter.table)
     app.use("/api/ticket",myRouter.ticket)
     app.use("/api/ticketLine",myRouter.ticketLine)
+    app.use("/api/tax",myRouter.tax)
+    app.use("/api/money-advances",myRouter.moneyAdvance)
+    app.use("/api/settlements",myRouter.moneySettlement)
 
     Router.category(app);
     Router.product(app);
