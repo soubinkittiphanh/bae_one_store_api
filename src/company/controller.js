@@ -78,13 +78,27 @@ exports.uploadProfileImage = async (req, res) => {
   try {
     const companyId = req.params.id;
 
+    console.log('Upload request received for company:', companyId);
+    console.log('Request files:', req.files);
+    console.log('Request file:', req.file);
+
     if (!req.file) {
+      console.log('No file provided in request');
       return res.status(400).json({ message: 'No image file provided' });
     }
+
+    console.log('File details:', {
+      fieldname: req.file.fieldname,
+      originalname: req.file.originalname,
+      mimetype: req.file.mimetype,
+      size: req.file.size,
+      filename: req.file.filename
+    });
 
     // Find the company
     const company = await Company.findByPk(companyId);
     if (!company) {
+      console.log('Company not found:', companyId);
       // Delete uploaded file if company not found
       if (fs.existsSync(req.file.path)) {
         fs.unlinkSync(req.file.path);
@@ -97,12 +111,15 @@ exports.uploadProfileImage = async (req, res) => {
       const oldImagePath = path.join(__dirname, '..', company.profile_image_path);
       if (fs.existsSync(oldImagePath)) {
         fs.unlinkSync(oldImagePath);
+        console.log('Deleted old image:', oldImagePath);
       }
     }
 
     // Update company with new image path
     const imagePath = `/uploads/company-profiles/${req.file.filename}`;
     await company.update({ profile_image_path: imagePath });
+
+    console.log('Image uploaded successfully:', imagePath);
 
     res.json({
       message: 'Profile image uploaded successfully',
@@ -111,6 +128,7 @@ exports.uploadProfileImage = async (req, res) => {
     });
 
   } catch (err) {
+    console.error('Error uploading profile image:', err);
     logger.error('Error uploading profile image:', err);
 
     // Delete uploaded file on error
