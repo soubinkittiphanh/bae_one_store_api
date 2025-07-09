@@ -41,7 +41,7 @@ class SettlementController {
           {
             model: BankAccount,
             as: 'bankAccount',
-            attributes: ['bank_acc_id', 'account_number', 'account_name', 'bank_name', 'branch'],
+            // attributes: ['account_number', 'account_name', 'bank_name', 'branch'],
             required: false // Left join - settlement might not have bank account
           }
         ],
@@ -96,7 +96,7 @@ class SettlementController {
           {
             model: BankAccount,
             as: 'bankAccount',
-            attributes: ['bank_acc_id', 'account_number', 'account_name', 'bank_name', 'branch'],
+            // attributes: ['bank_acc_id', 'account_number', 'account_name', 'bank_name', 'branch'],
             required: false
           }
         ]
@@ -232,7 +232,7 @@ class SettlementController {
           {
             model: BankAccount,
             as: 'bankAccount',
-            attributes: ['bank_acc_id', 'account_number', 'account_name', 'bank_name', 'branch'],
+            // attributes: ['bank_acc_id', 'account_number', 'account_name', 'bank_name', 'branch'],
             required: false
           }
         ]
@@ -393,7 +393,7 @@ class SettlementController {
           {
             model: BankAccount,
             as: 'bankAccount',
-            attributes: ['bank_acc_id', 'account_number', 'account_name', 'bank_name', 'branch'],
+            // attributes: ['bank_acc_id', 'account_number', 'account_name', 'bank_name', 'branch'],
             required: false
           }
         ]
@@ -473,7 +473,7 @@ class SettlementController {
           {
             model: BankAccount,
             as: 'bankAccount',
-            attributes: ['bank_acc_id', 'account_number', 'account_name', 'bank_name', 'branch'],
+            // attributes: ['bank_acc_id', 'account_number', 'account_name', 'bank_name', 'branch'],
             required: false
           }
         ],
@@ -558,7 +558,7 @@ class SettlementController {
           {
             model: BankAccount,
             as: 'bankAccount',
-            attributes: ['bank_acc_id', 'account_number', 'account_name', 'bank_name']
+            // attributes: ['bank_acc_id', 'account_number', 'account_name', 'bank_name']
           }
         ],
         group: ['bankAccountId']
@@ -622,7 +622,7 @@ class SettlementController {
           {
             model: BankAccount,
             as: 'bankAccount',
-            attributes: ['bank_acc_id', 'account_number', 'account_name', 'bank_name', 'branch']
+            // attributes: ['bank_acc_id', 'account_number', 'account_name', 'bank_name', 'branch']
           }
         ],
         limit: parseInt(limit),
@@ -684,7 +684,7 @@ class SettlementController {
           {
             model: BankAccount,
             as: 'bankAccount',
-            attributes: ['bank_acc_id', 'account_number', 'account_name', 'bank_name', 'branch'],
+            // attributes: ['bank_acc_id', 'account_number', 'account_name', 'bank_name', 'branch'],
             required: false
           }
         ],
