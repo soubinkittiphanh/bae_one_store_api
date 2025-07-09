@@ -116,7 +116,7 @@ exports.uploadProfileImage = async (req, res) => {
     }
 
     // Update company with new image path
-    const imagePath = `/uploads/company-profiles/${req.file.filename}`;
+    const imagePath = `uploads/company-profiles/${req.file.filename}`;
     await company.update({ profile_image_path: imagePath });
 
     console.log('Image uploaded successfully:', imagePath);
