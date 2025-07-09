@@ -52,6 +52,7 @@ const ticketLine = require("../pos/ticketLine").router
 const tax = require("../tax/router")
 const moneyAdvance = require("../moneyAdvance/router")
 const moneySettlement = require("../moneySettlement/router")
+const bankAccount = require("../bankAccount/router")
 
 module.exports={
     orderRouter,
@@ -107,5 +108,6 @@ module.exports={
     washJob,
     moneyAdvance,
     moneySettlement,
-    tax
+    tax,
+    bankAccount,
 }

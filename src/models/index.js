@@ -121,6 +121,7 @@ db.ticket = require("../pos/ticket/model")(sequelize, DataTypes);
 db.ticketLine = require("../pos/ticketLine/model")(sequelize, DataTypes);
 db.tax = require("../tax/model")(sequelize, DataTypes);
 db.moneyAdvance = require("../moneyAdvance/model")(sequelize, DataTypes);
+db.bank_account = require("../bankAccount/model")(sequelize, DataTypes);
 db.moneySettlement = require("../moneySettlement/model")(sequelize, DataTypes);
 
 

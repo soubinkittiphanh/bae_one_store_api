@@ -113,7 +113,7 @@ class SettlementController {
       const { amount, method, notes, userId, moneyAdvanceId } = req.body;
 
       // Validation
-      if (!amount || !method || !userId || !moneyAdvanceId) {
+      if (!amount || !method || !userId ) {
         return res.status(400).json({
           success: false,
           message: 'Amount, method, userId, and moneyAdvanceId are required'

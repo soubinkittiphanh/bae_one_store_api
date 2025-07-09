@@ -13,7 +13,7 @@ const headerService = require("./service");
 const common = require('../common')
 const { Op, where, literal } = require('sequelize');
 const productService = require('../product/service');
-const { sequelize } = require('../models');
+const { sequelize, location, company } = require('../models');
 const spfService = require('../spf/service')
 const cardService = require('../card/service')
 // 1. 200 OK - The request has succeeded and the server has returned the requested data.
@@ -488,7 +488,7 @@ exports.getSaleHeadersByDateAndUser = async (req, res) => {
   logger.warn(`Request date ${date.startDate} userId ${date.userId}`)
   try {
     const saleHeaders = await SaleHeader.findAll({
-      include: ['user', 'client', 'payment', 'currency', 'location', Customer,
+      include: ['user', 'client', 'payment', 'currency', Customer,
         {
           model: Line,
           as: "lines",
@@ -499,7 +499,7 @@ exports.getSaleHeadersByDateAndUser = async (req, res) => {
             },
             {
               model: SaleHeader,
-              as: "header"
+              as: "header",
             },
 
           ]
@@ -507,7 +507,18 @@ exports.getSaleHeadersByDateAndUser = async (req, res) => {
         {
           model: Customer,
           include: ['geography', 'shipping']
-        }
+        },
+
+        {
+          model: location,
+          as: "location",
+          include: [
+            {
+              model: company,
+              as: "company"
+            },]
+        },
+
 
       ],
       where: {
@@ -799,7 +810,7 @@ exports.sumSaleCurrentYear = async (req, res) => {
       include: [Customer, 'payment', 'lines', {
         model: SaleLine,
         as: "lines",
-        include:['cards']
+        include: ['cards']
       },],
       attributes: ['id', 'discount', 'total', 'bookingDate'],
       where: {

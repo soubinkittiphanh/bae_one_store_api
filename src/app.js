@@ -21,6 +21,7 @@ const buildApp = async () => {
     app.use("/api/accountChart",myRouter.chartAccount)
     app.use("/api/upgrade",myRouter.upgrade)
     app.use("/api/rider",myRouter.rider)
+    app.use("/api/bank_account",myRouter.bankAccount)
     app.use("/api/location",myRouter.location)
     app.use("/api/campaign",myRouter.campaign)
     app.use("/api/campaignEntry",myRouter.campaignEntry)
