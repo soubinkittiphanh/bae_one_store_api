@@ -5,18 +5,21 @@ const Settlement = require('../models').moneySettlement;
 const user = require('../models').user;
 const currency = require('../models').currency;
 const MoneyAdvance = require('../models').moneyAdvance;
+const BankAccount = require('../models').bank_account;
+
 class SettlementController {
   
   // GET /settlements - Get all settlements with pagination
   static async getAll(req, res) {
     try {
-      const { page = 1, limit = 10, method, userId, moneyAdvanceId } = req.query;
+      const { page = 1, limit = 10, method, userId, moneyAdvanceId, bankAccountId } = req.query;
       const offset = (page - 1) * limit;
       
       const whereClause = {};
       if (method) whereClause.method = method;
       if (userId) whereClause.userId = userId;
       if (moneyAdvanceId) whereClause.moneyAdvanceId = moneyAdvanceId;
+      if (bankAccountId) whereClause.bankAccountId = bankAccountId;
 
       const { count, rows } = await Settlement.findAndCountAll({
         where: whereClause,
@@ -24,16 +27,22 @@ class SettlementController {
           { 
             model: user, 
             as: 'proceeder', 
-             
           },
           { 
             model: MoneyAdvance, 
             as: 'moneyAdvance',
             attributes: ['id', 'amount', 'purpose', 'status'],
             include: [
-              { model: user, as: 'maker',  },
-              { model: currency, as: 'currency',  }
-            ]
+              { model: user, as: 'maker' },
+              { model: currency, as: 'currency' }
+            ],
+            required: false // Left join - settlement might not have money advance
+          },
+          {
+            model: BankAccount,
+            as: 'bankAccount',
+            attributes: ['bank_acc_id', 'account_number', 'account_name', 'bank_name', 'branch'],
+            required: false // Left join - settlement might not have bank account
           }
         ],
         limit: parseInt(limit),
@@ -72,17 +81,23 @@ class SettlementController {
           { 
             model: user, 
             as: 'proceeder', 
-             
           },
           { 
             model: MoneyAdvance, 
             as: 'moneyAdvance',
             attributes: ['id', 'amount', 'purpose', 'status', 'dueDate'],
             include: [
-              { model: user, as: 'maker',  },
-              { model: user, as: 'checker',  },
-              { model: currency, as: 'currency',  }
-            ]
+              { model: user, as: 'maker' },
+              { model: user, as: 'checker' },
+              { model: currency, as: 'currency' }
+            ],
+            required: false
+          },
+          {
+            model: BankAccount,
+            as: 'bankAccount',
+            attributes: ['bank_acc_id', 'account_number', 'account_name', 'bank_name', 'branch'],
+            required: false
           }
         ]
       });
@@ -110,49 +125,72 @@ class SettlementController {
   // POST /settlements - Create new settlement
   static async create(req, res) {
     try {
-      const { amount, method, notes, userId, moneyAdvanceId } = req.body;
+      const { amount, method, notes, userId, moneyAdvanceId, bankAccountId } = req.body;
 
       // Validation
-      if (!amount || !method || !userId ) {
+      if (!amount || !method || !userId) {
         return res.status(400).json({
           success: false,
-          message: 'Amount, method, userId, and moneyAdvanceId are required'
+          message: 'Amount, method, and userId are required'
         });
       }
 
-      // Check if money advance exists and is approved
-      const moneyAdvance = await MoneyAdvance.findByPk(moneyAdvanceId);
-      if (!moneyAdvance) {
-        return res.status(404).json({
-          success: false,
-          message: 'Money advance not found'
-        });
-      }
-
-      if (moneyAdvance.status !== 'approved') {
+      // Validate bank account is required for bank_transfer method
+      if (method === 'bank_transfer' && !bankAccountId) {
         return res.status(400).json({
           success: false,
-          message: 'Can only create settlements for approved money advances'
+          message: 'Bank account is required for bank transfer settlements'
         });
       }
 
-      // Calculate total settled amount
-      const existingSettlements = await Settlement.sum('amount', {
-        where: { moneyAdvanceId }
-      });
+      // Validate bank account exists if provided
+      if (bankAccountId) {
+        const bankAccount = await BankAccount.findByPk(bankAccountId);
+        if (!bankAccount) {
+          return res.status(404).json({
+            success: false,
+            message: 'Bank account not found'
+          });
+        }
+      }
 
-      const totalSettled = (existingSettlements || 0) + parseFloat(amount);
+      let moneyAdvance = null;
       
-      if (totalSettled > parseFloat(moneyAdvance.amount)) {
-        return res.status(400).json({
-          success: false,
-          message: 'Settlement amount exceeds remaining balance',
-          data: {
-            advanceAmount: moneyAdvance.amount,
-            alreadySettled: existingSettlements || 0,
-            remainingBalance: parseFloat(moneyAdvance.amount) - (existingSettlements || 0)
-          }
+      // Check if money advance exists and is approved (only if provided)
+      if (moneyAdvanceId) {
+        moneyAdvance = await MoneyAdvance.findByPk(moneyAdvanceId);
+        if (!moneyAdvance) {
+          return res.status(404).json({
+            success: false,
+            message: 'Money advance not found'
+          });
+        }
+
+        if (moneyAdvance.status !== 'approved') {
+          return res.status(400).json({
+            success: false,
+            message: 'Can only create settlements for approved money advances'
+          });
+        }
+
+        // Calculate total settled amount for this money advance
+        const existingSettlements = await Settlement.sum('amount', {
+          where: { moneyAdvanceId }
         });
+
+        const totalSettled = (existingSettlements || 0) + parseFloat(amount);
+        
+        if (totalSettled > parseFloat(moneyAdvance.amount)) {
+          return res.status(400).json({
+            success: false,
+            message: 'Settlement amount exceeds remaining balance',
+            data: {
+              advanceAmount: moneyAdvance.amount,
+              alreadySettled: existingSettlements || 0,
+              remainingBalance: parseFloat(moneyAdvance.amount) - (existingSettlements || 0)
+            }
+          });
+        }
       }
 
       const settlement = await Settlement.create({
@@ -160,12 +198,19 @@ class SettlementController {
         method,
         notes,
         userId,
-        moneyAdvanceId
+        moneyAdvanceId: moneyAdvanceId || null,
+        bankAccountId: method === 'bank_transfer' ? bankAccountId : null
       });
 
-      // Check if fully settled and update money advance status
-      if (totalSettled >= parseFloat(moneyAdvance.amount)) {
-        await moneyAdvance.update({ status: 'settled' });
+      // Check if fully settled and update money advance status (only if money advance exists)
+      if (moneyAdvance) {
+        const totalSettled = await Settlement.sum('amount', {
+          where: { moneyAdvanceId }
+        });
+
+        if (totalSettled >= parseFloat(moneyAdvance.amount)) {
+          await moneyAdvance.update({ status: 'settled' });
+        }
       }
 
       // Fetch the created settlement with associations
@@ -174,15 +219,21 @@ class SettlementController {
           { 
             model: user, 
             as: 'proceeder', 
-             
           },
           { 
             model: MoneyAdvance, 
             as: 'moneyAdvance',
             attributes: ['id', 'amount', 'purpose', 'status'],
             include: [
-              { model: user, as: 'maker',  }
-            ]
+              { model: user, as: 'maker' }
+            ],
+            required: false
+          },
+          {
+            model: BankAccount,
+            as: 'bankAccount',
+            attributes: ['bank_acc_id', 'account_number', 'account_name', 'bank_name', 'branch'],
+            required: false
           }
         ]
       });
@@ -205,10 +256,10 @@ class SettlementController {
   static async update(req, res) {
     try {
       const { id } = req.params;
-      const { amount, method, notes } = req.body;
+      const { amount, method, notes, bankAccountId, moneyAdvanceId } = req.body;
 
       const settlement = await Settlement.findByPk(id, {
-        include: [{ model: MoneyAdvance, as: 'moneyAdvance' }]
+        include: [{ model: MoneyAdvance, as: 'moneyAdvance', required: false }]
       });
       
       if (!settlement) {
@@ -218,48 +269,113 @@ class SettlementController {
         });
       }
 
-      // If amount is being updated, validate total doesn't exceed advance amount
-      if (amount && amount !== settlement.amount) {
+      // Validate bank account is required for bank_transfer method
+      const updatedMethod = method || settlement.method;
+      if (updatedMethod === 'bank_transfer' && !bankAccountId && !settlement.bankAccountId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Bank account is required for bank transfer settlements'
+        });
+      }
+
+      // Validate bank account exists if provided
+      if (bankAccountId) {
+        const bankAccount = await BankAccount.findByPk(bankAccountId);
+        if (!bankAccount) {
+          return res.status(404).json({
+            success: false,
+            message: 'Bank account not found'
+          });
+        }
+      }
+
+      // Validate money advance exists if provided
+      let newMoneyAdvance = null;
+      const finalMoneyAdvanceId = moneyAdvanceId !== undefined ? moneyAdvanceId : settlement.moneyAdvanceId;
+      
+      if (finalMoneyAdvanceId) {
+        newMoneyAdvance = await MoneyAdvance.findByPk(finalMoneyAdvanceId);
+        if (!newMoneyAdvance) {
+          return res.status(404).json({
+            success: false,
+            message: 'Money advance not found'
+          });
+        }
+
+        if (newMoneyAdvance.status !== 'approved' && newMoneyAdvance.status !== 'settled') {
+          return res.status(400).json({
+            success: false,
+            message: 'Can only update settlements for approved or settled money advances'
+          });
+        }
+      }
+
+      // If amount is being updated and there's a money advance, validate total doesn't exceed advance amount
+      if (amount && amount !== settlement.amount && finalMoneyAdvanceId) {
         const existingSettlements = await Settlement.sum('amount', {
           where: { 
-            moneyAdvanceId: settlement.moneyAdvanceId,
+            moneyAdvanceId: finalMoneyAdvanceId,
             id: { [Op.ne]: settlement.id } // Exclude current settlement
           }
         });
 
         const totalSettled = (existingSettlements || 0) + parseFloat(amount);
+        const advanceAmount = newMoneyAdvance ? parseFloat(newMoneyAdvance.amount) : 0;
         
-        if (totalSettled > parseFloat(settlement.moneyAdvance.amount)) {
+        if (totalSettled > advanceAmount) {
           return res.status(400).json({
             success: false,
             message: 'Updated settlement amount would exceed advance balance',
             data: {
-              advanceAmount: settlement.moneyAdvance.amount,
+              advanceAmount: advanceAmount,
               otherSettlements: existingSettlements || 0,
-              maxAllowedAmount: parseFloat(settlement.moneyAdvance.amount) - (existingSettlements || 0)
+              maxAllowedAmount: advanceAmount - (existingSettlements || 0)
             }
           });
         }
       }
 
+      // Update settlement
       await settlement.update({
         amount: amount || settlement.amount,
         method: method || settlement.method,
-        notes: notes !== undefined ? notes : settlement.notes
+        notes: notes !== undefined ? notes : settlement.notes,
+        bankAccountId: updatedMethod === 'bank_transfer' ? (bankAccountId || settlement.bankAccountId) : null,
+        moneyAdvanceId: finalMoneyAdvanceId
       });
 
-      // Recalculate if money advance should be marked as settled
-      const totalSettled = await Settlement.sum('amount', {
-        where: { moneyAdvanceId: settlement.moneyAdvanceId }
-      });
+      // Recalculate money advance status for old money advance (if it existed and is being changed)
+      if (settlement.moneyAdvanceId && settlement.moneyAdvanceId !== finalMoneyAdvanceId) {
+        const oldMoneyAdvance = await MoneyAdvance.findByPk(settlement.moneyAdvanceId);
+        if (oldMoneyAdvance) {
+          const oldTotalSettled = await Settlement.sum('amount', {
+            where: { moneyAdvanceId: settlement.moneyAdvanceId }
+          });
+          
+          const shouldBeSettled = oldTotalSettled >= parseFloat(oldMoneyAdvance.amount);
+          
+          if (shouldBeSettled && oldMoneyAdvance.status !== 'settled') {
+            await oldMoneyAdvance.update({ status: 'settled' });
+          } else if (!shouldBeSettled && oldMoneyAdvance.status === 'settled') {
+            await oldMoneyAdvance.update({ status: 'approved' });
+          }
+        }
+      }
 
-      const shouldBeSettled = totalSettled >= parseFloat(settlement.moneyAdvance.amount);
-      const currentStatus = settlement.moneyAdvance.status;
+      // Recalculate money advance status for new/current money advance (if it exists)
+      if (finalMoneyAdvanceId) {
+        const totalSettled = await Settlement.sum('amount', {
+          where: { moneyAdvanceId: finalMoneyAdvanceId }
+        });
 
-      if (shouldBeSettled && currentStatus !== 'settled') {
-        await settlement.moneyAdvance.update({ status: 'settled' });
-      } else if (!shouldBeSettled && currentStatus === 'settled') {
-        await settlement.moneyAdvance.update({ status: 'approved' });
+        const shouldBeSettled = totalSettled >= parseFloat(newMoneyAdvance.amount);
+        const currentStatus = newMoneyAdvance.status;
+
+        if (shouldBeSettled && currentStatus !== 'settled') {
+          await newMoneyAdvance.update({ status: 'settled' });
+        } else if (!shouldBeSettled && currentStatus === 'settled') {
+          await newMoneyAdvance.update({ status: 'approved' });
+        }
       }
 
       const updatedSettlement = await Settlement.findByPk(id, {
@@ -267,12 +383,18 @@ class SettlementController {
           { 
             model: user, 
             as: 'proceeder', 
-             
           },
           { 
             model: MoneyAdvance, 
             as: 'moneyAdvance',
-            attributes: ['id', 'amount', 'purpose', 'status']
+            attributes: ['id', 'amount', 'purpose', 'status'],
+            required: false
+          },
+          {
+            model: BankAccount,
+            as: 'bankAccount',
+            attributes: ['bank_acc_id', 'account_number', 'account_name', 'bank_name', 'branch'],
+            required: false
           }
         ]
       });
@@ -297,7 +419,7 @@ class SettlementController {
       const { id } = req.params;
 
       const settlement = await Settlement.findByPk(id, {
-        include: [{ model: MoneyAdvance, as: 'moneyAdvance' }]
+        include: [{ model: MoneyAdvance, as: 'moneyAdvance', required: false }]
       });
       
       if (!settlement) {
@@ -309,16 +431,18 @@ class SettlementController {
 
       await settlement.destroy();
 
-      // Recalculate money advance status after deletion
-      const remainingSettlements = await Settlement.sum('amount', {
-        where: { moneyAdvanceId: settlement.moneyAdvanceId }
-      });
+      // Recalculate money advance status after deletion (only if money advance exists)
+      if (settlement.moneyAdvanceId && settlement.moneyAdvance) {
+        const remainingSettlements = await Settlement.sum('amount', {
+          where: { moneyAdvanceId: settlement.moneyAdvanceId }
+        });
 
-      const totalRemaining = remainingSettlements || 0;
-      const advanceAmount = parseFloat(settlement.moneyAdvance.amount);
+        const totalRemaining = remainingSettlements || 0;
+        const advanceAmount = parseFloat(settlement.moneyAdvance.amount);
 
-      if (totalRemaining < advanceAmount && settlement.moneyAdvance.status === 'settled') {
-        await settlement.moneyAdvance.update({ status: 'approved' });
+        if (totalRemaining < advanceAmount && settlement.moneyAdvance.status === 'settled') {
+          await settlement.moneyAdvance.update({ status: 'approved' });
+        }
       }
 
       res.json({
@@ -345,7 +469,12 @@ class SettlementController {
           { 
             model: user, 
             as: 'proceeder', 
-             
+          },
+          {
+            model: BankAccount,
+            as: 'bankAccount',
+            attributes: ['bank_acc_id', 'account_number', 'account_name', 'bank_name', 'branch'],
+            required: false
           }
         ],
         order: [['createdAt', 'DESC']]
@@ -384,9 +513,18 @@ class SettlementController {
   // GET /settlements/dashboard - Dashboard statistics
   static async getDashboard(req, res) {
     try {
-      const { userId } = req.query;
+      const { userId, bankAccountId, hasMoneyAdvance } = req.query;
       
-      const whereClause = userId ? { userId } : {};
+      const whereClause = {};
+      if (userId) whereClause.userId = userId;
+      if (bankAccountId) whereClause.bankAccountId = bankAccountId;
+      
+      // Filter by whether settlement has money advance or not
+      if (hasMoneyAdvance === 'true') {
+        whereClause.moneyAdvanceId = { [Op.ne]: null };
+      } else if (hasMoneyAdvance === 'false') {
+        whereClause.moneyAdvanceId = null;
+      }
 
       const [totalCount, totalAmount] = await Promise.all([
         Settlement.count({ where: whereClause }),
@@ -404,6 +542,39 @@ class SettlementController {
         group: ['method']
       });
 
+      // Settlement by bank account (for bank transfers only)
+      const bankAccountStats = await Settlement.findAll({
+        where: { 
+          ...whereClause,
+          method: 'bank_transfer',
+          bankAccountId: { [Op.ne]: null }
+        },
+        attributes: [
+          'bankAccountId',
+          [Settlement.sequelize.fn('COUNT', Settlement.sequelize.col('Settlement.id')), 'count'],
+          [Settlement.sequelize.fn('SUM', Settlement.sequelize.col('amount')), 'total']
+        ],
+        include: [
+          {
+            model: BankAccount,
+            as: 'bankAccount',
+            attributes: ['bank_acc_id', 'account_number', 'account_name', 'bank_name']
+          }
+        ],
+        group: ['bankAccountId']
+      });
+
+      // Settlements with vs without money advance
+      const advanceStats = await Settlement.findAll({
+        where: whereClause,
+        attributes: [
+          [Settlement.sequelize.fn('COUNT', Settlement.sequelize.col('id')), 'count'],
+          [Settlement.sequelize.fn('SUM', Settlement.sequelize.col('amount')), 'total'],
+          [Settlement.sequelize.literal('CASE WHEN moneyAdvanceId IS NULL THEN "standalone" ELSE "with_advance" END'), 'type']
+        ],
+        group: [Settlement.sequelize.literal('CASE WHEN moneyAdvanceId IS NULL THEN "standalone" ELSE "with_advance" END')]
+      });
+
       res.json({
         success: true,
         data: {
@@ -411,13 +582,142 @@ class SettlementController {
             totalCount,
             totalAmount: totalAmount || 0
           },
-          byMethod: methodStats
+          byMethod: methodStats,
+          byBankAccount: bankAccountStats,
+          byAdvanceType: advanceStats
         }
       });
     } catch (error) {
       res.status(500).json({
         success: false,
         message: 'Error fetching dashboard data',
+        error: error.message
+      });
+    }
+  }
+
+  // GET /settlements/by-bank-account/:bankAccountId - Get settlements for specific bank account
+  static async getByBankAccountId(req, res) {
+    try {
+      const { bankAccountId } = req.params;
+      const { page = 1, limit = 10 } = req.query;
+      const offset = (page - 1) * limit;
+
+      const { count, rows } = await Settlement.findAndCountAll({
+        where: { bankAccountId },
+        include: [
+          { 
+            model: user, 
+            as: 'proceeder', 
+          },
+          { 
+            model: MoneyAdvance, 
+            as: 'moneyAdvance',
+            attributes: ['id', 'amount', 'purpose', 'status'],
+            include: [
+              { model: user, as: 'maker' }
+            ],
+            required: false
+          },
+          {
+            model: BankAccount,
+            as: 'bankAccount',
+            attributes: ['bank_acc_id', 'account_number', 'account_name', 'bank_name', 'branch']
+          }
+        ],
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+        order: [['createdAt', 'DESC']]
+      });
+
+      // Calculate total amount for this bank account
+      const totalAmount = await Settlement.sum('amount', {
+        where: { bankAccountId }
+      });
+
+      res.json({
+        success: true,
+        data: {
+          settlements: rows,
+          summary: {
+            totalAmount: totalAmount || 0,
+            settlementCount: count
+          },
+          pagination: {
+            currentPage: parseInt(page),
+            totalPages: Math.ceil(count / limit),
+            totalItems: count,
+            itemsPerPage: parseInt(limit)
+          }
+        }
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Error fetching settlements for bank account',
+        error: error.message
+      });
+    }
+  }
+
+  // GET /settlements/standalone - Get standalone settlements (not linked to money advance)
+  static async getStandalone(req, res) {
+    try {
+      const { page = 1, limit = 10, method, userId, bankAccountId } = req.query;
+      const offset = (page - 1) * limit;
+      
+      const whereClause = {
+        moneyAdvanceId: null // Only standalone settlements
+      };
+      
+      if (method) whereClause.method = method;
+      if (userId) whereClause.userId = userId;
+      if (bankAccountId) whereClause.bankAccountId = bankAccountId;
+
+      const { count, rows } = await Settlement.findAndCountAll({
+        where: whereClause,
+        include: [
+          { 
+            model: user, 
+            as: 'proceeder', 
+          },
+          {
+            model: BankAccount,
+            as: 'bankAccount',
+            attributes: ['bank_acc_id', 'account_number', 'account_name', 'bank_name', 'branch'],
+            required: false
+          }
+        ],
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+        order: [['createdAt', 'DESC']]
+      });
+
+      // Calculate total amount for standalone settlements
+      const totalAmount = await Settlement.sum('amount', {
+        where: whereClause
+      });
+
+      res.json({
+        success: true,
+        data: {
+          settlements: rows,
+          summary: {
+            totalAmount: totalAmount || 0,
+            settlementCount: count
+          },
+          pagination: {
+            currentPage: parseInt(page),
+            totalPages: Math.ceil(count / limit),
+            totalItems: count,
+            itemsPerPage: parseInt(limit)
+          }
+        }
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Error fetching standalone settlements',
         error: error.message
       });
     }
