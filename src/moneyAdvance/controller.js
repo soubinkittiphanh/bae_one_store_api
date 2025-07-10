@@ -4,6 +4,7 @@ const MoneyAdvance = require('../models').moneyAdvance;
 const user = require('../models').user;
 const currency = require('../models').currency;
 const settlement = require('../models').moneySettlement;
+const bankAccount = require('../models').bank_account;
 
 class MoneyAdvanceController {
   
@@ -23,7 +24,8 @@ class MoneyAdvanceController {
           { model: user, as: 'maker' },
           { model: user, as: 'checker' },
           { model: currency, as: 'currency'},
-          { model: settlement, as: 'settlementLine' }
+          { model: settlement, as: 'settlementLine' },
+          { model: bankAccount, as: 'bankAccount' }
         ],
         limit: parseInt(limit),
         offset: parseInt(offset),
@@ -61,7 +63,8 @@ class MoneyAdvanceController {
           { model: user, as: 'maker' },
           { model: user, as: 'checker' },
           { model: currency, as: 'currency' },
-          { model: settlement, as: 'settlementLine' }
+          { model: settlement, as: 'settlementLine' },
+          { model: bankAccount, as: 'bankAccount' }
         ]
       });
 
@@ -88,7 +91,7 @@ class MoneyAdvanceController {
   // POST /money-advances - Create new money advance
   static async create(req, res) {
     try {
-      const { amount, purpose, note, makerId, currencyId, dueDate } = req.body;
+      const { amount, purpose, note, makerId, currencyId, dueDate, bankAccountId } = req.body;
 
       // Validation
       if (!amount || !makerId || !currencyId) {
@@ -105,6 +108,7 @@ class MoneyAdvanceController {
         makerId,
         currencyId,
         dueDate,
+        bankAccountId,
         status: 'pending'
       });
 
@@ -112,7 +116,8 @@ class MoneyAdvanceController {
       const createdAdvance = await MoneyAdvance.findByPk(advance.id, {
         include: [
           { model: user, as: 'maker', },
-          { model: currency, as: 'currency' }
+          { model: currency, as: 'currency' },
+          { model: bankAccount, as: 'bankAccount' }
         ]
       });
 
@@ -134,7 +139,7 @@ class MoneyAdvanceController {
   static async update(req, res) {
     try {
       const { id } = req.params;
-      const { amount, purpose, note, dueDate } = req.body;
+      const { amount, purpose, note, dueDate, bankAccountId } = req.body;
 
       const advance = await MoneyAdvance.findByPk(id);
       
@@ -157,14 +162,16 @@ class MoneyAdvanceController {
         amount: amount || advance.amount,
         purpose: purpose || advance.purpose,
         note: note || advance.note,
-        dueDate: dueDate || advance.dueDate
+        dueDate: dueDate || advance.dueDate,
+        bankAccountId: bankAccountId || advance.bankAccountId
       });
 
       const updatedAdvance = await MoneyAdvance.findByPk(id, {
         include: [
           { model: user, as: 'maker', },
           { model: user, as: 'checker', },
-          { model: currency, as: 'currency' }
+          { model: currency, as: 'currency' },
+          { model: bankAccount, as: 'bankAccount' }
         ]
       });
 
@@ -214,7 +221,8 @@ class MoneyAdvanceController {
         include: [
           { model: user, as: 'maker', },
           { model: user, as: 'checker', },
-          { model: currency, as: 'currency' }
+          { model: currency, as: 'currency' },
+          { model: bankAccount, as: 'bankAccount' }
         ]
       });
 
@@ -262,7 +270,8 @@ class MoneyAdvanceController {
           { model: user, as: 'maker', },
           { model: user, as: 'checker', },
           { model: currency, as: 'currency' },
-          { model: settlement, as: 'settlementLine' }
+          { model: settlement, as: 'settlementLine' },
+          { model: bankAccount, as: 'bankAccount' }
         ]
       });
 

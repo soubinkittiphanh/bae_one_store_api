@@ -60,6 +60,10 @@ module.exports = (sequelize, DataTypes) => {
             foreignKey: 'moneyAdvanceId',
             as: 'settlementLine',
         });
+        MoneyAdvance.hasMany(models.bank_account, {
+            foreignKey: 'bankAccountId',
+            as: 'bankAccount',
+        });
     };
 
     return MoneyAdvance;
