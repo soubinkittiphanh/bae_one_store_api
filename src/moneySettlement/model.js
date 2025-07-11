@@ -36,7 +36,7 @@ module.exports = (sequelize, DataTypes) => {
             foreignKey: 'moneyAdvanceId',
             as: 'moneyAdvance',
         });
-        Settlement.belongsTo(models.bank_account, {
+        Settlement.belongsTo(models.bankAccount, {
             foreignKey: 'bankAccountId',
             as: 'bankAccount',
         });

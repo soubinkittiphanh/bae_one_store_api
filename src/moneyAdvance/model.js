@@ -2,6 +2,8 @@
 // DATABASE MODELS - SEQUELIZE
 // ===============================================================
 
+const logger = require("../api/logger");
+
 // 1. MONEY ISSUANCE MODEL
 // models/MoneyIssuance.js
 module.exports = (sequelize, DataTypes) => {
@@ -42,6 +44,11 @@ module.exports = (sequelize, DataTypes) => {
         freezeTableName: true,
     });
     MoneyAdvance.associate = models => {
+        logger.info(`Associating table MoneyAdvance with models`)
+        MoneyAdvance.belongsTo(models.bankAccount, {
+            foreignKey: 'bankAccountId',
+            as: 'bankAccount',
+        });
         MoneyAdvance.belongsTo(models.user, {
             foreignKey: 'makerId',
             as: 'maker',
@@ -60,10 +67,7 @@ module.exports = (sequelize, DataTypes) => {
             foreignKey: 'moneyAdvanceId',
             as: 'settlementLine',
         });
-        MoneyAdvance.hasMany(models.bank_account, {
-            foreignKey: 'bankAccountId',
-            as: 'bankAccount',
-        });
+
     };
 
     return MoneyAdvance;

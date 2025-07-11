@@ -3,7 +3,11 @@ module.exports = (sequelize, DataTypes) => {
         accountNumber: {
             type: DataTypes.STRING,
             allowNull: false,
-            unique: true
+            unique: true,
+            unique: {
+                name: 'unique_account_number',  // ✅ Give it a fixed name
+                msg: 'Account number must be unique'
+            }
         },
         accountName: {
             type: DataTypes.STRING,

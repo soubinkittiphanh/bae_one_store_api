@@ -5,16 +5,16 @@ const Settlement = require('../models').moneySettlement;
 const user = require('../models').user;
 const currency = require('../models').currency;
 const MoneyAdvance = require('../models').moneyAdvance;
-const BankAccount = require('../models').bank_account;
+const BankAccount = require('../models').bankAccount;
 
 class SettlementController {
-  
+
   // GET /settlements - Get all settlements with pagination
   static async getAll(req, res) {
     try {
       const { page = 1, limit = 10, method, userId, moneyAdvanceId, bankAccountId } = req.query;
       const offset = (page - 1) * limit;
-      
+
       const whereClause = {};
       if (method) whereClause.method = method;
       if (userId) whereClause.userId = userId;
@@ -24,12 +24,12 @@ class SettlementController {
       const { count, rows } = await Settlement.findAndCountAll({
         where: whereClause,
         include: [
-          { 
-            model: user, 
-            as: 'proceeder', 
+          {
+            model: user,
+            as: 'proceeder',
           },
-          { 
-            model: MoneyAdvance, 
+          {
+            model: MoneyAdvance,
             as: 'moneyAdvance',
             attributes: ['id', 'amount', 'purpose', 'status'],
             include: [
@@ -75,15 +75,15 @@ class SettlementController {
   static async getById(req, res) {
     try {
       const { id } = req.params;
-      
+
       const settlement = await Settlement.findByPk(id, {
         include: [
-          { 
-            model: user, 
-            as: 'proceeder', 
+          {
+            model: user,
+            as: 'proceeder',
           },
-          { 
-            model: MoneyAdvance, 
+          {
+            model: MoneyAdvance,
             as: 'moneyAdvance',
             attributes: ['id', 'amount', 'purpose', 'status', 'dueDate'],
             include: [
@@ -155,7 +155,7 @@ class SettlementController {
       }
 
       let moneyAdvance = null;
-      
+
       // Check if money advance exists and is approved (only if provided)
       if (moneyAdvanceId) {
         moneyAdvance = await MoneyAdvance.findByPk(moneyAdvanceId);
@@ -179,7 +179,7 @@ class SettlementController {
         });
 
         const totalSettled = (existingSettlements || 0) + parseFloat(amount);
-        
+
         if (totalSettled > parseFloat(moneyAdvance.amount)) {
           return res.status(400).json({
             success: false,
@@ -199,7 +199,7 @@ class SettlementController {
         notes,
         userId,
         moneyAdvanceId: moneyAdvanceId || null,
-        bankAccountId: method === 'bank_transfer' ? bankAccountId : null
+        bankAccountId:  bankAccountId || null
       });
 
       // Check if fully settled and update money advance status (only if money advance exists)
@@ -216,12 +216,12 @@ class SettlementController {
       // Fetch the created settlement with associations
       const createdSettlement = await Settlement.findByPk(settlement.id, {
         include: [
-          { 
-            model: user, 
-            as: 'proceeder', 
+          {
+            model: user,
+            as: 'proceeder',
           },
-          { 
-            model: MoneyAdvance, 
+          {
+            model: MoneyAdvance,
             as: 'moneyAdvance',
             attributes: ['id', 'amount', 'purpose', 'status'],
             include: [
@@ -261,7 +261,7 @@ class SettlementController {
       const settlement = await Settlement.findByPk(id, {
         include: [{ model: MoneyAdvance, as: 'moneyAdvance', required: false }]
       });
-      
+
       if (!settlement) {
         return res.status(404).json({
           success: false,
@@ -292,7 +292,7 @@ class SettlementController {
       // Validate money advance exists if provided
       let newMoneyAdvance = null;
       const finalMoneyAdvanceId = moneyAdvanceId !== undefined ? moneyAdvanceId : settlement.moneyAdvanceId;
-      
+
       if (finalMoneyAdvanceId) {
         newMoneyAdvance = await MoneyAdvance.findByPk(finalMoneyAdvanceId);
         if (!newMoneyAdvance) {
@@ -313,7 +313,7 @@ class SettlementController {
       // If amount is being updated and there's a money advance, validate total doesn't exceed advance amount
       if (amount && amount !== settlement.amount && finalMoneyAdvanceId) {
         const existingSettlements = await Settlement.sum('amount', {
-          where: { 
+          where: {
             moneyAdvanceId: finalMoneyAdvanceId,
             id: { [Op.ne]: settlement.id } // Exclude current settlement
           }
@@ -321,7 +321,7 @@ class SettlementController {
 
         const totalSettled = (existingSettlements || 0) + parseFloat(amount);
         const advanceAmount = newMoneyAdvance ? parseFloat(newMoneyAdvance.amount) : 0;
-        
+
         if (totalSettled > advanceAmount) {
           return res.status(400).json({
             success: false,
@@ -336,14 +336,14 @@ class SettlementController {
       }
 
       // Update settlement
+      // Update settlement
       await settlement.update({
-        amount: amount || settlement.amount,
+        amount: amount !== undefined ? amount : settlement.amount,
         method: method || settlement.method,
         notes: notes !== undefined ? notes : settlement.notes,
-        bankAccountId: updatedMethod === 'bank_transfer' ? (bankAccountId || settlement.bankAccountId) : null,
-        moneyAdvanceId: finalMoneyAdvanceId
+        bankAccountId: bankAccountId !== undefined ? bankAccountId : settlement.bankAccountId,
+        moneyAdvanceId: finalMoneyAdvanceId !== undefined ? finalMoneyAdvanceId : settlement.moneyAdvanceId
       });
-
       // Recalculate money advance status for old money advance (if it existed and is being changed)
       if (settlement.moneyAdvanceId && settlement.moneyAdvanceId !== finalMoneyAdvanceId) {
         const oldMoneyAdvance = await MoneyAdvance.findByPk(settlement.moneyAdvanceId);
@@ -351,9 +351,9 @@ class SettlementController {
           const oldTotalSettled = await Settlement.sum('amount', {
             where: { moneyAdvanceId: settlement.moneyAdvanceId }
           });
-          
+
           const shouldBeSettled = oldTotalSettled >= parseFloat(oldMoneyAdvance.amount);
-          
+
           if (shouldBeSettled && oldMoneyAdvance.status !== 'settled') {
             await oldMoneyAdvance.update({ status: 'settled' });
           } else if (!shouldBeSettled && oldMoneyAdvance.status === 'settled') {
@@ -380,12 +380,12 @@ class SettlementController {
 
       const updatedSettlement = await Settlement.findByPk(id, {
         include: [
-          { 
-            model: user, 
-            as: 'proceeder', 
+          {
+            model: user,
+            as: 'proceeder',
           },
-          { 
-            model: MoneyAdvance, 
+          {
+            model: MoneyAdvance,
             as: 'moneyAdvance',
             attributes: ['id', 'amount', 'purpose', 'status'],
             required: false
@@ -421,7 +421,7 @@ class SettlementController {
       const settlement = await Settlement.findByPk(id, {
         include: [{ model: MoneyAdvance, as: 'moneyAdvance', required: false }]
       });
-      
+
       if (!settlement) {
         return res.status(404).json({
           success: false,
@@ -466,9 +466,9 @@ class SettlementController {
       const settlements = await Settlement.findAll({
         where: { moneyAdvanceId },
         include: [
-          { 
-            model: user, 
-            as: 'proceeder', 
+          {
+            model: user,
+            as: 'proceeder',
           },
           {
             model: BankAccount,
@@ -514,11 +514,11 @@ class SettlementController {
   static async getDashboard(req, res) {
     try {
       const { userId, bankAccountId, hasMoneyAdvance } = req.query;
-      
+
       const whereClause = {};
       if (userId) whereClause.userId = userId;
       if (bankAccountId) whereClause.bankAccountId = bankAccountId;
-      
+
       // Filter by whether settlement has money advance or not
       if (hasMoneyAdvance === 'true') {
         whereClause.moneyAdvanceId = { [Op.ne]: null };
@@ -544,7 +544,7 @@ class SettlementController {
 
       // Settlement by bank account (for bank transfers only)
       const bankAccountStats = await Settlement.findAll({
-        where: { 
+        where: {
           ...whereClause,
           method: 'bank_transfer',
           bankAccountId: { [Op.ne]: null }
@@ -606,12 +606,12 @@ class SettlementController {
       const { count, rows } = await Settlement.findAndCountAll({
         where: { bankAccountId },
         include: [
-          { 
-            model: user, 
-            as: 'proceeder', 
+          {
+            model: user,
+            as: 'proceeder',
           },
-          { 
-            model: MoneyAdvance, 
+          {
+            model: MoneyAdvance,
             as: 'moneyAdvance',
             attributes: ['id', 'amount', 'purpose', 'status'],
             include: [
@@ -665,11 +665,11 @@ class SettlementController {
     try {
       const { page = 1, limit = 10, method, userId, bankAccountId } = req.query;
       const offset = (page - 1) * limit;
-      
+
       const whereClause = {
         moneyAdvanceId: null // Only standalone settlements
       };
-      
+
       if (method) whereClause.method = method;
       if (userId) whereClause.userId = userId;
       if (bankAccountId) whereClause.bankAccountId = bankAccountId;
@@ -677,9 +677,9 @@ class SettlementController {
       const { count, rows } = await Settlement.findAndCountAll({
         where: whereClause,
         include: [
-          { 
-            model: user, 
-            as: 'proceeder', 
+          {
+            model: user,
+            as: 'proceeder',
           },
           {
             model: BankAccount,

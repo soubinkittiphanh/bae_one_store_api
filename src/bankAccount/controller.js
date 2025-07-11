@@ -1,5 +1,5 @@
 const logger = require('../api/logger');
-const BankAccount = require('../models').bank_account;
+const BankAccount = require('../models').bankAccount;
 
 module.exports = {
     async create(req, res) {

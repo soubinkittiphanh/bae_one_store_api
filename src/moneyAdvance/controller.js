@@ -4,7 +4,7 @@ const MoneyAdvance = require('../models').moneyAdvance;
 const user = require('../models').user;
 const currency = require('../models').currency;
 const settlement = require('../models').moneySettlement;
-const bankAccount = require('../models').bank_account;
+const bankAccount = require('../models').bankAccount;
 
 class MoneyAdvanceController {
   
