@@ -57,8 +57,10 @@ const countUser = async () => {
 
 const ensureDefaultUserExists = async () => {
     const dbSuffix = env.db.database.split('_')[3];
-    const dfUserId = Number(dbSuffix) || 1000;
+    // const dfUserId = Number(dbSuffix) || 1000;
+    const dfUserId = dbSuffix || 1000;
     let isbrandNewDB = false;
+    logger.warn(`USER DEDTAIL TO CREATE ${dfUserId}`)
     const userToCreate = {
         cus_id: dfUserId || '1000',                  // User ID (integer, required)
         cus_pass: dfUserId || '1111',      // Password (string, required)
@@ -108,42 +110,42 @@ const basicParameterInitialise = async () => {
             const query5 = `INSERT INTO MenuHeaderLines SELECT * FROM dcommerce_pro_init.MenuHeaderLines;`;
             const query6 = `INSERT INTO GroupAuthorities SELECT * FROM dcommerce_pro_init.GroupAuthorities;`;
             const query7 = `CREATE TABLE card_sale AS SELECT * FROM dcommerce_pro_init.card_sale;`;
-            const query8 = `INSERT INTO company (id,
-    mnemonic,
-    name,
-    tel,
-    email,
-    address,
-    province,
-    district,
-    bank,
-    accountName,
-    accounts,
-    village,
-    remark,
-    isActive,
-    createdAt,
-    updateTimestamp
-)
-SELECT
-id,
-    mnemonic,
-    name,
-    tel,
-    email,
-    address,
-    province,
-    district,
-    bank,
-    accountName,
-    accounts,
-    village,
-    remark,
-    isActive,
-    createdAt,
-    updateTimestamp
-FROM
-    dcommerce_pro_init.company;`;
+//             const query8 = `INSERT INTO company (id,
+//     mnemonic,
+//     name,
+//     tel,
+//     email,
+//     address,
+//     province,
+//     district,
+//     bank,
+//     accountName,
+//     accounts,
+//     village,
+//     remark,
+//     isActive,
+//     createdAt,
+//     updateTimestamp
+// )
+// SELECT
+// id,
+//     mnemonic,
+//     name,
+//     tel,
+//     email,
+//     address,
+//     province,
+//     district,
+//     bank,
+//     accountName,
+//     accounts,
+//     village,
+//     remark,
+//     isActive,
+//     createdAt,
+//     updateTimestamp
+// FROM
+//     dcommerce_pro_init.company;`;
             const query9 = `INSERT INTO shipping SELECT * FROM dcommerce_pro_init.shipping;`;
             const query10 = `INSERT INTO geography SELECT * FROM dcommerce_pro_init.geography;`;
             const query11 = `INSERT INTO rider SELECT * FROM dcommerce_pro_init.rider;`;
