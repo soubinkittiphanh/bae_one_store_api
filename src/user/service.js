@@ -165,7 +165,7 @@ FROM dcommerce_pro_init.currency;
 
             await db.sequelize.query(query15, { type: db.sequelize.QueryTypes.INSERT, transaction });
             await db.sequelize.query(query16, { type: db.sequelize.QueryTypes.INSERT, transaction });
-            await db.sequelize.query(query8, { type: db.sequelize.QueryTypes.INSERT, transaction });
+            // await db.sequelize.query(query8, { type: db.sequelize.QueryTypes.INSERT, transaction });
             await db.sequelize.query(query0, { type: db.sequelize.QueryTypes.INSERT, transaction });
             await db.sequelize.query(query1, { type: db.sequelize.QueryTypes.INSERT, transaction });
             await db.sequelize.query(query2, { type: db.sequelize.QueryTypes.INSERT, transaction });
