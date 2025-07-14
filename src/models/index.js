@@ -71,6 +71,7 @@ const initializeModels = () => {
     category: require("../category/model")(sequelize, DataTypes),
     
     // Product related models
+    tax: require("../tax/model")(sequelize, DataTypes),
     product: require("../product/model")(sequelize, DataTypes),
     productSize: require("../product_size/model")(sequelize, DataTypes),
     image: require("../image/model")(sequelize, DataTypes),
@@ -149,7 +150,7 @@ const initializeModels = () => {
     country: require("../country/model")(sequelize, DataTypes),
     village: require("../district/model")(sequelize, DataTypes),
     district: require("../district-village/model")(sequelize, DataTypes),
-    tax: require("../tax/model")(sequelize, DataTypes),
+    
     
     // Tutorial model (uses different DB)
     tuturial: require("../tutorial/model")(tutorialDB, DataTypes),
