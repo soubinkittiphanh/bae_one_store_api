@@ -40,6 +40,14 @@ module.exports = (sequelize, DataTypes) => {
             foreignKey: 'bankAccountId',
             as: 'bankAccount',
         });
+        Settlement.belongsTo(models.ministry, {
+            foreignKey: 'ministryId',
+            as: 'ministry',
+        });
+        Settlement.belongsTo(models.chartAccount, {
+            foreignKey: 'chartAccountId',
+            as: 'chartAccount',
+        });
     };
 
   return Settlement;

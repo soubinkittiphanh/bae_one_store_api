@@ -150,6 +150,7 @@ const initializeModels = () => {
     country: require("../country/model")(sequelize, DataTypes),
     village: require("../district/model")(sequelize, DataTypes),
     district: require("../district-village/model")(sequelize, DataTypes),
+    ministry: require("../ministry/model")(sequelize, DataTypes),
     
     
     // Tutorial model (uses different DB)

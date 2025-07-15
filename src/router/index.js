@@ -53,6 +53,7 @@ const tax = require("../tax/router")
 const moneyAdvance = require("../moneyAdvance/router")
 const moneySettlement = require("../moneySettlement/router")
 const bankAccount = require("../bankAccount/router")
+const ministry = require("../ministry/router")
 
 module.exports={
     orderRouter,
@@ -110,4 +111,5 @@ module.exports={
     moneySettlement,
     tax,
     bankAccount,
+    ministry,
 }

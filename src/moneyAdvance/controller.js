@@ -5,18 +5,20 @@ const user = require('../models').user;
 const currency = require('../models').currency;
 const settlement = require('../models').moneySettlement;
 const bankAccount = require('../models').bankAccount;
+const ministry = require('../models').ministry;
 
 class MoneyAdvanceController {
   
   // GET /money-advances - Get all money advances with pagination
   static async getAll(req, res) {
     try {
-      const { page = 1, limit = 10, status, makerId } = req.query;
+      const { page = 1, limit = 10, status, makerId, ministryId } = req.query;
       const offset = (page - 1) * limit;
       
       const whereClause = {};
       if (status) whereClause.status = status;
       if (makerId) whereClause.makerId = makerId;
+      if (ministryId) whereClause.ministryId = ministryId;
 
       const { count, rows } = await MoneyAdvance.findAndCountAll({
         where: whereClause,
@@ -25,7 +27,8 @@ class MoneyAdvanceController {
           { model: user, as: 'checker' },
           { model: currency, as: 'currency'},
           { model: settlement, as: 'settlementLine' },
-          { model: bankAccount, as: 'bankAccount' }
+          { model: bankAccount, as: 'bankAccount' },
+          { model: ministry, as: 'ministry' }
         ],
         limit: parseInt(limit),
         offset: parseInt(offset),
@@ -64,7 +67,8 @@ class MoneyAdvanceController {
           { model: user, as: 'checker' },
           { model: currency, as: 'currency' },
           { model: settlement, as: 'settlementLine' },
-          { model: bankAccount, as: 'bankAccount' }
+          { model: bankAccount, as: 'bankAccount' },
+          { model: ministry, as: 'ministry' }
         ]
       });
 
@@ -91,7 +95,7 @@ class MoneyAdvanceController {
   // POST /money-advances - Create new money advance
   static async create(req, res) {
     try {
-      const { amount, purpose, note, makerId, currencyId, dueDate, bankAccountId } = req.body;
+      const { amount, purpose, note, makerId, currencyId, dueDate, bankAccountId, ministryId } = req.body;
 
       // Validation
       if (!amount || !makerId || !currencyId) {
@@ -109,6 +113,7 @@ class MoneyAdvanceController {
         currencyId,
         dueDate,
         bankAccountId,
+        ministryId,
         status: 'pending'
       });
 
@@ -117,7 +122,8 @@ class MoneyAdvanceController {
         include: [
           { model: user, as: 'maker', },
           { model: currency, as: 'currency' },
-          { model: bankAccount, as: 'bankAccount' }
+          { model: bankAccount, as: 'bankAccount' },
+          { model: ministry, as: 'ministry' }
         ]
       });
 
@@ -139,7 +145,7 @@ class MoneyAdvanceController {
   static async update(req, res) {
     try {
       const { id } = req.params;
-      const { amount, purpose, note, dueDate, bankAccountId } = req.body;
+      const { amount, purpose, note, dueDate, bankAccountId, ministryId } = req.body;
 
       const advance = await MoneyAdvance.findByPk(id);
       
@@ -163,7 +169,8 @@ class MoneyAdvanceController {
         purpose: purpose || advance.purpose,
         note: note || advance.note,
         dueDate: dueDate || advance.dueDate,
-        bankAccountId: bankAccountId || advance.bankAccountId
+        bankAccountId: bankAccountId || advance.bankAccountId,
+        ministryId: ministryId || advance.ministryId
       });
 
       const updatedAdvance = await MoneyAdvance.findByPk(id, {
@@ -171,7 +178,8 @@ class MoneyAdvanceController {
           { model: user, as: 'maker', },
           { model: user, as: 'checker', },
           { model: currency, as: 'currency' },
-          { model: bankAccount, as: 'bankAccount' }
+          { model: bankAccount, as: 'bankAccount' },
+          { model: ministry, as: 'ministry' }
         ]
       });
 
@@ -222,7 +230,8 @@ class MoneyAdvanceController {
           { model: user, as: 'maker', },
           { model: user, as: 'checker', },
           { model: currency, as: 'currency' },
-          { model: bankAccount, as: 'bankAccount' }
+          { model: bankAccount, as: 'bankAccount' },
+          { model: ministry, as: 'ministry' }
         ]
       });
 
@@ -271,7 +280,8 @@ class MoneyAdvanceController {
           { model: user, as: 'checker', },
           { model: currency, as: 'currency' },
           { model: settlement, as: 'settlementLine' },
-          { model: bankAccount, as: 'bankAccount' }
+          { model: bankAccount, as: 'bankAccount' },
+          { model: ministry, as: 'ministry' }
         ]
       });
 
@@ -329,9 +339,11 @@ class MoneyAdvanceController {
   // GET /money-advances/dashboard - Dashboard statistics
   static async getDashboard(req, res) {
     try {
-      const { makerId } = req.query;
+      const { makerId, ministryId } = req.query;
       
-      const whereClause = makerId ? { makerId } : {};
+      const whereClause = {};
+      if (makerId) whereClause.makerId = makerId;
+      if (ministryId) whereClause.ministryId = ministryId;
 
       const [total, pending, approved, settled] = await Promise.all([
         MoneyAdvance.count({ where: whereClause }),
@@ -359,6 +371,56 @@ class MoneyAdvanceController {
       res.status(500).json({
         success: false,
         message: 'Error fetching dashboard data',
+        error: error.message
+      });
+    }
+  }
+
+  // GET /money-advances/by-ministry - Get advances grouped by ministry
+  static async getByMinistry(req, res) {
+    try {
+      const { status } = req.query;
+      
+      const whereClause = {};
+      if (status) whereClause.status = status;
+
+      const advances = await MoneyAdvance.findAll({
+        where: whereClause,
+        include: [
+          { model: user, as: 'maker' },
+          { model: user, as: 'checker' },
+          { model: currency, as: 'currency' },
+          { model: bankAccount, as: 'bankAccount' },
+          { model: ministry, as: 'ministry', required: true }
+        ],
+        order: [['ministry', 'name', 'ASC'], ['createdAt', 'DESC']]
+      });
+
+      // Group by ministry
+      const groupedByMinistry = advances.reduce((acc, advance) => {
+        const ministryName = advance.ministry.name;
+        if (!acc[ministryName]) {
+          acc[ministryName] = {
+            ministry: advance.ministry,
+            advances: [],
+            totalAmount: 0,
+            count: 0
+          };
+        }
+        acc[ministryName].advances.push(advance);
+        acc[ministryName].totalAmount += parseFloat(advance.amount);
+        acc[ministryName].count += 1;
+        return acc;
+      }, {});
+
+      res.json({
+        success: true,
+        data: groupedByMinistry
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Error fetching advances by ministry',
         error: error.message
       });
     }

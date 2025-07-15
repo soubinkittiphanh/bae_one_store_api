@@ -67,6 +67,10 @@ module.exports = (sequelize, DataTypes) => {
             foreignKey: 'moneyAdvanceId',
             as: 'settlementLine',
         });
+        MoneyAdvance.belongsTo(models.ministry, {
+            foreignKey: 'ministryId',
+            as: 'ministry',
+        });
 
     };
 
