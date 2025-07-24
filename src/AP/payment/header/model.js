@@ -16,22 +16,19 @@ module.exports = (sequelize, DataTypes) => {
         payee: {
             type: DataTypes.STRING,
         },
-        
-        rate:{
+
+        rate: {
             type: DataTypes.DOUBLE,
             allowNull: false,
             defaultValue: 1
         },
-        totalAmount:{
+        totalAmount: {
             type: DataTypes.DOUBLE,
             allowNull: false,
         },
         locking_session_id: {
             type: DataTypes.STRING,
             allowNull: false,
-        },
-        update_user: {
-            type: DataTypes.INTEGER,
         },
         isActive: {
             type: DataTypes.BOOLEAN,

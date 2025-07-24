@@ -133,7 +133,13 @@ const initializeModels = () => {
     payment: require("../paymentMethod/model")(sequelize, DataTypes),
     bankAccount: require("../bankAccount/model")(sequelize, DataTypes),
     moneySettlement: require("../moneySettlement/model")(sequelize, DataTypes),
+    moneyAdvanceAudit: require("../moneyAdvanceAudit/model")(sequelize, DataTypes),
     moneyAdvance: require("../moneyAdvance/model")(sequelize, DataTypes),
+    revenue_target: require("../revenueTarget/model")(sequelize, DataTypes),
+    apInvoice: require("../AP/invoice/model")(sequelize, DataTypes),
+    invoiceLineItem: require("../AP/invoiceLine/model")(sequelize, DataTypes),
+    apInvoiceSettlement: require("../AP/invoiceSettlement/model")(sequelize, DataTypes),
+    apInvoiceSettlementLine: require("../AP/invoiceSettlementLine/model")(sequelize, DataTypes),
     
     // Other models
     vendor: require("../vendor/model")(sequelize, DataTypes),

@@ -8,9 +8,18 @@ const logger = require("../api/logger");
 // models/MoneyIssuance.js
 module.exports = (sequelize, DataTypes) => {
     const MoneyAdvance = sequelize.define('MoneyAdvance', {
+        bookingDate: {
+            type: DataTypes.DATEONLY,
+            allowNull: false,
+        },
         amount: {
             type: DataTypes.DECIMAL(20, 2),
             allowNull: false
+        },
+        exchangeRate: {
+            type: DataTypes.DECIMAL(20, 2),
+            allowNull: false,
+            defaultValue: 1.00
         },
         purpose: {
             type: DataTypes.STRING,

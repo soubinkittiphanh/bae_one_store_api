@@ -147,7 +147,7 @@ class SettlementController {
   // POST /settlements - Create new settlement
   static async create(req, res) {
     try {
-      const { amount, method, notes, userId, moneyAdvanceId, bankAccountId, ministryId, chartAccountId } = req.body;
+      const { amount, method, notes, userId, moneyAdvanceId, bankAccountId, ministryId, chartAccountId,currencyId,bookingDate } = req.body;
 
       // Validation
       if (!amount || !method || !userId) {
@@ -238,10 +238,12 @@ class SettlementController {
       }
 
       const settlement = await Settlement.create({
+        bookingDate,
         amount,
         method,
         notes,
         userId,
+        currencyId:currencyId || null,
         moneyAdvanceId: moneyAdvanceId || null,
         bankAccountId: bankAccountId || null,
         ministryId: ministryId || null,
@@ -289,6 +291,11 @@ class SettlementController {
             model: ChartAccount,
             as: 'chartAccount',
             required: false
+          },
+          {
+            model: currency,
+            as: 'currency',
+            required: false
           }
         ]
       });
@@ -311,7 +318,7 @@ class SettlementController {
   static async update(req, res) {
     try {
       const { id } = req.params;
-      const { amount, method, notes, bankAccountId, moneyAdvanceId, ministryId, chartAccountId } = req.body;
+      const { amount, method, notes, bankAccountId, moneyAdvanceId, ministryId, chartAccountId,currencyId,bookingDate } = req.body;
 
       const settlement = await Settlement.findByPk(id, {
         include: [{ model: MoneyAdvance, as: 'moneyAdvance', required: false }]
@@ -414,10 +421,12 @@ class SettlementController {
 
       // Update settlement
       await settlement.update({
+        bookingDate:bookingDate,
         amount: amount !== undefined ? amount : settlement.amount,
         method: method || settlement.method,
         notes: notes !== undefined ? notes : settlement.notes,
         bankAccountId: bankAccountId !== undefined ? bankAccountId : settlement.bankAccountId,
+        currencyId: currencyId||null,
         moneyAdvanceId: finalMoneyAdvanceId !== undefined ? finalMoneyAdvanceId : settlement.moneyAdvanceId,
         ministryId: ministryId !== undefined ? ministryId : settlement.ministryId,
         chartAccountId: chartAccountId !== undefined ? chartAccountId : settlement.chartAccountId
@@ -482,6 +491,11 @@ class SettlementController {
           {
             model: ChartAccount,
             as: 'chartAccount',
+            required: false
+          },
+          {
+            model: currency,
+            as: 'currency',
             required: false
           }
         ]

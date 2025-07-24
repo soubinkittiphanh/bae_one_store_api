@@ -70,6 +70,11 @@ const buildApp = async () => {
     app.use("/api/money-advances",myRouter.moneyAdvance)
     app.use("/api/settlements",myRouter.moneySettlement)
     app.use("/api/ministries",myRouter.ministry)
+    app.use("/api/revenue-targets",myRouter.revenueTarget)
+    app.use("/api/ap-invoices",myRouter.apInvoice)
+    app.use("/api/ap-invoices-line",myRouter.apInvoiceLine)
+    app.use("/api/ap-invoices-settlement",myRouter.apInvoiceSettlement)
+    app.use("/api/ap-invoices-settlement-line",myRouter.apInvoiceSettlementLine)
 
     Router.category(app);
     Router.product(app);
