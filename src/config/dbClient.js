@@ -157,7 +157,7 @@ const clientDB = {
         "host": "150.95.31.23",
         "user": "root",
         "password": "sdat@3480",
-        "database": "dcommerce_pro_auto_02077150006",
+        "database": "dcommerce_pro_auto_55244451",
         "port": 3306,
     },
     "the_corners": {

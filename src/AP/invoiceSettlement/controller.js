@@ -1,9 +1,10 @@
 // ===============================================================
-// AP SETTLEMENT CONTROLLER
-// File: /AP/settlement/controller.js (or wherever you want to place it)
+// AP SETTLEMENT CONTROLLER - UPDATED FOR YOUR MODEL
+// File: /AP/settlement/controller.js
 // ===============================================================
 const logger = require("../../api/logger");
-const { apInvoiceSettlement,apInvoiceSettlementLine, apInvoice, user, vendor, sequelize } = require("../../models");
+const { apInvoiceSettlement, apInvoiceSettlementLine, apInvoice, user, vendor, sequelize } = require("../../models");
+const InvoiceLineItem = require("../../models").invoiceLineItem;
 
 class APSettlementController {
 
@@ -36,10 +37,9 @@ class APSettlementController {
                 };
             }
 
-            // Search by settlement number or reference
+            // Search by reference only (since settlementNumber doesn't exist in your model)
             if (search) {
                 whereClause[sequelize.Sequelize.Op.or] = [
-                    { settlementNumber: { [sequelize.Sequelize.Op.like]: `%${search}%` } },
                     { reference: { [sequelize.Sequelize.Op.like]: `%${search}%` } }
                 ];
             }
@@ -47,12 +47,12 @@ class APSettlementController {
             const { count, rows } = await apInvoiceSettlement.findAndCountAll({
                 where: whereClause,
                 include: [
-                    { model: user, as: 'maker' },
-                    { model: user, as: 'checker' }
+                    { model: user, as: 'maker', required: false },
+                    { model: user, as: 'checker', required: false }
                 ],
                 limit: parseInt(limit),
                 offset: parseInt(offset),
-                order: [['settlementDate', 'DESC'], ['settlementNumber', 'DESC']]
+                order: [['settlementDate', 'DESC'], ['id', 'DESC']]
             });
 
             const totalPages = Math.ceil(count / limit);
@@ -90,17 +90,23 @@ class APSettlementController {
 
             const settlement = await apInvoiceSettlement.findByPk(id, {
                 include: [
-                    { model: user, as: 'maker' },
-                    { model: user, as: 'checker' },
+                    { model: user, as: 'maker', required: false },
+                    { model: user, as: 'checker', required: false },
                     {
                         model: apInvoiceSettlementLine,
                         as: 'invoiceSettlements',
                         include: [
                             {
-                                model: apInvoice,
-                                as: 'invoice',
+                                model: InvoiceLineItem,
+                                as: 'invoiceLineItem',
                                 include: [
-                                    { model: vendor, as: 'vendor' }
+                                    {
+                                        model: apInvoice,
+                                        as: 'invoice',
+                                        include: [
+                                            { model: vendor, as: 'vendor' }
+                                        ]
+                                    }
                                 ]
                             }
                         ]
@@ -132,7 +138,7 @@ class APSettlementController {
     }
 
     // ===============================================================
-    // CREATE SETTLEMENT
+    // CREATE SETTLEMENT - UPDATED FOR YOUR MODEL
     // ===============================================================
     static async createSettlement(req, res) {
         const transaction = await sequelize.transaction();
@@ -141,38 +147,31 @@ class APSettlementController {
             logger.info('Request body received:', { body: req.body });
 
             const {
-                settlementNumber,
                 settlementDate,
                 paymentAmount,
                 baseAmount,
-                exchangeRate = 1.000000,
                 status = 'draft',
                 reference,
                 description,
                 note,
-                makerId,
                 invoiceAllocations = []
             } = req.body;
 
             logger.info('Extracted data:', {
-                settlementNumber,
                 settlementDate,
                 paymentAmount,
                 baseAmount,
-                exchangeRate,
                 status,
                 reference,
                 description,
                 note,
-                makerId,
                 invoiceAllocationsCount: invoiceAllocations.length,
                 requestUserId: req.user?.id
             });
 
-            // Validation
-            if (!settlementNumber || !settlementDate || !paymentAmount || !baseAmount) {
+            // Validation - only for fields that exist in your model
+            if (!settlementDate || !paymentAmount || !baseAmount) {
                 logger.error('Validation failed - missing required fields:', {
-                    settlementNumber: !!settlementNumber,
                     settlementDate: !!settlementDate,
                     paymentAmount: !!paymentAmount,
                     baseAmount: !!baseAmount
@@ -181,44 +180,21 @@ class APSettlementController {
                 await transaction.rollback();
                 return res.status(400).json({
                     success: false,
-                    message: 'Missing required fields: settlementNumber, settlementDate, paymentAmount, baseAmount'
+                    message: 'Missing required fields: settlementDate, paymentAmount, baseAmount'
                 });
             }
 
-            logger.info('Validation passed - checking for existing settlement number');
+            logger.info('Validation passed - creating main settlement record');
 
-            // Check if settlement number exists
-            const existingSettlement = await apInvoiceSettlement.findOne({
-                where: { settlementNumber }
-            });
-
-            if (existingSettlement) {
-                logger.error('Settlement number already exists:', {
-                    settlementNumber,
-                    existingId: existingSettlement.id
-                });
-
-                await transaction.rollback();
-                return res.status(400).json({
-                    success: false,
-                    message: 'Settlement number already exists'
-                });
-            }
-
-            logger.info('Settlement number is unique - creating main settlement record');
-
-            // Create main settlement record
+            // Create main settlement record - only using fields from your model
             const settlementData = {
-                settlementNumber,
                 settlementDate,
                 paymentAmount,
                 baseAmount,
-                exchangeRate,
                 status,
                 reference,
                 description,
-                note,
-                makerId: makerId || req.user?.id
+                note
             };
 
             logger.info('Creating settlement with data:', { settlementData });
@@ -227,7 +203,7 @@ class APSettlementController {
 
             logger.info('Main settlement created successfully:', {
                 id: settlement.id,
-                settlementNumber: settlement.settlementNumber
+                settlementDate: settlement.settlementDate
             });
 
             // Create invoice allocations if provided
@@ -243,37 +219,76 @@ class APSettlementController {
                         allocation: allocation
                     });
 
-                    // ⚠️ IMPORTANT: You're using the wrong model here!
-                    // You should use a different model for invoice allocations, not apInvoiceSettlement
-                    // The error occurs because apInvoiceSettlement requires settlementNumber, paymentAmount, baseAmount
-                    // But allocations don't have these fields
+                    // Map invoiceId to invoiceLineItemId
+                    let invoiceLineItemId = null;
+                    if (allocation.invoiceId) {
+                        try {
+                            const invoiceLineItem = await InvoiceLineItem.findOne({
+                                where: { invoiceId: allocation.invoiceId },
+                                order: [['id', 'ASC']]
+                            });
 
+                            if (invoiceLineItem) {
+                                invoiceLineItemId = invoiceLineItem.id;
+                                logger.info(`Mapped invoice ${allocation.invoiceId} to invoice line item ${invoiceLineItemId}`);
+                            } else {
+                                logger.warn(`No invoice line items found for invoice ${allocation.invoiceId}, creating default line item`);
+                                
+                                const invoice = await apInvoice.findByPk(allocation.invoiceId);
+                                if (!invoice) {
+                                    throw new Error(`Invoice ${allocation.invoiceId} not found`);
+                                }
+
+                                const defaultLineItem = await InvoiceLineItem.create({
+                                    invoiceId: allocation.invoiceId,
+                                    lineNumber: 1,
+                                    description: 'Default settlement line',
+                                    quantity: 1,
+                                    unitPrice: invoice.totalAmount || allocation.amount,
+                                    lineTotal: invoice.totalAmount || allocation.amount,
+                                    status: 'active'
+                                }, { transaction });
+
+                                invoiceLineItemId = defaultLineItem.id;
+                                logger.info(`Created default invoice line item ${invoiceLineItemId} for invoice ${allocation.invoiceId}`);
+                            }
+                        } catch (mappingError) {
+                            logger.error('Error mapping invoice to invoice line item:', {
+                                invoiceId: allocation.invoiceId,
+                                error: mappingError.message
+                            });
+                            throw new Error(`Failed to map invoice ${allocation.invoiceId} to invoice line item: ${mappingError.message}`);
+                        }
+                    }
+
+                    if (!invoiceLineItemId) {
+                        throw new Error(`Could not resolve invoice line item for invoice ${allocation.invoiceId}`);
+                    }
+
+                    // Create allocation data - only using fields that exist in settlement line model
                     const allocationData = {
-                        invoiceId: allocation.invoiceId,
+                        amount: allocation.amount,
+                        status: 'active',
                         settlementId: settlement.id,
-                        settledAmount: allocation.settledAmount,
-                        exchangeRate: allocation.exchangeRate || exchangeRate,
-                        settlementDate: settlementDate,
-                        reference: allocation.reference,
-                        note: allocation.note,
-                        makerId: makerId || req.user?.id
+                        invoiceLineItemId: invoiceLineItemId
                     };
 
-                    logger.info('Allocation data to create:', { allocationData });
+                    logger.info('Allocation data to create:', { 
+                        allocationData,
+                        originalInvoiceId: allocation.invoiceId,
+                        mappedInvoiceLineItemId: invoiceLineItemId
+                    });
 
                     try {
-                        // ❌ THIS IS THE PROBLEM - You should use invoiceSettlement model, not apInvoiceSettlement
-                        // await apInvoiceSettlement.create(allocationData, { transaction });
-
-                        // ✅ Use the correct model for invoice allocations:
                         await apInvoiceSettlementLine.create(allocationData, { transaction });
-
-                        logger.info(`Allocation ${i + 1} created successfully`);
+                        logger.info(`Allocation ${i + 1} created successfully with invoice line item ${invoiceLineItemId}`);
 
                     } catch (allocationError) {
                         logger.error('Error creating allocation:', {
                             allocationIndex: i,
                             allocationData,
+                            originalInvoiceId: allocation.invoiceId,
+                            mappedInvoiceLineItemId: invoiceLineItemId,
                             error: {
                                 message: allocationError.message,
                                 stack: allocationError.stack,
@@ -298,8 +313,26 @@ class APSettlementController {
 
             const createdSettlement = await apInvoiceSettlement.findByPk(settlement.id, {
                 include: [
-                    { model: user, as: 'maker' },
-                    { model: apInvoiceSettlementLine, as: 'invoiceSettlements' }
+                    { model: user, as: 'maker', required: false },
+                    {
+                        model: apInvoiceSettlementLine,
+                        as: 'invoiceSettlements',
+                        include: [
+                            {
+                                model: InvoiceLineItem,
+                                as: 'invoiceLineItem',
+                                include: [
+                                    {
+                                        model: apInvoice,
+                                        as: 'invoice',
+                                        include: [
+                                            { model: vendor, as: 'vendor' }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    }
                 ]
             });
 
@@ -317,6 +350,7 @@ class APSettlementController {
             });
 
         } catch (error) {
+            logger.error(` ERROR CREATING AP SETTLEMENT ${error}`)
             await transaction.rollback();
 
             logger.error('=== ERROR CREATING AP SETTLEMENT ===', {
@@ -338,8 +372,9 @@ class APSettlementController {
             });
         }
     }
+
     // ===============================================================
-    // UPDATE SETTLEMENT
+    // UPDATE SETTLEMENT - UPDATED FOR YOUR MODEL
     // ===============================================================
     static async updateSettlement(req, res) {
         const transaction = await sequelize.transaction();
@@ -347,11 +382,9 @@ class APSettlementController {
         try {
             const { id } = req.params;
             const {
-                settlementNumber,
                 settlementDate,
                 paymentAmount,
                 baseAmount,
-                exchangeRate,
                 status,
                 reference,
                 description,
@@ -372,7 +405,7 @@ class APSettlementController {
             }
 
             // Check if settlement can be modified
-            if (!existingSettlement.canBeModified()) {
+            if (existingSettlement.canBeModified && !existingSettlement.canBeModified()) {
                 await transaction.rollback();
                 return res.status(400).json({
                     success: false,
@@ -380,13 +413,11 @@ class APSettlementController {
                 });
             }
 
-            // Update settlement
+            // Update settlement - only using fields from your model
             await existingSettlement.update({
-                settlementNumber,
                 settlementDate,
                 paymentAmount,
                 baseAmount,
-                exchangeRate,
                 status,
                 reference,
                 description,
@@ -396,23 +427,51 @@ class APSettlementController {
             // Update invoice allocations
             if (invoiceAllocations && invoiceAllocations.length > 0) {
                 // Delete existing allocations
-                await apInvoiceSettlement.destroy({
+                await apInvoiceSettlementLine.destroy({
                     where: { settlementId: id },
                     transaction
                 });
 
-                // Create new allocations
+                // Create new allocations with mapping
                 for (const allocation of invoiceAllocations) {
-                    await apInvoiceSettlement.create({
-                        invoiceId: allocation.invoiceId,
-                        settlementId: id,
-                        settledAmount: allocation.settledAmount,
-                        exchangeRate: allocation.exchangeRate || exchangeRate,
-                        settlementDate: settlementDate,
-                        reference: allocation.reference,
-                        note: allocation.note,
-                        makerId: req.user?.id
-                    }, { transaction });
+                    // Map invoiceId to invoiceLineItemId (same logic as create)
+                    let invoiceLineItemId = null;
+                    if (allocation.invoiceId) {
+                        const invoiceLineItem = await InvoiceLineItem.findOne({
+                            where: { invoiceId: allocation.invoiceId },
+                            order: [['id', 'ASC']]
+                        });
+
+                        if (invoiceLineItem) {
+                            invoiceLineItemId = invoiceLineItem.id;
+                        } else {
+                            // Create default if not exists
+                            const invoice = await apInvoice.findByPk(allocation.invoiceId);
+                            if (invoice) {
+                                const defaultLineItem = await InvoiceLineItem.create({
+                                    invoiceId: allocation.invoiceId,
+                                    lineNumber: 1,
+                                    description: 'Default settlement line',
+                                    quantity: 1,
+                                    unitPrice: invoice.totalAmount || allocation.amount,
+                                    lineTotal: invoice.totalAmount || allocation.amount,
+                                    status: 'active'
+                                }, { transaction });
+                                invoiceLineItemId = defaultLineItem.id;
+                            }
+                        }
+                    }
+
+                    if (invoiceLineItemId) {
+                        const allocationData = {
+                            amount: allocation.amount,
+                            status: 'active',
+                            settlementId: id,
+                            invoiceLineItemId: invoiceLineItemId
+                        };
+
+                        await apInvoiceSettlementLine.create(allocationData, { transaction });
+                    }
                 }
             }
 
@@ -421,9 +480,27 @@ class APSettlementController {
             // Fetch updated settlement
             const updatedSettlement = await apInvoiceSettlement.findByPk(id, {
                 include: [
-                    { model: user, as: 'maker' },
-                    { model: user, as: 'checker' },
-                    { model: apInvoiceSettlementLine, as: 'invoiceSettlements' }
+                    { model: user, as: 'maker', required: false },
+                    { model: user, as: 'checker', required: false },
+                    {
+                        model: apInvoiceSettlementLine,
+                        as: 'invoiceSettlements',
+                        include: [
+                            {
+                                model: InvoiceLineItem,
+                                as: 'invoiceLineItem',
+                                include: [
+                                    {
+                                        model: apInvoice,
+                                        as: 'invoice',
+                                        include: [
+                                            { model: vendor, as: 'vendor' }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    }
                 ]
             });
 
@@ -447,7 +524,7 @@ class APSettlementController {
     }
 
     // ===============================================================
-    // DELETE SETTLEMENT
+    // DELETE SETTLEMENT - UPDATED FOR YOUR MODEL
     // ===============================================================
     static async deleteSettlement(req, res) {
         const transaction = await sequelize.transaction();
@@ -465,7 +542,7 @@ class APSettlementController {
             }
 
             // Check if settlement can be deleted
-            if (!settlement.canBeModified()) {
+            if (settlement.canBeModified && !settlement.canBeModified()) {
                 await transaction.rollback();
                 return res.status(400).json({
                     success: false,
@@ -473,8 +550,8 @@ class APSettlementController {
                 });
             }
 
-            // Delete related invoice settlements first
-            await apInvoiceSettlement.destroy({
+            // Delete related invoice settlement lines first
+            await apInvoiceSettlementLine.destroy({
                 where: { settlementId: id },
                 transaction
             });
@@ -503,12 +580,11 @@ class APSettlementController {
     }
 
     // ===============================================================
-    // APPROVE SETTLEMENT
+    // APPROVE SETTLEMENT - UPDATED FOR YOUR MODEL
     // ===============================================================
     static async approveSettlement(req, res) {
         try {
             const { id } = req.params;
-            const { checkerId, reason } = req.body;
 
             const settlement = await apInvoiceSettlement.findByPk(id);
             if (!settlement) {
@@ -525,13 +601,12 @@ class APSettlementController {
                 });
             }
 
+            // Only update status since checkerId and approvedAt don't exist in your model
             await settlement.update({
-                status: 'approved',
-                checkerId: checkerId || req.user?.id,
-                approvedAt: new Date()
+                status: 'approved'
             });
 
-            logger.info(`Settlement ${settlement.settlementNumber} approved by user ${checkerId}`);
+            logger.info(`Settlement ${settlement.id} approved`);
 
             res.status(200).json({
                 success: true,
@@ -550,7 +625,7 @@ class APSettlementController {
     }
 
     // ===============================================================
-    // COMPLETE SETTLEMENT
+    // COMPLETE SETTLEMENT - UPDATED FOR YOUR MODEL
     // ===============================================================
     static async completeSettlement(req, res) {
         try {
@@ -571,12 +646,12 @@ class APSettlementController {
                 });
             }
 
+            // Only update status since completedAt doesn't exist in your model
             await settlement.update({
-                status: 'completed',
-                completedAt: new Date()
+                status: 'completed'
             });
 
-            logger.info(`Settlement ${settlement.settlementNumber} completed`);
+            logger.info(`Settlement ${settlement.id} completed`);
 
             res.status(200).json({
                 success: true,
@@ -595,13 +670,13 @@ class APSettlementController {
     }
 
     // ===============================================================
-    // GET OUTSTANDING INVOICES
+    // GET OUTSTANDING INVOICES - UNCHANGED
     // ===============================================================
     static async getOutstandingInvoices(req, res) {
         try {
             const { vendorId, currencyId } = req.query;
             const whereClause = {
-                status: ['approved', 'partially_paid', 'overdue']
+                status: ['approved', 'partially_paid', 'overdue','draft']
             };
 
             if (vendorId) {
@@ -620,7 +695,7 @@ class APSettlementController {
                     [sequelize.literal('totalAmount - paidAmount'), 'outstandingAmount']
                 ],
                 include: [
-                    { model: vendor, as: 'vendor', }
+                    { model: vendor, as: 'vendor' }
                 ],
                 having: sequelize.literal('outstandingAmount > 0'),
                 order: [['dueDate', 'ASC'], ['invoiceNumber', 'ASC']]
@@ -634,47 +709,6 @@ class APSettlementController {
 
         } catch (error) {
             logger.error('Error fetching outstanding invoices:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Internal server error',
-                error: error.message
-            });
-        }
-    }
-
-    // ===============================================================
-    // GENERATE SETTLEMENT NUMBER
-    // ===============================================================
-    static async generateSettlementNumber(req, res) {
-        try {
-            const year = new Date().getFullYear();
-            const prefix = `PAY-${year}-`;
-
-            const lastSettlement = await apInvoiceSettlement.findOne({
-                where: {
-                    settlementNumber: {
-                        [sequelize.Sequelize.Op.like]: `${prefix}%`
-                    }
-                },
-                order: [['settlementNumber', 'DESC']]
-            });
-
-            let nextNumber = 1;
-            if (lastSettlement) {
-                const lastNumber = parseInt(lastSettlement.settlementNumber.split('-').pop());
-                nextNumber = lastNumber + 1;
-            }
-
-            const settlementNumber = `${prefix}${nextNumber.toString().padStart(3, '0')}`;
-
-            res.status(200).json({
-                success: true,
-                message: 'Settlement number generated successfully',
-                data: { settlementNumber }
-            });
-
-        } catch (error) {
-            logger.error('Error generating settlement number:', error);
             res.status(500).json({
                 success: false,
                 message: 'Internal server error',

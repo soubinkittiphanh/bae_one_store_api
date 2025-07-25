@@ -44,7 +44,7 @@ router.post('/:id/complete', APSettlementController.completeSettlement);
 // ===============================================================
 
 // GET /api/settlements/utils/generate-number - Generate new settlement number
-router.get('/utils/generate-number', APSettlementController.generateSettlementNumber);
+// router.get('/utils/generate-number', APSettlementController.generateSettlementNumber);
 
 // GET /api/settlements/invoices/outstanding - Get outstanding invoices for settlement
 router.get('/invoices/outstanding', APSettlementController.getOutstandingInvoices);

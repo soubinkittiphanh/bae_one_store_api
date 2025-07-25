@@ -7,11 +7,6 @@ const logger = require("../../api/logger");
 // models/APSettlement.js
 module.exports = (sequelize, DataTypes) => {
     const APSettlement = sequelize.define('APInvoiceSettlement', {
-        settlementNumber: {
-            type: DataTypes.STRING(50),
-            allowNull: false,
-            unique: true
-        },
         settlementDate: {
             type: DataTypes.DATEONLY,
             allowNull: false
@@ -24,16 +19,10 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.DECIMAL(20, 2),
             allowNull: false
         },
-        exchangeRate: {
-            type: DataTypes.DECIMAL(20, 6),
-            allowNull: false,
-            defaultValue: 1.000000
-        },
         status: {
             type: DataTypes.ENUM('draft', 'pending', 'approved', 'completed', 'cancelled'),
             defaultValue: 'draft'
         },
-
         reference: {
             type: DataTypes.STRING(100),
             allowNull: true
@@ -41,7 +30,6 @@ module.exports = (sequelize, DataTypes) => {
         description: {
             type: DataTypes.TEXT
         },
-      
         note: {
             type: DataTypes.TEXT
         }
@@ -54,36 +42,23 @@ module.exports = (sequelize, DataTypes) => {
         hooks: {
             beforeSave: (settlement) => {
                 // Auto-calculate base amount if same currency
-                if (APSettlement.paymentCurrencyId === APSettlement.baseCurrencyId) {
-                    APSettlement.baseAmount = APSettlement.paymentAmount;
-                    APSettlement.exchangeRate = 1.000000;
-                } else if (APSettlement.paymentAmount && APSettlement.exchangeRate) {
-                    APSettlement.baseAmount = APSettlement.paymentAmount / APSettlement.exchangeRate;
+                if (settlement.paymentCurrencyId === settlement.baseCurrencyId) {
+                    settlement.baseAmount = settlement.paymentAmount;
+                    settlement.exchangeRate = 1.000000;
+                } else if (settlement.paymentAmount && settlement.exchangeRate) {
+                    settlement.baseAmount = settlement.paymentAmount / settlement.exchangeRate;
                 }
-
                 // Set exchange date to settlement date if not provided
-                if (!APSettlement.exchangeDate) {
-                    APSettlement.exchangeDate = APSettlement.settlementDate;
+                if (!settlement.exchangeDate) {
+                    settlement.exchangeDate = settlement.settlementDate;
                 }
             }
         }
     });
 
     APSettlement.associate = models => {
-        logger.info(`Associating table Settlement with models`);
-
-        // Settlement belongs to payment currency
-        APSettlement.belongsTo(models.currency, {
-            foreignKey: 'paymentCurrencyId',
-            as: 'paymentCurrency',
-        });
-
-        // Settlement belongs to base currency
-        APSettlement.belongsTo(models.currency, {
-            foreignKey: 'baseCurrencyId',
-            as: 'baseCurrency',
-        });
-
+        logger.info(`Associating table APInvoiceSettlement with models`);
+        
         // Settlement belongs to payment method
         APSettlement.belongsTo(models.payment, {
             foreignKey: 'paymentMethodId',
@@ -108,18 +83,23 @@ module.exports = (sequelize, DataTypes) => {
             as: 'checker',
         });
 
-        // Settlement -> InvoiceSettlement (One-to-Many)
+        // *** MISSING ASSOCIATION - ADD THIS ***
+        // Settlement has many settlement lines
         APSettlement.hasMany(models.apInvoiceSettlementLine, {
-            foreignKey: 'settlementLineId',
-            as: 'invoiceSettlementsLines',
+            foreignKey: 'settlementId',
+            as: 'invoiceSettlements'
         });
     };
 
     // Instance methods
     APSettlement.prototype.getUnallocatedAmount = async function() {
-        const InvoiceSettlement = sequelize.models.apInvoiceSettlement;
-        const allocated = await InvoiceSettlement.sum('settledAmount', {
-            where: { settlementId: this.id }
+        // Fix: Use correct model name and field
+        const InvoiceSettlementLine = sequelize.models.InvoiceSettlementLine;
+        const allocated = await InvoiceSettlementLine.sum('amount', {
+            where: { 
+                settlementId: this.id,
+                status: 'active'
+            }
         });
         return parseFloat(this.baseAmount) - (parseFloat(allocated) || 0);
     };
