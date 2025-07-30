@@ -1,7 +1,7 @@
 
 
 module.exports = (sequelize, DataTypes) => {
-    const ArHeader = sequelize.define('receive_header', {
+    const ArHeader = sequelize.define('ar_receive_header', {
         bookingDate: {
             type: DataTypes.DATEONLY,
             allowNull: false,

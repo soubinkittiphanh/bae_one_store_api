@@ -64,6 +64,9 @@ const initializeModels = () => {
     client: require("../client/model")(sequelize, DataTypes),
     group: require("../group/model")(sequelize, DataTypes),
     user: require("../user/model")(sequelize, DataTypes),
+    applicant: require("../applicant/model")(sequelize, DataTypes),
+    jobAdvertise: require("../jobDescription/model")(sequelize, DataTypes),
+    benefit: require("../benefit/model")(sequelize, DataTypes),
     company: require("../company/model")(sequelize, DataTypes),
     location: require("../location/model")(sequelize, DataTypes),
     currency: require("../currency/model")(sequelize, DataTypes),
@@ -140,6 +143,10 @@ const initializeModels = () => {
     invoiceLineItem: require("../AP/invoiceLine/model")(sequelize, DataTypes),
     apInvoiceSettlement: require("../AP/invoiceSettlement/model")(sequelize, DataTypes),
     apInvoiceSettlementLine: require("../AP/invoiceSettlementLine/model")(sequelize, DataTypes),
+    arInvoiceHeader: require("../ARV2/invoice/header/model")(sequelize, DataTypes),
+    arInvoiceLine: require("../ARV2/invoice/line/model")(sequelize, DataTypes),
+    arReceiveHeader: require("../ARV2/receive/header/model")(sequelize, DataTypes),
+    arReceiveLine: require("../ARV2/receive/line/model")(sequelize, DataTypes),
     
     // Other models
     vendor: require("../vendor/model")(sequelize, DataTypes),

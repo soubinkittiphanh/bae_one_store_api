@@ -11,6 +11,11 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.DECIMAL(20, 2),
       allowNull: false
     },
+    exchangeRate: {
+      type: DataTypes.DECIMAL(20, 2),
+      allowNull: false,
+      defaultValue: 1.00
+    },
     method: {
       type: DataTypes.ENUM('cash', 'bank_transfer', 'deduction'),
       allowNull: false
@@ -35,6 +40,10 @@ module.exports = (sequelize, DataTypes) => {
     Settlement.belongsTo(models.user, {
       foreignKey: 'userId',
       as: 'proceeder',
+    });
+    Settlement.belongsTo(models.user, {
+      foreignKey: 'updateUserId',
+      as: 'updateUser',
     });
     Settlement.belongsTo(models.currency, {
       foreignKey: 'currencyId',

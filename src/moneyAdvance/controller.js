@@ -10,19 +10,41 @@ const MoneyAdvanceAudit = require('../models').moneyAdvanceAudit;
 const { AuditHelper } = require('../moneyAdvanceAudit/helper');
 class MoneyAdvanceController {
 
-  // GET /money-advances - Get all money advances with pagination
+  
+
+  // UPDATED getAll METHOD IN MoneyAdvanceController
   static async getAll(req, res) {
     try {
-      const { page = 1, limit = 10, status, makerId, ministryId, bookingDate } = req.query;
+      const {
+        page = 1,
+        limit = 10,
+        status,
+        makerId,
+        ministryId,
+        bookingDate,
+        available_for_settlement
+      } = req.query;
+
       const offset = (page - 1) * limit;
 
       const whereClause = {};
-      if (status) whereClause.status = status;
+
+      // Handle status parameter (can be array or single value)
+      if (status) {
+        if (Array.isArray(status)) {
+          whereClause.status = { [require('sequelize').Op.in]: status };
+        } else {
+          whereClause.status = status;
+        }
+      }
+
+      // Handle other filters
       if (makerId) whereClause.makerId = makerId;
       if (ministryId) whereClause.ministryId = ministryId;
       if (bookingDate) whereClause.bookingDate = bookingDate;
 
-      const { count, rows } = await MoneyAdvance.findAndCountAll({
+      // Base query options
+      const queryOptions = {
         where: whereClause,
         include: [
           { model: user, as: 'maker' },
@@ -35,21 +57,74 @@ class MoneyAdvanceController {
         limit: parseInt(limit),
         offset: parseInt(offset),
         order: [['createdAt', 'DESC']]
-      });
+      };
+
+      const { count, rows } = await MoneyAdvance.findAndCountAll(queryOptions);
+
+      let processedRows = rows;
+
+      // Handle available_for_settlement filter
+      if (available_for_settlement === 'true' || available_for_settlement === true) {
+        // Filter advances that can still receive settlements
+        // (either not settled at all, or partially settled)
+        const advancesWithSettlementInfo = await Promise.all(
+          rows.map(async (advance) => {
+            // Calculate total settlements for this advance
+            const settlements = await settlement.findAll({
+              where: { moneyAdvanceId: advance.id }
+            });
+
+            const totalSettled = settlements.reduce((sum, s) =>
+              sum + parseFloat(s.amount || 0), 0
+            );
+
+            const advanceAmount = parseFloat(advance.amount);
+            const outstandingAmount = advanceAmount - totalSettled;
+
+            // Only include if there's outstanding amount and status allows settlement
+            const canReceiveSettlement =
+              outstandingAmount > 0.01 && // Has outstanding amount (with small tolerance for floating point)
+              ['approved', 'pending'].includes(advance.status); // Status allows settlement
+
+            return {
+              ...advance.toJSON(),
+              totalSettled,
+              outstandingAmount,
+              canReceiveSettlement,
+              settlementPercentage: advanceAmount > 0 ?
+                ((totalSettled / advanceAmount) * 100).toFixed(2) : 0
+            };
+          })
+        );
+
+        // Filter only advances that can receive settlements
+        processedRows = advancesWithSettlementInfo.filter(
+          advance => advance.canReceiveSettlement
+        );
+      }
+
+      // Format response to match frontend expectations
+      const responseData = available_for_settlement === 'true' || available_for_settlement === true
+        ? processedRows  // For settlement dialog, return the processed array directly
+        : rows;          // For normal listing, return the original rows
 
       res.json({
         success: true,
-        data: {
-          advances: rows,
-          pagination: {
-            currentPage: parseInt(page),
-            totalPages: Math.ceil(count / limit),
-            totalItems: count,
-            itemsPerPage: parseInt(limit)
+        data: available_for_settlement === 'true' || available_for_settlement === true
+          ? responseData  // Settlement dialog expects data directly
+          : {             // Normal listing expects nested structure
+            advances: responseData,
+            pagination: {
+              currentPage: parseInt(page),
+              totalPages: Math.ceil(count / limit),
+              totalItems: count,
+              itemsPerPage: parseInt(limit)
+            }
           }
-        }
       });
+
     } catch (error) {
+      logger.error('Error fetching money advances:', error);
       res.status(500).json({
         success: false,
         message: 'Error fetching money advances',
@@ -58,6 +133,71 @@ class MoneyAdvanceController {
     }
   }
 
+  // ADD THIS NEW METHOD TO MoneyAdvanceController for better performance
+  // GET /money-advances/available-for-settlement - Optimized endpoint for settlement dialog
+  static async getAvailableForSettlement(req, res) {
+    try {
+      const { status = ['pending', 'approved'], limit = 50 } = req.query;
+
+      const whereClause = {
+        status: Array.isArray(status)
+          ? { [require('sequelize').Op.in]: status }
+          : { [require('sequelize').Op.in]: [status] }
+      };
+
+      // Get advances with their settlements in one query for better performance
+      const advances = await MoneyAdvance.findAll({
+        where: whereClause,
+        include: [
+          { model: user, as: 'maker' },
+          { model: currency, as: 'currency' },
+          { model: ministry, as: 'ministry' },
+          {
+            model: settlement,
+            as: 'settlementLine',
+            required: false // LEFT JOIN to include advances with no settlements
+          }
+        ],
+        limit: parseInt(limit),
+        order: [['createdAt', 'DESC']]
+      });
+
+      // Process advances to calculate settlement info
+      const availableAdvances = advances
+        .map(advance => {
+          const settlements = advance.settlementLine || [];
+          const totalSettled = settlements.reduce((sum, s) =>
+            sum + parseFloat(s.amount || 0), 0
+          );
+
+          const advanceAmount = parseFloat(advance.amount);
+          const outstandingAmount = advanceAmount - totalSettled;
+
+          return {
+            ...advance.toJSON(),
+            totalSettled,
+            outstandingAmount,
+            settlementPercentage: advanceAmount > 0 ?
+              ((totalSettled / advanceAmount) * 100).toFixed(2) : 0,
+            canReceiveSettlement: outstandingAmount > 0.01
+          };
+        })
+        .filter(advance => advance.canReceiveSettlement); // Only return settleable advances
+
+      res.json({
+        success: true,
+        data: availableAdvances
+      });
+
+    } catch (error) {
+      logger.error('Error fetching available advances for settlement:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error fetching available advances for settlement',
+        error: error.message
+      });
+    }
+  }
   // GET /money-advances/:id - Get single money advance
   static async getById(req, res) {
     try {
@@ -107,7 +247,7 @@ class MoneyAdvanceController {
         currencyId,
         dueDate,
         bankAccountId,
-        ministryId
+        ministryId,
       } = req.body;
 
       // Validation
@@ -138,7 +278,7 @@ class MoneyAdvanceController {
         dueDate,
         bankAccountId,
         ministryId,
-        status: 'pending'
+        status: 'approved'
       });
       // 🆕 ADD THIS: Create audit record (just 2 lines!)
       const auditContext = AuditHelper.getAuditContext(req);
@@ -181,6 +321,7 @@ class MoneyAdvanceController {
         dueDate,
         bankAccountId,
         ministryId,
+        updateUserId,
         currencyId
       } = req.body;
 
@@ -194,12 +335,12 @@ class MoneyAdvanceController {
       }
 
       // Only allow updates if status is pending
-      if (advance.status !== 'pending') {
-        return res.status(400).json({
-          success: false,
-          message: 'Cannot update approved or settled advances'
-        });
-      }
+      // if (advance.status !== 'pending') {
+      //   return res.status(400).json({
+      //     success: false,
+      //     message: 'Cannot update approved or settled advances'
+      //   });
+      // }
 
       // Validate booking date format if provided
       if (bookingDate) {
@@ -224,6 +365,7 @@ class MoneyAdvanceController {
         dueDate: dueDate || advance.dueDate,
         bankAccountId: bankAccountId || advance.bankAccountId,
         currencyId: currencyId || null,
+        updateUserId: updateUserId || null,
         ministryId: ministryId || advance.ministryId
       });
 

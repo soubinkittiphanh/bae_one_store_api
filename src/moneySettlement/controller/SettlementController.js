@@ -147,7 +147,7 @@ class SettlementController {
   // POST /settlements - Create new settlement
   static async create(req, res) {
     try {
-      const { amount, method, notes, userId, moneyAdvanceId, bankAccountId, ministryId, chartAccountId,currencyId,bookingDate } = req.body;
+      const { amount, method, notes, userId, moneyAdvanceId, bankAccountId, ministryId, chartAccountId, currencyId, bookingDate, exchangeRate } = req.body;
 
       // Validation
       if (!amount || !method || !userId) {
@@ -243,7 +243,8 @@ class SettlementController {
         method,
         notes,
         userId,
-        currencyId:currencyId || null,
+        exchangeRate,
+        currencyId: currencyId || null,
         moneyAdvanceId: moneyAdvanceId || null,
         bankAccountId: bankAccountId || null,
         ministryId: ministryId || null,
@@ -318,7 +319,7 @@ class SettlementController {
   static async update(req, res) {
     try {
       const { id } = req.params;
-      const { amount, method, notes, bankAccountId, moneyAdvanceId, ministryId, chartAccountId,currencyId,bookingDate } = req.body;
+      const { amount, method, notes, bankAccountId, moneyAdvanceId, ministryId, chartAccountId, currencyId, bookingDate, exchangeRate,updateUserId } = req.body;
 
       const settlement = await Settlement.findByPk(id, {
         include: [{ model: MoneyAdvance, as: 'moneyAdvance', required: false }]
@@ -421,12 +422,14 @@ class SettlementController {
 
       // Update settlement
       await settlement.update({
-        bookingDate:bookingDate,
+        bookingDate: bookingDate,
         amount: amount !== undefined ? amount : settlement.amount,
         method: method || settlement.method,
         notes: notes !== undefined ? notes : settlement.notes,
         bankAccountId: bankAccountId !== undefined ? bankAccountId : settlement.bankAccountId,
-        currencyId: currencyId||null,
+        currencyId: currencyId || null,
+        updateUserId: updateUserId || null,
+        exchangeRate: exchangeRate || 1,
         moneyAdvanceId: finalMoneyAdvanceId !== undefined ? finalMoneyAdvanceId : settlement.moneyAdvanceId,
         ministryId: ministryId !== undefined ? ministryId : settlement.ministryId,
         chartAccountId: chartAccountId !== undefined ? chartAccountId : settlement.chartAccountId

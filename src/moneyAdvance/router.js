@@ -103,6 +103,7 @@ const validateParams = [
     .withMessage('Valid ID is required')
 ];
 
+// 🆕 UPDATED: Enhanced validation for settlement support
 const validateQuery = [
   query('page')
     .optional()
@@ -114,8 +115,17 @@ const validateQuery = [
     .withMessage('Limit must be between 1 and 100'),
   query('status')
     .optional()
-    .isIn(['pending', 'approved', 'settled'])
-    .withMessage('Status must be pending, approved, or settled'),
+    .custom((value) => {
+      // Handle both single status and array of statuses
+      if (Array.isArray(value)) {
+        const validStatuses = ['pending', 'approved', 'settled'];
+        return value.every(status => validStatuses.includes(status));
+      } else if (typeof value === 'string') {
+        return ['pending', 'approved', 'settled'].includes(value);
+      }
+      return false;
+    })
+    .withMessage('Status must be pending, approved, or settled (can be array or single value)'),
   query('makerId')
     .optional()
     .isInt({ min: 1 })
@@ -123,7 +133,15 @@ const validateQuery = [
   query('ministryId')
     .optional()
     .isInt({ min: 1 })
-    .withMessage('Valid ministryId is required when provided')
+    .withMessage('Valid ministryId is required when provided'),
+  query('available_for_settlement')
+    .optional()
+    .isBoolean()
+    .withMessage('available_for_settlement must be a boolean'),
+  query('bookingDate')
+    .optional()
+    .isISO8601()
+    .withMessage('Booking date must be a valid date')
 ];
 
 // Report validation middleware
@@ -278,6 +296,10 @@ const validateSettleWithReason = [
 
 // GET routes - Specific endpoints first
 router.get('/', validateQuery, MoneyAdvanceController.getAll);
+
+// 🆕 NEW: Settlement support route - MUST come before other specific routes
+router.get('/available-for-settlement', validateQuery, MoneyAdvanceController.getAvailableForSettlement);
+
 router.get('/dashboard', validateQuery, MoneyAdvanceController.getDashboard);
 router.get('/by-ministry', validateQuery, MoneyAdvanceController.getByMinistry);
 router.get('/by-booking-date', validateQuery, MoneyAdvanceController.getByBookingDate);

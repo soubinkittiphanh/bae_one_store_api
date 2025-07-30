@@ -63,6 +63,10 @@ module.exports = (sequelize, DataTypes) => {
             as: 'maker',
         });
         MoneyAdvance.belongsTo(models.user, {
+            foreignKey: 'updateUserId',
+            as: 'updateUser',
+        });
+        MoneyAdvance.belongsTo(models.user, {
             foreignKey: 'checkerId',
             as: 'checker',
         });
