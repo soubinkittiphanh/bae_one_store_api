@@ -1,9 +1,9 @@
 // ===============================================================
 // AR RECEIVE HEADER CONTROLLER
 // ===============================================================
-const logger = require("../api/logger");
-const { user, arInvoiceHeader, arReceiveLine } = require('../models');
-const ReceiveHeader = require('../models').arReceiveHeader;
+const logger = require("../../../api/logger");
+const { user, arInvoiceHeader,arInvoiceLine, arReceiveLine, sequelize } = require('../../../models');
+const ReceiveHeader = require('../../../models').arReceiveHeader;
 const { Op } = require('sequelize');
 
 class ReceiveHeaderController {
@@ -123,8 +123,7 @@ class ReceiveHeaderController {
       });
     }
   }
-
-  // GET RECEIVE HEADER BY ID
+  // GET RECEIVE HEADER BY ID (Updated to include receive lines)
   static async findById(req, res) {
     try {
       const { id } = req.params;
@@ -149,7 +148,13 @@ class ReceiveHeaderController {
           },
           {
             model: arReceiveLine,
-            as: 'receiveLines'
+            as: 'receiveLines',
+            include: [
+              {
+                model: arInvoiceLine,
+                as: 'invoiceLine'
+              }
+            ]
           }
         ]
       });
@@ -175,9 +180,11 @@ class ReceiveHeaderController {
       });
     }
   }
-
-  // CREATE NEW RECEIVE HEADER
+  // CREATE NEW RECEIVE HEADER WITH ALLOCATION LINES
   static async create(req, res) {
+   
+    const transaction = await sequelize.transaction();
+
     try {
       const {
         receiptNumber,
@@ -188,16 +195,37 @@ class ReceiveHeaderController {
         paymentMethod = 'cash',
         referenceNumber,
         notes,
-        inputterId
+        inputterId,
+        allocationLines = [] // Extract allocationLines from request body
       } = req.body;
+
+      logger.info('Create receive header request:', {
+        receiptNumber,
+        invoiceHeaderId,
+        totalReceivedAmount,
+        allocationLinesCount: allocationLines.length
+      });
 
       // Validate required fields
       if (!receiptNumber || !bookingDate || !receivedDate || !invoiceHeaderId) {
+        await transaction.rollback();
         return res.status(400).json({
           success: false,
           message: 'Receipt number, booking date, received date, and invoice header ID are required'
         });
       }
+
+      // Validate allocation lines
+      if (!allocationLines || allocationLines.length === 0) {
+        await transaction.rollback();
+        return res.status(400).json({
+          success: false,
+          message: 'At least one allocation line is required'
+        });
+      }
+
+      // Handle empty string inputterId - convert to null
+      const validInputterId = inputterId && inputterId.toString().trim() !== '' ? inputterId : null;
 
       // Check if receipt number already exists
       const existingReceipt = await ReceiveHeader.findOne({
@@ -205,6 +233,7 @@ class ReceiveHeaderController {
       });
 
       if (existingReceipt) {
+        await transaction.rollback();
         return res.status(400).json({
           success: false,
           message: 'Receipt number already exists'
@@ -214,16 +243,18 @@ class ReceiveHeaderController {
       // Verify invoice header exists
       const invoiceHeaderExists = await arInvoiceHeader.findByPk(invoiceHeaderId);
       if (!invoiceHeaderExists) {
+        await transaction.rollback();
         return res.status(400).json({
           success: false,
           message: 'Invoice header not found'
         });
       }
 
-      // Verify inputter exists if provided
-      if (inputterId) {
-        const inputterExists = await user.findByPk(inputterId);
+      // Verify inputter exists if provided (only check if not null/empty)
+      if (validInputterId) {
+        const inputterExists = await user.findByPk(validInputterId);
         if (!inputterExists) {
+          await transaction.rollback();
           return res.status(400).json({
             success: false,
             message: 'Inputter not found'
@@ -231,6 +262,38 @@ class ReceiveHeaderController {
         }
       }
 
+      // Validate allocation lines
+      for (const allocation of allocationLines) {
+        if (!allocation.invoiceLineId || !allocation.allocatedAmount) {
+          await transaction.rollback();
+          return res.status(400).json({
+            success: false,
+            message: 'Each allocation line must have invoiceLineId and allocatedAmount'
+          });
+        }
+
+        // Verify invoice line exists
+        const invoiceLineExists = await arInvoiceLine.findByPk(allocation.invoiceLineId);
+        if (!invoiceLineExists) {
+          await transaction.rollback();
+          return res.status(400).json({
+            success: false,
+            message: `Invoice line ${allocation.invoiceLineId} not found`
+          });
+        }
+
+        // Validate allocated amount
+        const allocatedAmount = parseFloat(allocation.allocatedAmount);
+        if (allocatedAmount <= 0) {
+          await transaction.rollback();
+          return res.status(400).json({
+            success: false,
+            message: 'Allocated amount must be greater than 0'
+          });
+        }
+      }
+
+      // Create receive header
       const receiveHeader = await ReceiveHeader.create({
         receiptNumber,
         bookingDate,
@@ -240,10 +303,30 @@ class ReceiveHeaderController {
         paymentMethod,
         referenceNumber,
         notes,
-        inputterId,
+        inputterId: validInputterId,
         makerId: req.user?.id
-      });
+      }, { transaction });
 
+      logger.info('Receive header created:', { id: receiveHeader.id });
+
+      // Create allocation lines (receive lines)
+      const allocationLinesData = allocationLines.map(allocation => ({
+        receiveHeaderId: receiveHeader.id,
+        lineNumber: allocation.lineNumber,
+        invoiceLineId: allocation.invoiceLineId,
+        allocatedAmount: parseFloat(allocation.allocatedAmount),
+        allocationDate: allocation.allocationDate || receivedDate,
+        notes: allocation.notes || '',
+        makerId: req.user?.id
+      }));
+
+      const createdReceiveLines = await arReceiveLine.bulkCreate(allocationLinesData, { transaction });
+
+      logger.info('Receive lines created:', { count: createdReceiveLines.length });
+
+      await transaction.commit();
+
+      // Fetch the complete receive header with allocations
       const createdReceiveHeader = await ReceiveHeader.findByPk(receiveHeader.id, {
         include: [
           {
@@ -258,6 +341,16 @@ class ReceiveHeaderController {
           {
             model: user,
             as: 'maker'
+          },
+          {
+            model: arReceiveLine,
+            as: 'receiveLines',
+            include: [
+              {
+                model: arInvoiceLine,
+                as: 'invoiceLine'
+              }
+            ]
           }
         ]
       });
@@ -269,6 +362,7 @@ class ReceiveHeaderController {
       });
 
     } catch (error) {
+      await transaction.rollback();
       logger.error('Error creating receive header:', error);
       res.status(500).json({
         success: false,
@@ -278,14 +372,22 @@ class ReceiveHeaderController {
     }
   }
 
-  // UPDATE RECEIVE HEADER
+  // UPDATE RECEIVE HEADER WITH ALLOCATION LINES
   static async update(req, res) {
+    const transaction = await sequelize.transaction();
+
     try {
       const { id } = req.params;
-      const updateData = req.body;
+      const { allocationLines, ...updateData } = req.body; // Extract allocationLines separately
+
+      logger.info('Update receive header request:', {
+        id,
+        allocationLinesCount: allocationLines ? allocationLines.length : 0
+      });
 
       const receiveHeader = await ReceiveHeader.findByPk(id);
       if (!receiveHeader) {
+        await transaction.rollback();
         return res.status(404).json({
           success: false,
           message: 'Receive header not found'
@@ -296,16 +398,24 @@ class ReceiveHeaderController {
       delete updateData.id;
       delete updateData.makerId;
 
+      // Handle empty string inputterId
+      if ('inputterId' in updateData) {
+        updateData.inputterId = updateData.inputterId && updateData.inputterId.toString().trim() !== ''
+          ? updateData.inputterId
+          : null;
+      }
+
       // Check receipt number uniqueness if being updated
       if (updateData.receiptNumber && updateData.receiptNumber !== receiveHeader.receiptNumber) {
         const existingReceipt = await ReceiveHeader.findOne({
-          where: { 
+          where: {
             receiptNumber: updateData.receiptNumber,
             id: { [Op.ne]: id }
           }
         });
 
         if (existingReceipt) {
+          await transaction.rollback();
           return res.status(400).json({
             success: false,
             message: 'Receipt number already exists'
@@ -317,6 +427,7 @@ class ReceiveHeaderController {
       if (updateData.invoiceHeaderId) {
         const invoiceHeaderExists = await arInvoiceHeader.findByPk(updateData.invoiceHeaderId);
         if (!invoiceHeaderExists) {
+          await transaction.rollback();
           return res.status(400).json({
             success: false,
             message: 'Invoice header not found'
@@ -327,6 +438,7 @@ class ReceiveHeaderController {
       if (updateData.inputterId) {
         const inputterExists = await user.findByPk(updateData.inputterId);
         if (!inputterExists) {
+          await transaction.rollback();
           return res.status(400).json({
             success: false,
             message: 'Inputter not found'
@@ -337,8 +449,67 @@ class ReceiveHeaderController {
       // Add update user info
       updateData.updateUserId = req.user?.id;
 
-      await receiveHeader.update(updateData);
+      // Update receive header
+      await receiveHeader.update(updateData, { transaction });
 
+      // Handle allocation lines if provided
+      if (allocationLines && Array.isArray(allocationLines)) {
+        // Delete existing receive lines
+        await arReceiveLine.destroy({
+          where: { receiveHeaderId: id },
+          transaction
+        });
+
+        // Create new allocation lines
+        if (allocationLines.length > 0) {
+          // Validate allocation lines
+          for (const allocation of allocationLines) {
+            if (!allocation.invoiceLineId || !allocation.allocatedAmount) {
+              await transaction.rollback();
+              return res.status(400).json({
+                success: false,
+                message: 'Each allocation line must have invoiceLineId and allocatedAmount'
+              });
+            }
+
+            // Verify invoice line exists
+            const invoiceLineExists = await arInvoiceLine.findByPk(allocation.invoiceLineId);
+            if (!invoiceLineExists) {
+              await transaction.rollback();
+              return res.status(400).json({
+                success: false,
+                message: `Invoice line ${allocation.invoiceLineId} not found`
+              });
+            }
+
+            // Validate allocated amount
+            const allocatedAmount = parseFloat(allocation.allocatedAmount);
+            if (allocatedAmount <= 0) {
+              await transaction.rollback();
+              return res.status(400).json({
+                success: false,
+                message: 'Allocated amount must be greater than 0'
+              });
+            }
+          }
+
+          const allocationLinesData = allocationLines.map(allocation => ({
+            receiveHeaderId: id,
+            lineNumber: allocation.lineNumber,
+            invoiceLineId: allocation.invoiceLineId,
+            allocatedAmount: parseFloat(allocation.allocatedAmount),
+            allocationDate: allocation.allocationDate || receiveHeader.receivedDate,
+            notes: allocation.notes || '',
+            makerId: req.user?.id
+          }));
+
+          await arReceiveLine.bulkCreate(allocationLinesData, { transaction });
+        }
+      }
+
+      await transaction.commit();
+
+      // Fetch updated receive header with allocations
       const updatedReceiveHeader = await ReceiveHeader.findByPk(id, {
         include: [
           {
@@ -357,6 +528,16 @@ class ReceiveHeaderController {
           {
             model: user,
             as: 'updateUser'
+          },
+          {
+            model: arReceiveLine,
+            as: 'receiveLines',
+            include: [
+              {
+                model: arInvoiceLine,
+                as: 'invoiceLine'
+              }
+            ]
           }
         ]
       });
@@ -368,6 +549,7 @@ class ReceiveHeaderController {
       });
 
     } catch (error) {
+      await transaction.rollback();
       logger.error('Error updating receive header:', error);
       res.status(500).json({
         success: false,
@@ -376,7 +558,6 @@ class ReceiveHeaderController {
       });
     }
   }
-
   // DELETE RECEIVE HEADER
   static async delete(req, res) {
     try {
@@ -655,7 +836,7 @@ class ReceiveHeaderController {
 
     const lastNumber = parseInt(latestReceipt.receiptNumber.replace(prefix, ''));
     const nextNumber = (lastNumber + 1).toString().padStart(3, '0');
-    
+
     return `${prefix}${nextNumber}`;
   }
 }

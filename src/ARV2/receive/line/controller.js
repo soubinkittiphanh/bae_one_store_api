@@ -1,9 +1,9 @@
 // ===============================================================
 // AR RECEIVE LINE CONTROLLER
 // ===============================================================
-const logger = require("../api/logger");
-const { user, arReceiveHeader, arInvoiceLine } = require('../models');
-const ReceiveLine = require('../models').arReceiveLine;
+const logger = require("../../../api/logger");
+const { user, arReceiveHeader, arInvoiceLine } = require('../../../models');
+const ReceiveLine = require('../../../models').arReceiveLine;
 const { Op } = require('sequelize');
 
 class ReceiveLineController {

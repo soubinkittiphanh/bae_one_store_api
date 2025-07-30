@@ -63,7 +63,9 @@ const applicant = require("../applicant/router")
 const jobAdvertise = require("../jobDescription/router")
 const benefit = require("../benefit/router")
 const arInvoiceHeader = require("../ARV2/invoice/header/router")
-const arReceiveHeader = require("../ARV2/invoice/line/router")
+const arInvoiceLine = require("../ARV2/invoice/line/router")
+const arReceiveHeader = require("../ARV2/receive/header/router")
+const arReceiveLine = require("../ARV2/receive/line/router")
 
 module.exports={
     orderRouter,
@@ -131,5 +133,7 @@ module.exports={
     jobAdvertise,
     benefit,
     arInvoiceHeader,
+    arInvoiceLine,
     arReceiveHeader,
+    arReceiveLine,
 }

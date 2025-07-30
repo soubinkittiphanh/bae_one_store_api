@@ -75,9 +75,11 @@ const buildApp = async () => {
     app.use("/api/job-advertises",myRouter.jobAdvertise)
     app.use("/api/revenue-targets",myRouter.revenueTarget)
     app.use("/api/ar-invoices",myRouter.arInvoiceHeader)
+    app.use("/api/ar-invoice-lines",myRouter.arInvoiceLine)
     app.use("/api/ar-receive-headers",myRouter.arReceiveHeader)
+    app.use("/api/ar-receive-lines",myRouter.arReceiveLine)
     app.use("/api/ap-invoices",myRouter.apInvoice)
-    app.use("/api/ap-invoices-line",myRouter.apInvoiceLine)
+    app.use("/api/ap-invoices-lines",myRouter.apInvoiceLine)
     app.use("/api/ap-invoices-settlement",myRouter.apInvoiceSettlement)
     app.use("/api/ap-invoices-settlement-line",myRouter.apInvoiceSettlementLine)
 
