@@ -228,7 +228,7 @@ class SettlementDashboardController {
           {
             model: Ministry,
             as: 'ministry',
-            attributes: ['id', 'name', 'code']
+            // attributes: ['id', 'name', 'code']
           }
         ],
         group: ['ministryId'],
@@ -255,6 +255,104 @@ class SettlementDashboardController {
     }
   }
 
+  // Add this method to SettlementDashboardController class
+
+  // GET /settlements/currency-breakdown - Get settlement breakdown by currency
+  static async getCurrencyBreakdown(req, res) {
+    try {
+      const { startDate, endDate, method, bankAccountId, ministryId, chartAccountId } = req.query;
+
+      const whereClause = {};
+
+      // Apply filters
+      if (method) whereClause.method = method;
+      if (bankAccountId) whereClause.bankAccountId = bankAccountId;
+      if (ministryId) whereClause.ministryId = ministryId;
+      if (chartAccountId) whereClause.chartAccountId = chartAccountId;
+
+      // Date range filter
+      if (startDate || endDate) {
+        whereClause.bookingDate = {};
+        if (startDate) whereClause.bookingDate[Op.gte] = new Date(startDate);
+        if (endDate) whereClause.bookingDate[Op.lte] = new Date(endDate);
+      }
+
+      // Get currency breakdown with LAK equivalent calculations
+      const currencyBreakdown = await Settlement.findAll({
+        where: whereClause,
+        attributes: [
+          'currencyId',
+          [Settlement.sequelize.fn('COUNT', Settlement.sequelize.col('Settlement.id')), 'count'],
+          [Settlement.sequelize.fn('SUM', Settlement.sequelize.col('amount')), 'totalAmount'],
+          [Settlement.sequelize.fn('AVG', Settlement.sequelize.col('exchangeRate')), 'avgExchangeRate'],
+          [Settlement.sequelize.fn('SUM',
+            Settlement.sequelize.literal('amount * exchangeRate')
+          ), 'lakEquivalent']
+        ],
+        include: [
+          {
+            model: require('../../models').currency,
+            as: 'currency',
+            // attributes: ['id', 'code', 'name', 'symbol']
+          }
+        ],
+        group: ['currencyId', 'currency.id'],
+        order: [[Settlement.sequelize.fn('SUM',
+          Settlement.sequelize.literal('amount * exchangeRate')
+        ), 'DESC']]
+      });
+
+      // Calculate totals
+      const totalLakEquivalent = currencyBreakdown.reduce((sum, currency) =>
+        sum + parseFloat(currency.dataValues.lakEquivalent || 0), 0
+      );
+
+      const totalSettlements = currencyBreakdown.reduce((sum, currency) =>
+        sum + parseInt(currency.dataValues.count || 0), 0
+      );
+
+      // Format the response data
+      const formattedBreakdown = currencyBreakdown.map(item => {
+        const data = item.dataValues;
+        const currencyCode = item.currency?.code || 'LAK';
+
+        return {
+          currencyId: data.currencyId,
+          currencyCode: currencyCode,
+          currencyName: item.currency?.name || 'Lao Kip',
+          currencySymbol: item.currency?.symbol || '₭',
+          count: parseInt(data.count),
+          totalAmount: parseFloat(data.totalAmount || 0),
+          avgExchangeRate: parseFloat(data.avgExchangeRate || 1),
+          lakEquivalent: parseFloat(data.lakEquivalent || 0),
+          percentage: totalLakEquivalent > 0 ?
+            Math.round((parseFloat(data.lakEquivalent || 0) / totalLakEquivalent) * 100) : 0
+        };
+      });
+
+      res.json({
+        success: true,
+        data: {
+          currencies: formattedBreakdown,
+          summary: {
+            totalCurrencies: formattedBreakdown.length,
+            totalSettlements: totalSettlements,
+            totalLakEquivalent: totalLakEquivalent
+          },
+          period: {
+            startDate: startDate || null,
+            endDate: endDate || null
+          }
+        }
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Error fetching currency breakdown',
+        error: error.message
+      });
+    }
+  }
   // GET /settlements/analytics/top-chart-accounts - Get top chart accounts by settlement amount
   static async getTopChartAccounts(req, res) {
     try {
@@ -282,7 +380,7 @@ class SettlementDashboardController {
           {
             model: ChartAccount,
             as: 'chartAccount',
-            attributes: ['id', 'accountCode', 'accountName']
+            // attributes: ['id', 'accountCode', 'accountName']
           }
         ],
         group: ['chartAccountId'],

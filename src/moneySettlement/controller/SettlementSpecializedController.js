@@ -22,6 +22,11 @@ class SettlementSpecializedController {
             as: 'proceeder',
           },
           {
+            model: currency,
+            as: 'currency',
+            required: false
+          },
+          {
             model: BankAccount,
             as: 'bankAccount',
             required: false
@@ -83,6 +88,11 @@ class SettlementSpecializedController {
           {
             model: user,
             as: 'proceeder',
+          },
+          {
+            model: currency,
+            as: 'currency',
+            required: false
           },
           {
             model: MoneyAdvance,
@@ -158,6 +168,11 @@ class SettlementSpecializedController {
             as: 'proceeder',
           },
           {
+            model: currency,
+            as: 'currency',
+            required: false
+          },
+          {
             model: MoneyAdvance,
             as: 'moneyAdvance',
             attributes: ['id', 'amount', 'purpose', 'status'],
@@ -229,6 +244,11 @@ class SettlementSpecializedController {
           {
             model: user,
             as: 'proceeder',
+          },
+          {
+            model: currency,
+            as: 'currency',
+            required: false
           },
           {
             model: MoneyAdvance,
@@ -311,6 +331,11 @@ class SettlementSpecializedController {
           {
             model: user,
             as: 'proceeder',
+          },
+          {
+            model: currency,
+            as: 'currency',
+            required: false
           },
           {
             model: BankAccount,

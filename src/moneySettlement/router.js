@@ -52,6 +52,16 @@ const validateCreateSettlement = [
     .isInt({ min: 1 })
     .withMessage('ChartAccountId must be a valid integer'),
   
+  body('currencyId')
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage('CurrencyId must be a valid integer'),
+  
+  body('exchangeRate')
+    .optional()
+    .isFloat({ min: 0.0001 })
+    .withMessage('Exchange rate must be a positive number'),
+  
   // Custom validation: bank account required for bank transfers
   body('bankAccountId').custom((value, { req }) => {
     if (req.body.method === 'bank_transfer' && !value) {
@@ -79,6 +89,20 @@ const validateUpdateSettlement = [
     .optional()
     .isLength({ max: 1000 })
     .withMessage('Notes cannot exceed 1000 characters'),
+  
+  body('currencyId')
+    .optional()
+    .custom((value) => {
+      if (value !== null && value !== undefined && (!Number.isInteger(Number(value)) || Number(value) < 1)) {
+        throw new Error('CurrencyId must be a valid integer or null');
+      }
+      return true;
+    }),
+  
+  body('exchangeRate')
+    .optional()
+    .isFloat({ min: 0.0001 })
+    .withMessage('Exchange rate must be a positive number'),
   
   body('moneyAdvanceId')
     .optional()
@@ -137,6 +161,7 @@ const handleValidationErrors = (req, res, next) => {
 
 // Dashboard and Analytics routes (must come before general routes)
 router.get('/dashboard', SettlementDashboardController.getDashboard);
+router.get('/currency-breakdown', SettlementDashboardController.getCurrencyBreakdown); // NEW ENDPOINT
 router.get('/analytics/summary', SettlementDashboardController.getSummaryAnalytics);
 router.get('/analytics/top-ministries', SettlementDashboardController.getTopMinistries);
 router.get('/analytics/top-chart-accounts', SettlementDashboardController.getTopChartAccounts);
