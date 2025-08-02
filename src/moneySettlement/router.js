@@ -161,6 +161,7 @@ const handleValidationErrors = (req, res, next) => {
 
 // Dashboard and Analytics routes (must come before general routes)
 router.get('/dashboard', SettlementDashboardController.getDashboard);
+router.get('/stats', SettlementDashboardController.getStats); // ← ADD THIS LINE
 router.get('/currency-breakdown', SettlementDashboardController.getCurrencyBreakdown); // NEW ENDPOINT
 router.get('/analytics/summary', SettlementDashboardController.getSummaryAnalytics);
 router.get('/analytics/top-ministries', SettlementDashboardController.getTopMinistries);

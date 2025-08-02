@@ -53,6 +53,11 @@ class SettlementController {
             required: false // Left join - settlement might not have ministry
           },
           {
+            model: currency,
+            as: 'currency',
+            required: false // Left join - settlement might not have ministry
+          },
+          {
             model: ChartAccount,
             as: 'chartAccount',
             required: false // Left join - settlement might not have chart account

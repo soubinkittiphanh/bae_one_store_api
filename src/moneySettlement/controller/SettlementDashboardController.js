@@ -353,6 +353,66 @@ class SettlementDashboardController {
       });
     }
   }
+  // Add this method to your SettlementDashboardController class
+  static async getStats(req, res) {
+    try {
+      const { Op } = require('sequelize');
+
+      // Get total count and amount
+      const [totalCount, totalAmountResult] = await Promise.all([
+        Settlement.count(),
+        Settlement.sum('amount')
+      ]);
+
+      const totalAmount = totalAmountResult || 0;
+
+      // Get this month's settlements
+      const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+      const endOfMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0);
+
+      const thisMonth = await Settlement.count({
+        where: {
+          bookingDate: {
+            [Op.between]: [startOfMonth, endOfMonth]
+          }
+        }
+      });
+
+      // Get pending settlements
+      const pendingAdvances = await Settlement.findAll({
+        include: [{
+          model: require('../../models').moneyAdvance,
+          as: 'moneyAdvance',
+          where: {
+            status: { [Op.in]: ['approved', 'pending'] }
+          },
+          required: true
+        }],
+        attributes: ['moneyAdvanceId'],
+        group: ['moneyAdvanceId']
+      });
+
+      const pending = pendingAdvances.length;
+
+      res.json({
+        success: true,
+        data: {
+          totalCount: parseInt(totalCount) || 0,
+          totalAmount: parseFloat(totalAmount) || 0,
+          thisMonth: parseInt(thisMonth) || 0,
+          pending: parseInt(pending) || 0
+        }
+      });
+
+    } catch (error) {
+      console.error('Stats error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error fetching settlement statistics',
+        error: error.message
+      });
+    }
+  }
   // GET /settlements/analytics/top-chart-accounts - Get top chart accounts by settlement amount
   static async getTopChartAccounts(req, res) {
     try {
