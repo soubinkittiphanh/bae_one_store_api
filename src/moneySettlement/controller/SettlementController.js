@@ -12,18 +12,57 @@ const ChartAccount = require('../../models').chartAccount;
 class SettlementController {
 
   // GET /settlements - Get all settlements with pagination
+  // GET /settlements - Get all settlements with pagination
   static async getAll(req, res) {
     try {
-      const { page = 1, limit = 10, method, userId, moneyAdvanceId, bankAccountId, ministryId, chartAccountId } = req.query;
+      const {
+        page = 1,
+        limit = 10,
+        method,
+        userId,
+        moneyAdvanceId,
+        bankAccountId,
+        ministryId,
+        chartAccountId,
+        bookingDate,
+        fromDate,
+        toDate
+      } = req.query;
+
       const offset = (page - 1) * limit;
+      const { Op } = require('sequelize');
 
       const whereClause = {};
+
+      // Handle existing filters
       if (method) whereClause.method = method;
       if (userId) whereClause.userId = userId;
       if (moneyAdvanceId) whereClause.moneyAdvanceId = moneyAdvanceId;
       if (bankAccountId) whereClause.bankAccountId = bankAccountId;
       if (ministryId) whereClause.ministryId = ministryId;
       if (chartAccountId) whereClause.chartAccountId = chartAccountId;
+
+      // Handle date filtering - improved logic
+      if (bookingDate) {
+        // If specific bookingDate is provided, use exact match
+        whereClause.bookingDate = bookingDate;
+      } else if (fromDate || toDate) {
+        // If date range is provided, use between/gte/lte operators
+        const dateFilter = {};
+
+        if (fromDate && toDate) {
+          // Both dates provided - filter between dates (inclusive)
+          dateFilter[Op.between] = [fromDate, toDate];
+        } else if (fromDate) {
+          // Only fromDate provided - filter from this date onwards
+          dateFilter[Op.gte] = fromDate;
+        } else if (toDate) {
+          // Only toDate provided - filter up to this date
+          dateFilter[Op.lte] = toDate;
+        }
+
+        whereClause.bookingDate = dateFilter;
+      }
 
       const { count, rows } = await Settlement.findAndCountAll({
         where: whereClause,
@@ -80,6 +119,7 @@ class SettlementController {
           }
         }
       });
+
     } catch (error) {
       res.status(500).json({
         success: false,
@@ -324,7 +364,7 @@ class SettlementController {
   static async update(req, res) {
     try {
       const { id } = req.params;
-      const { amount, method, notes, bankAccountId, moneyAdvanceId, ministryId, chartAccountId, currencyId, bookingDate, exchangeRate,updateUserId } = req.body;
+      const { amount, method, notes, bankAccountId, moneyAdvanceId, ministryId, chartAccountId, currencyId, bookingDate, exchangeRate, updateUserId } = req.body;
 
       const settlement = await Settlement.findByPk(id, {
         include: [{ model: MoneyAdvance, as: 'moneyAdvance', required: false }]

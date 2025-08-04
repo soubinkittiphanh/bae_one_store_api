@@ -9,10 +9,7 @@ const ministry = require('../models').ministry;
 const MoneyAdvanceAudit = require('../models').moneyAdvanceAudit;
 const { AuditHelper } = require('../moneyAdvanceAudit/helper');
 class MoneyAdvanceController {
-
-  
-
-  // UPDATED getAll METHOD IN MoneyAdvanceController
+  // IMPROVED getAll METHOD IN MoneyAdvanceController
   static async getAll(req, res) {
     try {
       const {
@@ -22,17 +19,20 @@ class MoneyAdvanceController {
         makerId,
         ministryId,
         bookingDate,
+        fromDate,
+        toDate,
         available_for_settlement
       } = req.query;
 
       const offset = (page - 1) * limit;
+      const { Op } = require('sequelize');
 
       const whereClause = {};
 
       // Handle status parameter (can be array or single value)
       if (status) {
         if (Array.isArray(status)) {
-          whereClause.status = { [require('sequelize').Op.in]: status };
+          whereClause.status = { [Op.in]: status };
         } else {
           whereClause.status = status;
         }
@@ -41,7 +41,28 @@ class MoneyAdvanceController {
       // Handle other filters
       if (makerId) whereClause.makerId = makerId;
       if (ministryId) whereClause.ministryId = ministryId;
-      if (bookingDate) whereClause.bookingDate = bookingDate;
+
+      // Handle date filtering - improved logic
+      if (bookingDate) {
+        // If specific bookingDate is provided, use exact match
+        whereClause.bookingDate = bookingDate;
+      } else if (fromDate || toDate) {
+        // If date range is provided, use between/gte/lte operators
+        const dateFilter = {};
+
+        if (fromDate && toDate) {
+          // Both dates provided - filter between dates (inclusive)
+          dateFilter[Op.between] = [fromDate, toDate];
+        } else if (fromDate) {
+          // Only fromDate provided - filter from this date onwards
+          dateFilter[Op.gte] = fromDate;
+        } else if (toDate) {
+          // Only toDate provided - filter up to this date
+          dateFilter[Op.lte] = toDate;
+        }
+
+        whereClause.bookingDate = dateFilter;
+      }
 
       // Base query options
       const queryOptions = {

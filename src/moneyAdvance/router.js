@@ -1,7 +1,7 @@
 const controller = require("./controller")
 const express = require("express")
 const router = express.Router()
-const {validateToken} = require('../api').jwtApi
+const { validateToken } = require('../api').jwtApi
 const { body, param, query } = require('express-validator');
 router.use(validateToken);
 const MoneyAdvanceController = require('./controller');
@@ -296,7 +296,6 @@ const validateSettleWithReason = [
 
 // GET routes - Specific endpoints first
 router.get('/', validateQuery, MoneyAdvanceController.getAll);
-
 // 🆕 NEW: Settlement support route - MUST come before other specific routes
 router.get('/available-for-settlement', validateQuery, MoneyAdvanceController.getAvailableForSettlement);
 
