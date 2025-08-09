@@ -11,7 +11,15 @@ const getAllRevenueTargets = async (req, res) => {
         {
           model: require('../models').currency,
           as: 'currency'
-        }
+        },
+        {
+          model: require('../models').ministry,
+          as: 'subMinistries'
+        },
+        {
+          model: require('../models').chartAccount,
+          as: 'chartAccount'
+        },
       ]
     });
     res.status(200).json(revenueTargets);
@@ -77,7 +85,7 @@ const createRevenueTarget = async (req, res) => {
       currencyId,
       remark,
       isActive,
-      parentMinistryId, 
+      parentMinistryId,
       chartAccountId,
     });
     res.status(200).json(newRevenueTarget);
@@ -160,6 +168,7 @@ const deleteRevenueTargetById = async (req, res) => {
 
 // Get revenue targets by year
 const getRevenueTargetsByYear = async (req, res) => {
+  logger.info(`REVENUE TARGET IS BEING CALLED `)
   const { year } = req.params;
   try {
     const revenueTargets = await RevenueTarget.findAll({
@@ -171,10 +180,19 @@ const getRevenueTargetsByYear = async (req, res) => {
         {
           model: require('../models').currency,
           as: 'currency'
-        }
+        },
+        {
+          model: require('../models').ministry,
+          as: 'subMinistries'
+        },
+        {
+          model: require('../models').chartAccount,
+          as: 'chartAccount'
+        },
       ],
       order: [['name', 'ASC']]
     });
+    logger.info(`RESPONSE DATA ${revenueTargets}`)
     res.status(200).json(revenueTargets);
   } catch (error) {
     console.error(error);

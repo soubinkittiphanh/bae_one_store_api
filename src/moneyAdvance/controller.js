@@ -780,6 +780,7 @@ class MoneyAdvanceController {
         toDate,
         ministryId,
         currencyId,
+        bankAccountId,
         status,
         makerId
       } = req.query;
@@ -806,6 +807,7 @@ class MoneyAdvanceController {
       if (currencyId) whereClause.currencyId = currencyId;
       if (status) whereClause.status = status;
       if (makerId) whereClause.makerId = makerId;
+      if (bankAccountId) whereClause.bankAccountId = bankAccountId;
 
       // Get the main report data
       const reportData = await MoneyAdvance.findAll({
