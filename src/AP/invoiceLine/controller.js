@@ -126,7 +126,17 @@ class invoiceLineItemController {
         include: [
           {
             model: db.apInvoice,
-            as: 'invoice'
+            as: 'invoice',
+            include: [
+              {
+                model: db.user,
+                as: 'maker'
+              },
+              {
+                model: db.user,
+                as: 'checker'
+              },
+            ]
           },
           {
             model: db.chartAccount,
@@ -139,7 +149,8 @@ class invoiceLineItemController {
           {
             model: db.user,
             as: 'maker'
-          }
+          },
+
         ],
         order: [['lineNumber', 'ASC']]
       });

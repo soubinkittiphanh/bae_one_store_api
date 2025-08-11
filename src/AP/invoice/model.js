@@ -1,5 +1,5 @@
 // ===============================================================
-// DATABASE MODELS - SEQUELIZE
+// DATABASE MODELS - SEQUELIZE WITH AUDIT TRAIL
 // ===============================================================
 const logger = require("../../api/logger");
 
@@ -65,10 +65,8 @@ module.exports = (sequelize, DataTypes) => {
         // if you don't want that, set the following
         freezeTableName: true,
         hooks: {
+            // Existing hook for business logic
             beforeSave: (invoice) => {
-                // Remove these lines since subtotal and taxAmount don't exist in your model:
-                // invoice.totalAmount = parseFloat(invoice.subtotal) + parseFloat(invoice.taxAmount);
-
                 // Update status based on payment
                 if (invoice.paidAmount >= invoice.totalAmount) {
                     invoice.status = 'paid';
@@ -79,6 +77,210 @@ module.exports = (sequelize, DataTypes) => {
                 // Check for overdue
                 if (invoice.dueDate < new Date() && invoice.status !== 'paid') {
                     invoice.status = 'overdue';
+                }
+            },
+
+            // AUDIT TRAIL HOOKS
+
+            // Before any update, save current state to audit table
+            beforeUpdate: async (invoice, options) => {
+                try {
+                    // Use the correct model name from your index.js - with safety check
+                    const APInvoiceModel = sequelize.models.APInvoice;
+
+                    if (!APInvoiceModel) {
+                        logger.warn('APInvoice model not found in sequelize.models');
+                        return;
+                    }
+
+                    // Get the current complete record from database before update
+                    const currentRecord = await APInvoiceModel.findByPk(invoice.id, {
+                        include: [
+                            {
+                                model: sequelize.models.vendor,
+                                as: 'vendor',
+                                attributes: ['id', 'name'],
+                                required: false
+                            },
+                            {
+                                model: sequelize.models.currency,
+                                as: 'currency',
+                                attributes: ['id', 'name', 'code'],
+                                required: false
+                            },
+                            {
+                                model: sequelize.models.user,
+                                as: 'maker',
+                                attributes: ['id', 'cus_name', 'cus_email'],
+                                required: false
+                            },
+                            {
+                                model: sequelize.models.user,
+                                as: 'checker',
+                                attributes: ['id', 'cus_name', 'cus_email'],
+                                required: false
+                            },
+                            {
+                                model: sequelize.models.InvoiceLineItem,
+                                as: 'lineItems',
+                                required: false
+                            }
+                        ]
+                    });
+
+                    // Check if audit model exists and has the method
+                    const AuditModel = sequelize.models.APInvoiceAudit;
+                    if (currentRecord && AuditModel && typeof AuditModel.createAuditRecord === 'function') {
+                        const userId = options.context?.userId || invoice.makerId || 1;
+                        const reason = options.context?.reason || 'Record updated';
+
+                        await AuditModel.createAuditRecord(
+                            currentRecord.toJSON(),
+                            userId,
+                            'UPDATE',
+                            reason
+                        );
+
+                        logger.info(`Audit record created for invoice ${invoice.id} update`);
+                    } else {
+                        if (!AuditModel) {
+                            logger.warn('APInvoiceAudit model not found in sequelize.models');
+                        } else if (typeof AuditModel.createAuditRecord !== 'function') {
+                            logger.warn('createAuditRecord method not found on APInvoiceAudit model');
+                        }
+                    }
+                } catch (error) {
+                    logger.error('Failed to create audit record before update:', error);
+                    // Don't throw error - audit shouldn't break main functionality
+                }
+            },
+
+            // After create, save the new record to audit table
+            afterCreate: async (invoice, options) => {
+                try {
+                    // Check if audit model exists and has the method
+                    const AuditModel = sequelize.models.APInvoiceAudit;
+
+                    if (AuditModel && typeof AuditModel.createAuditRecord === 'function') {
+                        // Use the correct model name from your index.js
+                        const APInvoiceModel = sequelize.models.APInvoice;
+
+                        if (!APInvoiceModel) {
+                            logger.warn('APInvoice model not found in sequelize.models');
+                            return;
+                        }
+
+                        // Get the complete record with associations
+                        const completeRecord = await APInvoiceModel.findByPk(invoice.id, {
+                            include: [
+                                {
+                                    model: sequelize.models.vendor,
+                                    as: 'vendor',
+                                    attributes: ['id', 'name'],
+                                    required: false
+                                },
+                                {
+                                    model: sequelize.models.currency,
+                                    as: 'currency',
+                                    attributes: ['id', 'name', 'code'],
+                                    required: false
+                                },
+                                {
+                                    model: sequelize.models.user,
+                                    as: 'maker',
+                                    attributes: ['id', 'cus_name', 'cus_email'],
+                                    required: false
+                                }
+                            ]
+                        });
+
+                        await AuditModel.createAuditRecord(
+                            completeRecord ? completeRecord.toJSON() : invoice.toJSON(),
+                            invoice.makerId,
+                            'CREATE',
+                            'Invoice created'
+                        );
+
+                        logger.info(`Audit record created for new invoice ${invoice.id}`);
+                    } else {
+                        if (!AuditModel) {
+                            logger.warn('APInvoiceAudit model not found in sequelize.models');
+                        } else if (typeof AuditModel.createAuditRecord !== 'function') {
+                            logger.warn('createAuditRecord method not found on APInvoiceAudit model');
+                        }
+                    }
+                } catch (error) {
+                    logger.error('Failed to create audit record after create:', error);
+                    // Don't throw error - audit shouldn't break main functionality
+                }
+            },
+
+            // Before delete, save the record being deleted
+            beforeDestroy: async (invoice, options) => {
+                try {
+                    // Check if audit model exists and has the method
+                    const AuditModel = sequelize.models.APInvoiceAudit;
+
+                    if (AuditModel && typeof AuditModel.createAuditRecord === 'function') {
+                        const userId = options.context?.userId || 1;
+                        const reason = options.context?.reason || 'Invoice deleted';
+
+                        // Use the correct model name from your index.js
+                        const APInvoiceModel = sequelize.models.APInvoice;
+
+                        if (!APInvoiceModel) {
+                            logger.warn('APInvoice model not found in sequelize.models');
+                            return;
+                        }
+
+                        // Get complete record before deletion
+                        const completeRecord = await APInvoiceModel.findByPk(invoice.id, {
+                            include: [
+                                {
+                                    model: sequelize.models.vendor,
+                                    as: 'vendor',
+                                    attributes: ['id', 'name'],
+                                    required: false
+                                },
+                                {
+                                    model: sequelize.models.currency,
+                                    as: 'currency',
+                                    attributes: ['id', 'name', 'code'],
+                                    required: false
+                                },
+                                {
+                                    model: sequelize.models.user,
+                                    as: 'maker',
+                                    attributes: ['id', 'cus_name', 'cus_email'],
+                                    required: false
+                                },
+                                {
+                                    model: sequelize.models.user,
+                                    as: 'checker',
+                                    attributes: ['id', 'cus_name', 'cus_email'],
+                                    required: false
+                                }
+                            ]
+                        });
+
+                        await AuditModel.createAuditRecord(
+                            completeRecord ? completeRecord.toJSON() : invoice.toJSON(),
+                            userId,
+                            'DELETE',
+                            reason
+                        );
+
+                        logger.info(`Audit record created for invoice ${invoice.id} deletion`);
+                    } else {
+                        if (!AuditModel) {
+                            logger.warn('APInvoiceAudit model not found in sequelize.models');
+                        } else if (typeof AuditModel.createAuditRecord !== 'function') {
+                            logger.warn('createAuditRecord method not found on APInvoiceAudit model');
+                        }
+                    }
+                } catch (error) {
+                    logger.error('Failed to create audit record before delete:', error);
+                    // Don't throw error - audit shouldn't break main functionality
                 }
             }
         }
@@ -122,6 +324,12 @@ module.exports = (sequelize, DataTypes) => {
             foreignKey: 'invoiceId',
             as: 'settlements',
         });
+
+        // Invoice -> Audit Trail (One-to-Many)
+        APInvoice.hasMany(models.apInvoiceAudit, {
+            foreignKey: 'invoiceId',
+            as: 'auditTrail',
+        });
     };
 
     // Instance methods
@@ -135,6 +343,114 @@ module.exports = (sequelize, DataTypes) => {
 
     APInvoice.prototype.canBePaid = function () {
         return ['approved', 'partially_paid', 'overdue'].includes(this.status);
+    };
+
+    // New method to get audit history
+    APInvoice.prototype.getAuditHistory = async function (limit = 10) {
+        const AuditModel = sequelize.models.APInvoiceAudit;
+        if (!AuditModel) {
+            logger.warn('APInvoiceAudit model not found in sequelize.models');
+            return [];
+        }
+
+        try {
+            return await AuditModel.findAll({
+                where: { invoiceId: this.id },
+                include: [
+                    {
+                        model: sequelize.models.user,
+                        as: 'user',
+                        attributes: ['id', 'cus_name', 'cus_email'],
+                        required: false
+                    }
+                ],
+                order: [['auditDate', 'DESC']],
+                limit: limit
+            });
+        } catch (error) {
+            logger.error('Error getting audit history:', error);
+            return [];
+        }
+    };
+
+    // Method to approve invoice with audit trail
+    APInvoice.prototype.approve = async function (userId, comments = null) {
+        const transaction = await sequelize.transaction();
+
+        try {
+            // Update invoice status
+            await this.update({
+                status: 'approved',
+                checkerId: userId,
+                approvedAt: new Date()
+            }, {
+                transaction,
+                context: {
+                    userId: userId,
+                    reason: 'Invoice approved',
+                    comments: comments
+                }
+            });
+
+            // Create specific approval audit record
+            const AuditModel = sequelize.models.APInvoiceAudit;
+            if (AuditModel && typeof AuditModel.createAuditRecord === 'function') {
+                await AuditModel.createAuditRecord(
+                    this.toJSON(),
+                    userId,
+                    'APPROVE',
+                    comments || 'Invoice approved'
+                );
+            }
+
+            await transaction.commit();
+            logger.info(`Invoice ${this.id} approved by user ${userId}`);
+
+            return this;
+        } catch (error) {
+            await transaction.rollback();
+            logger.error(`Failed to approve invoice ${this.id}:`, error);
+            throw error;
+        }
+    };
+
+    // Method to reject invoice with audit trail
+    APInvoice.prototype.reject = async function (userId, reason) {
+        const transaction = await sequelize.transaction();
+
+        try {
+            // Update invoice status
+            await this.update({
+                status: 'draft', // or 'rejected' if you have that status
+                checkerId: userId
+            }, {
+                transaction,
+                context: {
+                    userId: userId,
+                    reason: reason || 'Invoice rejected'
+                }
+            });
+
+            // Create specific rejection audit record
+            const AuditModel = sequelize.models.APInvoiceAudit;
+            if (AuditModel && typeof AuditModel.createAuditRecord === 'function') {
+                await AuditModel.createAuditRecord(
+                    this.toJSON(),
+                    userId,
+                    'REJECT',
+                    reason || 'Invoice rejected'
+                );
+            }
+
+            await transaction.commit();
+            logger.info(`Invoice ${this.id} rejected by user ${userId}`);
+
+            return this;
+        } catch (error) {
+            await transaction.rollback();
+            logger.error(`Failed to reject invoice ${this.id}:`, error);
+            throw error;
+        }
     };
 
     return APInvoice;

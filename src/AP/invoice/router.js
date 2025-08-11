@@ -26,6 +26,7 @@ router.get('/', APInvoiceController.getAllInvoices);
 // GET AP INVOICE BY ID
 // GET /api/ap-invoices/:id
 router.get('/:id', APInvoiceController.getInvoiceById);
+router.get('/audit/:id', APInvoiceController.getInvoiceAuditById);
 
 // UPDATE AP INVOICE
 // PUT /api/ap-invoices/:id

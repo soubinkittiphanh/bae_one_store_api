@@ -3,7 +3,7 @@
 // ===============================================================
 
 const logger = require('../../../api/logger');
-const { user, customer, currency, arInvoiceLine, arReceiveHeader, sequelize } = require('../../../models');
+const { user, client, currency, arInvoiceLine, arReceiveHeader, sequelize } = require('../../../models');
 const InvoiceHeader = require('../../../models').arInvoiceHeader;
 const { Op } = require('sequelize');
 class InvoiceHeaderController {
@@ -15,7 +15,7 @@ class InvoiceHeaderController {
                 limit = 25,
                 search = '',
                 status = '',
-                customerId = '',
+                clientId = '',
                 dateFrom = '',
                 dateTo = '',
                 sortBy = 'invoiceDate',
@@ -38,8 +38,8 @@ class InvoiceHeaderController {
             }
 
             // Customer filter
-            if (customerId) {
-                whereClause.customerId = customerId;
+            if (clientId) {
+                whereClause.clientId = clientId;
             }
 
             // Date range filter
@@ -53,8 +53,8 @@ class InvoiceHeaderController {
                 where: whereClause,
                 include: [
                     {
-                        model: customer,
-                        as: 'customer'
+                        model: client,
+                        as: 'client'
                     },
                     {
                         model: currency,
@@ -114,8 +114,8 @@ class InvoiceHeaderController {
             const invoice = await InvoiceHeader.findByPk(id, {
                 include: [
                     {
-                        model: customer,
-                        as: 'customer'
+                        model: client,
+                        as: 'client'
                     },
                     {
                         model: currency,
@@ -170,7 +170,7 @@ class InvoiceHeaderController {
                 invoiceNumber,
                 invoiceDate,
                 dueDate,
-                customerId,
+                clientId,
                 currencyId,
                 exchangeRate = 1,
                 totalAmount = 0,
@@ -182,7 +182,7 @@ class InvoiceHeaderController {
             } = req.body;
 
             // Validate required fields
-            if (!invoiceNumber || !invoiceDate || !customerId) {
+            if (!invoiceNumber || !invoiceDate || !clientId) {
                 return res.status(400).json({
                     success: false,
                     message: 'Invoice number, invoice date, and customer ID are required'
@@ -211,7 +211,7 @@ class InvoiceHeaderController {
             }
 
             // Verify customer exists
-            const customerExists = await customer.findByPk(customerId);
+            const customerExists = await client.findByPk(clientId);
             if (!customerExists) {
                 await transaction.rollback();
                 return res.status(400).json({
@@ -237,7 +237,7 @@ class InvoiceHeaderController {
                 invoiceNumber,
                 invoiceDate,
                 dueDate,
-                customerId,
+                clientId,
                 currencyId,
                 exchangeRate,
                 totalAmount,
@@ -270,8 +270,8 @@ class InvoiceHeaderController {
             const createdInvoice = await InvoiceHeader.findByPk(invoice.id, {
                 include: [
                     {
-                        model: customer,
-                        as: 'customer'
+                        model: client,
+                        as: 'client'
                     },
                     {
                         model: currency,
@@ -344,8 +344,8 @@ class InvoiceHeaderController {
             }
 
             // Verify foreign key references if being updated
-            if (updateData.customerId) {
-                const customerExists = await customer.findByPk(updateData.customerId);
+            if (updateData.clientId) {
+                const customerExists = await client.findByPk(updateData.clientId);
                 if (!customerExists) {
                     await transaction.rollback();
                     return res.status(400).json({
@@ -404,8 +404,8 @@ class InvoiceHeaderController {
             const updatedInvoice = await InvoiceHeader.findByPk(id, {
                 include: [
                     {
-                        model: customer,
-                        as: 'customer'
+                        model: client,
+                        as: 'client'
                     },
                     {
                         model: currency,
@@ -528,10 +528,10 @@ class InvoiceHeaderController {
     // GET INVOICE STATISTICS
     static async getStatistics(req, res) {
         try {
-            const { customerId, dateFrom, dateTo } = req.query;
+            const { clientId, dateFrom, dateTo } = req.query;
             const whereClause = {};
 
-            if (customerId) whereClause.customerId = customerId;
+            if (clientId) whereClause.clientId = clientId;
             if (dateFrom || dateTo) {
                 whereClause.invoiceDate = {};
                 if (dateFrom) whereClause.invoiceDate[Op.gte] = dateFrom;
@@ -644,8 +644,8 @@ class InvoiceHeaderController {
                 },
                 include: [
                     {
-                        model: customer,
-                        as: 'customer',
+                        model: client,
+                        as: 'client',
                         attributes: ['id', 'name']
                     }
                 ],
@@ -669,9 +669,9 @@ class InvoiceHeaderController {
     }
 
     // HELPER: Get invoice totals by customer
-    static async getCustomerTotals(customerId) {
+    static async getCustomerTotals(clientId) {
         const totals = await InvoiceHeader.findAll({
-            where: { customerId },
+            where: { clientId },
             attributes: [
                 [sequelize.fn('COUNT', '*'), 'invoiceCount'],
                 [sequelize.fn('SUM', sequelize.col('totalAmount')), 'totalAmount'],

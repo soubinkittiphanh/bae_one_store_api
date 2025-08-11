@@ -3,7 +3,7 @@
 // File: /AP/settlement/controller.js
 // ===============================================================
 const logger = require("../../api/logger");
-const { apInvoiceSettlement, apInvoiceSettlementLine, apInvoice, user, vendor, sequelize } = require("../../models");
+const { apInvoiceSettlement, apSettlementAudit, apInvoiceSettlementLine, apInvoice, user, vendor, sequelize } = require("../../models");
 const InvoiceLineItem = require("../../models").invoiceLineItem;
 
 class APSettlementController {
@@ -136,6 +136,40 @@ class APSettlementController {
             });
         }
     }
+    // ===============================================================
+    // GET SETTLEMENT AUDIT BY SETTLEMENT ID
+    // ===============================================================
+    static async getSettlementAuditBySettlementId(req, res) {
+        try {
+            const { id } = req.params;
+
+            const settlementAudit = await apSettlementAudit.findAll({
+                where: { settlementId: id },
+                order: [['id', 'DESC']],
+            });
+
+            if (!settlementAudit) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Settlement not found'
+                });
+            }
+
+            res.status(200).json({
+                success: true,
+                message: 'Settlement fetched successfully',
+                data: settlementAudit
+            });
+
+        } catch (error) {
+            logger.error('Error fetching settlement:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Internal server error',
+                error: error.message
+            });
+        }
+    }
 
     // ===============================================================
     // CREATE SETTLEMENT - UPDATED FOR YOUR MODEL
@@ -233,7 +267,7 @@ class APSettlementController {
                                 logger.info(`Mapped invoice ${allocation.invoiceId} to invoice line item ${invoiceLineItemId}`);
                             } else {
                                 logger.warn(`No invoice line items found for invoice ${allocation.invoiceId}, creating default line item`);
-                                
+
                                 const invoice = await apInvoice.findByPk(allocation.invoiceId);
                                 if (!invoice) {
                                     throw new Error(`Invoice ${allocation.invoiceId} not found`);
@@ -273,7 +307,7 @@ class APSettlementController {
                         invoiceLineItemId: invoiceLineItemId
                     };
 
-                    logger.info('Allocation data to create:', { 
+                    logger.info('Allocation data to create:', {
                         allocationData,
                         originalInvoiceId: allocation.invoiceId,
                         mappedInvoiceLineItemId: invoiceLineItemId
@@ -389,6 +423,9 @@ class APSettlementController {
                 reference,
                 description,
                 note,
+                paymentMethodId,
+                bankAccountId,
+                makerId,
                 invoiceAllocations = []
             } = req.body;
 
@@ -421,6 +458,9 @@ class APSettlementController {
                 status,
                 reference,
                 description,
+                paymentMethodId,
+                bankAccountId,
+                makerId,
                 note
             }, { transaction });
 
@@ -676,7 +716,7 @@ class APSettlementController {
         try {
             const { vendorId, currencyId } = req.query;
             const whereClause = {
-                status: ['approved', 'partially_paid', 'overdue','draft']
+                status: ['approved', 'partially_paid', 'overdue', 'draft']
             };
 
             if (vendorId) {

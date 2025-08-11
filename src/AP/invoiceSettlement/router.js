@@ -19,8 +19,9 @@ router.get('/', APSettlementController.getAllSettlements);
 
 // GET /api/settlements/:id - Get settlement by ID with full details
 router.get('/:id', APSettlementController.getSettlementById);
+router.get('/audit/:id', APSettlementController.getSettlementAuditBySettlementId);
 
-// POST /api/settlements - Create new settlement
+// POST /api/settlements - Create new settlement`
 router.post('/', APSettlementController.createSettlement);
 
 // PUT /api/settlements/:id - Update existing settlement

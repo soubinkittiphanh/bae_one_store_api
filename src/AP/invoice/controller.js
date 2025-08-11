@@ -2,7 +2,7 @@
 // AP INVOICE CONTROLLER
 // ===============================================================
 const logger = require("../../api/logger");
-const { apInvoice, vendor, currency, user, invoiceLineItem, apInvoiceSettlement, sequelize } = require("../../models");
+const { apInvoice, apInvoiceAudit, vendor, currency, user, invoiceLineItem, apInvoiceSettlement, sequelize } = require("../../models");
 const db = require('../../models');
 const { Op } = require('sequelize');
 
@@ -391,6 +391,48 @@ class APInvoiceController {
 
         } catch (error) {
             logger.error('Error fetching AP Invoice:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Internal server error',
+                error: error.message
+            });
+        }
+    }
+    // ===============================================================
+    // GET AP INVOICE AUDIT BY ID
+    // ===============================================================
+    // ===============================================================
+    // GET AP INVOICE AUDIT BY ID
+    // ===============================================================
+    static async getInvoiceAuditById(req, res) {
+        try {
+            const { id } = req.params;
+            logger.info(`Fetching AP Invoice audit records with Invoice ID: ${id}`);
+
+            const auditRecords = await apInvoiceAudit.findAll({
+                where: {
+                    invoiceId: id,
+                },
+                include: [
+                    // Add any related models you want to include
+                ]
+            });
+
+            // Check if any audit records were found
+            if (auditRecords.length === 0) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'No audit records found for this AP Invoice'
+                });
+            }
+
+            res.status(200).json({
+                success: true,
+                message: 'AP Invoice audit records fetched successfully',
+                data: auditRecords
+            });
+        } catch (error) {
+            logger.error('Error fetching AP Invoice audit:', error);
             res.status(500).json({
                 success: false,
                 message: 'Internal server error',

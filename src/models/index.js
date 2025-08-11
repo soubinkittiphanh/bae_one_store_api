@@ -140,12 +140,16 @@ const initializeModels = () => {
     moneyAdvance: require("../moneyAdvance/model")(sequelize, DataTypes),
     revenue_target: require("../revenueTarget/model")(sequelize, DataTypes),
     apInvoice: require("../AP/invoice/model")(sequelize, DataTypes),
+    apInvoiceAudit: require("../AP/invoiceAudit/model")(sequelize, DataTypes),
     invoiceLineItem: require("../AP/invoiceLine/model")(sequelize, DataTypes),
     apInvoiceSettlement: require("../AP/invoiceSettlement/model")(sequelize, DataTypes),
+    apSettlementAudit: require("../AP/invoiceSettlementAudit/model")(sequelize, DataTypes),
     apInvoiceSettlementLine: require("../AP/invoiceSettlementLine/model")(sequelize, DataTypes),
     arInvoiceHeader: require("../ARV2/invoice/header/model")(sequelize, DataTypes),
+    arInvoiceHeaderAudit: require("../ARV2/invoice/headerAudit/model")(sequelize, DataTypes),
     arInvoiceLine: require("../ARV2/invoice/line/model")(sequelize, DataTypes),
     arReceiveHeader: require("../ARV2/receive/header/model")(sequelize, DataTypes),
+    arReceiveHeaderAudit: require("../ARV2/receive/headerAudit/model")(sequelize, DataTypes),
     arReceiveLine: require("../ARV2/receive/line/model")(sequelize, DataTypes),
     
     // Other models
