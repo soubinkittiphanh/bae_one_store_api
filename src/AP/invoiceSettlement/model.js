@@ -116,7 +116,7 @@ module.exports = (sequelize, DataTypes) => {
           });
 
           if (currentRecord && typeof APSettlementAudit.createAuditRecord === 'function') {
-            const userId = options.userId || settlement.checkerId || settlement.makerId || 1;
+            const userId =  settlement.updateUserId || settlement.makerId || 1;
             
             // Determine action based on status change
             let action = 'UPDATE';

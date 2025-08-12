@@ -3,9 +3,9 @@
 // ===============================================================
 
 const logger = require('../../../api/logger');
-const { user, client, currency, arInvoiceLine, arReceiveHeader, sequelize } = require('../../../models');
+const { user, client, currency, arInvoiceLine, arReceiveHeader, arInvoiceHeaderAudit, sequelize } = require('../../../models');
 const InvoiceHeader = require('../../../models').arInvoiceHeader;
-const { Op } = require('sequelize');
+const { Op, where } = require('sequelize');
 class InvoiceHeaderController {
     // GET ALL INVOICES WITH FILTERS AND PAGINATION
     static async findAll(req, res) {
@@ -157,6 +157,39 @@ class InvoiceHeaderController {
             res.status(500).json({
                 success: false,
                 message: 'Error fetching invoice',
+                error: error.message
+            });
+        }
+    }
+    // GET INVOICE BY ID
+    static async findAuditByHeaderId(req, res) {
+        try {
+            const { id } = req.params;
+
+            const invoiceAudit = await arInvoiceHeaderAudit.findAll({
+                where: {
+                    invoiceHeaderId: id,
+                },
+                include: []
+            });
+
+            if (!invoiceAudit) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Invoice audit not found'
+                });
+            }
+
+            res.status(200).json({
+                success: true,
+                data: invoiceAudit
+            });
+
+        } catch (error) {
+            logger.error('Error fetching invoiceAudit:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Error fetching invoiceAudit',
                 error: error.message
             });
         }

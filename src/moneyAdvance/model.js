@@ -12,6 +12,26 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.DATEONLY,
             allowNull: false,
         },
+        externalRef: {
+            type: DataTypes.STRING,
+            // allowNull: false
+        },
+        externalRefNo: {
+            type: DataTypes.STRING,
+            // allowNull: false
+        },
+        chequeNo: {
+            type: DataTypes.STRING,
+            // allowNull: false
+        },
+        receiveName: {
+            type: DataTypes.STRING,
+            // allowNull: false
+        },
+        receiveIDNO: {
+            type: DataTypes.STRING,
+            // allowNull: false
+        },
         amount: {
             type: DataTypes.DECIMAL(20, 2),
             allowNull: false

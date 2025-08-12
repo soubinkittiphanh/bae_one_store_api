@@ -103,6 +103,8 @@ module.exports = (sequelize, DataTypes) => {
 
       // Before updating - store current state to audit
       beforeUpdate: async (invoice, options) => {
+        logger.info(`Insert the audit table data invoice ${JSON.stringify(invoice)}`)
+        // logger.info(`Insert the audit table data  options ${JSON.stringify(options)}`)
         try {
           const ARInvoiceHeaderAudit = sequelize.models.ARInvoiceHeaderAudit;
           
@@ -148,7 +150,7 @@ module.exports = (sequelize, DataTypes) => {
           });
 
           if (currentRecord && typeof ARInvoiceHeaderAudit.createAuditRecord === 'function') {
-            const userId = options.userId || invoice.updateUserId || invoice.makerId || 1;
+            const userId = invoice.updateUserId || invoice.makerId || 1;
             
             // Determine action based on status change
             let action = 'UPDATE';

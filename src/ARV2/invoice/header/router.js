@@ -17,6 +17,7 @@ router.get('/statistics', InvoiceHeaderController.getStatistics);
 
 // GET /api/invoices/:id - Get single invoice by ID
 router.get('/:id', InvoiceHeaderController.findById);
+router.get('/audit/:id', InvoiceHeaderController.findAuditByHeaderId);
 
 // POST /api/invoices - Create new invoice
 router.post('/', InvoiceHeaderController.create);

@@ -131,7 +131,7 @@ module.exports = (sequelize, DataTypes) => {
                     // Check if audit model exists and has the method
                     const AuditModel = sequelize.models.APInvoiceAudit;
                     if (currentRecord && AuditModel && typeof AuditModel.createAuditRecord === 'function') {
-                        const userId = options.context?.userId || invoice.makerId || 1;
+                        const userId =  invoice.updateUserId || 1;
                         const reason = options.context?.reason || 'Record updated';
 
                         await AuditModel.createAuditRecord(

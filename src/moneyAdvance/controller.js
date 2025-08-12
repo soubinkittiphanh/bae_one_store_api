@@ -260,6 +260,11 @@ class MoneyAdvanceController {
     try {
       const {
         bookingDate,
+        externalRef,           // 🆕 NEW FIELD
+        externalRefNo,         // 🆕 NEW FIELD
+        chequeNo,              // 🆕 NEW FIELD
+        receiveName,           // 🆕 NEW FIELD
+        receiveIDNO,           // 🆕 NEW FIELD
         amount,
         exchangeRate,
         purpose,
@@ -288,8 +293,31 @@ class MoneyAdvanceController {
         });
       }
 
+      // 🆕 OPTIONAL: Additional validation for new fields
+      // Uncomment and modify as needed based on your business rules
+      /*
+      if (chequeNo && chequeNo.length > 50) {
+        return res.status(400).json({
+          success: false,
+          message: 'Cheque number cannot exceed 50 characters'
+        });
+      }
+  
+      if (receiveIDNO && receiveIDNO.length > 20) {
+        return res.status(400).json({
+          success: false,
+          message: 'Receive ID number cannot exceed 20 characters'
+        });
+      }
+      */
+
       const advance = await MoneyAdvance.create({
         bookingDate,
+        externalRef,           // 🆕 NEW FIELD
+        externalRefNo,         // 🆕 NEW FIELD
+        chequeNo,              // 🆕 NEW FIELD
+        receiveName,           // 🆕 NEW FIELD
+        receiveIDNO,           // 🆕 NEW FIELD
         amount,
         exchangeRate,
         purpose,
@@ -301,14 +329,15 @@ class MoneyAdvanceController {
         ministryId,
         status: 'approved'
       });
-      // 🆕 ADD THIS: Create audit record (just 2 lines!)
+
+      // 🆕 CREATE AUDIT RECORD
       const auditContext = AuditHelper.getAuditContext(req);
       await AuditHelper.auditCreate(advance.id, advance.toJSON(), auditContext);
 
       // Fetch the created advance with associations
       const createdAdvance = await MoneyAdvance.findByPk(advance.id, {
         include: [
-          { model: user, as: 'maker', },
+          { model: user, as: 'maker' },
           { model: currency, as: 'currency' },
           { model: bankAccount, as: 'bankAccount' },
           { model: ministry, as: 'ministry' }
@@ -335,6 +364,11 @@ class MoneyAdvanceController {
       const { id } = req.params;
       const {
         bookingDate,
+        externalRef,           // 🆕 NEW FIELD
+        externalRefNo,         // 🆕 NEW FIELD
+        chequeNo,              // 🆕 NEW FIELD
+        receiveName,           // 🆕 NEW FIELD
+        receiveIDNO,           // 🆕 NEW FIELD
         amount,
         exchangeRate,
         purpose,
@@ -374,31 +408,52 @@ class MoneyAdvanceController {
         }
       }
 
-      // 🆕 ADD THIS: Store old data before update
+      // 🆕 OPTIONAL: Additional validation for new fields during update
+      /*
+      if (chequeNo && chequeNo.length > 50) {
+        return res.status(400).json({
+          success: false,
+          message: 'Cheque number cannot exceed 50 characters'
+        });
+      }
+  
+      if (receiveIDNO && receiveIDNO.length > 20) {
+        return res.status(400).json({
+          success: false,
+          message: 'Receive ID number cannot exceed 20 characters'
+        });
+      }
+      */
+
+      // 🆕 STORE OLD DATA BEFORE UPDATE
       const oldData = advance.toJSON();
 
       await advance.update({
         bookingDate: bookingDate || advance.bookingDate,
+        externalRef: externalRef !== undefined ? externalRef : advance.externalRef,           // 🆕 NEW FIELD
+        externalRefNo: externalRefNo !== undefined ? externalRefNo : advance.externalRefNo,   // 🆕 NEW FIELD
+        chequeNo: chequeNo !== undefined ? chequeNo : advance.chequeNo,                       // 🆕 NEW FIELD
+        receiveName: receiveName !== undefined ? receiveName : advance.receiveName,           // 🆕 NEW FIELD
+        receiveIDNO: receiveIDNO !== undefined ? receiveIDNO : advance.receiveIDNO,           // 🆕 NEW FIELD
         amount: amount || advance.amount,
         exchangeRate: exchangeRate || advance.exchangeRate,
         purpose: purpose || advance.purpose,
         note: note || advance.note,
         dueDate: dueDate || advance.dueDate,
         bankAccountId: bankAccountId || advance.bankAccountId,
-        currencyId: currencyId || null,
+        currencyId: currencyId || advance.currencyId,
         updateUserId: updateUserId || null,
         ministryId: ministryId || advance.ministryId
       });
 
-      // 🆕 ADD THIS: Create audit record (just 2 lines!)
+      // 🆕 CREATE AUDIT RECORD
       const auditContext = AuditHelper.getAuditContext(req);
       await AuditHelper.auditUpdate(id, oldData, advance.toJSON(), auditContext);
 
-
       const updatedAdvance = await MoneyAdvance.findByPk(id, {
         include: [
-          { model: user, as: 'maker', },
-          { model: user, as: 'checker', },
+          { model: user, as: 'maker' },
+          { model: user, as: 'checker' },
           { model: currency, as: 'currency' },
           { model: bankAccount, as: 'bankAccount' },
           { model: ministry, as: 'ministry' }
@@ -418,7 +473,6 @@ class MoneyAdvanceController {
       });
     }
   }
-
   // PUT /money-advances/:id/approve - Approve money advance
   static async approve(req, res) {
     try {
