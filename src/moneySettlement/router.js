@@ -20,7 +20,7 @@ const validateCreateSettlement = [
     .withMessage('Amount must be greater than 0'),
   
   body('method')
-    .isIn(['cash', 'bank_transfer', 'deduction'])
+    .isIn(['cash', 'bank_transfer', 'deduction','cheque'])
     .withMessage('Method must be one of: cash, bank_transfer, deduction'),
   
   body('userId')
@@ -82,7 +82,7 @@ const validateUpdateSettlement = [
   
   body('method')
     .optional()
-    .isIn(['cash', 'bank_transfer', 'deduction'])
+    .isIn(['cash', 'bank_transfer', 'deduction','cheque'])
     .withMessage('Method must be one of: cash, bank_transfer, deduction'),
   
   body('notes')

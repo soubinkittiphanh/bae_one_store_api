@@ -17,11 +17,27 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue: 1.00
     },
     method: {
-      type: DataTypes.ENUM('cash', 'bank_transfer', 'deduction'),
+      type: DataTypes.ENUM('cash', 'bank_transfer', 'deduction','cheque'),
       allowNull: false
     },
     notes: {
       type: DataTypes.TEXT
+    },
+    externalRef: {
+      type: DataTypes.STRING,
+      // allowNull: false
+    },
+    externalRefNo: {
+      type: DataTypes.STRING,
+      // allowNull: false
+    },
+    chequeNo: {
+      type: DataTypes.STRING,
+      // allowNull: false
+    },
+    fromPersonName: {
+      type: DataTypes.STRING,
+      // allowNull: false
     },
   }, {
     sequelize,

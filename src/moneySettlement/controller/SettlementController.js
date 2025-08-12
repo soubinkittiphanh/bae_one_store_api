@@ -192,7 +192,24 @@ class SettlementController {
   // POST /settlements - Create new settlement
   static async create(req, res) {
     try {
-      const { amount, method, notes, userId, moneyAdvanceId, bankAccountId, ministryId, chartAccountId, currencyId, bookingDate, exchangeRate } = req.body;
+      const {
+        amount,
+        method,
+        notes,
+        userId,
+        moneyAdvanceId,
+        bankAccountId,
+        ministryId,
+        chartAccountId,
+        currencyId,
+        bookingDate,
+        exchangeRate,
+        // ✅ NEW FIELDS ADDED
+        externalRef,
+        externalRefNo,
+        chequeNo,
+        fromPersonName
+      } = req.body;
 
       // Validation
       if (!amount || !method || !userId) {
@@ -293,7 +310,12 @@ class SettlementController {
         moneyAdvanceId: moneyAdvanceId || null,
         bankAccountId: bankAccountId || null,
         ministryId: ministryId || null,
-        chartAccountId: chartAccountId || null
+        chartAccountId: chartAccountId || null,
+        // ✅ NEW FIELDS INCLUDED IN CREATE
+        externalRef: externalRef || null,
+        externalRefNo: externalRefNo || null,
+        chequeNo: chequeNo || null,
+        fromPersonName: fromPersonName || null
       });
 
       // Check if fully settled and update money advance status (only if money advance exists)
@@ -364,7 +386,24 @@ class SettlementController {
   static async update(req, res) {
     try {
       const { id } = req.params;
-      const { amount, method, notes, bankAccountId, moneyAdvanceId, ministryId, chartAccountId, currencyId, bookingDate, exchangeRate, updateUserId } = req.body;
+      const {
+        amount,
+        method,
+        notes,
+        bankAccountId,
+        moneyAdvanceId,
+        ministryId,
+        chartAccountId,
+        currencyId,
+        bookingDate,
+        exchangeRate,
+        updateUserId,
+        // ✅ NEW FIELDS ADDED TO UPDATE
+        externalRef,
+        externalRefNo,
+        chequeNo,
+        fromPersonName
+      } = req.body;
 
       const settlement = await Settlement.findByPk(id, {
         include: [{ model: MoneyAdvance, as: 'moneyAdvance', required: false }]
@@ -477,7 +516,12 @@ class SettlementController {
         exchangeRate: exchangeRate || 1,
         moneyAdvanceId: finalMoneyAdvanceId !== undefined ? finalMoneyAdvanceId : settlement.moneyAdvanceId,
         ministryId: ministryId !== undefined ? ministryId : settlement.ministryId,
-        chartAccountId: chartAccountId !== undefined ? chartAccountId : settlement.chartAccountId
+        chartAccountId: chartAccountId !== undefined ? chartAccountId : settlement.chartAccountId,
+        // ✅ NEW FIELDS INCLUDED IN UPDATE
+        externalRef: externalRef !== undefined ? externalRef : settlement.externalRef,
+        externalRefNo: externalRefNo !== undefined ? externalRefNo : settlement.externalRefNo,
+        chequeNo: chequeNo !== undefined ? chequeNo : settlement.chequeNo,
+        fromPersonName: fromPersonName !== undefined ? fromPersonName : settlement.fromPersonName
       });
 
       // Recalculate money advance status for old money advance (if it existed and is being changed)
