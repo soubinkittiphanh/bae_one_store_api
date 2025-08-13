@@ -259,6 +259,7 @@ class MoneyAdvanceController {
   static async create(req, res) {
     try {
       const {
+        method,
         bookingDate,
         externalRef,           // 🆕 NEW FIELD
         externalRefNo,         // 🆕 NEW FIELD
@@ -312,6 +313,7 @@ class MoneyAdvanceController {
       */
 
       const advance = await MoneyAdvance.create({
+        method,
         bookingDate,
         externalRef,           // 🆕 NEW FIELD
         externalRefNo,         // 🆕 NEW FIELD
@@ -363,6 +365,7 @@ class MoneyAdvanceController {
     try {
       const { id } = req.params;
       const {
+        method,
         bookingDate,
         externalRef,           // 🆕 NEW FIELD
         externalRefNo,         // 🆕 NEW FIELD
@@ -429,6 +432,7 @@ class MoneyAdvanceController {
       const oldData = advance.toJSON();
 
       await advance.update({
+        method: method || advance.method,
         bookingDate: bookingDate || advance.bookingDate,
         externalRef: externalRef !== undefined ? externalRef : advance.externalRef,           // 🆕 NEW FIELD
         externalRefNo: externalRefNo !== undefined ? externalRefNo : advance.externalRefNo,   // 🆕 NEW FIELD

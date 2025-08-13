@@ -12,6 +12,10 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.DATEONLY,
             allowNull: false,
         },
+        method: {
+            type: DataTypes.ENUM('cash', 'bank_transfer', 'deduction', 'cheque'),
+            allowNull: false
+        },
         externalRef: {
             type: DataTypes.STRING,
             // allowNull: false
