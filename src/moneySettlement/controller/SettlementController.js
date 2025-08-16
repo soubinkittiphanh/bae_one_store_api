@@ -165,7 +165,8 @@ class SettlementController {
             model: ChartAccount,
             as: 'chartAccount',
             required: false
-          }
+          },
+          { model: currency, as: 'currency' }
         ]
       });
 

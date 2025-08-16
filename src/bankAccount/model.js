@@ -26,7 +26,7 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: false
         },
         currency: {
-            type: DataTypes.ENUM('LAK', 'USD', 'THB', 'CNY'),
+            type: DataTypes.ENUM('LAK', 'USD', 'THB', 'CNY','EUR'),
             allowNull: false,
             defaultValue: 'LAK'
         },
