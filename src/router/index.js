@@ -50,8 +50,8 @@ const table = require("../pos/table").router
 const ticket = require("../pos/ticket").router
 const ticketLine = require("../pos/ticketLine").router
 const tax = require("../tax/router")
-const moneyAdvance = require("../moneyAdvance/router")
-const moneySettlement = require("../moneySettlement/router")
+const moneyAdvance = require("../PWT/moneyAdvance/router")
+const moneySettlement = require("../PWT/moneySettlement/router")
 const bankAccount = require("../bankAccount/router")
 const ministry = require("../ministry/router")
 const revenueTarget = require("../revenueTarget/router")
@@ -59,13 +59,15 @@ const apInvoice = require("../AP/invoice/router")
 const apInvoiceLine = require("../AP/invoiceLine/router")
 const apInvoiceSettlement = require("../AP/invoiceSettlement/router")
 const apInvoiceSettlementLine = require("../AP/invoiceSettlementLine/router")
-const applicant = require("../applicant/router")
-const jobAdvertise = require("../jobDescription/router")
+const applicant = require("../job-fair/applicant/router")
+const agency = require("../job-fair/agency/router")
+const jobAdvertise = require("../job-fair/jobDescription/router")
 const benefit = require("../benefit/router")
 const arInvoiceHeader = require("../ARV2/invoice/header/router")
 const arInvoiceLine = require("../ARV2/invoice/line/router")
 const arReceiveHeader = require("../ARV2/receive/header/router")
 const arReceiveLine = require("../ARV2/receive/line/router")
+const batchJob = require("../job-fair/job-batch/router")
 
 module.exports={
     orderRouter,
@@ -136,4 +138,6 @@ module.exports={
     arInvoiceLine,
     arReceiveHeader,
     arReceiveLine,
+    batchJob,
+    agency,
 }

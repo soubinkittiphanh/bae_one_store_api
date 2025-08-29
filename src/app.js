@@ -71,6 +71,7 @@ const buildApp = async () => {
     app.use("/api/settlements",myRouter.moneySettlement)
     app.use("/api/ministries",myRouter.ministry)
     app.use("/api/applicants",myRouter.applicant)
+    app.use("/api/agency",myRouter.agency)
     app.use("/api/benefits",myRouter.benefit)
     app.use("/api/job-advertises",myRouter.jobAdvertise)
     app.use("/api/revenue-targets",myRouter.revenueTarget)
@@ -82,6 +83,7 @@ const buildApp = async () => {
     app.use("/api/ap-invoices-lines",myRouter.apInvoiceLine)
     app.use("/api/ap-invoices-settlement",myRouter.apInvoiceSettlement)
     app.use("/api/ap-invoices-settlement-line",myRouter.apInvoiceSettlementLine)
+    app.use("/api/batch-job",myRouter.batchJob)
 
     Router.category(app);
     Router.product(app);
