@@ -60,6 +60,7 @@ const apInvoiceLine = require("../AP/invoiceLine/router")
 const apInvoiceSettlement = require("../AP/invoiceSettlement/router")
 const apInvoiceSettlementLine = require("../AP/invoiceSettlementLine/router")
 const applicant = require("../job-fair/applicant/router")
+const MOU = require("../job-fair/MOU/router")
 const agency = require("../job-fair/agency/router")
 const jobAdvertise = require("../job-fair/jobDescription/router")
 const benefit = require("../benefit/router")
@@ -140,4 +141,5 @@ module.exports={
     arReceiveLine,
     batchJob,
     agency,
+    MOU,
 }

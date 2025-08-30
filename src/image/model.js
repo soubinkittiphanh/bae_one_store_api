@@ -1,3 +1,4 @@
+const logger = require("../api/logger");
 
 
 module.exports = (sequelize, DataTypes) => {
@@ -31,6 +32,18 @@ module.exports = (sequelize, DataTypes) => {
         // if you don't want that, set the following
         freezeTableName: true,
     })
+
+
+  Image.associate = models => {
+    logger.info(`Associating table IMAGE with models`);
+
+    // Belongs to Agency
+    Image.belongsTo(models.MOU, {
+      foreignKey: 'MOUID',
+      as: 'MOU',
+    });
+
+  };
 
     return Image;
 };

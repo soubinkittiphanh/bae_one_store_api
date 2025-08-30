@@ -76,7 +76,7 @@ class ApplicantController {
 
     } catch (error) {
       logger.error("Error creating applicant:", error);
-      
+
       if (error.name === 'SequelizeValidationError') {
         return res.status(400).json({
           success: false,
@@ -111,47 +111,62 @@ class ApplicantController {
         status,
         gender,
         passportAvailability,
-        isActive = true,
+        isActive = 'true', // 🔥 FIX: Query params are strings, not booleans
         search,
         sortBy = 'createdAt',
         sortOrder = 'DESC'
       } = req.query;
 
       const offset = (page - 1) * limit;
-      const whereClause = { isActive };
+
+      // 🔥 FIX: Properly convert string to boolean
+      const whereClause = {
+        isActive: isActive === 'true' || isActive === true || isActive === 1
+      };
 
       // Add filters
       if (status) whereClause.status = status;
       if (gender) whereClause.gender = gender;
-      if (passportAvailability !== undefined) whereClause.passportAvailability = passportAvailability === 'true';
-      
-      if (search) {
+
+      // 🔥 FIX: Handle passportAvailability properly
+      if (passportAvailability !== undefined && passportAvailability !== '') {
+        whereClause.passportAvailability = passportAvailability === 'true';
+      }
+
+      if (search && search.trim()) {
         whereClause[Op.or] = [
-          { firstName: { [Op.iLike]: `%${search}%` } },
-          { lastName: { [Op.iLike]: `%${search}%` } },
-          { phone: { [Op.iLike]: `%${search}%` } },
-          { passportNo: { [Op.iLike]: `%${search}%` } }
+          { firstName: { [Op.iLike]: `%${search.trim()}%` } },
+          { lastName: { [Op.iLike]: `%${search.trim()}%` } },
+          { phone: { [Op.iLike]: `%${search.trim()}%` } },
+          { passportNo: { [Op.iLike]: `%${search.trim()}%` } }
         ];
       }
+
+      console.log('🔍 Where clause:', JSON.stringify(whereClause, null, 2));
 
       const { count, rows } = await Applicant.findAndCountAll({
         where: whereClause,
         include: [
           {
-            model: user,
+            model: user, // Make sure this matches your model import
             as: 'maker',
-            attributes: ['id', 'name', 'email']
+            attributes: ['cus_id', 'cus_name', 'cus_email'],
+            required: false // 🔥 FIX: Use LEFT JOIN to avoid missing associations
           },
           {
-            model: user,
+            model: user, // Make sure this matches your model import  
             as: 'updateUser',
-            attributes: ['id', 'name', 'email']
+            attributes: ['cus_id', 'cus_name', 'cus_email'],
+            required: false // 🔥 FIX: Use LEFT JOIN to avoid missing associations
           }
         ],
         order: [[sortBy, sortOrder.toUpperCase()]],
         limit: parseInt(limit),
-        offset: parseInt(offset)
+        offset: parseInt(offset),
+        distinct: true // 🔥 FIX: Important for accurate count with includes
       });
+
+      console.log(`📊 Found ${count} applicants, returning ${rows.length} rows`);
 
       return res.status(200).json({
         success: true,
@@ -168,10 +183,19 @@ class ApplicantController {
       });
 
     } catch (error) {
+      console.error('❌ Error retrieving applicants:', error);
       logger.error("Error retrieving applicants:", error);
+
+      // 🔥 FIX: Return more detailed error info in development
+      const isDevelopment = process.env.NODE_ENV === 'development';
+
       return res.status(500).json({
         success: false,
-        message: "Internal server error"
+        message: "Internal server error",
+        ...(isDevelopment && {
+          error: error.message,
+          stack: error.stack
+        })
       });
     }
   }
@@ -187,12 +211,12 @@ class ApplicantController {
           {
             model: user,
             as: 'maker',
-            attributes: ['id', 'name', 'email']
+            attributes: ['cus_id', 'cus_name', 'cus_email']
           },
           {
             model: user,
             as: 'updateUser',
-            attributes: ['id', 'name', 'email']
+            attributes: ['cus_id', 'cus_name', 'cus_email']
           }
         ]
       });
@@ -252,7 +276,7 @@ class ApplicantController {
 
     } catch (error) {
       logger.error("Error updating applicant:", error);
-      
+
       if (error.name === 'SequelizeValidationError') {
         return res.status(400).json({
           success: false,
@@ -350,7 +374,7 @@ class ApplicantController {
           {
             model: user,
             as: 'maker',
-            attributes: ['id', 'name', 'email']
+            attributes: ['cus_id', 'cus_name', 'cus_email']
           }
         ],
         limit: parseInt(limit),
@@ -478,15 +502,15 @@ class ApplicantController {
       const offset = (page - 1) * limit;
 
       const { count, rows } = await Applicant.findAndCountAll({
-        where: { 
+        where: {
           status: status.toUpperCase(),
-          isActive: true 
+          isActive: true
         },
         include: [
           {
             model: user,
             as: 'maker',
-            attributes: ['id', 'name', 'email']
+            attributes: ['cus_id', 'cus_name', 'cus_email']
           }
         ],
         limit: parseInt(limit),

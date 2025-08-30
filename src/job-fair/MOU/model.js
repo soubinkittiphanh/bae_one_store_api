@@ -1,77 +1,106 @@
+// ===============================================================
+// DATABASE MODELS - SEQUELIZE
+// ===============================================================
 const logger = require("../../api/logger");
 
-// models/JobBatch.js
+// JOB MODEL
+// models/MOU.js
 module.exports = (sequelize, DataTypes) => {
-  const JobBatch = sequelize.define('JobBatch', {
-    // Batch Information
-    batchName: {
+  const MOU = sequelize.define('MOU', {
+    // ===============================================================
+    // BASIC IDENTIFICATION
+    // ===============================================================
+
+    // ລະຫັດ Job - Job Code
+    jobCode: {
       type: DataTypes.STRING,
       allowNull: false,
-      validate: {
-        len: [1, 100]
-      }
+      unique: true
     },
-    runningNo: {
+
+    // MOU Number
+    mouNumber: {
       type: DataTypes.STRING,
-      allowNull: false,
-      unique: true,
-      validate: {
-        len: [1, 50]
-      }
-    },
-    jobDescription: {
-      type: DataTypes.TEXT,
       allowNull: true
     },
-    
-    // Batch Details
-    totalPositions: {
-      type: DataTypes.INTEGER,
+
+    // PM Charge
+    pmCharge: {
+      type: DataTypes.DOUBLE,
       allowNull: true,
-      defaultValue: 0,
-      validate: {
-        min: 0
-      }
+      defaultValue: 0
     },
-    
-    // Dates
-    batchStartDate: {
-      type: DataTypes.DATEONLY,
+    exchangeRate: {
+      type: DataTypes.DOUBLE,
+      defaultValue: 1,
       allowNull: true
     },
-    batchEndDate: {
-      type: DataTypes.DATEONLY,
+
+    // Agency (FK handled in association)
+    // stored as reference in associations
+    // agencyId: handled below
+
+    // ບໍລິສັດນາຍຈ່າງ - Employer Company
+    employerCompany: {
+      type: DataTypes.STRING,
       allowNull: true
     },
-    deploymentDate: {
-      type: DataTypes.DATEONLY,
+
+    // ສະຖານທີ່ເຮັດວຽກ - Work Location
+    workLocation: {
+      type: DataTypes.STRING,
       allowNull: true
     },
-    
-    // Status and Priority
-    status: {
-      type: DataTypes.ENUM('draft', 'active', 'completed', 'cancelled', 'on_hold'),
+
+    // ໜ້າວຽກ - Job Title / Description
+    jobTitle: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+
+    // ຈຳນວນແຮງງານ - Number of Workers
+    numberOfWorkers: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0
+    },
+
+    // ປະເພດແຮງງານ - Worker Type
+    workerType: {
+      type: DataTypes.ENUM('Man', 'Woman', 'Spous',  'Any'),
+      allowNull: false,
+      defaultValue: 'Any'
+    },
+
+    // ສະຖານະງານ - Job Status
+    jobStatus: {
+      type: DataTypes.ENUM('draft', 'open', 'in_progress', 'completed', 'cancelled'),
       allowNull: false,
       defaultValue: 'draft'
     },
-    priority: {
-      type: DataTypes.ENUM('low', 'medium', 'high', 'urgent'),
-      allowNull: false,
-      defaultValue: 'medium'
+
+    // ເອກະສານຕິດຂັດ - Related Documents (can store file path or JSON)
+    documents: {
+      type: DataTypes.JSON,
+      allowNull: true
     },
-    
-    
+
+    // ===============================================================
+    // STATUS AND NOTES
+    // ===============================================================
+
+    // Notes
     notes: {
       type: DataTypes.TEXT,
       allowNull: true
     },
-    
-    // Processing Information
+
+    // System Active
     isActive: {
       type: DataTypes.BOOLEAN,
       allowNull: false,
       defaultValue: true
-    },
+    }
   }, {
     sequelize,
     timestamps: true,
@@ -79,79 +108,42 @@ module.exports = (sequelize, DataTypes) => {
     updatedAt: 'updateTimestamp',
     freezeTableName: true,
     indexes: [
-      {
-        fields: ['runningNo'],
-        unique: true
-      },
-      {
-        fields: ['batchName']
-      },
-      {
-        fields: ['status']
-      },
-      {
-        fields: ['batchStartDate']
-      },
-      {
-        fields: ['priority']
-      },
-      {
-        fields: ['isActive']
-      }
-    ],
-    hooks: {
-      beforeValidate: (jobBatch, options) => {
-        // Auto-generate running number if not provided
-        if (!jobBatch.runningNo) {
-          const timestamp = new Date().toISOString().replace(/[-:]/g, '').slice(0, 15);
-          jobBatch.runningNo = `JB-${timestamp}`;
-        }
-      }
-    }
+      { fields: ['jobCode'], unique: true },
+      { fields: ['jobStatus'] },
+      { fields: ['isActive'] },
+    ]
   });
 
-  JobBatch.associate = models => {
-    logger.info(`Associating table JobBatch with models`);
-    
-    // User associations
-    JobBatch.belongsTo(models.user, {
+  MOU.associate = models => {
+    logger.info(`Associating table Job with models`);
+
+    // Belongs to Agency
+    MOU.belongsTo(models.Agency, {
+      foreignKey: 'agencyId',
+      as: 'agency',
+    });
+
+    // Created by User
+    MOU.belongsTo(models.user, {
       foreignKey: 'makerId',
-      as: 'maker'
+      as: 'maker',
     });
-    
-    JobBatch.belongsTo(models.user, {
+    MOU.belongsTo(models.currency, {
+      foreignKey: 'currencyId',
+      as: 'currency',
+    });
+
+    // Updated by User
+    MOU.belongsTo(models.user, {
       foreignKey: 'updateUserId',
-      as: 'updateUser'
+      as: 'updateUser',
+    });
+    MOU.hasMany(models.image, {
+      foreignKey: 'MOUID',
+      as: 'images'
     });
 
   };
 
-  // Instance methods
-  JobBatch.prototype.getRemainingPositions = function() {
-    return this.totalPositions - this.filledPositions;
-  };
-
-  JobBatch.prototype.getCompletionPercentage = function() {
-    if (!this.totalPositions || this.totalPositions === 0) return 0;
-    return Math.round((this.filledPositions / this.totalPositions) * 100);
-  };
-
-  JobBatch.prototype.isOverdue = function() {
-    if (!this.batchEndDate) return false;
-    return new Date() > new Date(this.batchEndDate) && this.status !== 'completed';
-  };
-
-  // Class methods
-  JobBatch.getActiveBatches = function() {
-    return this.findAll({
-      where: {
-        status: 'active',
-        isActive: true
-      },
-      order: [['priority', 'DESC'], ['batchStartDate', 'ASC']]
-    });
-  };
-
-
-  return JobBatch;
+  return MOU;
 };

@@ -5,6 +5,7 @@
 
 const logger = require("../../api/logger");
 const { Agency, user } = require("../../models");
+const User  = require("../../models").user;
 const { Op } = require("sequelize");
 
 class AgencyController {
@@ -64,7 +65,7 @@ class AgencyController {
 
     } catch (error) {
       logger.error("Error creating agency:", error);
-      
+
       if (error.name === 'SequelizeValidationError') {
         return res.status(400).json({
           success: false,
@@ -91,6 +92,7 @@ class AgencyController {
   }
 
   // Get all agencies with pagination and filtering
+
   static async getAll(req, res) {
     try {
       const {
@@ -99,20 +101,24 @@ class AgencyController {
         status,
         city,
         district,
-        isActive = true,
+        isActive = 'true', // Query params are strings, not booleans
         search,
         sortBy = 'createdAt',
         sortOrder = 'DESC'
       } = req.query;
 
       const offset = (page - 1) * limit;
-      const whereClause = { isActive };
+
+      // Convert isActive string to boolean
+      const whereClause = {
+        isActive: isActive === 'true' || isActive === true
+      };
 
       // Add filters
       if (status) whereClause.status = status;
       if (city) whereClause.city = city;
       if (district) whereClause.district = district;
-      
+
       if (search) {
         whereClause[Op.or] = [
           { agencyName: { [Op.iLike]: `%${search}%` } },
@@ -123,24 +129,30 @@ class AgencyController {
         ];
       }
 
+      // Use findAndCountAll instead of findAll to get both count and rows
       const { count, rows } = await Agency.findAndCountAll({
         where: whereClause,
         include: [
           {
-            model: user,
+            model: User, // Make sure this matches your actual User model name
             as: 'maker',
-            attributes: ['cus_id', 'cus_name', 'cus_email']
+            attributes: ['cus_id', 'cus_name', 'cus_email'],
+            required: false // Use left join in case no maker exists
           },
           {
-            model: user,
+            model: User, // Make sure this matches your actual User model name
             as: 'updateUser',
-            attributes: ['cus_id', 'cus_name', 'cus_email']
+            attributes: ['cus_id', 'cus_name', 'cus_email'],
+            required: false // Use left join in case no updateUser exists
           }
         ],
         order: [[sortBy, sortOrder.toUpperCase()]],
         limit: parseInt(limit),
-        offset: parseInt(offset)
+        offset: parseInt(offset),
+        distinct: true // Important when using includes to get correct count
       });
+      logger.info(`Retrieved ${count} agencies`);
+      logger.info(`Retrieved ${rows} agencies`);
 
       return res.status(200).json({
         success: true,
@@ -157,14 +169,18 @@ class AgencyController {
       });
 
     } catch (error) {
-      logger.error("Error retrieving agencies:", error);
+      console.error("Error retrieving agencies:", error);
+
+      // Return more detailed error info in development
+      const isDevelopment = process.env.NODE_ENV === 'development';
+
       return res.status(500).json({
         success: false,
-        message: "Internal server error"
+        message: "Internal server error",
+        ...(isDevelopment && { error: error.message, stack: error.stack })
       });
     }
   }
-
   // Get agency by ID
   static async getById(req, res) {
     try {
@@ -241,7 +257,7 @@ class AgencyController {
 
     } catch (error) {
       logger.error("Error updating agency:", error);
-      
+
       if (error.name === 'SequelizeValidationError') {
         return res.status(400).json({
           success: false,
@@ -389,11 +405,11 @@ class AgencyController {
         Agency.count({ where: { status: 'active', isActive: true } }),
         Agency.count({ where: { status: 'inactive', isActive: true } }),
         Agency.count({ where: { status: 'suspended', isActive: true } }),
-        Agency.count({ 
-          where: { 
+        Agency.count({
+          where: {
             licenseNumber: { [Op.ne]: null },
-            isActive: true 
-          } 
+            isActive: true
+          }
         }),
         Agency.count({
           where: {
@@ -481,9 +497,9 @@ class AgencyController {
       const offset = (page - 1) * limit;
 
       const { count, rows } = await Agency.findAndCountAll({
-        where: { 
+        where: {
           status: status.toLowerCase(),
-          isActive: true 
+          isActive: true
         },
         include: [
           {
@@ -528,10 +544,10 @@ class AgencyController {
       const offset = (page - 1) * limit;
 
       const { count, rows } = await Agency.findAndCountAll({
-        where: { 
+        where: {
           city: city,
           status: status,
-          isActive: true 
+          isActive: true
         },
         include: [
           {
