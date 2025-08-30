@@ -152,7 +152,7 @@ const multi = async (req, res) => {
     logger.info("Outside loop");
     try {
 
-        const producId = await productService.createProdV1(req, imagesObj )
+        const producId = await productService.createProdV1(req, imagesObj)
         res.status(201).send(`Transaction completed |${producId}`);
     } catch (error) {
         logger.info("False and removing files... ");
@@ -206,62 +206,84 @@ const remove_file = async (req, res) => {
 const multiUpdate = async (req, res) => {
     const files = req.files;
     logger.info('jSON: ' + req.body.FORM);
-    logger.info('Files: ' + files.length);
+    logger.info('Files: ' + (files ? files.length : 0));
+
     const rndName = Date.now();
     let imagesObj = [];
 
-    files.forEach(el => {
-        var target_path = 'uploads/';
-        var oldpath = el.path;
-        var newpath = target_path + rndName + el.originalname;
-        !(fs.existsSync(`${target_path}${el.originalname}`)) &&
-            fs.rename(oldpath, newpath, function (err) {
-                if (err) {
-                    logger.info('Error: ' + err);
-                    return res.send('Error: ' + err)
-                    // throw err;
-                }
-
-            });
-        imagesObj.push({ 'name': rndName + el.originalname, 'path': newpath })
-        logger.info('Loop len: ' + imagesObj.length);
-        logger.info("Inside loop");
-    });
-    logger.info("Outside loop");
     try {
-        await productService.updateProd(req, imagesObj)
+        // Parse the form data to get existing images and other product data
+        const formData = JSON.parse(req.body.FORM);
+        logger.info('Parsed form data:', formData);
+
+        // Step 1: Preserve existing images
+        if (formData.pro_image && Array.isArray(formData.pro_image)) {
+            formData.pro_image.forEach(existingImage => {
+                imagesObj.push({
+                    'name': existingImage.name,
+                    'path': existingImage.path,
+                    'isExisting': true // Flag to identify existing images
+                });
+            });
+            logger.info('Existing images preserved:', imagesObj.length);
+        }
+
+        // Step 2: Process new uploaded files
+        if (files && files.length > 0) {
+            files.forEach(el => {
+                const target_path = 'uploads/';
+                const oldpath = el.path;
+                const newFileName = rndName + el.originalname;
+                const newpath = target_path + newFileName;
+
+                // Check if file doesn't already exist before renaming
+                if (!fs.existsSync(newpath)) {
+                    fs.rename(oldpath, newpath, function (err) {
+                        if (err) {
+                            logger.error('Error renaming file: ' + err);
+                            throw new Error('File rename error: ' + err);
+                        }
+                    });
+
+                    imagesObj.push({
+                        'name': newFileName,
+                        'path': newpath,
+                        'isExisting': false // Flag to identify new images
+                    });
+                } else {
+                    logger.warn('File already exists: ' + newpath);
+                }
+            });
+            logger.info('New files processed:', files.length);
+        }
+
+        logger.info('Total images (existing + new):', imagesObj.length);
+        logger.info("Outside loop - calling productService.updateProd");
+
+        // Step 3: Update product with combined images (existing + new)
+        await productService.updateProd(req, imagesObj);
         res.status(200).send('Transaction completed');
+
     } catch (error) {
-        logger.error(`Upload fail: ${error}`)
-        //*****************  REMOVE FILE IF THERE IS ERROR  *****************//
-        logger.info("False and removing files... ");
+        logger.error(`Upload fail: ${error}`);
+
+        //***************** REMOVE NEW FILES IF THERE IS ERROR *****************//
+        logger.info("Error occurred, removing newly uploaded files...");
         imagesObj.forEach(el => {
-            fs.unlinkSync(el.path, er => {
-                logger.info("Error: cannot remove file " + er);
-            })
-        })
-        logger.info("False and removing files...completed ");
+            // Only remove newly uploaded files, not existing ones
+            if (!el.isExisting && fs.existsSync(el.path)) {
+                try {
+                    fs.unlinkSync(el.path);
+                    logger.info('Removed file: ' + el.path);
+                } catch (unlinkErr) {
+                    logger.error("Error removing file: " + unlinkErr);
+                }
+            }
+        });
+        logger.info("File cleanup completed");
         res.status(401).send(`Error: ${error}`);
     }
-
-    /*
-        const commandResult = await axios.put("/product_e", { ...req.body, imagesObj }).then((res) => {
-            logger.info("AXIOS Succeed: " + res.data);
-            sqlComMessage = res.data
-            logger.info("REQUEST STATUS CODE update: " + res.data);
-            logger.info("REQUEST STATUS CODE DATA update: " + res.status);
-            return res.data === 'Transaction completed' ? true : false;
-        }).catch(er => {
-            sqlComMessage = er;
-            logger.info("AXIOS Error: " + er.data.Error);
-            logger.info("AXIOS Error: " + er.Error);
-            logger.info("AXIOS Error: " + er);
-            return false;
-        })
-    
-        */
-
-}
+};
 
 module.exports = {
     singleMaster,
