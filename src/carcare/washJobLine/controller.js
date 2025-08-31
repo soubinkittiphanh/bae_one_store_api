@@ -1,8 +1,8 @@
 // const WashJob = require('../models').washJob;
 const { body, validationResult } = require('express-validator');
-const logger = require('../api/logger');
-const  WashJob = require('../models').washjob;
-const  Product = require('../models').product;
+const logger = require('../../api/logger');
+const  WashJob = require('../../models').washjob;
+const  Product = require('../../models').product;
 
 // Create a new WashJob with lines
 exports.create = async (req, res) => {

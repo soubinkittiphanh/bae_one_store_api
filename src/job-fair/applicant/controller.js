@@ -1,10 +1,10 @@
 // ===============================================================
-// APPLICANT CONTROLLER
+// APPLICANT CONTROLLER - Updated with JobBatch Support
 // controllers/ApplicantController.js
 // ===============================================================
 
 const logger = require("../../api/logger");
-const { Applicant, user } = require("../../models");
+const { Applicant, user, JobBatch } = require("../../models"); // 🔥 ADD: Import JobBatch
 const { Op } = require("sequelize");
 
 class ApplicantController {
@@ -33,11 +33,23 @@ class ApplicantController {
         interviewExamDate,
         passportPhoto,
         applicantPhoto,
-        status
+        status,
+        jobBatchId // 🔥 ADD: Accept jobBatchId
       } = req.body;
 
       // Get user ID from request (assuming it's set by auth middleware)
       const makerId = req.user?.id || req.userId;
+
+      // 🔥 ADD: Validate jobBatchId if provided
+      if (jobBatchId) {
+        const jobBatchExists = await JobBatch.findByPk(jobBatchId);
+        if (!jobBatchExists) {
+          return res.status(400).json({
+            success: false,
+            message: "Invalid job batch ID provided"
+          });
+        }
+      }
 
       const applicant = await Applicant.create({
         firstName,
@@ -62,8 +74,20 @@ class ApplicantController {
         passportPhoto,
         applicantPhoto,
         status: status || 'INTERVIEW',
+        jobBatchId, // 🔥 ADD: Include jobBatchId
         makerId,
         updateUserId: makerId
+      });
+
+      // 🔥 ADD: Fetch created applicant with associations for response
+      const createdApplicant = await Applicant.findByPk(applicant.id, {
+        include: [
+          {
+            model: JobBatch,
+            as: 'jobBatch',
+            attributes: ['id', 'batchName', 'jobDescription', 'status', 'batchStartDate', 'batchEndDate']
+          }
+        ]
       });
 
       logger.info(`Applicant created with ID: ${applicant.id} by user: ${makerId}`);
@@ -71,7 +95,7 @@ class ApplicantController {
       return res.status(201).json({
         success: true,
         message: "Applicant created successfully",
-        data: applicant
+        data: createdApplicant
       });
 
     } catch (error) {
@@ -111,7 +135,8 @@ class ApplicantController {
         status,
         gender,
         passportAvailability,
-        isActive = 'true', // 🔥 FIX: Query params are strings, not booleans
+        isActive = 'true',
+        jobBatchId, // 🔥 ADD: Job batch filter
         search,
         sortBy = 'createdAt',
         sortOrder = 'DESC'
@@ -127,6 +152,7 @@ class ApplicantController {
       // Add filters
       if (status) whereClause.status = status;
       if (gender) whereClause.gender = gender;
+      if (jobBatchId) whereClause.jobBatchId = jobBatchId; // 🔥 ADD: Job batch filter
 
       // 🔥 FIX: Handle passportAvailability properly
       if (passportAvailability !== undefined && passportAvailability !== '') {
@@ -148,22 +174,29 @@ class ApplicantController {
         where: whereClause,
         include: [
           {
-            model: user, // Make sure this matches your model import
+            model: user,
             as: 'maker',
             attributes: ['cus_id', 'cus_name', 'cus_email'],
-            required: false // 🔥 FIX: Use LEFT JOIN to avoid missing associations
+            required: false
           },
           {
-            model: user, // Make sure this matches your model import  
+            model: user,
             as: 'updateUser',
             attributes: ['cus_id', 'cus_name', 'cus_email'],
-            required: false // 🔥 FIX: Use LEFT JOIN to avoid missing associations
+            required: false
+          },
+          {
+            // 🔥 ADD: Include JobBatch association
+            model: JobBatch,
+            as: 'jobBatch',
+            attributes: ['id', 'batchName', 'jobDescription', 'status', 'batchStartDate', 'batchEndDate'],
+            required: false
           }
         ],
         order: [[sortBy, sortOrder.toUpperCase()]],
         limit: parseInt(limit),
         offset: parseInt(offset),
-        distinct: true // 🔥 FIX: Important for accurate count with includes
+        distinct: true
       });
 
       console.log(`📊 Found ${count} applicants, returning ${rows.length} rows`);
@@ -186,7 +219,6 @@ class ApplicantController {
       console.error('❌ Error retrieving applicants:', error);
       logger.error("Error retrieving applicants:", error);
 
-      // 🔥 FIX: Return more detailed error info in development
       const isDevelopment = process.env.NODE_ENV === 'development';
 
       return res.status(500).json({
@@ -217,6 +249,12 @@ class ApplicantController {
             model: user,
             as: 'updateUser',
             attributes: ['cus_id', 'cus_name', 'cus_email']
+          },
+          {
+            // 🔥 ADD: Include JobBatch association
+            model: JobBatch,
+            as: 'jobBatch',
+            attributes: ['id', 'batchName', 'jobDescription', 'status', 'batchStartDate', 'batchEndDate']
           }
         ]
       });
@@ -261,17 +299,39 @@ class ApplicantController {
         });
       }
 
+      // 🔥 ADD: Validate jobBatchId if being updated
+      if (updateData.jobBatchId) {
+        const jobBatchExists = await JobBatch.findByPk(updateData.jobBatchId);
+        if (!jobBatchExists) {
+          return res.status(400).json({
+            success: false,
+            message: "Invalid job batch ID provided"
+          });
+        }
+      }
+
       // Add updateUserId to the update data
       updateData.updateUserId = updateUserId;
 
       const updatedApplicant = await applicant.update(updateData);
+
+      // 🔥 ADD: Fetch updated applicant with associations for response
+      const applicantWithAssociations = await Applicant.findByPk(updatedApplicant.id, {
+        include: [
+          {
+            model: JobBatch,
+            as: 'jobBatch',
+            attributes: ['id', 'batchName', 'jobDescription', 'status', 'batchStartDate', 'batchEndDate']
+          }
+        ]
+      });
 
       logger.info(`Applicant updated with ID: ${id} by user: ${updateUserId}`);
 
       return res.status(200).json({
         success: true,
         message: "Applicant updated successfully",
-        data: updatedApplicant
+        data: applicantWithAssociations
       });
 
     } catch (error) {
@@ -344,7 +404,8 @@ class ApplicantController {
         gender,
         passportAvailability,
         city,
-        workPlace
+        workPlace,
+        jobBatchId // 🔥 ADD: Job batch filter
       } = req.query;
 
       const offset = (page - 1) * limit;
@@ -356,6 +417,7 @@ class ApplicantController {
       if (passportAvailability !== undefined) whereClause.passportAvailability = passportAvailability === 'true';
       if (city) whereClause.city = city;
       if (workPlace) whereClause.workPlace = { [Op.iLike]: `%${workPlace}%` };
+      if (jobBatchId) whereClause.jobBatchId = jobBatchId; // 🔥 ADD: Job batch filter
 
       // Add keyword search
       if (keyword) {
@@ -375,6 +437,12 @@ class ApplicantController {
             model: user,
             as: 'maker',
             attributes: ['cus_id', 'cus_name', 'cus_email']
+          },
+          {
+            // 🔥 ADD: Include JobBatch association
+            model: JobBatch,
+            as: 'jobBatch',
+            attributes: ['id', 'batchName', 'jobDescription', 'status', 'batchStartDate', 'batchEndDate']
           }
         ],
         limit: parseInt(limit),
@@ -415,7 +483,10 @@ class ApplicantController {
         rejectedApplicants,
         withPassport,
         maleApplicants,
-        femaleApplicants
+        femaleApplicants,
+        // 🔥 ADD: Job batch related statistics
+        applicantsWithJobBatch,
+        applicantsWithoutJobBatch
       ] = await Promise.all([
         Applicant.count({ where: { isActive: true } }),
         Applicant.count({ where: { status: 'INTERVIEW', isActive: true } }),
@@ -423,7 +494,10 @@ class ApplicantController {
         Applicant.count({ where: { status: 'rejected', isActive: true } }),
         Applicant.count({ where: { passportAvailability: true, isActive: true } }),
         Applicant.count({ where: { gender: 'male', isActive: true } }),
-        Applicant.count({ where: { gender: 'female', isActive: true } })
+        Applicant.count({ where: { gender: 'female', isActive: true } }),
+        // 🔥 ADD: Count applicants with job batch
+        Applicant.count({ where: { jobBatchId: { [Op.ne]: null }, isActive: true } }),
+        Applicant.count({ where: { jobBatchId: null, isActive: true } })
       ]);
 
       return res.status(200).json({
@@ -436,7 +510,10 @@ class ApplicantController {
           rejectedApplicants,
           withPassport,
           maleApplicants,
-          femaleApplicants
+          femaleApplicants,
+          // 🔥 ADD: Job batch statistics
+          applicantsWithJobBatch,
+          applicantsWithoutJobBatch
         }
       });
 
@@ -498,19 +575,32 @@ class ApplicantController {
   static async getByStatus(req, res) {
     try {
       const { status } = req.params;
-      const { page = 1, limit = 10 } = req.query;
+      const { page = 1, limit = 10, jobBatchId } = req.query; // 🔥 ADD: Job batch filter
       const offset = (page - 1) * limit;
 
+      // 🔥 ADD: Build where clause with optional job batch filter
+      const whereClause = {
+        status: status.toUpperCase(),
+        isActive: true
+      };
+
+      if (jobBatchId) {
+        whereClause.jobBatchId = jobBatchId;
+      }
+
       const { count, rows } = await Applicant.findAndCountAll({
-        where: {
-          status: status.toUpperCase(),
-          isActive: true
-        },
+        where: whereClause,
         include: [
           {
             model: user,
             as: 'maker',
             attributes: ['cus_id', 'cus_name', 'cus_email']
+          },
+          {
+            // 🔥 ADD: Include JobBatch association
+            model: JobBatch,
+            as: 'jobBatch',
+            attributes: ['id', 'batchName', 'jobDescription', 'status', 'batchStartDate', 'batchEndDate']
           }
         ],
         limit: parseInt(limit),
@@ -534,6 +624,112 @@ class ApplicantController {
 
     } catch (error) {
       logger.error("Error retrieving applicants by status:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Internal server error"
+      });
+    }
+  }
+
+  // 🔥 NEW: Get applicants by job batch
+  static async getByJobBatch(req, res) {
+    try {
+      const { jobBatchId } = req.params;
+      const { page = 1, limit = 10, status } = req.query;
+      const offset = (page - 1) * limit;
+
+      // Build where clause
+      const whereClause = {
+        jobBatchId,
+        isActive: true
+      };
+
+      if (status) {
+        whereClause.status = status.toUpperCase();
+      }
+
+      const { count, rows } = await Applicant.findAndCountAll({
+        where: whereClause,
+        include: [
+          {
+            model: user,
+            as: 'maker',
+            attributes: ['cus_id', 'cus_name', 'cus_email']
+          },
+          {
+            model: JobBatch,
+            as: 'jobBatch',
+            attributes: ['id', 'batchName', 'jobDescription', 'status', 'batchStartDate', 'batchEndDate']
+          }
+        ],
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+        order: [['createdAt', 'DESC']]
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: `Applicants for job batch retrieved successfully`,
+        data: {
+          applicants: rows,
+          pagination: {
+            current_page: parseInt(page),
+            per_page: parseInt(limit),
+            total: count,
+            total_pages: Math.ceil(count / limit)
+          }
+        }
+      });
+
+    } catch (error) {
+      logger.error("Error retrieving applicants by job batch:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Internal server error"
+      });
+    }
+  }
+
+  // 🔥 NEW: Get job batch statistics
+  static async getJobBatchStats(req, res) {
+    try {
+      const { jobBatchId } = req.params;
+
+      const [
+        totalApplicants,
+        interviewApplicants,
+        registeredApplicants,
+        rejectedApplicants,
+        maleApplicants,
+        femaleApplicants,
+        withPassport
+      ] = await Promise.all([
+        Applicant.count({ where: { jobBatchId, isActive: true } }),
+        Applicant.count({ where: { jobBatchId, status: 'INTERVIEW', isActive: true } }),
+        Applicant.count({ where: { jobBatchId, status: 'REGISTER', isActive: true } }),
+        Applicant.count({ where: { jobBatchId, status: 'rejected', isActive: true } }),
+        Applicant.count({ where: { jobBatchId, gender: 'male', isActive: true } }),
+        Applicant.count({ where: { jobBatchId, gender: 'female', isActive: true } }),
+        Applicant.count({ where: { jobBatchId, passportAvailability: true, isActive: true } })
+      ]);
+
+      return res.status(200).json({
+        success: true,
+        message: "Job batch statistics retrieved successfully",
+        data: {
+          jobBatchId,
+          totalApplicants,
+          interviewApplicants,
+          registeredApplicants,
+          rejectedApplicants,
+          maleApplicants,
+          femaleApplicants,
+          withPassport
+        }
+      });
+
+    } catch (error) {
+      logger.error("Error retrieving job batch statistics:", error);
       return res.status(500).json({
         success: false,
         message: "Internal server error"

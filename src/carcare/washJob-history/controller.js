@@ -1,6 +1,6 @@
 // const WashJob = require('../models').washJob;
 const { body, validationResult } = require('express-validator');
-const logger = require('../api/logger');
+const logger = require('../../api/logger');
 const { WashJob, Product, Service, WashJobServiceProduct } = require('../models');
 
 // Create a new wash job with products and services

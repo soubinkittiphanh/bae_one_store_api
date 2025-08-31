@@ -1,18 +1,18 @@
 // const WashJob = require('../models').washJob;
 const { body, validationResult } = require('express-validator');
-const logger = require('../api/logger');
-const WashJob = require('../models').washjob;
-const WashJobHistory = require('../models').washjobHis;
-const WashJobLine = require('../models').washjobline;
-const Product = require('../models').product;
-const SaleHeader = require('../models').saleHeader;
-const SaleLine = require('../models').saleLine;
-const Currency = require('../models').currency;
-const Location = require('../models').location;
-const Payment = require('../models').payment;
-const Unit = require('../models').unit;
-const { sequelize, priceList } = require('../models');
-const PriceList = require('../models').priceList;
+const logger = require('../../api/logger');
+const WashJob = require('../../models').washjob;
+const WashJobHistory = require('../../models').washjobHis;
+const WashJobLine = require('../../models').washjobline;
+const Product = require('../../models').product;
+const SaleHeader = require('../../models').saleHeader;
+const SaleLine = require('../../models').saleLine;
+const Currency = require('../../models').currency;
+const Location = require('../../models').location;
+const Payment = require('../../models').payment;
+const Unit = require('../../models').unit;
+const { sequelize, priceList } = require('../../models');
+const PriceList = require('../../models').priceList;
 // Create a new wash job with products and services
 exports.createWashJob = async (req, res) => {
   logger.info(`Request creating washJob body ${JSON.stringify(req.body)}`);
@@ -68,6 +68,10 @@ exports.getAllWashJobs = async (req, res) => {
                 {
                   model: PriceList,
                   as: 'priceLists'
+                },
+                {
+                  model: Currency,
+                  as: 'saleCurrency'
                 }
               ]
             },

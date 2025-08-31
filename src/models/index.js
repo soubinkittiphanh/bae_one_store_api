@@ -113,9 +113,9 @@ const initializeModels = () => {
     reservationLine: require("../reservation/line/model")(sequelize, DataTypes),
     
     // Wash job models
-    washjob: require("../washJob/model")(sequelize, DataTypes),
-    washjobHis: require("../washJob-history/model")(sequelize, DataTypes),
-    washjobline: require("../washJobLine/model")(sequelize, DataTypes),
+    washjob: require("../carcare/washJob/model")(sequelize, DataTypes),
+    washjobHis: require("../carcare/washJob-history/model")(sequelize, DataTypes),
+    washjobline: require("../carcare/washJobLine/model")(sequelize, DataTypes),
     
     // Transfer models
     transferHeader: require("../transfer/model")(sequelize, DataTypes),

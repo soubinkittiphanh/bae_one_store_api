@@ -1,5 +1,5 @@
 const logger = require("../../api/logger");
-const { JobBatch, user } = require("../../models");
+const { JobBatch, user, MOU } = require("../../models"); // Added MOU import
 const { Op } = require("sequelize");
 
 // controllers/JobBatchController.js
@@ -17,11 +17,23 @@ class JobBatchController {
         deploymentDate,
         status,
         priority,
-        notes
+        notes,
+        mouId // NEW: MOU association
       } = req.body;
 
       // Get user ID from request (assuming it's set by auth middleware)
       const makerId = req.user?.id || req.userId;
+
+      // NEW: Validate MOU exists if mouId is provided
+      if (mouId) {
+        const mouExists = await MOU.findByPk(mouId);
+        if (!mouExists) {
+          return res.status(400).json({
+            success: false,
+            message: "Invalid MOU ID provided"
+          });
+        }
+      }
 
       const jobBatch = await JobBatch.create({
         batchName,
@@ -34,8 +46,20 @@ class JobBatchController {
         status: status || 'draft',
         priority: priority || 'medium',
         notes,
+        mouId, // NEW: Include MOU ID
         makerId,
         updateUserId: makerId
+      });
+
+      // NEW: Fetch created job batch with associations for response
+      const createdJobBatch = await JobBatch.findByPk(jobBatch.id, {
+        include: [
+          {
+            model: MOU,
+            as: 'mou',
+            attributes: ['id', 'jobCode', 'mouNumber', 'jobTitle', 'employerCompany', 'workLocation', 'numberOfWorkers', 'workerType', 'jobStatus']
+          }
+        ]
       });
 
       logger.info(`Job batch created with ID: ${jobBatch.id} by user: ${makerId}`);
@@ -43,7 +67,7 @@ class JobBatchController {
       return res.status(201).json({
         success: true,
         message: "Job batch created successfully",
-        data: jobBatch
+        data: createdJobBatch
       });
 
     } catch (error) {
@@ -67,6 +91,13 @@ class JobBatchController {
         });
       }
 
+      if (error.name === 'SequelizeForeignKeyConstraintError') {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid MOU reference"
+        });
+      }
+
       return res.status(500).json({
         success: false,
         message: "Internal server error"
@@ -82,6 +113,7 @@ class JobBatchController {
         limit = 10,
         status,
         priority,
+        mouId, // NEW: MOU filter
         isActive = true,
         search,
         sortBy = 'createdAt',
@@ -94,6 +126,7 @@ class JobBatchController {
       // Add filters
       if (status) whereClause.status = status;
       if (priority) whereClause.priority = priority;
+      if (mouId) whereClause.mouId = mouId; // NEW: MOU filter
       
       if (search) {
         whereClause[Op.or] = [
@@ -109,17 +142,27 @@ class JobBatchController {
           {
             model: user,
             as: 'maker',
-            // attributes: ['id', 'name', 'email']
+            attributes: ['cus_id', 'cus_name', 'cus_email'],
+            required: false // Use LEFT JOIN
           },
           {
             model: user,
             as: 'updateUser',
-            // attributes: ['id', 'name', 'email']
+            attributes: ['cus_id', 'cus_name', 'cus_email'],
+            required: false // Use LEFT JOIN
+          },
+          {
+            // NEW: Include MOU association
+            model: MOU,
+            as: 'mou',
+            attributes: ['id', 'jobCode', 'mouNumber', 'jobTitle', 'employerCompany', 'workLocation', 'numberOfWorkers', 'workerType', 'jobStatus'],
+            required: false // Use LEFT JOIN to include batches without MOU
           }
         ],
         order: [[sortBy, sortOrder.toUpperCase()]],
         limit: parseInt(limit),
-        offset: parseInt(offset)
+        offset: parseInt(offset),
+        distinct: true // Important for accurate count with includes
       });
 
       return res.status(200).json({
@@ -148,7 +191,22 @@ class JobBatchController {
   // Get active job batches (using model class method)
   static async getActiveBatches(req, res) {
     try {
-      const activeBatches = await JobBatch.getActiveBatches();
+      const activeBatches = await JobBatch.findAll({
+        where: {
+          status: 'active',
+          isActive: true
+        },
+        include: [
+          {
+            // NEW: Include MOU in active batches
+            model: MOU,
+            as: 'mou',
+            attributes: ['id', 'jobCode', 'mouNumber', 'jobTitle', 'employerCompany', 'workLocation', 'jobStatus'],
+            required: false
+          }
+        ],
+        order: [['priority', 'DESC'], ['batchStartDate', 'ASC']]
+      });
 
       return res.status(200).json({
         success: true,
@@ -176,12 +234,18 @@ class JobBatchController {
           {
             model: user,
             as: 'maker',
-            // attributes: ['id', 'name', 'email']
+            attributes: ['cus_id', 'cus_name', 'cus_email']
           },
           {
             model: user,
             as: 'updateUser',
-            // attributes: ['id', 'name', 'email']
+            attributes: ['cus_id', 'cus_name', 'cus_email']
+          },
+          {
+            // NEW: Include full MOU details for single record
+            model: MOU,
+            as: 'mou',
+            attributes: ['id', 'jobCode', 'mouNumber', 'jobTitle', 'employerCompany', 'workLocation', 'numberOfWorkers', 'workerType', 'jobStatus', 'pmCharge', 'exchangeRate', 'documents', 'notes']
           }
         ]
       });
@@ -228,7 +292,8 @@ class JobBatchController {
         deploymentDate,
         status,
         priority,
-        notes
+        notes,
+        mouId // NEW: MOU ID for updates
       } = req.body;
 
       const updateUserId = req.user?.id || req.userId;
@@ -244,6 +309,17 @@ class JobBatchController {
         });
       }
 
+      // NEW: Validate MOU exists if mouId is being updated
+      if (mouId !== undefined && mouId !== null) {
+        const mouExists = await MOU.findByPk(mouId);
+        if (!mouExists) {
+          return res.status(400).json({
+            success: false,
+            message: "Invalid MOU ID provided"
+          });
+        }
+      }
+
       const updatedJobBatch = await jobBatch.update({
         batchName: batchName || jobBatch.batchName,
         runningNo: runningNo || jobBatch.runningNo,
@@ -255,7 +331,19 @@ class JobBatchController {
         status: status || jobBatch.status,
         priority: priority || jobBatch.priority,
         notes: notes !== undefined ? notes : jobBatch.notes,
+        mouId: mouId !== undefined ? mouId : jobBatch.mouId, // NEW: Update MOU ID
         updateUserId
+      });
+
+      // NEW: Fetch updated job batch with associations for response
+      const jobBatchWithAssociations = await JobBatch.findByPk(updatedJobBatch.id, {
+        include: [
+          {
+            model: MOU,
+            as: 'mou',
+            attributes: ['id', 'jobCode', 'mouNumber', 'jobTitle', 'employerCompany', 'workLocation', 'jobStatus']
+          }
+        ]
       });
 
       logger.info(`Job batch updated with ID: ${id} by user: ${updateUserId}`);
@@ -263,7 +351,7 @@ class JobBatchController {
       return res.status(200).json({
         success: true,
         message: "Job batch updated successfully",
-        data: updatedJobBatch
+        data: jobBatchWithAssociations
       });
 
     } catch (error) {
@@ -284,6 +372,13 @@ class JobBatchController {
         return res.status(409).json({
           success: false,
           message: "Running number already exists"
+        });
+      }
+
+      if (error.name === 'SequelizeForeignKeyConstraintError') {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid MOU reference"
         });
       }
 
@@ -332,7 +427,7 @@ class JobBatchController {
     }
   }
 
-  // Get dashboard statistics
+  // Enhanced dashboard statistics with MOU data
   static async getDashboardStats(req, res) {
     try {
       const [
@@ -340,7 +435,9 @@ class JobBatchController {
         activeBatches,
         completedBatches,
         overdueBatches,
-        draftBatches
+        draftBatches,
+        batchesWithMOU, // NEW: Count batches with MOU
+        batchesWithoutMOU // NEW: Count batches without MOU
       ] = await Promise.all([
         JobBatch.count({ where: { isActive: true } }),
         JobBatch.count({ where: { status: 'active', isActive: true } }),
@@ -352,7 +449,10 @@ class JobBatchController {
             isActive: true
           }
         }),
-        JobBatch.count({ where: { status: 'draft', isActive: true } })
+        JobBatch.count({ where: { status: 'draft', isActive: true } }),
+        // NEW: MOU-related statistics
+        JobBatch.count({ where: { mouId: { [Op.ne]: null }, isActive: true } }),
+        JobBatch.count({ where: { mouId: null, isActive: true } })
       ]);
 
       const totalPositions = await JobBatch.sum('totalPositions', {
@@ -368,7 +468,10 @@ class JobBatchController {
           completedBatches,
           overdueBatches,
           draftBatches,
-          totalPositions
+          totalPositions,
+          // NEW: MOU statistics
+          batchesWithMOU,
+          batchesWithoutMOU
         }
       });
 
@@ -419,6 +522,109 @@ class JobBatchController {
 
     } catch (error) {
       logger.error("Error updating job batch status:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Internal server error"
+      });
+    }
+  }
+
+  // NEW: Get job batches by MOU
+  static async getByMOU(req, res) {
+    try {
+      const { mouId } = req.params;
+      const { page = 1, limit = 10, status } = req.query;
+      const offset = (page - 1) * limit;
+
+      // Build where clause
+      const whereClause = {
+        mouId,
+        isActive: true
+      };
+
+      if (status) {
+        whereClause.status = status;
+      }
+
+      const { count, rows } = await JobBatch.findAndCountAll({
+        where: whereClause,
+        include: [
+          {
+            model: user,
+            as: 'maker',
+            attributes: ['cus_id', 'cus_name', 'cus_email']
+          },
+          {
+            model: MOU,
+            as: 'mou',
+            attributes: ['id', 'jobCode', 'mouNumber', 'jobTitle', 'employerCompany', 'workLocation', 'jobStatus']
+          }
+        ],
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+        order: [['createdAt', 'DESC']]
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: `Job batches for MOU retrieved successfully`,
+        data: {
+          jobBatches: rows,
+          pagination: {
+            current_page: parseInt(page),
+            per_page: parseInt(limit),
+            total: count,
+            total_pages: Math.ceil(count / limit)
+          }
+        }
+      });
+
+    } catch (error) {
+      logger.error("Error retrieving job batches by MOU:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Internal server error"
+      });
+    }
+  }
+
+  // NEW: Get MOU statistics for a specific MOU
+  static async getMOUStats(req, res) {
+    try {
+      const { mouId } = req.params;
+
+      const [
+        totalBatches,
+        activeBatches,
+        completedBatches,
+        draftBatches,
+        cancelledBatches,
+        totalPositions
+      ] = await Promise.all([
+        JobBatch.count({ where: { mouId, isActive: true } }),
+        JobBatch.count({ where: { mouId, status: 'active', isActive: true } }),
+        JobBatch.count({ where: { mouId, status: 'completed', isActive: true } }),
+        JobBatch.count({ where: { mouId, status: 'draft', isActive: true } }),
+        JobBatch.count({ where: { mouId, status: 'cancelled', isActive: true } }),
+        JobBatch.sum('totalPositions', { where: { mouId, isActive: true } }) || 0
+      ]);
+
+      return res.status(200).json({
+        success: true,
+        message: "MOU statistics retrieved successfully",
+        data: {
+          mouId,
+          totalBatches,
+          activeBatches,
+          completedBatches,
+          draftBatches,
+          cancelledBatches,
+          totalPositions
+        }
+      });
+
+    } catch (error) {
+      logger.error("Error retrieving MOU statistics:", error);
       return res.status(500).json({
         success: false,
         message: "Internal server error"

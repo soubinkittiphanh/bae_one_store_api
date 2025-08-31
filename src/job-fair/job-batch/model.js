@@ -23,7 +23,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.TEXT,
       allowNull: true
     },
-    
+
     // Batch Details
     totalPositions: {
       type: DataTypes.INTEGER,
@@ -33,7 +33,7 @@ module.exports = (sequelize, DataTypes) => {
         min: 0
       }
     },
-    
+
     // Dates
     batchStartDate: {
       type: DataTypes.DATEONLY,
@@ -47,7 +47,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.DATEONLY,
       allowNull: true
     },
-    
+
     // Status and Priority
     status: {
       type: DataTypes.ENUM('draft', 'active', 'completed', 'cancelled', 'on_hold'),
@@ -59,13 +59,13 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       defaultValue: 'medium'
     },
-    
-    
+
+
     notes: {
       type: DataTypes.TEXT,
       allowNull: true
     },
-    
+
     // Processing Information
     isActive: {
       type: DataTypes.BOOLEAN,
@@ -112,37 +112,41 @@ module.exports = (sequelize, DataTypes) => {
 
   JobBatch.associate = models => {
     logger.info(`Associating table JobBatch with models`);
-    
+
     // User associations
     JobBatch.belongsTo(models.user, {
       foreignKey: 'makerId',
       as: 'maker'
     });
-    
+
     JobBatch.belongsTo(models.user, {
       foreignKey: 'updateUserId',
       as: 'updateUser'
+    });
+    JobBatch.belongsTo(models.MOU, {
+      foreignKey: 'mouId',
+      as: 'mou',
     });
 
   };
 
   // Instance methods
-  JobBatch.prototype.getRemainingPositions = function() {
+  JobBatch.prototype.getRemainingPositions = function () {
     return this.totalPositions - this.filledPositions;
   };
 
-  JobBatch.prototype.getCompletionPercentage = function() {
+  JobBatch.prototype.getCompletionPercentage = function () {
     if (!this.totalPositions || this.totalPositions === 0) return 0;
     return Math.round((this.filledPositions / this.totalPositions) * 100);
   };
 
-  JobBatch.prototype.isOverdue = function() {
+  JobBatch.prototype.isOverdue = function () {
     if (!this.batchEndDate) return false;
     return new Date() > new Date(this.batchEndDate) && this.status !== 'completed';
   };
 
   // Class methods
-  JobBatch.getActiveBatches = function() {
+  JobBatch.getActiveBatches = function () {
     return this.findAll({
       where: {
         status: 'active',

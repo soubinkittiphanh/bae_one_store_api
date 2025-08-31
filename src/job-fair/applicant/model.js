@@ -224,6 +224,10 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: 'updateUserId',
       as: 'updateUser',
     });
+    Applicant.belongsTo(models.JobBatch, {
+      foreignKey: 'jobBatchId',
+      as: 'jobBatch',
+    });
   };
 
   return Applicant;

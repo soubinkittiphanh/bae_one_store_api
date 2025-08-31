@@ -1,5 +1,5 @@
-const logger = require('../api/logger');
-const Unit = require('../models').unit
+const logger = require('../../api/logger');
+const Unit = require('../../models').unit
 // function generateRandomString(length) {
 //     let result = '';
 //     const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
