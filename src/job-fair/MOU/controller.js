@@ -1,19 +1,24 @@
 // ===============================================================
-// MOU CONTROLLER
+// MOU CONTROLLER - FIXED VERSION
 // ===============================================================
-const { MOU, Agency, user, currency, image } = require('../../models');
+const { MOU, Agency, user, currency, image, sequelize } = require('../../models');
 const logger = require('../../api/logger');
-const { Op, ValidationError, DatabaseError } = require('sequelize');
+const { Op, ValidationError, DatabaseError, QueryTypes } = require('sequelize');
 const { v4: uuidv4 } = require('uuid');
+const fs = require('fs');
+const path = require('path');
 
 class MOUController {
   // ===============================================================
-  // CREATE MOU
+  // CREATE MOU WITH FILES
   // ===============================================================
   static async createMOU(req, res) {
     try {
-      logger.info('Creating new MOU', { body: req.body });
-      
+      logger.info('Creating new MOU with files', {
+        body: req.body,
+        files: req.files ? Object.keys(req.files) : []
+      });
+
       const {
         jobCode,
         mouNumber,
@@ -26,13 +31,13 @@ class MOUController {
         numberOfWorkers,
         workerType,
         jobStatus,
-        documents,
         notes,
         currencyId
       } = req.body;
 
       // Validation
       if (!jobCode) {
+        await MOUController.cleanupUploadedFiles(req.files);
         return res.status(400).json({
           success: false,
           message: 'Job code is required'
@@ -40,6 +45,7 @@ class MOUController {
       }
 
       if (!jobTitle) {
+        await MOUController.cleanupUploadedFiles(req.files);
         return res.status(400).json({
           success: false,
           message: 'Job title is required'
@@ -47,6 +53,7 @@ class MOUController {
       }
 
       if (!numberOfWorkers || numberOfWorkers < 1) {
+        await MOUController.cleanupUploadedFiles(req.files);
         return res.status(400).json({
           success: false,
           message: 'Number of workers must be at least 1'
@@ -56,6 +63,7 @@ class MOUController {
       // Check if jobCode already exists
       const existingMOU = await MOU.findOne({ where: { jobCode } });
       if (existingMOU) {
+        await MOUController.cleanupUploadedFiles(req.files);
         return res.status(409).json({
           success: false,
           message: 'Job code already exists'
@@ -66,6 +74,7 @@ class MOUController {
       if (agencyId) {
         const agency = await Agency.findByPk(agencyId);
         if (!agency) {
+          await MOUController.cleanupUploadedFiles(req.files);
           return res.status(404).json({
             success: false,
             message: 'Agency not found'
@@ -77,6 +86,7 @@ class MOUController {
       if (currencyId) {
         const currencyRecord = await currency.findByPk(currencyId);
         if (!currencyRecord) {
+          await MOUController.cleanupUploadedFiles(req.files);
           return res.status(404).json({
             success: false,
             message: 'Currency not found'
@@ -84,6 +94,20 @@ class MOUController {
         }
       }
 
+      // Process document files
+      let documentsData = [];
+      if (req.files && req.files.documents) {
+        documentsData = req.files.documents.map(file => ({
+          name: file.originalname,
+          filename: file.filename,
+          path: file.path,
+          mimetype: file.mimetype,
+          size: file.size,
+          uploadedAt: new Date()
+        }));
+      }
+
+      // Create MOU
       const newMOU = await MOU.create({
         jobCode,
         mouNumber,
@@ -96,12 +120,25 @@ class MOUController {
         numberOfWorkers,
         workerType: workerType || 'Any',
         jobStatus: jobStatus || 'draft',
-        documents,
+        documents: documentsData,
         notes,
         currencyId,
-        makerId: req.user?.id, // Assuming user ID is available in req.user
+        makerId: req.user?.id,
         isActive: true
       });
+
+      // Process and save images to image table
+      if (req.files && req.files.images) {
+        const imagePromises = req.files.images.map(file => {
+          return image.create({
+            orgName: file.originalname,
+            img_name: file.filename,
+            img_path: file.path,
+            MOUID: newMOU.id,
+          });
+        });
+        await Promise.all(imagePromises);
+      }
 
       // Fetch the created MOU with associations
       const mouWithAssociations = await MOU.findByPk(newMOU.id, {
@@ -114,15 +151,18 @@ class MOUController {
       });
 
       logger.info('MOU created successfully', { mouId: newMOU.id });
-
       res.status(201).json({
         success: true,
         message: 'MOU created successfully',
         data: mouWithAssociations
       });
+
     } catch (error) {
       logger.error('Error creating MOU:', error);
-      
+      if (req.files) {
+        await MOUController.cleanupUploadedFiles(req.files);
+      }
+
       if (error instanceof ValidationError) {
         return res.status(400).json({
           success: false,
@@ -131,6 +171,319 @@ class MOUController {
         });
       }
 
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  }
+
+  // ===============================================================
+  // UPDATE MOU WITH FILES
+  // ===============================================================
+  static async updateMOU(req, res) {
+    try {
+      const { id } = req.params;
+      const updateData = { ...req.body };
+      updateData.updateUserId = req.user?.id;
+
+      const mou = await MOU.findByPk(id);
+      if (!mou) {
+        await MOUController.cleanupUploadedFiles(req.files);
+        return res.status(404).json({
+          success: false,
+          message: 'MOU not found'
+        });
+      }
+
+      // Validate unique jobCode if it's being updated
+      if (updateData.jobCode && updateData.jobCode !== mou.jobCode) {
+        const existingMOU = await MOU.findOne({
+          where: {
+            jobCode: updateData.jobCode,
+            id: { [Op.ne]: id }
+          }
+        });
+        if (existingMOU) {
+          await MOUController.cleanupUploadedFiles(req.files);
+          return res.status(409).json({
+            success: false,
+            message: 'Job code already exists'
+          });
+        }
+      }
+
+      // Verify agency and currency if provided
+      if (updateData.agencyId) {
+        const agency = await Agency.findByPk(updateData.agencyId);
+        if (!agency) {
+          await MOUController.cleanupUploadedFiles(req.files);
+          return res.status(404).json({
+            success: false,
+            message: 'Agency not found'
+          });
+        }
+      }
+
+      if (updateData.currencyId) {
+        const currencyRecord = await currency.findByPk(updateData.currencyId);
+        if (!currencyRecord) {
+          await MOUController.cleanupUploadedFiles(req.files);
+          return res.status(404).json({
+            success: false,
+            message: 'Currency not found'
+          });
+        }
+      }
+
+      // Handle document updates
+      if (req.files && req.files.documents) {
+        const newDocuments = req.files.documents.map(file => ({
+          name: file.originalname,
+          filename: file.filename,
+          path: file.path,
+          mimetype: file.mimetype,
+          size: file.size,
+          uploadedAt: new Date()
+        }));
+
+        const existingDocuments = mou.documents || [];
+        updateData.documents = [...existingDocuments, ...newDocuments];
+      }
+
+      // Update MOU
+      await mou.update(updateData);
+
+      // Handle new images
+      if (req.files && req.files.images) {
+        const imagePromises = req.files.images.map(file => {
+          return image.create({
+            orgName: file.originalname,
+            img_name: file.filename,
+            img_path: file.path,
+            MOUID: id,
+          });
+        });
+        await Promise.all(imagePromises);
+      }
+
+      // Fetch updated MOU with associations
+      const updatedMOU = await MOU.findByPk(id, {
+        include: [
+          { model: Agency, as: 'agency' },
+          { model: user, as: 'maker', attributes: ['cus_id', 'cus_name', 'cus_email'] },
+          { model: user, as: 'updateUser', attributes: ['cus_id', 'cus_name', 'cus_email'] },
+          { model: currency, as: 'currency' },
+          { model: image, as: 'images' }
+        ]
+      });
+
+      logger.info('MOU updated successfully', { mouId: id });
+      res.json({
+        success: true,
+        message: 'MOU updated successfully',
+        data: updatedMOU
+      });
+
+    } catch (error) {
+      logger.error('Error updating MOU:', error);
+      if (req.files) {
+        await MOUController.cleanupUploadedFiles(req.files);
+      }
+
+      if (error instanceof ValidationError) {
+        return res.status(400).json({
+          success: false,
+          message: 'Validation error',
+          errors: error.errors.map(e => e.message)
+        });
+      }
+
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  }
+
+  // ===============================================================
+  // DELETE IMAGE
+  // ===============================================================
+  static async deleteImage(req, res) {
+    try {
+      const { imageId } = req.params;
+
+      const imageRecord = await image.findByPk(imageId);
+      if (!imageRecord) {
+        return res.status(404).json({
+          success: false,
+          message: 'Image not found'
+        });
+      }
+
+      // Delete physical file - use correct field name
+      if (fs.existsSync(imageRecord.img_path)) {
+        fs.unlinkSync(imageRecord.img_path);
+      }
+
+      await imageRecord.destroy();
+
+      res.json({
+        success: true,
+        message: 'Image deleted successfully'
+      });
+
+    } catch (error) {
+      logger.error('Error deleting image:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  }
+
+  // ===============================================================
+  // DELETE DOCUMENT
+  // ===============================================================
+  static async deleteDocument(req, res) {
+    try {
+      const { mouId, documentIndex } = req.params;
+
+      const mou = await MOU.findByPk(mouId);
+      if (!mou) {
+        return res.status(404).json({
+          success: false,
+          message: 'MOU not found'
+        });
+      }
+
+      const documents = mou.documents || [];
+      const docIndex = parseInt(documentIndex);
+
+      if (docIndex < 0 || docIndex >= documents.length) {
+        return res.status(404).json({
+          success: false,
+          message: 'Document not found'
+        });
+      }
+
+      const documentToDelete = documents[docIndex];
+
+      // Delete physical file
+      if (documentToDelete.path && fs.existsSync(documentToDelete.path)) {
+        fs.unlinkSync(documentToDelete.path);
+      }
+
+      // Create new array to ensure Sequelize detects change
+      const updatedDocuments = documents.filter((doc, index) => index !== docIndex);
+      mou.changed('documents', true);
+      await mou.update({ documents: updatedDocuments });
+
+      res.json({
+        success: true,
+        message: 'Document deleted successfully',
+        data: {
+          remainingDocuments: updatedDocuments.length,
+          deletedDocument: documentToDelete.name
+        }
+      });
+
+    } catch (error) {
+      logger.error('Error deleting document:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  }
+
+  // ===============================================================
+  // DOWNLOAD FUNCTIONS
+  // ===============================================================
+  static async downloadDocument(req, res) {
+    try {
+      const { mouId, documentIndex } = req.params;
+      
+      const mou = await MOU.findByPk(mouId);
+      if (!mou) {
+        return res.status(404).json({
+          success: false,
+          message: 'MOU not found'
+        });
+      }
+
+      const documents = mou.documents || [];
+      const docIndex = parseInt(documentIndex);
+      
+      if (docIndex < 0 || docIndex >= documents.length) {
+        return res.status(404).json({
+          success: false,
+          message: 'Document not found'
+        });
+      }
+
+      const document = documents[docIndex];
+      const filePath = document.path;
+      
+      if (!fs.existsSync(filePath)) {
+        return res.status(404).json({
+          success: false,
+          message: 'File not found on disk'
+        });
+      }
+
+      // Sanitize filename
+      let fileName = document.name || path.basename(filePath);
+      fileName = MOUController.sanitizeFilename(fileName);
+      
+      // Set headers safely
+      MOUController.setDownloadHeaders(res, fileName);
+      
+      res.sendFile(path.resolve(filePath));
+
+    } catch (error) {
+      logger.error('Error downloading document:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  }
+
+  static async downloadImage(req, res) {
+    try {
+      const { imageId } = req.params;
+      
+      const imageRecord = await image.findByPk(imageId);
+      if (!imageRecord) {
+        return res.status(404).json({
+          success: false,
+          message: 'Image not found'
+        });
+      }
+
+      const filePath = imageRecord.img_path;
+      
+      if (!fs.existsSync(filePath)) {
+        return res.status(404).json({
+          success: false,
+          message: 'File not found on disk'
+        });
+      }
+
+      let fileName = imageRecord.orgName || path.basename(filePath);
+      fileName = MOUController.sanitizeFilename(fileName);
+      
+      MOUController.setDownloadHeaders(res, fileName);
+      res.sendFile(path.resolve(filePath));
+
+    } catch (error) {
+      logger.error('Error downloading image:', error);
       res.status(500).json({
         success: false,
         message: 'Internal server error',
@@ -159,7 +512,6 @@ class MOUController {
       const offset = (parseInt(page) - 1) * parseInt(limit);
       const whereClause = { isActive };
 
-      // Add search functionality
       if (search) {
         whereClause[Op.or] = [
           { jobCode: { [Op.iLike]: `%${search}%` } },
@@ -169,7 +521,6 @@ class MOUController {
         ];
       }
 
-      // Add filters
       if (status) whereClause.jobStatus = status;
       if (agencyId) whereClause.agencyId = agencyId;
       if (workerType) whereClause.workerType = workerType;
@@ -178,7 +529,7 @@ class MOUController {
         where: whereClause,
         include: [
           { model: Agency, as: 'agency' },
-          { model: user, as: 'maker', attributes: ['cus_id', 'cus_name', 'cus_email'], },
+          { model: user, as: 'maker', attributes: ['cus_id', 'cus_name', 'cus_email'] },
           { model: currency, as: 'currency' },
           { model: image, as: 'images' }
         ],
@@ -225,8 +576,8 @@ class MOUController {
       const mou = await MOU.findByPk(id, {
         include: [
           { model: Agency, as: 'agency' },
-          { model: user, as: 'maker', attributes: ['cus_id', 'cus_name', 'cus_email'], },
-          { model: user, as: 'updateUser', attributes: ['cus_id', 'cus_name', 'cus_email'], },
+          { model: user, as: 'maker', attributes: ['cus_id', 'cus_name', 'cus_email'] },
+          { model: user, as: 'updateUser', attributes: ['cus_id', 'cus_name', 'cus_email'] },
           { model: currency, as: 'currency' },
           { model: image, as: 'images' }
         ]
@@ -255,102 +606,6 @@ class MOUController {
   }
 
   // ===============================================================
-  // UPDATE MOU
-  // ===============================================================
-  static async updateMOU(req, res) {
-    try {
-      const { id } = req.params;
-      const updateData = { ...req.body };
-      
-      // Add update user ID
-      updateData.updateUserId = req.user?.id;
-
-      const mou = await MOU.findByPk(id);
-      if (!mou) {
-        return res.status(404).json({
-          success: false,
-          message: 'MOU not found'
-        });
-      }
-
-      // Validate unique jobCode if it's being updated
-      if (updateData.jobCode && updateData.jobCode !== mou.jobCode) {
-        const existingMOU = await MOU.findOne({ 
-          where: { 
-            jobCode: updateData.jobCode,
-            id: { [Op.ne]: id }
-          } 
-        });
-        if (existingMOU) {
-          return res.status(409).json({
-            success: false,
-            message: 'Job code already exists'
-          });
-        }
-      }
-
-      // Verify agency exists if being updated
-      if (updateData.agencyId) {
-        const agency = await Agency.findByPk(updateData.agencyId);
-        if (!agency) {
-          return res.status(404).json({
-            success: false,
-            message: 'Agency not found'
-          });
-        }
-      }
-
-      // Verify currency exists if being updated
-      if (updateData.currencyId) {
-        const currencyRecord = await currency.findByPk(updateData.currencyId);
-        if (!currencyRecord) {
-          return res.status(404).json({
-            success: false,
-            message: 'Currency not found'
-          });
-        }
-      }
-
-      await mou.update(updateData);
-
-      // Fetch updated MOU with associations
-      const updatedMOU = await MOU.findByPk(id, {
-        include: [
-          { model: Agency, as: 'agency' },
-          { model: user, as: 'maker', attributes: ['cus_id', 'cus_name', 'cus_email'], },
-          { model: user, as: 'updateUser', attributes: ['cus_id', 'cus_name', 'cus_email'], },
-          { model: currency, as: 'currency' },
-          { model: image, as: 'images' }
-        ]
-      });
-
-      logger.info('MOU updated successfully', { mouId: id });
-
-      res.json({
-        success: true,
-        message: 'MOU updated successfully',
-        data: updatedMOU
-      });
-    } catch (error) {
-      logger.error('Error updating MOU:', error);
-      
-      if (error instanceof ValidationError) {
-        return res.status(400).json({
-          success: false,
-          message: 'Validation error',
-          errors: error.errors.map(e => e.message)
-        });
-      }
-
-      res.status(500).json({
-        success: false,
-        message: 'Internal server error',
-        error: process.env.NODE_ENV === 'development' ? error.message : undefined
-      });
-    }
-  }
-
-  // ===============================================================
   // DELETE MOU (SOFT DELETE)
   // ===============================================================
   static async deleteMOU(req, res) {
@@ -365,13 +620,10 @@ class MOUController {
         });
       }
 
-      // Soft delete by setting isActive to false
-      await mou.update({ 
+      await mou.update({
         isActive: false,
-        updateUserId: req.user?.id 
+        updateUserId: req.user?.id
       });
-
-      logger.info('MOU deleted successfully', { mouId: id });
 
       res.json({
         success: true,
@@ -397,13 +649,13 @@ class MOUController {
       const offset = (parseInt(page) - 1) * parseInt(limit);
 
       const { count, rows } = await MOU.findAndCountAll({
-        where: { 
+        where: {
           jobStatus: status,
-          isActive: true 
+          isActive: true
         },
         include: [
           { model: Agency, as: 'agency' },
-          { model: user, as: 'maker', attributes: ['cus_id', 'cus_name', 'cus_email'], },
+          { model: user, as: 'maker', attributes: ['cus_id', 'cus_name', 'cus_email'] },
           { model: currency, as: 'currency' }
         ],
         limit: parseInt(limit),
@@ -460,12 +712,10 @@ class MOUController {
         });
       }
 
-      await mou.update({ 
+      await mou.update({
         jobStatus: status,
-        updateUserId: req.user?.id 
+        updateUserId: req.user?.id
       });
-
-      logger.info('MOU status updated successfully', { mouId: id, newStatus: status });
 
       res.json({
         success: true,
@@ -519,6 +769,61 @@ class MOUController {
         error: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
     }
+  }
+
+  // ===============================================================
+  // HELPER METHODS (MOVED INSIDE CLASS)
+  // ===============================================================
+  
+  // Clean up uploaded files
+  static async cleanupUploadedFiles(files) {
+    if (!files) return;
+
+    try {
+      const allFiles = [];
+      if (files.images) allFiles.push(...files.images);
+      if (files.documents) allFiles.push(...files.documents);
+
+      for (const file of allFiles) {
+        if (fs.existsSync(file.path)) {
+          fs.unlinkSync(file.path);
+          logger.info(`Cleaned up uploaded file: ${file.path}`);
+        }
+      }
+    } catch (error) {
+      logger.error('Error cleaning up uploaded files:', error);
+    }
+  }
+
+  // Sanitize filename
+  static sanitizeFilename(filename) {
+    if (!filename) return 'document';
+    
+    return filename
+      .replace(/[<>:"/\\|?*\x00-\x1f]/g, '_')
+      .replace(/\s+/g, '_')
+      .replace(/_{2,}/g, '_')
+      .replace(/^_|_$/g, '')
+      .substring(0, 255);
+  }
+
+  // Set download headers safely
+  static setDownloadHeaders(res, filename) {
+    try {
+      const safeFilename = filename.replace(/[^\x00-\x7F]/g, '_');
+      res.setHeader('Content-Type', 'application/octet-stream');
+      res.setHeader('Content-Disposition', `attachment; filename="${safeFilename}"`);
+    } catch (error) {
+      console.error('Error setting headers:', error);
+      res.setHeader('Content-Type', 'application/octet-stream');
+      res.setHeader('Content-Disposition', 'attachment; filename="document"');
+    }
+  }
+
+  // Get file URL for frontend access
+  static getFileUrl(req, type, filename) {
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    return `${baseUrl}/uploads/${type}/${filename}`;
   }
 }
 
