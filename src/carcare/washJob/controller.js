@@ -80,6 +80,18 @@ exports.getAllWashJobs = async (req, res) => {
               as: 'priceList'
             }
           ]
+        },
+        {
+          model: SaleHeader,
+          as: 'saleHeader',
+          attributes: ['id', 'total'],
+          include: [
+            {
+              model: Payment,
+              as: 'payment',
+              attributes: ['id', 'payment_code','payment_name'],
+            }
+          ]
         }
       ]
     });
@@ -289,7 +301,7 @@ exports.createSaleFromWashJob = async (req, res) => {
       bookingDate: new Date(),
       remark: `From WashJob #${washJob.id}`,
       discount: washJob.manualDiscountAmount || 0,
-      total: washJob.totalAmount+washJob.manualDiscountAmount,
+      total: washJob.totalAmount + washJob.manualDiscountAmount,
       exchangeRate: dfCurrency.rate,
       isActive: true,
       // createdAt: new Date(),
