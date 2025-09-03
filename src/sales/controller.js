@@ -16,6 +16,7 @@ const productService = require('../product/service');
 const { sequelize, location, company } = require('../models');
 const spfService = require('../spf/service')
 const cardService = require('../card/service')
+const WashJob = require('../models').washjob;
 // 1. 200 OK - The request has succeeded and the server has returned the requested data.
 
 // 2. 201 Created - The request has been fulfilled and a new resource has been created.
@@ -186,6 +187,16 @@ exports.reverseSaleHeader = async (req, res) => {
         ]
       }]
     });
+    logger.info(`Sale header ${JSON.stringify(saleHeader)}`)
+    // Reverse external transaction 
+    if (saleHeader.washJobId) {
+      logger.info(`Reversing the washJob ${saleHeader.washJobId}`)
+      const washJob = await WashJob.findByPk(saleHeader.washJobId)
+      await washJob.update({
+        status:'CANCELLED',
+      });
+      logger.info(`Currency wash job version ${JSON.stringify(washJob)}`)
+    }
     if (!saleHeader) {
       logger.error("Order Id " + id + ' is not found')
       return res.status(404).json({ success: false, message: 'Sale header not found' });
