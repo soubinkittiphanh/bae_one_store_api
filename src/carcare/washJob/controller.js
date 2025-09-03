@@ -299,7 +299,7 @@ exports.createSaleFromWashJob = async (req, res) => {
     // 1. Create SaleHeader
     const saleHeader = await SaleHeader.create({
       bookingDate: new Date(),
-      remark: `From WashJob #${washJob.id}`,
+      remark: `${washJob.notes}`,
       discount: washJob.manualDiscountAmount || 0,
       total: washJob.totalAmount + washJob.manualDiscountAmount,
       exchangeRate: dfCurrency.rate,
