@@ -20,6 +20,10 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING,
             // allowNull: false
         },
+        externalBookingDate: {
+            type: DataTypes.DATEONLY,
+            allowNull: false,
+        },
         externalRefNo: {
             type: DataTypes.STRING,
             // allowNull: false

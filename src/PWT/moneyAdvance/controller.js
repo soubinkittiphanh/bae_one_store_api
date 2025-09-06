@@ -262,6 +262,7 @@ class MoneyAdvanceController {
         method,
         bookingDate,
         externalRef,           // 🆕 NEW FIELD
+        externalBookingDate,           // 🆕 NEW FIELD
         externalRefNo,         // 🆕 NEW FIELD
         chequeNo,              // 🆕 NEW FIELD
         receiveName,           // 🆕 NEW FIELD
@@ -316,6 +317,7 @@ class MoneyAdvanceController {
         method,
         bookingDate,
         externalRef,           // 🆕 NEW FIELD
+        externalBookingDate,           // 🆕 NEW FIELD
         externalRefNo,         // 🆕 NEW FIELD
         chequeNo,              // 🆕 NEW FIELD
         receiveName,           // 🆕 NEW FIELD
@@ -368,6 +370,7 @@ class MoneyAdvanceController {
         method,
         bookingDate,
         externalRef,           // 🆕 NEW FIELD
+        externalBookingDate,           // 🆕 NEW FIELD
         externalRefNo,         // 🆕 NEW FIELD
         chequeNo,              // 🆕 NEW FIELD
         receiveName,           // 🆕 NEW FIELD
@@ -434,6 +437,7 @@ class MoneyAdvanceController {
       await advance.update({
         method: method || advance.method,
         bookingDate: bookingDate || advance.bookingDate,
+        externalBookingDate: externalBookingDate || advance.externalBookingDate,
         externalRef: externalRef !== undefined ? externalRef : advance.externalRef,           // 🆕 NEW FIELD
         externalRefNo: externalRefNo !== undefined ? externalRefNo : advance.externalRefNo,   // 🆕 NEW FIELD
         chequeNo: chequeNo !== undefined ? chequeNo : advance.chequeNo,                       // 🆕 NEW FIELD

@@ -172,7 +172,7 @@ module.exports = (sequelize, DataTypes) => {
     
     // สถานะการสมัคร - Application Status
     status: {
-      type: DataTypes.ENUM('INTERVIEW', 'REGISTER', 'rejected'),
+      type: DataTypes.ENUM('INTERVIEW', 'REGISTER', 'CONFIRM'),
       allowNull: false,
       defaultValue: 'INTERVIEW'
     },
