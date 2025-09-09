@@ -202,6 +202,13 @@ const clientDB = {
         "database": "dcommerce_mpwt",
         "port": 3306,
     },
+    "taiphuan": {
+        "host": "150.95.31.23",
+        "user": "root",
+        "password": "sdat@3480",
+        "database": "dcommerce_pro_auto_02023838999",
+        "port": 3306,
+    },
 }
 
 module.exports = {

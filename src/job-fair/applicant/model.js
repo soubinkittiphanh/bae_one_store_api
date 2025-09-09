@@ -50,7 +50,7 @@ module.exports = (sequelize, DataTypes) => {
     // เบอใช - Phone Number
     phone: {
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: true
     },
     
     // เบอติดตอชุมชน - Emergency Contact Number

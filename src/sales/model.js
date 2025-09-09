@@ -50,6 +50,20 @@ module.exports = (sequelize, DataTypes) => {
         }
     })
 
+    SaleHeader.associate = models => {
+        // SaleHeader.hasMany(models.saleLine, {
+        //     foreignKey: 'saleHeaderId',
+        //     as: 'saleLines',
+        // });
+
+        // Optional: Link back to ticket for reference
+        SaleHeader.belongsTo(models.ticket, {
+            foreignKey: 'ticketId',
+            as: 'ticket',
+        });
+    };
+
+
     return SaleHeader;
 };
 

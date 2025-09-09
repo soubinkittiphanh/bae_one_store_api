@@ -6,6 +6,7 @@ module.exports = (sequelize, DataTypes) => {
         cus_id: {
             // type: DataTypes.INTEGER,
             type: DataTypes.BIGINT,
+            // type: DataTypes.STRING,
             allowNull: false,
             // primaryKey: true
         },

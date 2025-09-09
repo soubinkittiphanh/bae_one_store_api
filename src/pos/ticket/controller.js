@@ -1,4 +1,3 @@
-
 const { body, validationResult } = require('express-validator');
 const logger = require('../../api/logger');
 const { Op } = require('sequelize');
@@ -9,6 +8,96 @@ const Table = require('../../models').table;
 const sequelize = require('../../models').sequelize;
 const Payment = require('../../models').payment;
 const Client = require('../../models').client;
+const Product = require('../../models').product;
+// Add these for sale integration
+const SaleHeader = require('../../models').saleHeader;
+const SaleLine = require('../../models').saleLine;
+
+// Service function to convert ticket to sale
+const postTicketToSale = async (ticketId, transaction = null) => {
+    try {
+        // Get the ticket with all ticket lines
+        const ticket = await Ticket.findByPk(ticketId, {
+            include: [
+                {
+                    model: TicketLine,
+                    as: 'ticketLines',
+                    include: [
+                        {
+                            model: Product,
+                            as: 'product'
+                        }
+                    ]
+                },
+                {
+                    model: Client,
+                    as: 'client'
+                }
+            ],
+            transaction
+        });
+
+        if (!ticket) {
+            throw new Error('Ticket not found');
+        }
+
+        if (ticket.status !== 'paid' || ticket.paymentStatus !== 'paid') {
+            throw new Error('Ticket must be paid to post to sales');
+        }
+
+        // Check if this ticket has already been posted to sales
+        const existingSale = await SaleHeader.findOne({
+            where: { ticketId: ticketId },
+            transaction
+        });
+
+        if (existingSale) {
+            throw new Error('Ticket has already been posted to sales');
+        }
+
+        // Create sale header
+        const saleHeaderData = {
+            ticketId: ticket.id,
+            paymentId: ticket.paymentId,
+            bookingDate: new Date().toISOString().split('T')[0], // Today's date
+            referenceNo: `TKT-${ticket.id}-${Date.now()}`, // Generate reference number
+            remark: ticket.notes || `Sale from Ticket #${ticket.id}`,
+            discount: 0, // You can calculate this if needed
+            total: parseFloat(ticket.total),
+            exchangeRate: 1, // Default exchange rate
+            isActive: true
+        };
+
+        const saleHeader = await SaleHeader.create(saleHeaderData, { transaction });
+
+        // Create sale lines from ticket lines
+        const saleLines = [];
+        for (const ticketLine of ticket.ticketLines) {
+            const saleLineData = {
+                saleHeaderId: saleHeader.id,
+                productId: ticketLine.productId,
+                quantity: parseFloat(ticketLine.quantity),
+                unitRate: parseFloat(ticketLine.unitPrice),
+                price: parseFloat(ticketLine.unitPrice),
+                discount: 0, // You can calculate this if needed
+                total: parseFloat(ticketLine.totalPrice),
+                isActive: true
+            };
+
+            const saleLine = await SaleLine.create(saleLineData, { transaction });
+            saleLines.push(saleLine);
+        }
+
+        return {
+            saleHeader,
+            saleLines,
+            originalTicket: ticket
+        };
+
+    } catch (error) {
+        throw new Error(`Failed to post ticket to sale: ${error.message}`);
+    }
+};
 
 const ticketController = {
 
@@ -92,7 +181,7 @@ const ticketController = {
                     // attributes: ['id', 'quantity', 'unitPrice', 'total', 'notes', 'productId'],
                     include: [
                         {
-                            model: require('../../models').product, // Adjust based on your models
+                            model: Product,
                             as: 'product',
                             // attributes: ['id', 'name', 'price'],
                             required: false
@@ -163,8 +252,7 @@ const ticketController = {
                         model: TicketLine,
                         as: 'ticketLines',
                         include: [
-                            // Add product details if you have Product model
-                            // { model: Product, as: 'product', attributes: ['id', 'name', 'price'] }
+                            { model: Product, as: 'product', attributes: ['id', 'name', 'price'] }
                         ]
                     }
                 ]
@@ -257,7 +345,7 @@ const ticketController = {
                 const ticketLinesData = ticketLines.map(line => ({
                     ...line,
                     ticketId: newTicket.id,
-                    subtotal: (parseFloat(line.quantity) * parseFloat(line.unitPrice || 0)).toFixed(2)
+                    totalPrice: (parseFloat(line.quantity) * parseFloat(line.unitPrice || 0)).toFixed(2)
                 }));
 
                 await TicketLine.bulkCreate(ticketLinesData, { transaction });
@@ -350,7 +438,7 @@ const ticketController = {
                 const ticketLinesData = updateData.ticketLines.map(line => ({
                     ...line,
                     ticketId: id,
-                    subtotal: (parseFloat(line.quantity) * parseFloat(line.unitPrice || 0)).toFixed(2)
+                    totalPrice: (parseFloat(line.quantity) * parseFloat(line.unitPrice || 0)).toFixed(2)
                 }));
 
                 await TicketLine.bulkCreate(ticketLinesData, { transaction });
@@ -460,13 +548,17 @@ const ticketController = {
         }
     },
 
-    // Update payment status
+    // Update payment status - UPDATED WITH SALE INTEGRATION
     updatePaymentStatus: async (req, res) => {
+        // Use database transaction for data consistency
+        const t = await sequelize.transaction();
+        
         try {
             const { id } = req.params;
             const { paymentStatus, paymentId } = req.body;
 
             if (!paymentStatus) {
+                await t.rollback();
                 return res.status(400).json({
                     success: false,
                     message: 'Payment status is required'
@@ -475,15 +567,16 @@ const ticketController = {
 
             const validPaymentStatuses = ['pending', 'paid', 'refunded'];
             if (!validPaymentStatuses.includes(paymentStatus)) {
+                await t.rollback();
                 return res.status(400).json({
                     success: false,
                     message: 'Invalid payment status'
                 });
             }
 
-            const ticket = await Ticket.findByPk(id);
-
+            const ticket = await Ticket.findByPk(id, { transaction: t });
             if (!ticket) {
+                await t.rollback();
                 return res.status(404).json({
                     success: false,
                     message: 'Ticket not found'
@@ -498,14 +591,48 @@ const ticketController = {
                 updateData.status = 'paid';
             }
 
-            await ticket.update(updateData);
+            // Update the ticket
+            await ticket.update(updateData, { transaction: t });
+
+            let saleData = null;
+
+            // If status is paid, post to sale tables
+            if (paymentStatus === 'paid') {
+                try {
+                    saleData = await postTicketToSale(id, t);
+                    console.log(`Ticket ${id} successfully posted to sales`);
+                } catch (saleError) {
+                    // If it's already posted, that's okay, just log it
+                    if (saleError.message.includes('already been posted')) {
+                        console.log(`Ticket ${id} has already been posted to sales`);
+                    } else {
+                        // For other errors, rollback the transaction
+                        await t.rollback();
+                        return res.status(500).json({
+                            success: false,
+                            message: 'Error posting to sales',
+                            error: saleError.message
+                        });
+                    }
+                }
+            }
+
+            // Commit the transaction
+            await t.commit();
 
             res.status(200).json({
                 success: true,
-                message: 'Payment status updated successfully',
-                data: ticket
+                message: paymentStatus === 'paid' 
+                    ? 'Payment status updated and posted to sales successfully' 
+                    : 'Payment status updated successfully',
+                data: {
+                    ticket,
+                    sale: saleData
+                }
             });
+
         } catch (error) {
+            await t.rollback();
             res.status(500).json({
                 success: false,
                 message: 'Error updating payment status',
@@ -688,6 +815,7 @@ const ticketController = {
             });
         }
     },
+
     async getTicketsByTableAndStatus(req, res) {
         try {
             const { tableId } = req.params;
@@ -703,6 +831,7 @@ const ticketController = {
             res.status(500).json({ error: error.message });
         }
     },
+
     // Then add this controller method
     async getCurrentTicketByTable(req, res) {
         try {
@@ -733,6 +862,77 @@ const ticketController = {
             });
         } catch (error) {
             res.status(500).json({ error: error.message });
+        }
+    },
+
+    // NEW METHODS FOR SALE INTEGRATION
+
+    // Utility function to manually post a ticket to sales (if needed)
+    manualPostTicketToSale: async (req, res) => {
+        const t = await sequelize.transaction();
+        
+        try {
+            const { ticketId } = req.params;
+            
+            const saleData = await postTicketToSale(ticketId, t);
+            
+            await t.commit();
+            
+            res.status(200).json({
+                success: true,
+                message: 'Ticket posted to sales successfully',
+                data: saleData
+            });
+            
+        } catch (error) {
+            await t.rollback();
+            res.status(500).json({
+                success: false,
+                message: 'Error posting ticket to sales',
+                error: error.message
+            });
+        }
+    },
+
+    // Function to get sale data by ticket ID
+    getSaleByTicketId: async (req, res) => {
+        try {
+            const { ticketId } = req.params;
+            
+            const saleHeader = await SaleHeader.findOne({
+                where: { ticketId },
+                include: [
+                    {
+                        model: SaleLine,
+                        as: 'saleLines',
+                        include: [
+                            {
+                                model: Product,
+                                as: 'product'
+                            }
+                        ]
+                    }
+                ]
+            });
+            
+            if (!saleHeader) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Sale not found for this ticket'
+                });
+            }
+            
+            res.status(200).json({
+                success: true,
+                data: saleHeader
+            });
+            
+        } catch (error) {
+            res.status(500).json({
+                success: false,
+                message: 'Error retrieving sale data',
+                error: error.message
+            });
         }
     }
 };
