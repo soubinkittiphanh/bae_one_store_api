@@ -20,7 +20,8 @@ router.get('/download/document/:mouId/:documentIndex', MOUController.downloadDoc
 
 // Existing routes (without file upload)
 router.get('/', MOUController.getAllMOUs);
-router.get('/statistics', MOUController.getMOUStatistics);
+// router.get('/statistics', MOUController.getMOUStatistics);
+router.get('/statistics', MOUController.getStatistics);
 router.get('/status/:status', MOUController.getMOUsByStatus);
 router.get('/:id', MOUController.getMOUById);
 router.patch('/:id/status', MOUController.updateMOUStatus);

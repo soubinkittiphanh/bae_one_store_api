@@ -67,7 +67,7 @@ module.exports = (sequelize, DataTypes) => {
 
     // ປະເພດແຮງງານ - Worker Type
     workerType: {
-      type: DataTypes.ENUM('Man', 'Woman', 'Spous',  'Any'),
+      type: DataTypes.ENUM('Man', 'Woman', 'Spous', 'Any'),
       allowNull: false,
       defaultValue: 'Any'
     },
@@ -141,6 +141,13 @@ module.exports = (sequelize, DataTypes) => {
     MOU.hasMany(models.image, {
       foreignKey: 'MOUID',
       as: 'images'
+    });
+    // ADD THIS ASSOCIATION - MOU has many JobBatches
+    MOU.hasMany(models.JobBatch, {
+      foreignKey: 'mouId',
+      as: 'jobBatches',
+      onDelete: 'SET NULL', // When MOU is deleted, set jobBatch.mouId to NULL
+      onUpdate: 'CASCADE'
     });
 
   };

@@ -1,7 +1,7 @@
 // ===============================================================
 // MOU CONTROLLER - FIXED VERSION
 // ===============================================================
-const { MOU, Agency, user, currency, image, sequelize } = require('../../models');
+const { MOU, Agency, user, currency, image, sequelize,JobBatch } = require('../../models');
 const logger = require('../../api/logger');
 const { Op, ValidationError, DatabaseError, QueryTypes } = require('sequelize');
 const { v4: uuidv4 } = require('uuid');
@@ -178,6 +178,132 @@ class MOUController {
       });
     }
   }
+
+// Complete MOU Statistics Controller Method
+static async getStatistics(req, res) {
+  try {
+    // Get total MOUs count
+    const totalMOUs = await MOU.count({
+      where: { isActive: true }
+    });
+
+    // Get MOU status breakdown
+    const statusBreakdown = await MOU.findAll({
+      where: { isActive: true },
+      attributes: [
+        'jobStatus',
+        [sequelize.fn('COUNT', sequelize.col('id')), 'count']
+      ],
+      group: ['jobStatus'],
+      raw: true
+    });
+
+    // Convert status breakdown to object
+    const statusCounts = {
+      draft: 0,
+      open: 0,
+      inProgress: 0,
+      completed: 0,
+      cancelled: 0
+    };
+
+    statusBreakdown.forEach(item => {
+      if (statusCounts.hasOwnProperty(item.jobStatus)) {
+        statusCounts[item.jobStatus] = parseInt(item.count);
+      }
+    });
+
+    // Get JobBatch statistics
+    const jobBatchStats = await JobBatch.findAll({
+      where: { isActive: true },
+      attributes: [
+        [sequelize.fn('COUNT', sequelize.col('id')), 'totalJobBatches'],
+        [
+          sequelize.fn('COUNT', 
+            sequelize.literal(`CASE WHEN status = 'active' THEN 1 END`)
+          ), 
+          'activeJobBatches'
+        ],
+        [
+          sequelize.fn('COUNT', 
+            sequelize.literal(`CASE WHEN status = 'completed' THEN 1 END`)
+          ), 
+          'completedJobBatches'
+        ],
+        [
+          sequelize.fn('COUNT', 
+            sequelize.literal(`CASE WHEN status = 'draft' THEN 1 END`)
+          ), 
+          'draftJobBatches'
+        ]
+      ],
+      raw: true
+    });
+
+    // Get Applicant statistics
+    const applicantStats = await Applicant.findAll({
+      where: { isActive: true },
+      attributes: [
+        [sequelize.fn('COUNT', sequelize.col('id')), 'totalApplicants'],
+        [
+          sequelize.fn('COUNT', 
+            sequelize.literal(`CASE WHEN status = 'INTERVIEW' THEN 1 END`)
+          ), 
+          'interviewApplicants'
+        ],
+        [
+          sequelize.fn('COUNT', 
+            sequelize.literal(`CASE WHEN status = 'REGISTER' THEN 1 END`)
+          ), 
+          'registerApplicants'
+        ],
+        [
+          sequelize.fn('COUNT', 
+            sequelize.literal(`CASE WHEN status = 'CONFIRM' THEN 1 END`)
+          ), 
+          'confirmApplicants'
+        ]
+      ],
+      raw: true
+    });
+
+    // Extract data from query results
+    const batchData = jobBatchStats[0] || {};
+    const applicantData = applicantStats[0] || {};
+
+    // Build complete statistics object
+    const statistics = {
+      totalMOUs,
+      totalJobBatches: parseInt(batchData.totalJobBatches) || 0,
+      activeJobBatches: parseInt(batchData.activeJobBatches) || 0,
+      completedJobBatches: parseInt(batchData.completedJobBatches) || 0,
+      draftJobBatches: parseInt(batchData.draftJobBatches) || 0,
+      totalApplicants: parseInt(applicantData.totalApplicants) || 0,
+      totalInterviewApplicants: parseInt(applicantData.interviewApplicants) || 0,
+      totalRegisterApplicants: parseInt(applicantData.registerApplicants) || 0,
+      totalConfirmedApplicants: parseInt(applicantData.confirmApplicants) || 0,
+      statusBreakdown: statusCounts
+    };
+
+    // Send successful response
+    res.json({
+      success: true,
+      message: 'Statistics retrieved successfully',
+      data: statistics
+    });
+
+  } catch (error) {
+    logger.error('Error fetching MOU statistics:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+}
+
+// Don't forget to add the route in your routes file:
+// router.get('/statistics', MouController.getStatistics);
 
   // ===============================================================
   // UPDATE MOU WITH FILES
@@ -407,7 +533,7 @@ class MOUController {
   static async downloadDocument(req, res) {
     try {
       const { mouId, documentIndex } = req.params;
-      
+
       const mou = await MOU.findByPk(mouId);
       if (!mou) {
         return res.status(404).json({
@@ -418,7 +544,7 @@ class MOUController {
 
       const documents = mou.documents || [];
       const docIndex = parseInt(documentIndex);
-      
+
       if (docIndex < 0 || docIndex >= documents.length) {
         return res.status(404).json({
           success: false,
@@ -428,7 +554,7 @@ class MOUController {
 
       const document = documents[docIndex];
       const filePath = document.path;
-      
+
       if (!fs.existsSync(filePath)) {
         return res.status(404).json({
           success: false,
@@ -439,10 +565,10 @@ class MOUController {
       // Sanitize filename
       let fileName = document.name || path.basename(filePath);
       fileName = MOUController.sanitizeFilename(fileName);
-      
+
       // Set headers safely
       MOUController.setDownloadHeaders(res, fileName);
-      
+
       res.sendFile(path.resolve(filePath));
 
     } catch (error) {
@@ -458,7 +584,7 @@ class MOUController {
   static async downloadImage(req, res) {
     try {
       const { imageId } = req.params;
-      
+
       const imageRecord = await image.findByPk(imageId);
       if (!imageRecord) {
         return res.status(404).json({
@@ -468,7 +594,7 @@ class MOUController {
       }
 
       const filePath = imageRecord.img_path;
-      
+
       if (!fs.existsSync(filePath)) {
         return res.status(404).json({
           success: false,
@@ -478,7 +604,7 @@ class MOUController {
 
       let fileName = imageRecord.orgName || path.basename(filePath);
       fileName = MOUController.sanitizeFilename(fileName);
-      
+
       MOUController.setDownloadHeaders(res, fileName);
       res.sendFile(path.resolve(filePath));
 
@@ -525,6 +651,7 @@ class MOUController {
       if (agencyId) whereClause.agencyId = agencyId;
       if (workerType) whereClause.workerType = workerType;
 
+      // First, get MOUs with basic includes
       const { count, rows } = await MOU.findAndCountAll({
         where: whereClause,
         include: [
@@ -539,13 +666,119 @@ class MOUController {
         distinct: true
       });
 
+      // Get MOU IDs for statistics queries
+      const mouIds = rows.map(mou => mou.id);
+
+      let jobBatchStats = {};
+      let applicantStats = {};
+
+      if (mouIds.length > 0) {
+        // Get JobBatch statistics for each MOU
+        const batchStats = await JobBatch.findAll({
+          where: {
+            mouId: {
+              [Op.in]: mouIds
+            },
+            isActive: true
+          },
+          attributes: [
+            'mouId',
+            [sequelize.fn('COUNT', sequelize.col('id')), 'totalJobBatches'],
+            [
+              sequelize.fn('COUNT',
+                sequelize.literal(`CASE WHEN status = 'active' THEN 1 END`)
+              ),
+              'activeJobBatches'
+            ],
+            [
+              sequelize.fn('COUNT',
+                sequelize.literal(`CASE WHEN status = 'completed' THEN 1 END`)
+              ),
+              'completedJobBatches'
+            ],
+            [
+              sequelize.fn('COUNT',
+                sequelize.literal(`CASE WHEN status = 'draft' THEN 1 END`)
+              ),
+              'draftJobBatches'
+            ],
+            [
+              sequelize.fn('SUM', sequelize.col('totalPositions')),
+              'totalPositions'
+            ]
+          ],
+          group: ['mouId'],
+          raw: true
+        });
+
+        // Convert to object for easy lookup
+        batchStats.forEach(stat => {
+          jobBatchStats[stat.mouId] = {
+            totalJobBatches: parseInt(stat.totalJobBatches) || 0,
+            activeJobBatches: parseInt(stat.activeJobBatches) || 0,
+            completedJobBatches: parseInt(stat.completedJobBatches) || 0,
+            draftJobBatches: parseInt(stat.draftJobBatches) || 0,
+            totalPositions: parseInt(stat.totalPositions) || 0
+          };
+        });
+
+        // Get applicant statistics through JobBatch -> Applicant relationship
+        const applicantStatsQuery = await sequelize.query(`
+        SELECT 
+          jb.mouId,
+          COUNT(a.id) as totalApplicants,
+          COUNT(CASE WHEN a.status = 'INTERVIEW' THEN 1 END) as interviewCount,
+          COUNT(CASE WHEN a.status = 'REGISTER' THEN 1 END) as registerCount,
+          COUNT(CASE WHEN a.status = 'CONFIRM' THEN 1 END) as confirmCount
+        FROM JobBatch jb
+        LEFT JOIN Applicant a ON jb.id = a.jobBatchId AND a.isActive = true
+        WHERE jb.mouId IN (${mouIds.join(',')}) AND jb.isActive = true
+        GROUP BY jb.mouId
+      `, {
+          type: QueryTypes.SELECT
+        });
+
+        // Convert applicant stats to object
+        applicantStatsQuery.forEach(stat => {
+          applicantStats[stat.mouId] = {
+            totalApplicants: parseInt(stat.totalApplicants) || 0,
+            interview: parseInt(stat.interviewCount) || 0,
+            register: parseInt(stat.registerCount) || 0,
+            confirm: parseInt(stat.confirmCount) || 0
+          };
+        });
+      }
+
+      // Combine MOU data with statistics
+      const mousWithStats = rows.map(mou => {
+        const mouData = mou.get({ plain: true });
+        const mouId = mou.id;
+
+        return {
+          ...mouData,
+          jobBatchStatistics: jobBatchStats[mouId] || {
+            totalJobBatches: 0,
+            activeJobBatches: 0,
+            completedJobBatches: 0,
+            draftJobBatches: 0,
+            totalPositions: 0
+          },
+          applicantStatistics: applicantStats[mouId] || {
+            totalApplicants: 0,
+            interview: 0,
+            register: 0,
+            confirm: 0
+          }
+        };
+      });
+
       const totalPages = Math.ceil(count / parseInt(limit));
 
       res.json({
         success: true,
         message: 'MOUs retrieved successfully',
         data: {
-          mous: rows,
+          mous: mousWithStats,
           pagination: {
             currentPage: parseInt(page),
             totalPages,
@@ -556,6 +789,7 @@ class MOUController {
           }
         }
       });
+
     } catch (error) {
       logger.error('Error fetching MOUs:', error);
       res.status(500).json({
@@ -774,7 +1008,7 @@ class MOUController {
   // ===============================================================
   // HELPER METHODS (MOVED INSIDE CLASS)
   // ===============================================================
-  
+
   // Clean up uploaded files
   static async cleanupUploadedFiles(files) {
     if (!files) return;
@@ -798,7 +1032,7 @@ class MOUController {
   // Sanitize filename
   static sanitizeFilename(filename) {
     if (!filename) return 'document';
-    
+
     return filename
       .replace(/[<>:"/\\|?*\x00-\x1f]/g, '_')
       .replace(/\s+/g, '_')

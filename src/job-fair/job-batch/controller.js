@@ -1,7 +1,6 @@
 const logger = require("../../api/logger");
-const { JobBatch, user, MOU } = require("../../models"); // Added MOU import
+const { JobBatch, user, MOU, Applicant, sequelize } = require("../../models"); // Added MOU import
 const { Op } = require("sequelize");
-
 // controllers/JobBatchController.js
 class JobBatchController {
   // Create new job batch
@@ -72,7 +71,7 @@ class JobBatchController {
 
     } catch (error) {
       logger.error("Error creating job batch:", error);
-      
+
       if (error.name === 'SequelizeValidationError') {
         return res.status(400).json({
           success: false,
@@ -106,6 +105,8 @@ class JobBatchController {
   }
 
   // Get all job batches with pagination and filtering
+  // Get all job batches with pagination, filtering, and applicant statistics
+  // Get all job batches with pagination, filtering, and applicant statistics
   static async getAll(req, res) {
     try {
       const {
@@ -113,7 +114,7 @@ class JobBatchController {
         limit = 10,
         status,
         priority,
-        mouId, // NEW: MOU filter
+        mouId,
         isActive = true,
         search,
         sortBy = 'createdAt',
@@ -126,8 +127,8 @@ class JobBatchController {
       // Add filters
       if (status) whereClause.status = status;
       if (priority) whereClause.priority = priority;
-      if (mouId) whereClause.mouId = mouId; // NEW: MOU filter
-      
+      if (mouId) whereClause.mouId = mouId;
+
       if (search) {
         whereClause[Op.or] = [
           { batchName: { [Op.iLike]: `%${search}%` } },
@@ -136,6 +137,7 @@ class JobBatchController {
         ];
       }
 
+      // First, get the job batches with basic includes
       const { count, rows } = await JobBatch.findAndCountAll({
         where: whereClause,
         include: [
@@ -143,33 +145,98 @@ class JobBatchController {
             model: user,
             as: 'maker',
             attributes: ['cus_id', 'cus_name', 'cus_email'],
-            required: false // Use LEFT JOIN
+            required: false
           },
           {
             model: user,
             as: 'updateUser',
             attributes: ['cus_id', 'cus_name', 'cus_email'],
-            required: false // Use LEFT JOIN
+            required: false
           },
           {
-            // NEW: Include MOU association
             model: MOU,
             as: 'mou',
             attributes: ['id', 'jobCode', 'mouNumber', 'jobTitle', 'employerCompany', 'workLocation', 'numberOfWorkers', 'workerType', 'jobStatus'],
-            required: false // Use LEFT JOIN to include batches without MOU
+            required: false
           }
         ],
         order: [[sortBy, sortOrder.toUpperCase()]],
         limit: parseInt(limit),
         offset: parseInt(offset),
-        distinct: true // Important for accurate count with includes
+        distinct: true
+      });
+
+      // Then, get applicant statistics for each job batch
+      const jobBatchIds = rows.map(batch => batch.id);
+
+      let applicantStats = {};
+      if (jobBatchIds.length > 0) {
+        // Get applicant statistics using a separate query
+        const stats = await Applicant.findAll({
+          where: {
+            jobBatchId: {
+              [Op.in]: jobBatchIds
+            },
+            isActive: true // Only count active applicants
+          },
+          attributes: [
+            'jobBatchId',
+            [sequelize.fn('COUNT', sequelize.col('id')), 'totalApplicants'],
+            [
+              sequelize.fn('COUNT',
+                sequelize.literal(`CASE WHEN status = 'INTERVIEW' THEN 1 END`)
+              ),
+              'interviewCount'
+            ],
+            [
+              sequelize.fn('COUNT',
+                sequelize.literal(`CASE WHEN status = 'REGISTER' THEN 1 END`)
+              ),
+              'registerCount'
+            ],
+            [
+              sequelize.fn('COUNT',
+                sequelize.literal(`CASE WHEN status = 'CONFIRM' THEN 1 END`)
+              ),
+              'confirmCount'
+            ]
+          ],
+          group: ['jobBatchId'],
+          raw: true
+        });
+
+        // Convert to object for easy lookup
+        stats.forEach(stat => {
+          applicantStats[stat.jobBatchId] = {
+            total: parseInt(stat.totalApplicants) || 0,
+            interview: parseInt(stat.interviewCount) || 0,
+            register: parseInt(stat.registerCount) || 0,
+            confirm: parseInt(stat.confirmCount) || 0
+          };
+        });
+      }
+
+      // Combine job batch data with applicant statistics
+      const jobBatchesWithStats = rows.map(batch => {
+        const batchData = batch.get({ plain: true });
+        const batchId = batch.id;
+
+        return {
+          ...batchData,
+          applicantStatistics: applicantStats[batchId] || {
+            total: 0,
+            interview: 0,
+            register: 0,
+            confirm: 0
+          }
+        };
       });
 
       return res.status(200).json({
         success: true,
         message: "Job batches retrieved successfully",
         data: {
-          jobBatches: rows,
+          jobBatches: jobBatchesWithStats,
           pagination: {
             current_page: parseInt(page),
             per_page: parseInt(limit),
@@ -356,7 +423,7 @@ class JobBatchController {
 
     } catch (error) {
       logger.error("Error updating job batch:", error);
-      
+
       if (error.name === 'SequelizeValidationError') {
         return res.status(400).json({
           success: false,

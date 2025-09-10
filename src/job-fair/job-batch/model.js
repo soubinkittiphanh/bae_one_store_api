@@ -127,6 +127,12 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: 'mouId',
       as: 'mou',
     });
+    JobBatch.hasMany(models.Applicant, {
+      foreignKey: 'jobBatchId',
+      as: 'applicants',
+      onDelete: 'CASCADE', // Optional: delete applicants when job batch is deleted
+      onUpdate: 'CASCADE'
+    });
 
   };
 
