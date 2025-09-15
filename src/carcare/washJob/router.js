@@ -15,6 +15,7 @@ router
 .delete("/find/:id", controller.deleteWashJob)
 .get("/find", controller.getAllWashJobs)
 .get("/findAll", controller.getAllWashJobs)
+.get("/findAllRecentJob", controller.getRecentWashJobs)
 .get("/findAllByDate", controller.getAllWashJobs)
 .get("/find/:id", controller.getWashJobById)
 // .post("/generate", service.createHulkUnit)

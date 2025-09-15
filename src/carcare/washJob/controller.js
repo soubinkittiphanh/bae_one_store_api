@@ -12,6 +12,7 @@ const Location = require('../../models').location;
 const Payment = require('../../models').payment;
 const Unit = require('../../models').unit;
 const { sequelize, priceList } = require('../../models');
+const { Op } = require('sequelize');
 const PriceList = require('../../models').priceList;
 // Create a new wash job with products and services
 exports.createWashJob = async (req, res) => {
@@ -100,6 +101,74 @@ exports.getAllWashJobs = async (req, res) => {
     res.status(200).json(washJobs);
   } catch (err) {
     logger.error(`Fail to fetch washJob: ${err}`);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getRecentWashJobs = async (req, res) => {
+  try {
+    // Get current date and yesterday's date
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Start of today
+    
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1); // Start of yesterday
+    
+    const endOfToday = new Date(today);
+    endOfToday.setHours(23, 59, 59, 999); // End of today
+    logger.info(`RECENTLY DATE ${today} YESTERDAY ${yesterday} end of day ${endOfToday}`)
+    const washJobs = await WashJob.findAll({
+      where: {
+        createdAt: {
+          [Op.gte]: yesterday, // Greater than or equal to start of yesterday
+          [Op.lte]: endOfToday  // Less than or equal to end of today
+        }
+      },
+      include: [
+        {
+          model: WashJobLine,
+          as: 'lines',
+          include: [
+            {
+              model: Product,
+              as: 'product',
+              include: [
+                {
+                  model: PriceList,
+                  as: 'priceLists'
+                },
+                {
+                  model: Currency,
+                  as: 'saleCurrency'
+                }
+              ]
+            },
+            {
+              model: PriceList,
+              as: 'priceList'
+            }
+          ]
+        },
+        {
+          model: SaleHeader,
+          as: 'saleHeader',
+          attributes: ['id', 'total'],
+          include: [
+            {
+              model: Payment,
+              as: 'payment',
+              attributes: ['id', 'payment_code', 'payment_name']
+            }
+          ]
+        }
+      ],
+      order: [['createdAt', 'DESC']] // Order by most recent first
+    });
+
+    logger.info(`Fetched ${washJobs.length} recent WashJob records (today & yesterday)`);
+    res.status(200).json(washJobs);
+  } catch (err) {
+    logger.error(`Failed to fetch recent washJobs: ${err}`);
     res.status(500).json({ error: err.message });
   }
 };
