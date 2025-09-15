@@ -3384,3 +3384,1033 @@
 {"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-14T08:46:30.490Z"}
 {"level":"warn","message":"=============Loading saleHeader data=============","timestamp":"2025-09-14T08:46:30.491Z"}
 {"level":"warn","message":"Request date 2025-09-14 userId 1","timestamp":"2025-09-14T08:46:30.492Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2025-09-15T12:30:23.393Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2025-09-15T12:30:23.398Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2025-09-15T12:30:23.399Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2025-09-15T12:30:23.399Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2025-09-15T12:30:23.401Z","username":"johndoe"}
+{"level":"info","message":"Model name sequelize","timestamp":"2025-09-15T12:30:24.079Z"}
+{"level":"info","message":"Model name Sequelize","timestamp":"2025-09-15T12:30:24.080Z"}
+{"level":"info","message":"Model name centralSequelize","timestamp":"2025-09-15T12:30:24.080Z"}
+{"level":"info","message":"Model name spf","timestamp":"2025-09-15T12:30:24.081Z"}
+{"level":"info","message":"Model name client","timestamp":"2025-09-15T12:30:24.081Z"}
+{"level":"info","message":"Model name group","timestamp":"2025-09-15T12:30:24.083Z"}
+{"level":"info","message":"Model name user","timestamp":"2025-09-15T12:30:24.083Z"}
+{"level":"info","message":"Model name Applicant","timestamp":"2025-09-15T12:30:24.086Z"}
+{"level":"info","message":"Associating table Applicant with models","timestamp":"2025-09-15T12:30:24.088Z"}
+{"level":"info","message":"Model name MOU","timestamp":"2025-09-15T12:30:24.093Z"}
+{"level":"info","message":"Associating table Job with models","timestamp":"2025-09-15T12:30:24.095Z"}
+{"level":"info","message":"Model name Agency","timestamp":"2025-09-15T12:30:24.101Z"}
+{"level":"info","message":"Associating table Agency with models","timestamp":"2025-09-15T12:30:24.102Z"}
+{"level":"info","message":"Model name jobAdvertise","timestamp":"2025-09-15T12:30:24.104Z"}
+{"level":"info","message":"Associating table JobAdvertise with models","timestamp":"2025-09-15T12:30:24.105Z"}
+{"level":"info","message":"Model name JobBatch","timestamp":"2025-09-15T12:30:24.106Z"}
+{"level":"info","message":"Associating table JobBatch with models","timestamp":"2025-09-15T12:30:24.106Z"}
+{"level":"info","message":"Model name benefit","timestamp":"2025-09-15T12:30:24.111Z"}
+{"level":"info","message":"Associating table Benefit with models","timestamp":"2025-09-15T12:30:24.112Z"}
+{"level":"info","message":"Model name company","timestamp":"2025-09-15T12:30:24.113Z"}
+{"level":"info","message":"Model name location","timestamp":"2025-09-15T12:30:24.113Z"}
+{"level":"info","message":"Model name currency","timestamp":"2025-09-15T12:30:24.114Z"}
+{"level":"info","message":"Model name unit","timestamp":"2025-09-15T12:30:24.114Z"}
+{"level":"info","message":"Model name category","timestamp":"2025-09-15T12:30:24.114Z"}
+{"level":"info","message":"Model name tax","timestamp":"2025-09-15T12:30:24.114Z"}
+{"level":"info","message":"Model name product","timestamp":"2025-09-15T12:30:24.114Z"}
+{"level":"info","message":"Model name productSize","timestamp":"2025-09-15T12:30:24.114Z"}
+{"level":"info","message":"Model name image","timestamp":"2025-09-15T12:30:24.115Z"}
+{"level":"info","message":"Associating table IMAGE with models","timestamp":"2025-09-15T12:30:24.115Z"}
+{"level":"info","message":"Model name priceList","timestamp":"2025-09-15T12:30:24.117Z"}
+{"level":"info","message":"Model name webProductGroup","timestamp":"2025-09-15T12:30:24.118Z"}
+{"level":"info","message":"Model name customer","timestamp":"2025-09-15T12:30:24.118Z"}
+{"level":"info","message":"Model name order","timestamp":"2025-09-15T12:30:24.118Z"}
+{"level":"info","message":"Model name orderHIS","timestamp":"2025-09-15T12:30:24.119Z"}
+{"level":"info","message":"Model name orderTable","timestamp":"2025-09-15T12:30:24.119Z"}
+{"level":"info","message":"Model name saleHeader","timestamp":"2025-09-15T12:30:24.119Z"}
+{"level":"info","message":"Model name saleLine","timestamp":"2025-09-15T12:30:24.120Z"}
+{"level":"info","message":"Model name quotationHeader","timestamp":"2025-09-15T12:30:24.120Z"}
+{"level":"info","message":"Model name quotationLine","timestamp":"2025-09-15T12:30:24.120Z"}
+{"level":"info","message":"Model name poHeader","timestamp":"2025-09-15T12:30:24.121Z"}
+{"level":"info","message":"Model name poLine","timestamp":"2025-09-15T12:30:24.121Z"}
+{"level":"info","message":"Model name poHeaderHIS","timestamp":"2025-09-15T12:30:24.121Z"}
+{"level":"info","message":"Model name poLineHIS","timestamp":"2025-09-15T12:30:24.121Z"}
+{"level":"info","message":"Model name receivingHeader","timestamp":"2025-09-15T12:30:24.121Z"}
+{"level":"info","message":"Model name receivingLine","timestamp":"2025-09-15T12:30:24.121Z"}
+{"level":"info","message":"Model name reservation","timestamp":"2025-09-15T12:30:24.121Z"}
+{"level":"info","message":"Model name reservationLine","timestamp":"2025-09-15T12:30:24.121Z"}
+{"level":"info","message":"Model name washjob","timestamp":"2025-09-15T12:30:24.121Z"}
+{"level":"info","message":"Model name washjobHis","timestamp":"2025-09-15T12:30:24.121Z"}
+{"level":"info","message":"Model name washjobline","timestamp":"2025-09-15T12:30:24.121Z"}
+{"level":"info","message":"Model name transferHeader","timestamp":"2025-09-15T12:30:24.122Z"}
+{"level":"info","message":"Model name transferLine","timestamp":"2025-09-15T12:30:24.123Z"}
+{"level":"info","message":"Model name menuHeader","timestamp":"2025-09-15T12:30:24.123Z"}
+{"level":"info","message":"Model name menuLine","timestamp":"2025-09-15T12:30:24.123Z"}
+{"level":"info","message":"Model name webMenuHeader","timestamp":"2025-09-15T12:30:24.123Z"}
+{"level":"info","message":"Model name table","timestamp":"2025-09-15T12:30:24.123Z"}
+{"level":"info","message":"Model name ticket","timestamp":"2025-09-15T12:30:24.124Z"}
+{"level":"info","message":"Model name ticketLine","timestamp":"2025-09-15T12:30:24.126Z"}
+{"level":"info","message":"Model name gl","timestamp":"2025-09-15T12:30:24.126Z"}
+{"level":"info","message":"Model name chartAccount","timestamp":"2025-09-15T12:30:24.126Z"}
+{"level":"info","message":"Model name apPaymentHeader","timestamp":"2025-09-15T12:30:24.126Z"}
+{"level":"info","message":"Model name arReceiveHeader","timestamp":"2025-09-15T12:30:24.126Z"}
+{"level":"info","message":"Associating table ARReceiveHeader with models","timestamp":"2025-09-15T12:30:24.126Z"}
+{"level":"info","message":"Model name payment","timestamp":"2025-09-15T12:30:24.128Z"}
+{"level":"info","message":"Model name bankAccount","timestamp":"2025-09-15T12:30:24.128Z"}
+{"level":"info","message":"Model name moneySettlement","timestamp":"2025-09-15T12:30:24.128Z"}
+{"level":"info","message":"Model name moneyAdvanceAudit","timestamp":"2025-09-15T12:30:24.130Z"}
+{"level":"info","message":"Associating table MoneyAdvanceAudit with models","timestamp":"2025-09-15T12:30:24.130Z"}
+{"level":"info","message":"Model name moneyAdvance","timestamp":"2025-09-15T12:30:24.131Z"}
+{"level":"info","message":"Associating table MoneyAdvance with models","timestamp":"2025-09-15T12:30:24.131Z"}
+{"level":"info","message":"Model name revenue_target","timestamp":"2025-09-15T12:30:24.140Z"}
+{"level":"info","message":"Model name apInvoice","timestamp":"2025-09-15T12:30:24.141Z"}
+{"level":"info","message":"Associating table APInvoice with models","timestamp":"2025-09-15T12:30:24.141Z"}
+{"level":"info","message":"Model name apInvoiceAudit","timestamp":"2025-09-15T12:30:24.153Z"}
+{"level":"info","message":"Associating table APInvoiceAudit with models","timestamp":"2025-09-15T12:30:24.155Z"}
+{"level":"info","message":"Model name invoiceLineItem","timestamp":"2025-09-15T12:30:24.157Z"}
+{"level":"info","message":"Associating table InvoiceLineItem with models","timestamp":"2025-09-15T12:30:24.157Z"}
+{"level":"info","message":"Model name apInvoiceSettlement","timestamp":"2025-09-15T12:30:24.162Z"}
+{"level":"info","message":"Associating table APInvoiceSettlement with models","timestamp":"2025-09-15T12:30:24.162Z"}
+{"level":"info","message":"Model name apSettlementAudit","timestamp":"2025-09-15T12:30:24.172Z"}
+{"level":"info","message":"Associating table APSettlementAudit with models","timestamp":"2025-09-15T12:30:24.173Z"}
+{"level":"info","message":"Model name apInvoiceSettlementLine","timestamp":"2025-09-15T12:30:24.174Z"}
+{"level":"info","message":"Associating InvoiceSettlementLine with models","timestamp":"2025-09-15T12:30:24.174Z"}
+{"level":"info","message":"Model name arInvoiceHeader","timestamp":"2025-09-15T12:30:24.175Z"}
+{"level":"info","message":"Associating table ARInvoiceHeader with models","timestamp":"2025-09-15T12:30:24.175Z"}
+{"level":"info","message":"Model name arInvoiceHeaderAudit","timestamp":"2025-09-15T12:30:24.180Z"}
+{"level":"info","message":"Associating table ARInvoiceHeaderAudit with models","timestamp":"2025-09-15T12:30:24.181Z"}
+{"level":"info","message":"Model name arInvoiceLine","timestamp":"2025-09-15T12:30:24.184Z"}
+{"level":"info","message":"Associating table InvoiceLine with models","timestamp":"2025-09-15T12:30:24.186Z"}
+{"level":"info","message":"Model name arReceiveHeaderAudit","timestamp":"2025-09-15T12:30:24.191Z"}
+{"level":"info","message":"Associating table ARReceiveHeaderAudit with models","timestamp":"2025-09-15T12:30:24.191Z"}
+{"level":"info","message":"Model name arReceiveLine","timestamp":"2025-09-15T12:30:24.191Z"}
+{"level":"info","message":"Associating table ReceiveLine with models","timestamp":"2025-09-15T12:30:24.191Z"}
+{"level":"info","message":"Model name vendor","timestamp":"2025-09-15T12:30:24.191Z"}
+{"level":"info","message":"Model name shipping","timestamp":"2025-09-15T12:30:24.192Z"}
+{"level":"info","message":"Model name service","timestamp":"2025-09-15T12:30:24.192Z"}
+{"level":"info","message":"Model name authority","timestamp":"2025-09-15T12:30:24.192Z"}
+{"level":"info","message":"Model name terminal","timestamp":"2025-09-15T12:30:24.192Z"}
+{"level":"info","message":"Model name card","timestamp":"2025-09-15T12:30:24.192Z"}
+{"level":"info","message":"Model name campaign","timestamp":"2025-09-15T12:30:24.192Z"}
+{"level":"info","message":"Model name campaignEntry","timestamp":"2025-09-15T12:30:24.192Z"}
+{"level":"info","message":"Model name rider","timestamp":"2025-09-15T12:30:24.192Z"}
+{"level":"info","message":"Model name outlet","timestamp":"2025-09-15T12:30:24.192Z"}
+{"level":"info","message":"Model name geography","timestamp":"2025-09-15T12:30:24.192Z"}
+{"level":"info","message":"Model name country","timestamp":"2025-09-15T12:30:24.192Z"}
+{"level":"info","message":"Model name village","timestamp":"2025-09-15T12:30:24.192Z"}
+{"level":"info","message":"Model name district","timestamp":"2025-09-15T12:30:24.195Z"}
+{"level":"info","message":"Model name ministry","timestamp":"2025-09-15T12:30:24.197Z"}
+{"level":"info","message":"Model name tuturial","timestamp":"2025-09-15T12:30:24.205Z"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2025-09-15T12:30:24.686Z"}
+{"level":"info","message":"app is runing: 8888","timestamp":"2025-09-15T12:30:24.689Z"}
+{"level":"warn","message":"env: dcommerce_dev","timestamp":"2025-09-15T12:30:24.689Z"}
+{"level":"info","message":"tutorial_db Connection established","timestamp":"2025-09-15T12:30:25.004Z"}
+{"level":"info","message":"client_db Connection established","timestamp":"2025-09-15T12:30:25.011Z"}
+{"level":"error","message":"Error synchronizing database: Cannot delete property 'meta' of [object Array]","stack":"TypeError: Cannot delete property 'meta' of [object Array]\n    at Query.formatResults (/Users/soubinkittiphanh/Desktop/Pro/dcommerce/dc_api/node_modules/sequelize/lib/dialects/mariadb/query.js:110:7)\n    at Query.run (/Users/soubinkittiphanh/Desktop/Pro/dcommerce/dc_api/node_modules/sequelize/lib/dialects/mariadb/query.js:73:17)\n    at runMicrotasks (<anonymous>)\n    at processTicksAndRejections (node:internal/process/task_queues:96:5)\n    at async /Users/soubinkittiphanh/Desktop/Pro/dcommerce/dc_api/node_modules/sequelize/lib/sequelize.js:315:16\n    at async MySQLQueryInterface.removeColumn (/Users/soubinkittiphanh/Desktop/Pro/dcommerce/dc_api/node_modules/sequelize/lib/dialects/mysql/query-interface.js:27:23)\n    at async Function.sync (/Users/soubinkittiphanh/Desktop/Pro/dcommerce/dc_api/node_modules/sequelize/lib/model.js:967:13)\n    at async Sequelize._syncModelsWithCyclicReferences (/Users/soubinkittiphanh/Desktop/Pro/dcommerce/dc_api/node_modules/sequelize/lib/sequelize.js:395:7)\n    at async synchronizeDatabase (/Users/soubinkittiphanh/Desktop/Pro/dcommerce/dc_api/src/models/index.js:495:5)","timestamp":"2025-09-15T12:30:53.120Z"}
+{"level":"info","message":"Database central is synchronized","timestamp":"2025-09-15T12:30:53.374Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2025-09-15T12:55:15.435Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2025-09-15T12:55:15.440Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2025-09-15T12:55:15.441Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2025-09-15T12:55:15.442Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2025-09-15T12:55:15.443Z","username":"johndoe"}
+{"level":"info","message":"Model name sequelize","timestamp":"2025-09-15T12:55:16.240Z"}
+{"level":"info","message":"Model name Sequelize","timestamp":"2025-09-15T12:55:16.241Z"}
+{"level":"info","message":"Model name centralSequelize","timestamp":"2025-09-15T12:55:16.241Z"}
+{"level":"info","message":"Model name spf","timestamp":"2025-09-15T12:55:16.242Z"}
+{"level":"info","message":"Model name client","timestamp":"2025-09-15T12:55:16.243Z"}
+{"level":"info","message":"Model name group","timestamp":"2025-09-15T12:55:16.244Z"}
+{"level":"info","message":"Model name user","timestamp":"2025-09-15T12:55:16.245Z"}
+{"level":"info","message":"Model name Applicant","timestamp":"2025-09-15T12:55:16.248Z"}
+{"level":"info","message":"Associating table Applicant with models","timestamp":"2025-09-15T12:55:16.250Z"}
+{"level":"info","message":"Model name MOU","timestamp":"2025-09-15T12:55:16.255Z"}
+{"level":"info","message":"Associating table Job with models","timestamp":"2025-09-15T12:55:16.257Z"}
+{"level":"info","message":"Model name Agency","timestamp":"2025-09-15T12:55:16.265Z"}
+{"level":"info","message":"Associating table Agency with models","timestamp":"2025-09-15T12:55:16.266Z"}
+{"level":"info","message":"Model name jobAdvertise","timestamp":"2025-09-15T12:55:16.269Z"}
+{"level":"info","message":"Associating table JobAdvertise with models","timestamp":"2025-09-15T12:55:16.269Z"}
+{"level":"info","message":"Model name JobBatch","timestamp":"2025-09-15T12:55:16.271Z"}
+{"level":"info","message":"Associating table JobBatch with models","timestamp":"2025-09-15T12:55:16.271Z"}
+{"level":"info","message":"Model name benefit","timestamp":"2025-09-15T12:55:16.276Z"}
+{"level":"info","message":"Associating table Benefit with models","timestamp":"2025-09-15T12:55:16.278Z"}
+{"level":"info","message":"Model name company","timestamp":"2025-09-15T12:55:16.279Z"}
+{"level":"info","message":"Model name location","timestamp":"2025-09-15T12:55:16.280Z"}
+{"level":"info","message":"Model name currency","timestamp":"2025-09-15T12:55:16.281Z"}
+{"level":"info","message":"Model name unit","timestamp":"2025-09-15T12:55:16.281Z"}
+{"level":"info","message":"Model name category","timestamp":"2025-09-15T12:55:16.281Z"}
+{"level":"info","message":"Model name tax","timestamp":"2025-09-15T12:55:16.281Z"}
+{"level":"info","message":"Model name product","timestamp":"2025-09-15T12:55:16.281Z"}
+{"level":"info","message":"Model name productSize","timestamp":"2025-09-15T12:55:16.281Z"}
+{"level":"info","message":"Model name image","timestamp":"2025-09-15T12:55:16.281Z"}
+{"level":"info","message":"Associating table IMAGE with models","timestamp":"2025-09-15T12:55:16.281Z"}
+{"level":"info","message":"Model name priceList","timestamp":"2025-09-15T12:55:16.283Z"}
+{"level":"info","message":"Model name webProductGroup","timestamp":"2025-09-15T12:55:16.285Z"}
+{"level":"info","message":"Model name customer","timestamp":"2025-09-15T12:55:16.285Z"}
+{"level":"info","message":"Model name order","timestamp":"2025-09-15T12:55:16.285Z"}
+{"level":"info","message":"Model name orderHIS","timestamp":"2025-09-15T12:55:16.285Z"}
+{"level":"info","message":"Model name orderTable","timestamp":"2025-09-15T12:55:16.285Z"}
+{"level":"info","message":"Model name saleHeader","timestamp":"2025-09-15T12:55:16.285Z"}
+{"level":"info","message":"Model name saleLine","timestamp":"2025-09-15T12:55:16.287Z"}
+{"level":"info","message":"Model name quotationHeader","timestamp":"2025-09-15T12:55:16.287Z"}
+{"level":"info","message":"Model name quotationLine","timestamp":"2025-09-15T12:55:16.287Z"}
+{"level":"info","message":"Model name poHeader","timestamp":"2025-09-15T12:55:16.287Z"}
+{"level":"info","message":"Model name poLine","timestamp":"2025-09-15T12:55:16.287Z"}
+{"level":"info","message":"Model name poHeaderHIS","timestamp":"2025-09-15T12:55:16.287Z"}
+{"level":"info","message":"Model name poLineHIS","timestamp":"2025-09-15T12:55:16.287Z"}
+{"level":"info","message":"Model name receivingHeader","timestamp":"2025-09-15T12:55:16.287Z"}
+{"level":"info","message":"Model name receivingLine","timestamp":"2025-09-15T12:55:16.287Z"}
+{"level":"info","message":"Model name reservation","timestamp":"2025-09-15T12:55:16.287Z"}
+{"level":"info","message":"Model name reservationLine","timestamp":"2025-09-15T12:55:16.287Z"}
+{"level":"info","message":"Model name washjob","timestamp":"2025-09-15T12:55:16.287Z"}
+{"level":"info","message":"Model name washjobHis","timestamp":"2025-09-15T12:55:16.287Z"}
+{"level":"info","message":"Model name washjobline","timestamp":"2025-09-15T12:55:16.287Z"}
+{"level":"info","message":"Model name transferHeader","timestamp":"2025-09-15T12:55:16.289Z"}
+{"level":"info","message":"Model name transferLine","timestamp":"2025-09-15T12:55:16.289Z"}
+{"level":"info","message":"Model name menuHeader","timestamp":"2025-09-15T12:55:16.289Z"}
+{"level":"info","message":"Model name menuLine","timestamp":"2025-09-15T12:55:16.289Z"}
+{"level":"info","message":"Model name webMenuHeader","timestamp":"2025-09-15T12:55:16.289Z"}
+{"level":"info","message":"Model name table","timestamp":"2025-09-15T12:55:16.289Z"}
+{"level":"info","message":"Model name ticket","timestamp":"2025-09-15T12:55:16.292Z"}
+{"level":"info","message":"Model name ticketLine","timestamp":"2025-09-15T12:55:16.294Z"}
+{"level":"info","message":"Model name gl","timestamp":"2025-09-15T12:55:16.295Z"}
+{"level":"info","message":"Model name chartAccount","timestamp":"2025-09-15T12:55:16.295Z"}
+{"level":"info","message":"Model name apPaymentHeader","timestamp":"2025-09-15T12:55:16.295Z"}
+{"level":"info","message":"Model name arReceiveHeader","timestamp":"2025-09-15T12:55:16.295Z"}
+{"level":"info","message":"Associating table ARReceiveHeader with models","timestamp":"2025-09-15T12:55:16.296Z"}
+{"level":"info","message":"Model name payment","timestamp":"2025-09-15T12:55:16.298Z"}
+{"level":"info","message":"Model name bankAccount","timestamp":"2025-09-15T12:55:16.298Z"}
+{"level":"info","message":"Model name moneySettlement","timestamp":"2025-09-15T12:55:16.298Z"}
+{"level":"info","message":"Model name moneyAdvanceAudit","timestamp":"2025-09-15T12:55:16.300Z"}
+{"level":"info","message":"Associating table MoneyAdvanceAudit with models","timestamp":"2025-09-15T12:55:16.300Z"}
+{"level":"info","message":"Model name moneyAdvance","timestamp":"2025-09-15T12:55:16.301Z"}
+{"level":"info","message":"Associating table MoneyAdvance with models","timestamp":"2025-09-15T12:55:16.301Z"}
+{"level":"info","message":"Model name revenue_target","timestamp":"2025-09-15T12:55:16.310Z"}
+{"level":"info","message":"Model name apInvoice","timestamp":"2025-09-15T12:55:16.311Z"}
+{"level":"info","message":"Associating table APInvoice with models","timestamp":"2025-09-15T12:55:16.311Z"}
+{"level":"info","message":"Model name apInvoiceAudit","timestamp":"2025-09-15T12:55:16.321Z"}
+{"level":"info","message":"Associating table APInvoiceAudit with models","timestamp":"2025-09-15T12:55:16.323Z"}
+{"level":"info","message":"Model name invoiceLineItem","timestamp":"2025-09-15T12:55:16.327Z"}
+{"level":"info","message":"Associating table InvoiceLineItem with models","timestamp":"2025-09-15T12:55:16.328Z"}
+{"level":"info","message":"Model name apInvoiceSettlement","timestamp":"2025-09-15T12:55:16.335Z"}
+{"level":"info","message":"Associating table APInvoiceSettlement with models","timestamp":"2025-09-15T12:55:16.337Z"}
+{"level":"info","message":"Model name apSettlementAudit","timestamp":"2025-09-15T12:55:16.347Z"}
+{"level":"info","message":"Associating table APSettlementAudit with models","timestamp":"2025-09-15T12:55:16.348Z"}
+{"level":"info","message":"Model name apInvoiceSettlementLine","timestamp":"2025-09-15T12:55:16.349Z"}
+{"level":"info","message":"Associating InvoiceSettlementLine with models","timestamp":"2025-09-15T12:55:16.350Z"}
+{"level":"info","message":"Model name arInvoiceHeader","timestamp":"2025-09-15T12:55:16.350Z"}
+{"level":"info","message":"Associating table ARInvoiceHeader with models","timestamp":"2025-09-15T12:55:16.350Z"}
+{"level":"info","message":"Model name arInvoiceHeaderAudit","timestamp":"2025-09-15T12:55:16.360Z"}
+{"level":"info","message":"Associating table ARInvoiceHeaderAudit with models","timestamp":"2025-09-15T12:55:16.361Z"}
+{"level":"info","message":"Model name arInvoiceLine","timestamp":"2025-09-15T12:55:16.363Z"}
+{"level":"info","message":"Associating table InvoiceLine with models","timestamp":"2025-09-15T12:55:16.363Z"}
+{"level":"info","message":"Model name arReceiveHeaderAudit","timestamp":"2025-09-15T12:55:16.365Z"}
+{"level":"info","message":"Associating table ARReceiveHeaderAudit with models","timestamp":"2025-09-15T12:55:16.366Z"}
+{"level":"info","message":"Model name arReceiveLine","timestamp":"2025-09-15T12:55:16.368Z"}
+{"level":"info","message":"Associating table ReceiveLine with models","timestamp":"2025-09-15T12:55:16.368Z"}
+{"level":"info","message":"Model name vendor","timestamp":"2025-09-15T12:55:16.368Z"}
+{"level":"info","message":"Model name shipping","timestamp":"2025-09-15T12:55:16.368Z"}
+{"level":"info","message":"Model name service","timestamp":"2025-09-15T12:55:16.368Z"}
+{"level":"info","message":"Model name authority","timestamp":"2025-09-15T12:55:16.368Z"}
+{"level":"info","message":"Model name terminal","timestamp":"2025-09-15T12:55:16.368Z"}
+{"level":"info","message":"Model name card","timestamp":"2025-09-15T12:55:16.368Z"}
+{"level":"info","message":"Model name campaign","timestamp":"2025-09-15T12:55:16.368Z"}
+{"level":"info","message":"Model name campaignEntry","timestamp":"2025-09-15T12:55:16.368Z"}
+{"level":"info","message":"Model name rider","timestamp":"2025-09-15T12:55:16.368Z"}
+{"level":"info","message":"Model name outlet","timestamp":"2025-09-15T12:55:16.369Z"}
+{"level":"info","message":"Model name geography","timestamp":"2025-09-15T12:55:16.369Z"}
+{"level":"info","message":"Model name country","timestamp":"2025-09-15T12:55:16.369Z"}
+{"level":"info","message":"Model name village","timestamp":"2025-09-15T12:55:16.369Z"}
+{"level":"info","message":"Model name district","timestamp":"2025-09-15T12:55:16.372Z"}
+{"level":"info","message":"Model name ministry","timestamp":"2025-09-15T12:55:16.374Z"}
+{"level":"info","message":"Model name tuturial","timestamp":"2025-09-15T12:55:16.382Z"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2025-09-15T12:55:16.807Z"}
+{"level":"info","message":"app is runing: 8888","timestamp":"2025-09-15T12:55:16.810Z"}
+{"level":"warn","message":"env: dcommerce_dev","timestamp":"2025-09-15T12:55:16.810Z"}
+{"level":"info","message":"tutorial_db Connection established","timestamp":"2025-09-15T12:55:17.023Z"}
+{"level":"info","message":"client_db Connection established","timestamp":"2025-09-15T12:55:17.030Z"}
+{"level":"info","message":"************* User auth  *****************","timestamp":"2025-09-15T12:55:21.949Z"}
+{"level":"info","message":"**********[object SequelizeInstance:user]**********","timestamp":"2025-09-15T12:55:22.033Z"}
+{"level":"info","message":"**********Admin**********","timestamp":"2025-09-15T12:55:22.034Z"}
+{"level":"warn","message":"Token ===> send to client eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiY3VzX2lkIjoxMDAwLCJjdXNfbmFtZSI6IkFkbWluIiwiY3VzX3RlbCI6IjAyMDc3MTUwMDA4IiwidXNlckdyb3VwIjp7ImNvZGUiOiJTVVBFUiBVU0VSIiwibmFtZSI6IuC6l-C6teC6oeC6h-C6suC6mSDguqrgurHguprgup7guq3gupTguqXgurDguprgurvgupoiLCJpZCI6MX0sInRlcm1pbmFsIjpbXSwiaWF0IjoxNzU3OTQwOTIyLCJleHAiOjE3NTc5NTg5MjJ9.7ysqT1_6KX8dhPdI6fU7AjuY2ZjKUVMpihTnX1H0T6I","timestamp":"2025-09-15T12:55:22.042Z"}
+{"level":"info","message":"Token generated succeed [object Object]","timestamp":"2025-09-15T12:55:22.043Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2025-09-15T12:55:22.269Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2025-09-15T12:55:22.275Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T12:55:22.769Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T12:55:22.769Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T12:55:22.773Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T12:55:22.773Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T12:55:22.775Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T12:55:22.775Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T12:55:22.779Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T12:55:22.780Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T12:55:22.838Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T12:55:22.838Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T12:55:22.841Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T12:55:22.841Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T12:55:22.846Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T12:55:22.846Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T12:55:22.850Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T12:55:22.850Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T12:55:22.883Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T12:55:22.884Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T12:55:22.887Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T12:55:22.888Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T12:55:22.889Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T12:55:22.889Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T12:55:22.891Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T12:55:22.891Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T12:55:22.991Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T12:55:22.992Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T12:55:22.994Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T12:55:22.995Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T12:55:22.997Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T12:55:22.998Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T12:55:23.001Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T12:55:23.002Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T12:55:23.054Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T12:55:23.054Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T12:55:23.055Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T12:55:23.055Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T12:55:23.057Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T12:55:23.057Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T12:55:23.059Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T12:55:23.059Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T12:55:23.111Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T12:55:23.112Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T12:55:23.114Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T12:55:23.115Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T12:55:23.118Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T12:55:23.118Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T12:55:23.119Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T12:55:23.119Z"}
+{"level":"info","message":"rider[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider]","timestamp":"2025-09-15T12:55:23.146Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T12:55:26.529Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T12:55:26.532Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T12:55:26.532Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T12:55:26.532Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T12:55:26.533Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T12:55:26.533Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T12:55:26.535Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T12:55:26.535Z"}
+{"level":"warn","message":"=============Loading saleHeader data=============","timestamp":"2025-09-15T12:55:26.536Z"}
+{"level":"warn","message":"Request date 2025-09-15 userId 1","timestamp":"2025-09-15T12:55:26.536Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T12:55:34.151Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T12:55:34.152Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T12:55:34.153Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T12:55:34.153Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T12:55:34.154Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T12:55:34.154Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T12:55:34.154Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T12:55:34.154Z"}
+{"level":"warn","message":"=============Loading saleHeader data=============","timestamp":"2025-09-15T12:55:34.156Z"}
+{"level":"warn","message":"Request date 2025-09-15 userId 1","timestamp":"2025-09-15T12:55:34.157Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T12:55:47.404Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T12:55:47.409Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T12:55:47.410Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T12:55:47.410Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T12:55:47.410Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T12:55:47.410Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T12:55:47.412Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T12:55:47.412Z"}
+{"level":"warn","message":"=============Loading saleHeader data=============","timestamp":"2025-09-15T12:55:47.413Z"}
+{"level":"warn","message":"Request date 2025-09-15 userId 1","timestamp":"2025-09-15T12:55:47.414Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T12:55:55.530Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T12:55:55.531Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T12:55:55.532Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T12:55:55.532Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T12:55:55.532Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T12:55:55.532Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T12:55:55.532Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T12:55:55.533Z"}
+{"level":"warn","message":"=============Loading saleHeader data=============","timestamp":"2025-09-15T12:55:55.534Z"}
+{"level":"warn","message":"Request date 2025-09-15 userId 1","timestamp":"2025-09-15T12:55:55.534Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T12:56:04.287Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T12:56:04.287Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T12:56:04.287Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T12:56:04.287Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T12:56:04.287Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T12:56:04.287Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T12:56:04.288Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T12:56:04.288Z"}
+{"level":"warn","message":"=============Loading saleHeader data=============","timestamp":"2025-09-15T12:56:04.288Z"}
+{"level":"warn","message":"Request date 2025-09-15 userId 1","timestamp":"2025-09-15T12:56:04.288Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T12:56:21.799Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T12:56:21.805Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T12:56:21.808Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T12:56:21.808Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T12:56:21.809Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T12:56:21.809Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T12:56:21.812Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T12:56:21.812Z"}
+{"level":"warn","message":"=============Loading saleHeader data=============","timestamp":"2025-09-15T12:56:21.813Z"}
+{"level":"warn","message":"Request date 2025-09-15 userId 1","timestamp":"2025-09-15T12:56:21.813Z"}
+{"level":"info","message":"Database client is synchronized","timestamp":"2025-09-15T12:56:52.012Z"}
+{"level":"warn","message":"USER DEDTAIL TO CREATE 1000","timestamp":"2025-09-15T12:56:52.039Z"}
+{"level":"info","message":"********** Found Users: [{\"id\":1,\"cus_id\":1000,\"cus_pass\":\"1111\",\"cus_name\":\"Admin\",\"cus_tel\":\"02077150008\",\"cus_email\":\"soubin@gmail.com\",\"cus_active\":false,\"village\":null,\"district\":null,\"province\":null,\"remark\":null,\"isActive\":true,\"createdAt\":null,\"updateTimestamp\":\"2023-10-03T01:14:42.000Z\",\"groupId\":1},{\"id\":140,\"cus_id\":1001,\"cus_pass\":\"782230\",\"cus_name\":\"ແບ້\",\"cus_tel\":\"02077772171\",\"cus_email\":\"\",\"cus_active\":true,\"village\":\"\",\"district\":\"\",\"province\":\"\",\"remark\":\"undefined\",\"isActive\":true,\"createdAt\":null,\"updateTimestamp\":\"2023-10-03T01:14:16.000Z\",\"groupId\":1},{\"id\":141,\"cus_id\":1002,\"cus_pass\":\"975541\",\"cus_name\":\"ພົມ\",\"cus_tel\":\"02059262233\",\"cus_email\":\"\",\"cus_active\":true,\"village\":\"\",\"district\":\"\",\"province\":\"\",\"remark\":\"undefined\",\"isActive\":true,\"createdAt\":null,\"updateTimestamp\":\"2023-10-03T01:14:28.000Z\",\"groupId\":1}] **********","timestamp":"2025-09-15T12:56:52.078Z"}
+{"level":"info","message":"Users already exist. No need to create a default user.","timestamp":"2025-09-15T12:56:52.084Z"}
+{"level":"info","message":"Default user check complete.","timestamp":"2025-09-15T12:56:52.084Z"}
+{"level":"info","message":"Database central is synchronized","timestamp":"2025-09-15T12:56:52.360Z"}
+{"level":"info","message":"************* User auth  *****************","timestamp":"2025-09-15T13:17:18.940Z"}
+{"level":"error","message":"Cannot get user with error SequelizeDatabaseError: read ETIMEDOUT","timestamp":"2025-09-15T13:17:45.381Z"}
+{"level":"info","message":"************* User auth  *****************","timestamp":"2025-09-15T13:17:50.189Z"}
+{"level":"error","message":"Cannot get user with error SequelizeDatabaseError: read ETIMEDOUT","timestamp":"2025-09-15T13:18:12.411Z"}
+{"level":"info","message":"************* User auth  *****************","timestamp":"2025-09-15T13:18:25.270Z"}
+{"level":"info","message":"**********[object SequelizeInstance:user]**********","timestamp":"2025-09-15T13:18:25.447Z"}
+{"level":"info","message":"**********Admin**********","timestamp":"2025-09-15T13:18:25.448Z"}
+{"level":"warn","message":"Token ===> send to client eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiY3VzX2lkIjoxMDAwLCJjdXNfbmFtZSI6IkFkbWluIiwiY3VzX3RlbCI6IjAyMDc3MTUwMDA4IiwidXNlckdyb3VwIjp7ImNvZGUiOiJTVVBFUiBVU0VSIiwibmFtZSI6IuC6l-C6teC6oeC6h-C6suC6mSDguqrgurHguprgup7guq3gupTguqXgurDguprgurvgupoiLCJpZCI6MX0sInRlcm1pbmFsIjpbXSwiaWF0IjoxNzU3OTQyMzA1LCJleHAiOjE3NTc5NjAzMDV9.UX7xnYZhg60wiFWotmtVlscoHjM3BuIolHvnl8SGDgk","timestamp":"2025-09-15T13:18:25.458Z"}
+{"level":"info","message":"Token generated succeed [object Object]","timestamp":"2025-09-15T13:18:25.458Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2025-09-15T13:18:25.652Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2025-09-15T13:18:25.652Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:18:36.330Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:18:36.333Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:18:36.336Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:18:36.336Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:18:36.338Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:18:36.338Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:18:36.345Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:18:36.348Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:18:36.431Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:18:36.434Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:18:36.436Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:18:36.436Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:18:36.436Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:18:36.436Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:18:36.437Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:18:36.437Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:18:36.480Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:18:36.480Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:18:36.480Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:18:36.480Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:18:36.481Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:18:36.481Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:18:36.482Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:18:36.482Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:18:36.543Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:18:36.544Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:18:36.545Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:18:36.545Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:18:36.545Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:18:36.545Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:18:36.546Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:18:36.546Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:18:36.591Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:18:36.592Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:18:36.592Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:18:36.592Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:18:36.592Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:18:36.592Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:18:36.597Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:18:36.597Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:18:36.633Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:18:36.633Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:18:36.635Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:18:36.635Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:18:36.635Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:18:36.636Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:18:36.637Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:18:36.637Z"}
+{"level":"info","message":"rider[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider]","timestamp":"2025-09-15T13:18:36.659Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:18:50.700Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:18:50.702Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:18:50.710Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:18:50.710Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:18:50.710Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:18:50.710Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:18:50.711Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:18:50.711Z"}
+{"level":"warn","message":"=============Loading saleHeader data=============","timestamp":"2025-09-15T13:18:50.714Z"}
+{"level":"warn","message":"Request date 2025-09-15 userId 1","timestamp":"2025-09-15T13:18:50.714Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:20:52.340Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:20:52.344Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:20:52.345Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:20:52.345Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:20:52.345Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:20:52.345Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:20:52.346Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:20:52.346Z"}
+{"level":"warn","message":"=============Loading saleHeader data=============","timestamp":"2025-09-15T13:20:52.346Z"}
+{"level":"warn","message":"Request date 2025-09-15 userId 1","timestamp":"2025-09-15T13:20:52.346Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:21:04.918Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:21:04.924Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:21:04.926Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:21:04.927Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:21:04.928Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:21:04.928Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:21:04.928Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:21:04.928Z"}
+{"level":"warn","message":"=============Loading saleHeader data=============","timestamp":"2025-09-15T13:21:04.928Z"}
+{"level":"warn","message":"Request date 2025-09-01 userId 1","timestamp":"2025-09-15T13:21:04.929Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:21:13.224Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:21:13.234Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:21:13.235Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:21:13.235Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:21:13.235Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:21:13.236Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:21:13.238Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:21:13.238Z"}
+{"level":"warn","message":"=============Loading saleHeader data=============","timestamp":"2025-09-15T13:21:13.239Z"}
+{"level":"warn","message":"Request date 2025-09-15 userId 1","timestamp":"2025-09-15T13:21:13.239Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:21:20.726Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:21:20.727Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:21:20.727Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:21:20.727Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:21:20.727Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:21:20.727Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:21:20.727Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:21:20.728Z"}
+{"level":"warn","message":"=============Loading saleHeader data=============","timestamp":"2025-09-15T13:21:20.728Z"}
+{"level":"warn","message":"Request date 2025-09-01 userId 1","timestamp":"2025-09-15T13:21:20.728Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:21:54.088Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:21:54.101Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:21:54.102Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:21:54.102Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:21:54.104Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:21:54.105Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:21:54.110Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:21:54.111Z"}
+{"level":"warn","message":"=============Loading saleHeader data=============","timestamp":"2025-09-15T13:21:54.114Z"}
+{"level":"warn","message":"Request date 2025-09-07 userId 1","timestamp":"2025-09-15T13:21:54.122Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:22:06.307Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:22:06.312Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:22:06.313Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:22:06.313Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:22:06.314Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:22:06.314Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:22:06.315Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:22:06.315Z"}
+{"level":"warn","message":"=============Loading saleHeader data=============","timestamp":"2025-09-15T13:22:06.317Z"}
+{"level":"warn","message":"Request date 2025-09-15 userId 1","timestamp":"2025-09-15T13:22:06.317Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:22:08.848Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:22:08.849Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:22:08.849Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:22:08.849Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:22:08.850Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:22:08.850Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:22:08.851Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:22:08.851Z"}
+{"level":"warn","message":"=============Loading saleHeader data=============","timestamp":"2025-09-15T13:22:08.851Z"}
+{"level":"warn","message":"Request date 2025-09-15 userId 1","timestamp":"2025-09-15T13:22:08.851Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:22:20.218Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:22:20.219Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:22:20.219Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:22:20.219Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:22:20.219Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:22:20.220Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:22:20.220Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:22:20.220Z"}
+{"level":"warn","message":"=============Loading saleHeader data=============","timestamp":"2025-09-15T13:22:20.220Z"}
+{"level":"warn","message":"Request date 2025-01-01 userId 1","timestamp":"2025-09-15T13:22:20.221Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:23:18.741Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:23:18.745Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:23:18.746Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:23:18.746Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:23:18.746Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:23:18.746Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:23:18.748Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:23:18.748Z"}
+{"level":"warn","message":"=============Loading saleHeader data=============","timestamp":"2025-09-15T13:23:18.751Z"}
+{"level":"warn","message":"Request date 2025-09-15 userId 1","timestamp":"2025-09-15T13:23:18.751Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:23:45.080Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:23:45.081Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:23:45.081Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:23:45.081Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:23:45.082Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:23:45.082Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:23:45.082Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:23:45.082Z"}
+{"level":"warn","message":"=============Loading saleHeader data=============","timestamp":"2025-09-15T13:23:45.083Z"}
+{"level":"warn","message":"Request date 2025-01-01 userId 1","timestamp":"2025-09-15T13:23:45.083Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:25:06.904Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:25:06.912Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:25:06.913Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:25:06.913Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:25:06.914Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:25:06.914Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:25:06.915Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:25:06.915Z"}
+{"level":"warn","message":"=============Loading saleHeader data=============","timestamp":"2025-09-15T13:25:06.916Z"}
+{"level":"warn","message":"Request date 2025-09-15 userId 1","timestamp":"2025-09-15T13:25:06.917Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:25:11.790Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:25:11.790Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:25:11.791Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:25:11.791Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:25:11.792Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:25:11.792Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:25:11.792Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:25:11.792Z"}
+{"level":"warn","message":"=============Loading saleHeader data=============","timestamp":"2025-09-15T13:25:11.792Z"}
+{"level":"warn","message":"Request date 2025-09-15 userId 1","timestamp":"2025-09-15T13:25:11.792Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:25:22.178Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:25:22.180Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:25:22.180Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:25:22.181Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:25:22.181Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:25:22.181Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:25:22.181Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:25:22.181Z"}
+{"level":"warn","message":"=============Loading saleHeader data=============","timestamp":"2025-09-15T13:25:22.182Z"}
+{"level":"warn","message":"Request date 2025-09-15 userId 1","timestamp":"2025-09-15T13:25:22.182Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:26:18.717Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:26:18.720Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:26:18.721Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:26:18.721Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:26:18.722Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:26:18.722Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:26:18.722Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:26:18.722Z"}
+{"level":"warn","message":"=============Loading saleHeader data=============","timestamp":"2025-09-15T13:26:18.723Z"}
+{"level":"warn","message":"Request date 2025-09-01 userId 1","timestamp":"2025-09-15T13:26:18.723Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:28:51.506Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:28:51.511Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:28:51.512Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:28:51.512Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:28:51.512Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:28:51.513Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:28:51.517Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:28:51.517Z"}
+{"level":"warn","message":"=============Loading saleHeader data=============","timestamp":"2025-09-15T13:28:51.519Z"}
+{"level":"warn","message":"Request date 2025-09-01 userId 1","timestamp":"2025-09-15T13:28:51.519Z"}
+{"level":"info","message":"************* User auth  *****************","timestamp":"2025-09-15T13:28:57.332Z"}
+{"level":"info","message":"**********[object SequelizeInstance:user]**********","timestamp":"2025-09-15T13:28:57.423Z"}
+{"level":"info","message":"**********Admin**********","timestamp":"2025-09-15T13:28:57.423Z"}
+{"level":"warn","message":"Token ===> send to client eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiY3VzX2lkIjoxMDAwLCJjdXNfbmFtZSI6IkFkbWluIiwiY3VzX3RlbCI6IjAyMDc3MTUwMDA4IiwidXNlckdyb3VwIjp7ImNvZGUiOiJTVVBFUiBVU0VSIiwibmFtZSI6IuC6l-C6teC6oeC6h-C6suC6mSDguqrgurHguprgup7guq3gupTguqXgurDguprgurvgupoiLCJpZCI6MX0sInRlcm1pbmFsIjpbXSwiaWF0IjoxNzU3OTQyOTM3LCJleHAiOjE3NTc5NjA5Mzd9.RbAHkB99qWYeJh-lI0lPLQWGC8esEptqgT6wQ_4wyGc","timestamp":"2025-09-15T13:28:57.427Z"}
+{"level":"info","message":"Token generated succeed [object Object]","timestamp":"2025-09-15T13:28:57.428Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2025-09-15T13:28:57.600Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2025-09-15T13:28:57.601Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:29:08.261Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:29:08.268Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:29:08.271Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:29:08.271Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:29:08.273Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:29:08.273Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:29:08.277Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:29:08.278Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:29:08.360Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:29:08.360Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:29:08.360Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:29:08.361Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:29:08.362Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:29:08.362Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:29:08.363Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:29:08.364Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:29:08.392Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:29:08.392Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:29:08.393Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:29:08.393Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:29:08.393Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:29:08.393Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:29:08.394Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:29:08.394Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:29:08.451Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:29:08.452Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:29:08.454Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:29:08.454Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:29:08.456Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:29:08.456Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:29:08.457Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:29:08.457Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:29:08.492Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:29:08.492Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:29:08.492Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:29:08.492Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:29:08.493Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:29:08.493Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:29:08.493Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:29:08.493Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:29:08.533Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:29:08.534Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:29:08.535Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:29:08.535Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:29:08.536Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:29:08.536Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:29:08.536Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:29:08.537Z"}
+{"level":"info","message":"rider[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider]","timestamp":"2025-09-15T13:29:08.556Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:29:10.896Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:29:10.896Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:29:10.897Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:29:10.897Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:29:10.897Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:29:10.897Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:29:10.897Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:29:10.897Z"}
+{"level":"warn","message":"=============Loading saleHeader data=============","timestamp":"2025-09-15T13:29:10.898Z"}
+{"level":"warn","message":"Request date 2025-09-15 userId 1","timestamp":"2025-09-15T13:29:10.898Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:29:18.541Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:29:18.541Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:29:18.541Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:29:18.541Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:29:18.542Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:29:18.542Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:29:18.542Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:29:18.542Z"}
+{"level":"warn","message":"=============Loading saleHeader data=============","timestamp":"2025-09-15T13:29:18.542Z"}
+{"level":"warn","message":"Request date 2025-09-15 userId 1","timestamp":"2025-09-15T13:29:18.542Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:29:21.909Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:29:21.909Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:29:21.910Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:29:21.910Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:29:21.910Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:29:21.910Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:29:21.910Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:29:21.910Z"}
+{"level":"warn","message":"=============Loading saleHeader data=============","timestamp":"2025-09-15T13:29:21.910Z"}
+{"level":"warn","message":"Request date 2025-09-15 userId 1","timestamp":"2025-09-15T13:29:21.910Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:29:24.971Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:29:24.972Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:29:24.972Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:29:24.972Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:29:24.972Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:29:24.972Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:29:24.973Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:29:24.973Z"}
+{"level":"warn","message":"=============Loading saleHeader data=============","timestamp":"2025-09-15T13:29:24.974Z"}
+{"level":"warn","message":"Request date 2025-09-15 userId 1","timestamp":"2025-09-15T13:29:24.974Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:29:27.909Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:29:27.911Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:29:27.911Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:29:27.911Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:29:27.912Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:29:27.912Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:29:27.912Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:29:27.912Z"}
+{"level":"warn","message":"=============Loading saleHeader data=============","timestamp":"2025-09-15T13:29:27.912Z"}
+{"level":"warn","message":"Request date 2025-09-01 userId 1","timestamp":"2025-09-15T13:29:27.913Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:29:34.391Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:29:34.395Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:29:34.397Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:29:34.397Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:29:34.397Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:29:34.397Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:29:34.399Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:29:34.399Z"}
+{"level":"warn","message":"=============Loading saleHeader data=============","timestamp":"2025-09-15T13:29:34.400Z"}
+{"level":"warn","message":"Request date 2025-09-15 userId 1","timestamp":"2025-09-15T13:29:34.400Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:29:39.802Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:29:39.803Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:29:39.803Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:29:39.803Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:29:39.804Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:29:39.804Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:29:39.804Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:29:39.804Z"}
+{"level":"warn","message":"=============Loading saleHeader data=============","timestamp":"2025-09-15T13:29:39.804Z"}
+{"level":"warn","message":"Request date 2025-09-01 userId 1","timestamp":"2025-09-15T13:29:39.804Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:38:17.339Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:38:17.350Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:38:17.351Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:38:17.351Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:38:17.352Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:38:17.353Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:38:17.356Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:38:17.356Z"}
+{"level":"warn","message":"=============Loading saleHeader data=============","timestamp":"2025-09-15T13:38:17.357Z"}
+{"level":"warn","message":"Request date 2025-09-15 userId 1","timestamp":"2025-09-15T13:38:17.357Z"}
+{"level":"error","message":"===> Filter by date error: SequelizeDatabaseError: read ETIMEDOUT","timestamp":"2025-09-15T13:38:35.636Z"}
+{"level":"info","message":"************* User auth  *****************","timestamp":"2025-09-15T13:38:52.269Z"}
+{"level":"error","message":"Cannot get user with error SequelizeDatabaseError: read ETIMEDOUT","timestamp":"2025-09-15T13:39:10.746Z"}
+{"level":"info","message":"************* User auth  *****************","timestamp":"2025-09-15T13:43:21.343Z"}
+{"level":"error","message":"Cannot get user with error SequelizeDatabaseError: read ETIMEDOUT","timestamp":"2025-09-15T13:43:39.442Z"}
+{"level":"info","message":"************* User auth  *****************","timestamp":"2025-09-15T13:44:23.325Z"}
+{"level":"info","message":"**********[object SequelizeInstance:user]**********","timestamp":"2025-09-15T13:44:23.438Z"}
+{"level":"info","message":"**********Admin**********","timestamp":"2025-09-15T13:44:23.442Z"}
+{"level":"warn","message":"Token ===> send to client eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiY3VzX2lkIjoxMDAwLCJjdXNfbmFtZSI6IkFkbWluIiwiY3VzX3RlbCI6IjAyMDc3MTUwMDA4IiwidXNlckdyb3VwIjp7ImNvZGUiOiJTVVBFUiBVU0VSIiwibmFtZSI6IuC6l-C6teC6oeC6h-C6suC6mSDguqrgurHguprgup7guq3gupTguqXgurDguprgurvgupoiLCJpZCI6MX0sInRlcm1pbmFsIjpbXSwiaWF0IjoxNzU3OTQzODYzLCJleHAiOjE3NTc5NjE4NjN9.gezdVKd4HoqGuD0S4FDkCbJgvrOSL6bv85QebX5FN2c","timestamp":"2025-09-15T13:44:23.450Z"}
+{"level":"info","message":"Token generated succeed [object Object]","timestamp":"2025-09-15T13:44:23.450Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2025-09-15T13:44:23.674Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2025-09-15T13:44:23.675Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:44:34.266Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:44:34.267Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:44:34.268Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:44:34.268Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:44:34.269Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:44:34.270Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:44:34.270Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:44:34.271Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:44:34.318Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:44:34.318Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:44:34.319Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:44:34.319Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:44:34.319Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:44:34.319Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:44:34.320Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:44:34.320Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:44:34.359Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:44:34.359Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:44:34.360Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:44:34.360Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:44:34.360Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:44:34.360Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:44:34.361Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:44:34.361Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:44:34.411Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:44:34.411Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:44:34.411Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:44:34.411Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:44:34.411Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:44:34.411Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:44:34.412Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:44:34.412Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:44:34.444Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:44:34.444Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:44:34.445Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:44:34.445Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:44:34.446Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:44:34.446Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:44:34.449Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:44:34.449Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:44:34.488Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:44:34.488Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:44:34.488Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:44:34.488Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:44:34.488Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:44:34.488Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:44:34.489Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:44:34.489Z"}
+{"level":"info","message":"rider[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider]","timestamp":"2025-09-15T13:44:34.511Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:44:38.359Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:44:38.359Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:44:38.360Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:44:38.360Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:44:38.360Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:44:38.360Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:44:38.360Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:44:38.360Z"}
+{"level":"warn","message":"=============Loading saleHeader data=============","timestamp":"2025-09-15T13:44:38.361Z"}
+{"level":"warn","message":"Request date 2025-09-15 userId 1","timestamp":"2025-09-15T13:44:38.361Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:44:55.623Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:44:55.627Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:44:55.628Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:44:55.628Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:44:55.628Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:44:55.628Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:44:55.629Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:44:55.629Z"}
+{"level":"warn","message":"=============Loading saleHeader data=============","timestamp":"2025-09-15T13:44:55.629Z"}
+{"level":"warn","message":"Request date 2025-09-15 userId 1","timestamp":"2025-09-15T13:44:55.629Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:44:58.643Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:44:58.643Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:44:58.645Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:44:58.645Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:44:58.646Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:44:58.646Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:44:58.646Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:44:58.647Z"}
+{"level":"warn","message":"=============Loading saleHeader data=============","timestamp":"2025-09-15T13:44:58.647Z"}
+{"level":"warn","message":"Request date 2025-09-01 userId 1","timestamp":"2025-09-15T13:44:58.647Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:45:04.793Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:45:04.798Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:45:04.799Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:45:04.799Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:45:04.800Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:45:04.800Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:45:04.804Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:45:04.804Z"}
+{"level":"warn","message":"=============Loading saleHeader data=============","timestamp":"2025-09-15T13:45:04.805Z"}
+{"level":"warn","message":"Request date 2025-09-15 userId 1","timestamp":"2025-09-15T13:45:04.805Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:45:11.118Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:45:11.123Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:45:11.124Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:45:11.124Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:45:11.124Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:45:11.124Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:45:11.126Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:45:11.126Z"}
+{"level":"warn","message":"=============Loading saleHeader data=============","timestamp":"2025-09-15T13:45:11.128Z"}
+{"level":"warn","message":"Request date 2025-09-01 userId 1","timestamp":"2025-09-15T13:45:11.128Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:45:21.987Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:45:21.994Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:45:21.995Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:45:21.995Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:45:21.996Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:45:21.996Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:45:22.000Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:45:22.000Z"}
+{"level":"warn","message":"=============Loading saleHeader data=============","timestamp":"2025-09-15T13:45:22.002Z"}
+{"level":"warn","message":"Request date 2025-09-15 userId 1","timestamp":"2025-09-15T13:45:22.003Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:45:26.188Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:45:26.189Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:45:26.189Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:45:26.189Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:45:26.190Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:45:26.190Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:45:26.190Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:45:26.190Z"}
+{"level":"warn","message":"=============Loading saleHeader data=============","timestamp":"2025-09-15T13:45:26.190Z"}
+{"level":"warn","message":"Request date 2025-09-01 userId 1","timestamp":"2025-09-15T13:45:26.190Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:58:48.629Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:58:48.640Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:58:48.640Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:58:48.641Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:58:48.657Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:58:48.658Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T13:58:48.667Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T13:58:48.667Z"}
+{"level":"warn","message":"=============Loading saleHeader data=============","timestamp":"2025-09-15T13:58:48.670Z"}
+{"level":"warn","message":"Request date 2025-09-15 userId 1","timestamp":"2025-09-15T13:58:48.670Z"}
+{"level":"error","message":"===> Filter by date error: SequelizeDatabaseError: read ETIMEDOUT","timestamp":"2025-09-15T13:59:06.838Z"}
+{"level":"info","message":"************* User auth  *****************","timestamp":"2025-09-15T14:02:55.075Z"}
+{"level":"error","message":"Cannot get user with error SequelizeDatabaseError: read ETIMEDOUT","timestamp":"2025-09-15T14:03:13.341Z"}
+{"level":"info","message":"************* User auth  *****************","timestamp":"2025-09-15T14:03:47.864Z"}
+{"level":"info","message":"**********[object SequelizeInstance:user]**********","timestamp":"2025-09-15T14:03:48.050Z"}
+{"level":"info","message":"**********Admin**********","timestamp":"2025-09-15T14:03:48.054Z"}
+{"level":"warn","message":"Token ===> send to client eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiY3VzX2lkIjoxMDAwLCJjdXNfbmFtZSI6IkFkbWluIiwiY3VzX3RlbCI6IjAyMDc3MTUwMDA4IiwidXNlckdyb3VwIjp7ImNvZGUiOiJTVVBFUiBVU0VSIiwibmFtZSI6IuC6l-C6teC6oeC6h-C6suC6mSDguqrgurHguprgup7guq3gupTguqXgurDguprgurvgupoiLCJpZCI6MX0sInRlcm1pbmFsIjpbXSwiaWF0IjoxNzU3OTQ1MDI4LCJleHAiOjE3NTc5NjMwMjh9.SsVxEn72UXjaQgAm0xv0QcshXnkbazciLK750kIfkqY","timestamp":"2025-09-15T14:03:48.072Z"}
+{"level":"info","message":"Token generated succeed [object Object]","timestamp":"2025-09-15T14:03:48.073Z"}
+{"level":"info","message":"*************** FETCH PRODUCT ***************","timestamp":"2025-09-15T14:03:48.354Z"}
+{"level":"info","message":"*************Payload: *****************ss","timestamp":"2025-09-15T14:03:48.354Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:03:59.156Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:03:59.157Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:03:59.160Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:03:59.160Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:03:59.161Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:03:59.162Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:03:59.162Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:03:59.162Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:03:59.241Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:03:59.241Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:03:59.242Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:03:59.242Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:03:59.243Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:03:59.243Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:03:59.243Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:03:59.243Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:03:59.279Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:03:59.280Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:03:59.280Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:03:59.280Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:03:59.281Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:03:59.281Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:03:59.282Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:03:59.283Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:03:59.329Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:03:59.329Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:03:59.330Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:03:59.330Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:03:59.330Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:03:59.330Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:03:59.330Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:03:59.330Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:03:59.361Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:03:59.361Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:03:59.362Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:03:59.363Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:03:59.363Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:03:59.364Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:03:59.364Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:03:59.364Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:03:59.396Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:03:59.396Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:03:59.397Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:03:59.397Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:03:59.398Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:03:59.398Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:03:59.399Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:03:59.399Z"}
+{"level":"info","message":"rider[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider],[object SequelizeInstance:rider]","timestamp":"2025-09-15T14:03:59.420Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:04:02.052Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:04:02.054Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:04:02.055Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:04:02.055Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:04:02.056Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:04:02.056Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:04:02.056Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:04:02.057Z"}
+{"level":"warn","message":"=============Loading saleHeader data=============","timestamp":"2025-09-15T14:04:02.057Z"}
+{"level":"warn","message":"Request date 2025-09-15 userId 1","timestamp":"2025-09-15T14:04:02.058Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:04:30.032Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:04:30.035Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:04:30.036Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:04:30.036Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:04:30.037Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:04:30.037Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:04:30.038Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:04:30.038Z"}
+{"level":"warn","message":"=============Loading saleHeader data=============","timestamp":"2025-09-15T14:04:30.038Z"}
+{"level":"warn","message":"Request date 2025-09-15 userId 1","timestamp":"2025-09-15T14:04:30.039Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:10:39.216Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:10:39.219Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:10:39.221Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:10:39.221Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:10:39.222Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:10:39.222Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:10:39.227Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:10:39.228Z"}
+{"level":"warn","message":"=============Loading saleHeader data=============","timestamp":"2025-09-15T14:10:39.228Z"}
+{"level":"warn","message":"Request date 2025-09-15 userId 1","timestamp":"2025-09-15T14:10:39.228Z"}
+{"level":"error","message":"===> Filter by date error: SequelizeDatabaseError: read ETIMEDOUT","timestamp":"2025-09-15T14:10:57.249Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:10:57.293Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:10:57.293Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:10:57.294Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:10:57.294Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:10:57.294Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:10:57.294Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:10:57.294Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:10:57.294Z"}
+{"level":"warn","message":"=============Loading saleHeader data=============","timestamp":"2025-09-15T14:10:57.294Z"}
+{"level":"warn","message":"Request date 2025-09-15 userId 1","timestamp":"2025-09-15T14:10:57.294Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:10:58.196Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:10:58.208Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:10:58.209Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:10:58.209Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:10:58.210Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:10:58.210Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:10:58.210Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:10:58.210Z"}
+{"level":"warn","message":"=============Loading saleHeader data=============","timestamp":"2025-09-15T14:10:58.211Z"}
+{"level":"warn","message":"Request date 2025-09-15 userId 1","timestamp":"2025-09-15T14:10:58.211Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:10:59.534Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:10:59.535Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:10:59.535Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:10:59.536Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:10:59.536Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:10:59.536Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:10:59.537Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:10:59.537Z"}
+{"level":"warn","message":"=============Loading saleHeader data=============","timestamp":"2025-09-15T14:10:59.537Z"}
+{"level":"warn","message":"Request date 2025-09-15 userId 1","timestamp":"2025-09-15T14:10:59.537Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:11:01.615Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:11:01.617Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:11:01.617Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:11:01.617Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:11:01.617Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:11:01.617Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:11:01.618Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:11:01.618Z"}
+{"level":"warn","message":"=============Loading saleHeader data=============","timestamp":"2025-09-15T14:11:01.618Z"}
+{"level":"warn","message":"Request date 2025-09-15 userId 1","timestamp":"2025-09-15T14:11:01.618Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:11:18.912Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:11:18.923Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:11:18.928Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:11:18.929Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:11:18.929Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:11:18.930Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:11:18.930Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:11:18.930Z"}
+{"level":"warn","message":"=============Loading saleHeader data=============","timestamp":"2025-09-15T14:11:18.930Z"}
+{"level":"warn","message":"Request date 2025-09-15 userId 1","timestamp":"2025-09-15T14:11:18.930Z"}
+{"level":"error","message":"===> Filter by date error: SequelizeDatabaseError: read ETIMEDOUT","timestamp":"2025-09-15T14:11:29.283Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:12:18.160Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:12:18.174Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:12:18.176Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:12:18.176Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:12:18.176Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:12:18.176Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:12:18.176Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:12:18.176Z"}
+{"level":"warn","message":"=============Loading saleHeader data=============","timestamp":"2025-09-15T14:12:18.177Z"}
+{"level":"warn","message":"Request date 2025-09-15 userId 1","timestamp":"2025-09-15T14:12:18.177Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:12:20.654Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:12:20.657Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:12:20.671Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:12:20.673Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:12:20.681Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:12:20.681Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:12:20.682Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:12:20.682Z"}
+{"level":"warn","message":"=============Loading saleHeader data=============","timestamp":"2025-09-15T14:12:20.682Z"}
+{"level":"warn","message":"Request date 2025-09-15 userId 1","timestamp":"2025-09-15T14:12:20.682Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:12:23.698Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:12:23.701Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:12:23.702Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:12:23.703Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:12:23.703Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:12:23.703Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-09-15T14:12:23.705Z"}
+{"level":"warn","message":"User name from token: Admin","timestamp":"2025-09-15T14:12:23.706Z"}
+{"level":"warn","message":"=============Loading saleHeader data=============","timestamp":"2025-09-15T14:12:23.708Z"}
+{"level":"warn","message":"Request date 2025-09-15 userId 1","timestamp":"2025-09-15T14:12:23.708Z"}

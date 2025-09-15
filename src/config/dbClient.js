@@ -14,12 +14,19 @@ const clientDB = {
         "port": 3306,
     },
  
+    // "dev": {
+    //     "host": "mariadb-202130-0.cloudclusters.net",
+    //     "user": "soubin",
+    //     "password": "zaq1@wsx",
+    //     "database": "dcommerce_dev",
+    //     "port": 10087,
+    // },
     "dev": {
-        "host": "mariadb-202130-0.cloudclusters.net",
-        "user": "soubin",
-        "password": "zaq1@wsx",
+           "host": "150.95.31.23",
+        "user": "root",
+        "password": "sdat@3480",
         "database": "dcommerce_dev",
-        "port": 10087,
+        "port": 3306,
     },
     "demo": {
         "host": "150.95.31.23",
