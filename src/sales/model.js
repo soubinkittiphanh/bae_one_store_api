@@ -57,10 +57,7 @@ module.exports = (sequelize, DataTypes) => {
         // });
 
         // Optional: Link back to ticket for reference
-        SaleHeader.belongsTo(models.ticket, {
-            foreignKey: 'ticketId',
-            as: 'ticket',
-        });
+
     };
 
 

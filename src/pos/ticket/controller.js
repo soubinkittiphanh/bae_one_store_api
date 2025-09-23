@@ -72,6 +72,8 @@ const postTicketToSale = async (ticketId, transaction = null) => {
 
         // Create sale lines from ticket lines
         const saleLines = [];
+        logger.info(`ticket ${JSON.stringify(ticket)}`)
+        logger.info(`Sale line from ticketLine ${ticket.ticketLines}`)
         for (const ticketLine of ticket.ticketLines) {
             const saleLineData = {
                 saleHeaderId: saleHeader.id,
@@ -252,7 +254,7 @@ const ticketController = {
                         model: TicketLine,
                         as: 'ticketLines',
                         include: [
-                            { model: Product, as: 'product', attributes: ['id', 'name', 'price'] }
+                            { model: Product, as: 'product', attributes: ['id', 'pro_name', 'pro_price'] }
                         ]
                     }
                 ]
@@ -270,6 +272,7 @@ const ticketController = {
                 data: ticket
             });
         } catch (error) {
+            logger.error(`cannot fetch ticket with error ${error}`)
             res.status(500).json({
                 success: false,
                 message: 'Error fetching ticket',
@@ -603,6 +606,7 @@ const ticketController = {
                     console.log(`Ticket ${id} successfully posted to sales`);
                 } catch (saleError) {
                     // If it's already posted, that's okay, just log it
+                    logger.error(`POST TO Sale incompleted. with error ${saleError}`)
                     if (saleError.message.includes('already been posted')) {
                         console.log(`Ticket ${id} has already been posted to sales`);
                     } else {
