@@ -50,6 +50,11 @@ module.exports = (sequelize, DataTypes) => {
     },
     
     // ที่อยู่ - Address
+    village: {
+      type: DataTypes.TEXT,
+      allowNull: true
+    },
+    // ที่อยู่ - Address
     address: {
       type: DataTypes.TEXT,
       allowNull: true

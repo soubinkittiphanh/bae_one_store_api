@@ -6,10 +6,7 @@ module.exports = (sequelize, DataTypes) => {
     // Batch Information
     batchName: {
       type: DataTypes.STRING,
-      allowNull: false,
-      validate: {
-        len: [1, 100]
-      }
+      // allowNull: false,
     },
     runningNo: {
       type: DataTypes.STRING,
@@ -50,7 +47,7 @@ module.exports = (sequelize, DataTypes) => {
 
     // Status and Priority
     status: {
-      type: DataTypes.ENUM('draft', 'active', 'completed', 'cancelled', 'on_hold'),
+      type: DataTypes.ENUM('draft', 'active',),
       allowNull: false,
       defaultValue: 'draft'
     },
