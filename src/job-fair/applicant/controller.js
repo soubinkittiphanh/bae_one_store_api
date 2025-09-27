@@ -4,7 +4,7 @@
 // ===============================================================
 
 const logger = require("../../api/logger");
-const { Applicant, user, JobBatch } = require("../../models"); // 🔥 ADD: Import JobBatch
+const { Applicant, user, JobBatch, MOU, Agency } = require("../../models"); // 🔥 ADD: Import JobBatch
 const { Op } = require("sequelize");
 const path = require('path');
 const fs = require('fs');
@@ -102,7 +102,7 @@ class ApplicantController {
       }
 
       const oldImagePath = applicant[photoType];
-      
+
       if (!oldImagePath) {
         return res.status(400).json({
           success: false,
@@ -119,7 +119,7 @@ class ApplicantController {
       // Delete the actual file
       const filename = path.basename(oldImagePath);
       const fullPath = path.join(process.cwd(), 'uploads', 'applicants', filename);
-      
+
       fs.unlink(fullPath, (err) => {
         if (err && err.code !== 'ENOENT') {
           logger.warn(`Failed to delete ${photoType}: ${fullPath}`, err);
@@ -161,6 +161,7 @@ class ApplicantController {
         district,
         passportAvailability,
         passportNo,
+        passportIssueDate,
         passportExpiredDate,
         workPlace,
         contactStartDate,
@@ -214,6 +215,7 @@ class ApplicantController {
         district,
         passportAvailability: passportAvailability || false,
         passportNo,
+        passportIssueDate,
         passportExpiredDate,
         workPlace,
         contactStartDate,
@@ -422,10 +424,24 @@ class ApplicantController {
             required: false
           },
           {
+            model: Agency,
+            as: 'agency',
+            // attributes: ['cus_id', 'cus_name', 'cus_email'],
+            required: false
+          },
+          {
             model: JobBatch,
             as: 'jobBatch',
             attributes: ['id', 'batchName', 'jobDescription', 'status', 'batchStartDate', 'batchEndDate'],
-            required: false
+            required: false,
+            include: [
+              {
+                model: MOU,
+                as: 'mou',
+                // attributes: ['id', 'batchName', 'jobDescription', 'status', 'batchStartDate', 'batchEndDate'],
+                required: false,
+              }
+            ]
           }
         ],
         order: [[sortBy, sortOrder.toUpperCase()]],
@@ -637,6 +653,7 @@ class ApplicantController {
         emergencyContactNo,
         address,
         village,
+        agencyId,
         city,
         district,
         passportAvailability,
@@ -689,8 +706,10 @@ class ApplicantController {
         phone,
         emergencyContactNo,
         address,
+        agencyId,
         village,
         city,
+        agencyId,
         district,
         passportAvailability: passportAvailability || false,
         passportNo,

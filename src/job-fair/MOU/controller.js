@@ -1,7 +1,7 @@
 // ===============================================================
 // MOU CONTROLLER - FIXED VERSION
 // ===============================================================
-const { MOU, Agency, user, currency, image, sequelize,JobBatch } = require('../../models');
+const { MOU, Agency, user, currency, image, sequelize,JobBatch,Applicant } = require('../../models');
 const logger = require('../../api/logger');
 const { Op, ValidationError, DatabaseError, QueryTypes } = require('sequelize');
 const { v4: uuidv4 } = require('uuid');

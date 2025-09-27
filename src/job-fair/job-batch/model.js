@@ -97,9 +97,30 @@ module.exports = (sequelize, DataTypes) => {
       }
     ],
     hooks: {
-      beforeValidate: (jobBatch, options) => {
-        // Auto-generate running number if not provided
-        if (!jobBatch.runningNo) {
+      beforeValidate: async (jobBatch, options) => {
+        // Auto-generate sequential running number if not provided
+        if (!jobBatch.runningNo && jobBatch.mouId) {
+          try {
+            // Count existing batches for this MOU
+            const batchCount = await JobBatch.count({
+              where: {
+                mouId: jobBatch.mouId
+              }
+            });
+
+            // Generate running number: MOU_ID-001, MOU_ID-002, etc.
+            const nextNumber = batchCount + 1;
+            const paddedNumber = String(nextNumber).padStart(3, '0');
+            jobBatch.runningNo = `${jobBatch.mouId}-${paddedNumber}`;
+
+          } catch (error) {
+            logger.error('Error generating running number:', error);
+            // Fallback to timestamp-based if there's an error
+            const timestamp = new Date().toISOString().replace(/[-:]/g, '').slice(0, 15);
+            jobBatch.runningNo = `JB-${timestamp}`;
+          }
+        } else if (!jobBatch.runningNo) {
+          // Fallback if no mouId is provided
           const timestamp = new Date().toISOString().replace(/[-:]/g, '').slice(0, 15);
           jobBatch.runningNo = `JB-${timestamp}`;
         }
