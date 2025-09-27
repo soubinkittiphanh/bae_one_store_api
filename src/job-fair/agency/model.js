@@ -10,36 +10,39 @@ module.exports = (sequelize, DataTypes) => {
     // ===============================================================
     // BASIC IDENTIFICATION
     // ===============================================================
-    
+
     // ชื่อบริษัท - Agency Name
     agencyName: {
       type: DataTypes.STRING,
       allowNull: false
     },
-    
+
     // รหัสบริษัท - Agency Code
     agencyCode: {
       type: DataTypes.STRING,
       allowNull: true,
       unique: true
     },
-    
+
     // เลขทะเบียนบริษัท - Registration Number
     registrationNumber: {
       type: DataTypes.STRING,
       allowNull: true
     },
-    
+    agencyType: {
+      type: DataTypes.ENUM('Agency', 'Broker'),
+      allowNull: false
+    },
     // ===============================================================
     // CONTACT INFORMATION
     // ===============================================================
-    
+
     // เบอโทรศัพท์ - Phone Number
     phone: {
       type: DataTypes.STRING,
       allowNull: false
     },
-    
+
     // อีเมล - Email
     email: {
       type: DataTypes.STRING,
@@ -48,7 +51,7 @@ module.exports = (sequelize, DataTypes) => {
         isEmail: true
       }
     },
-    
+
     // ที่อยู่ - Address
     village: {
       type: DataTypes.TEXT,
@@ -59,84 +62,84 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.TEXT,
       allowNull: true
     },
-    
+
     // เมือง - City
     city: {
       type: DataTypes.STRING,
       allowNull: true
     },
-    
+
     // แขวง - District
     district: {
       type: DataTypes.STRING,
       allowNull: true
     },
-    
+
     // ===============================================================
     // BUSINESS INFORMATION
     // ===============================================================
-    
+
     // เลขใบอนุญาต - License Number
     licenseNumber: {
       type: DataTypes.STRING,
       allowNull: true
     },
-    
+
     // วันที่จดทะเบียน - Registration Date
     registrationDate: {
       type: DataTypes.DATEONLY,
       allowNull: true
     },
-    
+
     // วันหมดอายุใบอนุญาต - License Expiry Date
     licenseExpiryDate: {
       type: DataTypes.DATEONLY,
       allowNull: true
     },
-    
+
     // ===============================================================
     // CONTACT PERSON
     // ===============================================================
-    
+
     // ชื่อผู้ติดต่อ - Contact Person Name
     contactPersonName: {
       type: DataTypes.STRING,
       allowNull: true
     },
-    
+
     // ตำแหน่งผู้ติดต่อ - Contact Person Position
     contactPersonPosition: {
       type: DataTypes.STRING,
       allowNull: true
     },
-    
+
     // เบอผู้ติดต่อ - Contact Person Phone
     contactPersonPhone: {
       type: DataTypes.STRING,
       allowNull: true
     },
-    
+
     // ===============================================================
     // STATUS AND NOTES
     // ===============================================================
-    
+
     // สถานะ - Status
     status: {
       type: DataTypes.ENUM('active', 'inactive', 'suspended'),
       allowNull: false,
       defaultValue: 'active'
     },
-    
+
     // หมายเหตุ - Notes
     notes: {
       type: DataTypes.TEXT,
       allowNull: true
     },
-    
+
     // ===============================================================
     // SYSTEM FIELDS
     // ===============================================================
-    
+
     // ระบบใช้งาน - System Active
     isActive: {
       type: DataTypes.BOOLEAN,
@@ -171,12 +174,12 @@ module.exports = (sequelize, DataTypes) => {
 
   Agency.associate = models => {
     logger.info(`Associating table Agency with models`);
-    
+
     Agency.belongsTo(models.user, {
       foreignKey: 'makerId',
       as: 'maker',
     });
-    
+
     Agency.belongsTo(models.user, {
       foreignKey: 'updateUserId',
       as: 'updateUser',

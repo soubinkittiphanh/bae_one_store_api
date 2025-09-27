@@ -20,6 +20,9 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: false
     },
+    education: {
+      type: DataTypes.STRING,
+    },
 
     // ===============================================================
     // PERSONAL INFORMATION
@@ -29,6 +32,11 @@ module.exports = (sequelize, DataTypes) => {
     gender: {
       type: DataTypes.ENUM('male', 'female'),
       allowNull: false
+    },
+    depositAmount: {
+      type: DataTypes.DOUBLE,
+      allowNull: false,
+      defaultValue: 0
     },
 
     // อายุ - Age

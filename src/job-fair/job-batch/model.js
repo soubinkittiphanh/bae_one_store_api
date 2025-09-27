@@ -110,8 +110,8 @@ module.exports = (sequelize, DataTypes) => {
 
             // Generate running number: MOU_ID-001, MOU_ID-002, etc.
             const nextNumber = batchCount + 1;
-            const paddedNumber = String(nextNumber).padStart(3, '0');
-            jobBatch.runningNo = `${jobBatch.mouId}-${paddedNumber}`;
+            const paddedNumber = String(nextNumber).padStart(2, '0');
+            jobBatch.runningNo = `${jobBatch.jobCode}-${paddedNumber}`;
 
           } catch (error) {
             logger.error('Error generating running number:', error);

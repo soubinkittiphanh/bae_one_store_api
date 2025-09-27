@@ -17,6 +17,7 @@ class AgencyController {
         agencyCode,
         registrationNumber,
         phone,
+        agencyType,
         email,
         address,
         village,
@@ -38,6 +39,7 @@ class AgencyController {
       const agency = await Agency.create({
         agencyName,
         agencyCode,
+        agencyType,
         registrationNumber,
         phone,
         email,
