@@ -18,7 +18,7 @@ class SettlementController {
       const {
         page = 1,
         limit = 10,
-        method,
+        method='cash',
         userId,
         moneyAdvanceId,
         bankAccountId,

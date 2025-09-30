@@ -16,6 +16,7 @@ class MoneyAdvanceController {
         page = 1,
         limit = 10,
         status,
+        method = 'cash',
         makerId,
         ministryId,
         bookingDate,
@@ -41,6 +42,7 @@ class MoneyAdvanceController {
       // Handle other filters
       if (makerId) whereClause.makerId = makerId;
       if (ministryId) whereClause.ministryId = ministryId;
+      if (method) whereClause.method = method;
 
       // Handle date filtering - improved logic
       if (bookingDate) {
@@ -637,12 +639,13 @@ class MoneyAdvanceController {
   // GET /money-advances/dashboard - Dashboard statistics
   static async getDashboard(req, res) {
     try {
-      const { makerId, ministryId, bookingDate } = req.query;
+      const { makerId, ministryId, bookingDate, method = 'cash' } = req.query;
 
       const whereClause = {};
       if (makerId) whereClause.makerId = makerId;
       if (ministryId) whereClause.ministryId = ministryId;
       if (bookingDate) whereClause.bookingDate = bookingDate;
+      if (method) whereClause.method = method;
 
       const [total, pending, approved, settled] = await Promise.all([
         MoneyAdvance.count({ where: whereClause }),
