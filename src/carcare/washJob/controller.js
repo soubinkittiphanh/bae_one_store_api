@@ -196,7 +196,7 @@ exports.getAllWashJobsByDate = async (req, res) => {
     const washJobs = await WashJob.findAll({
       where: whereCondition,
       include: [
-        {
+         {
           model: WashJobLine,
           as: 'lines',
           include: [
@@ -207,12 +207,28 @@ exports.getAllWashJobsByDate = async (req, res) => {
                 {
                   model: PriceList,
                   as: 'priceLists'
+                },
+                {
+                  model: Currency,
+                  as: 'saleCurrency'
                 }
               ]
             },
             {
               model: PriceList,
               as: 'priceList'
+            }
+          ]
+        },
+        {
+          model: SaleHeader,
+          as: 'saleHeader',
+          attributes: ['id', 'total'],
+          include: [
+            {
+              model: Payment,
+              as: 'payment',
+              attributes: ['id', 'payment_code','payment_name'],
             }
           ]
         }
