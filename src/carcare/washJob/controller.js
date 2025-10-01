@@ -361,25 +361,45 @@ exports.deleteWashJob = async (req, res) => {
 exports.createSaleFromWashJob = async (req, res) => {
   const { paymentId, userId } = req.body;
   const washJobId = req.params.id;
-
+  
   const dfCurrency = await Currency.findOne({ where: { isLocalCCY: true } });
   const dfLocation = await Location.findOne({ where: { isActive: true } });
   const dfPayment = await Payment.findOne({ where: { isActive: true } });
   const dfUnit = await Unit.findOne({ where: { isActive: true } });
-  logger.info(`DF Currency ${JSON.stringify(dfCurrency)}`)
-  logger.info(`DF dfLocation ${JSON.stringify(dfLocation)}`)
-  logger.info(`DF dfPayment ${JSON.stringify(dfPayment)}`)
-
+  
+  logger.info(`DF Currency ${JSON.stringify(dfCurrency)}`);
+  logger.info(`DF dfLocation ${JSON.stringify(dfLocation)}`);
+  logger.info(`DF dfPayment ${JSON.stringify(dfPayment)}`);
+  
   const washJob = await WashJob.findByPk(washJobId, {
     include: [{ model: WashJobLine, as: 'lines' }],
   });
-
+  
   if (!washJob) {
     return res.status(404).json({ message: "Wash job not found" });
   }
-
+  
+  // VALIDATION: Check if already posted
+  if (washJob.saleHeaderId) {
+    logger.warn(`WashJob ${washJobId} already has saleHeaderId: ${washJob.saleHeaderId}`);
+    return res.status(400).json({ 
+      message: "This wash job has already been posted to sales",
+      saleHeaderId: washJob.saleHeaderId,
+      status: washJob.status
+    });
+  }
+  
+  // VALIDATION: Check if status is already SETTLED
+  if (washJob.status === 'SETTLED') {
+    logger.warn(`WashJob ${washJobId} is already in SETTLED status`);
+    return res.status(400).json({ 
+      message: "This wash job has already been settled",
+      status: washJob.status
+    });
+  }
+  
   const t = await sequelize.transaction();
-
+  
   try {
     // 1. Create SaleHeader
     const saleHeader = await SaleHeader.create({
@@ -389,8 +409,6 @@ exports.createSaleFromWashJob = async (req, res) => {
       total: washJob.totalAmount + washJob.manualDiscountAmount,
       exchangeRate: dfCurrency.rate,
       isActive: true,
-      // createdAt: new Date(),
-      // updateTimestamp: new Date(),
       paymentId: paymentId || dfPayment.id,
       clientId: washJob.clientId || null,
       currencyId: dfCurrency.id,
@@ -401,7 +419,7 @@ exports.createSaleFromWashJob = async (req, res) => {
       orderTableId: null,
       washJobId: washJob.id,
     }, { transaction: t });
-
+    
     // 2. Create SaleLines
     for (const line of washJob.lines) {
       await SaleLine.create({
@@ -413,20 +431,27 @@ exports.createSaleFromWashJob = async (req, res) => {
         total: (line.price || 0) * (line.quantity ?? 1),
       }, { transaction: t });
     }
-
-    // 3. Update WashJob status to "complete"
-    washJob.status = 'SETTLED'; // Make sure "status" column exists in DB
+    
+    // 3. Update WashJob status to "SETTLED"
+    washJob.status = 'SETTLED';
     washJob.saleHeaderId = saleHeader.id;
     await washJob.save({ transaction: t });
-
+    
     await t.commit();
-
-    return res.status(200).json({ message: "Sale created and job completed", saleHeader });
-
+    
+    logger.info(`Successfully created sale from WashJob ${washJobId}, SaleHeader ${saleHeader.id}`);
+    return res.status(200).json({ 
+      message: "Sale created and job completed", 
+      saleHeader 
+    });
+    
   } catch (err) {
     await t.rollback();
-    console.error(err);
-    return res.status(500).json({ message: "Failed to create sale", error: err.message });
+    logger.error(`Failed to create sale from WashJob ${washJobId}: ${err.message}`);
+    return res.status(500).json({ 
+      message: "Failed to create sale", 
+      error: err.message 
+    });
   }
 };
 
