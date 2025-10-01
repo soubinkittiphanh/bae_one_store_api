@@ -16,7 +16,7 @@ router
 .get("/find", controller.getAllWashJobs)
 .get("/findAll", controller.getAllWashJobs)
 .get("/findAllRecentJob", controller.getRecentWashJobs)
-.get("/findAllByDate", controller.getAllWashJobs)
+.get("/findAllByDate", controller.getAllWashJobsByDate)
 .get("/find/:id", controller.getWashJobById)
 // .post("/generate", service.createHulkUnit)
 // .post("/bulkCreate",service.createHulkStockCard)
