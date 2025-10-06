@@ -51,7 +51,7 @@ module.exports = (sequelize, DataTypes) => {
 
     // Status and Priority
     status: {
-      type: DataTypes.ENUM('draft', 'active',),
+      type: DataTypes.ENUM('draft', 'active','completed','settled'),
       allowNull: false,
       defaultValue: 'draft'
     },
