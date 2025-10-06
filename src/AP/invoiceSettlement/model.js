@@ -71,98 +71,99 @@ module.exports = (sequelize, DataTypes) => {
 
       // Before updating - store current state to audit
       beforeUpdate: async (settlement, options) => {
-        try {
-          const APSettlementAudit = sequelize.models.APSettlementAudit;
+
+        // try {
+        //   const APSettlementAudit = sequelize.models.APSettlementAudit;
           
-          if (!APSettlementAudit) {
-            logger.warn('APSettlementAudit model not found');
-            return;
-          }
+        //   if (!APSettlementAudit) {
+        //     logger.warn('APSettlementAudit model not found');
+        //     return;
+        //   }
 
-          // Get the current complete record from database BEFORE update
-          const APSettlementModel = sequelize.models.APInvoiceSettlement;
-          const currentRecord = await APSettlementModel.findByPk(settlement.id, {
-            include: [
-              {
-                model: sequelize.models.payment,
-                as: 'paymentMethod',
-                attributes: ['id', 'payment_code','payment_name'],
-                required: false
-              },
-              {
-                model: sequelize.models.bankAccount,
-                as: 'bankAccount',
-                attributes: ['id', 'accountName', 'accountNumber'],
-                required: false
-              },
-              {
-                model: sequelize.models.user,
-                as: 'maker',
-                attributes: ['id', 'cus_name', 'cus_email'],
-                required: false
-              },
-              {
-                model: sequelize.models.user,
-                as: 'checker',
-                attributes: ['id', 'cus_name', 'cus_email'],
-                required: false
-              },
-              {
-                model: sequelize.models.InvoiceSettlementLine,
-                as: 'invoiceSettlements',
-                required: false
-              }
-            ]
-          });
+        //   // Get the current complete record from database BEFORE update
+        //   const APSettlementModel = sequelize.models.APInvoiceSettlement;
+        //   const currentRecord = await APSettlementModel.findByPk(settlement.id, {
+        //     include: [
+        //       {
+        //         model: sequelize.models.payment,
+        //         as: 'paymentMethod',
+        //         attributes: ['id', 'payment_code','payment_name'],
+        //         required: false
+        //       },
+        //       {
+        //         model: sequelize.models.bankAccount,
+        //         as: 'bankAccount',
+        //         attributes: ['id', 'accountName', 'accountNumber'],
+        //         required: false
+        //       },
+        //       {
+        //         model: sequelize.models.user,
+        //         as: 'maker',
+        //         attributes: ['id', 'cus_name', 'cus_email'],
+        //         required: false
+        //       },
+        //       {
+        //         model: sequelize.models.user,
+        //         as: 'checker',
+        //         attributes: ['id', 'cus_name', 'cus_email'],
+        //         required: false
+        //       },
+        //       {
+        //         model: sequelize.models.InvoiceSettlementLine,
+        //         as: 'invoiceSettlements',
+        //         required: false
+        //       }
+        //     ]
+        //   });
 
-          if (currentRecord && typeof APSettlementAudit.createAuditRecord === 'function') {
-            const userId =  settlement.updateUserId || settlement.makerId || 1;
+        //   if (currentRecord && typeof APSettlementAudit.createAuditRecord === 'function') {
+        //     const userId =  settlement.updateUserId || settlement.makerId || 1;
             
-            // Determine action based on status change
-            let action = 'UPDATE';
-            let reason = options.reason || 'Settlement updated';
+        //     // Determine action based on status change
+        //     let action = 'UPDATE';
+        //     let reason = options.reason || 'Settlement updated';
             
-            if (settlement.changed('status')) {
-              const newStatus = settlement.status;
-              const oldStatus = settlement._previousDataValues?.status;
+        //     if (settlement.changed('status')) {
+        //       const newStatus = settlement.status;
+        //       const oldStatus = settlement._previousDataValues?.status;
               
-              switch (newStatus) {
-                case 'pending':
-                  action = 'UPDATE';
-                  reason = options.reason || 'Settlement submitted for approval';
-                  break;
-                case 'approved':
-                  action = 'APPROVE';
-                  reason = options.reason || 'Settlement approved';
-                  break;
-                case 'completed':
-                  action = 'COMPLETE';
-                  reason = options.reason || 'Settlement completed';
-                  break;
-                case 'cancelled':
-                  action = 'CANCEL';
-                  reason = options.reason || 'Settlement cancelled';
-                  break;
-                default:
-                  action = 'UPDATE';
-                  reason = options.reason || `Settlement status changed from ${oldStatus} to ${newStatus}`;
-              }
-            }
+        //       switch (newStatus) {
+        //         case 'pending':
+        //           action = 'UPDATE';
+        //           reason = options.reason || 'Settlement submitted for approval';
+        //           break;
+        //         case 'approved':
+        //           action = 'APPROVE';
+        //           reason = options.reason || 'Settlement approved';
+        //           break;
+        //         case 'completed':
+        //           action = 'COMPLETE';
+        //           reason = options.reason || 'Settlement completed';
+        //           break;
+        //         case 'cancelled':
+        //           action = 'CANCEL';
+        //           reason = options.reason || 'Settlement cancelled';
+        //           break;
+        //         default:
+        //           action = 'UPDATE';
+        //           reason = options.reason || `Settlement status changed from ${oldStatus} to ${newStatus}`;
+        //       }
+        //     }
 
-            // Store current state BEFORE the update
-            await APSettlementAudit.createAuditRecord(
-              currentRecord.toJSON(),
-              userId,
-              action,
-              reason
-            );
+        //     // Store current state BEFORE the update
+        //     await APSettlementAudit.createAuditRecord(
+        //       currentRecord.toJSON(),
+        //       userId,
+        //       action,
+        //       reason
+        //     );
 
-            logger.info(`Audit record created for settlement ${settlement.id} before update - Action: ${action}`);
-          }
-        } catch (error) {
-          logger.error('Failed to create audit record before update:', error);
-          // Don't throw error - audit shouldn't break main functionality
-        }
+        //     logger.info(`Audit record created for settlement ${settlement.id} before update - Action: ${action}`);
+        //   }
+        // } catch (error) {
+        //   logger.error('Failed to create audit record before update:', error);
+        //   // Don't throw error - audit shouldn't break main functionality
+        // }
       },
 
       // After creating - store the new record state
@@ -288,6 +289,10 @@ module.exports = (sequelize, DataTypes) => {
     APSettlement.belongsTo(models.payment, {
       foreignKey: 'paymentMethodId',
       as: 'paymentMethod',
+    });
+    APSettlement.belongsTo(models.currency, {
+      foreignKey: 'currencyId',
+      as: 'currency',
     });
     
     // Settlement belongs to bank account

@@ -3,7 +3,7 @@
 // File: /AP/settlement/controller.js
 // ===============================================================
 const logger = require("../../api/logger");
-const { apInvoiceSettlement, apSettlementAudit, apInvoiceSettlementLine, apInvoice, user, vendor, sequelize } = require("../../models");
+const { apInvoiceSettlement,currency, apSettlementAudit, apInvoiceSettlementLine, apInvoice, user, vendor, sequelize, Applicant, Agency } = require("../../models");
 const InvoiceLineItem = require("../../models").invoiceLineItem;
 
 class APSettlementController {
@@ -48,7 +48,35 @@ class APSettlementController {
                 where: whereClause,
                 include: [
                     { model: user, as: 'maker', required: false },
-                    { model: user, as: 'checker', required: false }
+                    { model: currency, as: 'currency', required: false },
+                    { model: user, as: 'checker', required: false },
+                    {
+                        model: apInvoiceSettlementLine,
+                        as: 'invoiceSettlements',
+                        include: [
+                            {
+                                model: InvoiceLineItem,
+                                as: 'invoiceLineItem',
+                                include: [
+                                    {
+                                        model: apInvoice,
+                                        as: 'invoice',
+                                        include: [
+                                            { model: vendor, as: 'vendor' }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                model: Agency,
+                                as: 'agency',
+                            },
+                            {
+                                model: Applicant,
+                                as: 'applicant',
+                            }
+                        ]
+                    }
                 ],
                 limit: parseInt(limit),
                 offset: parseInt(offset),
@@ -92,6 +120,7 @@ class APSettlementController {
                 include: [
                     { model: user, as: 'maker', required: false },
                     { model: user, as: 'checker', required: false },
+                    { model: currency, as: 'currency', required: false },
                     {
                         model: apInvoiceSettlementLine,
                         as: 'invoiceSettlements',
@@ -108,6 +137,14 @@ class APSettlementController {
                                         ]
                                     }
                                 ]
+                            },
+                            {
+                                model: Agency,
+                                as: 'agency',
+                            },
+                            {
+                                model: Applicant,
+                                as: 'applicant',
                             }
                         ]
                     }
@@ -184,22 +221,37 @@ class APSettlementController {
                 settlementDate,
                 paymentAmount,
                 baseAmount,
+                currencyId,
+                paymentMethodId,
+                bankAccountId,
                 status = 'draft',
                 reference,
                 description,
                 note,
-                invoiceAllocations = []
+                makerId,
+                checkerId,
+                approvalNote,
+                reason,
+                settlementLines = [],
+                invoiceAllocations = [] // Keep for backward compatibility
             } = req.body;
+
+            // Use settlementLines if provided, otherwise fall back to invoiceAllocations
+            const lines = settlementLines.length > 0 ? settlementLines : invoiceAllocations;
 
             logger.info('Extracted data:', {
                 settlementDate,
                 paymentAmount,
                 baseAmount,
+                currencyId,
+                paymentMethodId,
+                bankAccountId,
                 status,
                 reference,
                 description,
                 note,
-                invoiceAllocationsCount: invoiceAllocations.length,
+                makerId,
+                settlementLinesCount: lines.length,
                 requestUserId: req.user?.id
             });
 
@@ -220,15 +272,20 @@ class APSettlementController {
 
             logger.info('Validation passed - creating main settlement record');
 
-            // Create main settlement record - only using fields from your model
+            // Create main settlement record
             const settlementData = {
                 settlementDate,
                 paymentAmount,
                 baseAmount,
+                currencyId,
+                paymentMethodId,
+                bankAccountId,
                 status,
                 reference,
                 description,
-                note
+                note,
+                makerId: makerId || req.user?.id,
+                checkerId
             };
 
             logger.info('Creating settlement with data:', { settlementData });
@@ -240,103 +297,145 @@ class APSettlementController {
                 settlementDate: settlement.settlementDate
             });
 
-            // Create invoice allocations if provided
-            if (invoiceAllocations && invoiceAllocations.length > 0) {
-                logger.info('=== CREATING INVOICE ALLOCATIONS ===');
-                logger.info('Number of allocations to process:', { count: invoiceAllocations.length });
+            // Create settlement audit if reason is provided
+            if (reason) {
+                await apSettlementAudit.create({
+                    settlementId: settlement.id,
+                    userId: makerId || req.user?.id,
+                    action: 'create',
+                    reason: reason,
+                    oldValue: null,
+                    newValue: JSON.stringify(settlementData)
+                }, { transaction });
+                logger.info('Settlement audit record created');
+            }
 
-                for (let i = 0; i < invoiceAllocations.length; i++) {
-                    const allocation = invoiceAllocations[i];
+            // Create settlement lines if provided
+            if (lines && lines.length > 0) {
+                logger.info('=== CREATING SETTLEMENT LINES ===');
+                logger.info('Number of lines to process:', { count: lines.length });
 
-                    logger.info(`Processing allocation ${i + 1}/${invoiceAllocations.length}:`, {
-                        allocationIndex: i,
-                        allocation: allocation
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i];
+
+                    logger.info(`Processing line ${i + 1}/${lines.length}:`, {
+                        lineIndex: i,
+                        line: line
                     });
 
-                    // Map invoiceId to invoiceLineItemId
                     let invoiceLineItemId = null;
-                    if (allocation.invoiceId) {
+
+                    // Handle invoice-linked lines
+                    if (line.invoiceId) {
                         try {
                             const invoiceLineItem = await InvoiceLineItem.findOne({
-                                where: { invoiceId: allocation.invoiceId },
+                                where: { invoiceId: line.invoiceId },
                                 order: [['id', 'ASC']]
                             });
 
                             if (invoiceLineItem) {
                                 invoiceLineItemId = invoiceLineItem.id;
-                                logger.info(`Mapped invoice ${allocation.invoiceId} to invoice line item ${invoiceLineItemId}`);
+                                logger.info(`Mapped invoice ${line.invoiceId} to invoice line item ${invoiceLineItemId}`);
                             } else {
-                                logger.warn(`No invoice line items found for invoice ${allocation.invoiceId}, creating default line item`);
+                                logger.warn(`No invoice line items found for invoice ${line.invoiceId}, creating default line item`);
 
-                                const invoice = await apInvoice.findByPk(allocation.invoiceId);
+                                const invoice = await apInvoice.findByPk(line.invoiceId);
                                 if (!invoice) {
-                                    throw new Error(`Invoice ${allocation.invoiceId} not found`);
+                                    throw new Error(`Invoice ${line.invoiceId} not found`);
                                 }
 
                                 const defaultLineItem = await InvoiceLineItem.create({
-                                    invoiceId: allocation.invoiceId,
+                                    invoiceId: line.invoiceId,
                                     lineNumber: 1,
-                                    description: 'Default settlement line',
+                                    description: line.description || 'Default settlement line',
                                     quantity: 1,
-                                    unitPrice: invoice.totalAmount || allocation.amount,
-                                    lineTotal: invoice.totalAmount || allocation.amount,
+                                    unitPrice: invoice.totalAmount || line.amount,
+                                    lineTotal: invoice.totalAmount || line.amount,
                                     status: 'active'
                                 }, { transaction });
 
                                 invoiceLineItemId = defaultLineItem.id;
-                                logger.info(`Created default invoice line item ${invoiceLineItemId} for invoice ${allocation.invoiceId}`);
+                                logger.info(`Created default invoice line item ${invoiceLineItemId} for invoice ${line.invoiceId}`);
                             }
                         } catch (mappingError) {
                             logger.error('Error mapping invoice to invoice line item:', {
-                                invoiceId: allocation.invoiceId,
+                                invoiceId: line.invoiceId,
                                 error: mappingError.message
                             });
-                            throw new Error(`Failed to map invoice ${allocation.invoiceId} to invoice line item: ${mappingError.message}`);
+                            throw new Error(`Failed to map invoice ${line.invoiceId} to invoice line item: ${mappingError.message}`);
                         }
+                    } 
+                    // Handle manual lines (type === 'manual' and no invoiceId)
+                    else if (line.type === 'manual') {
+                        logger.info(`Processing manual settlement line without invoice`);
+                        invoiceLineItemId = null; // Manual lines don't need an invoice line item
                     }
 
-                    if (!invoiceLineItemId) {
-                        throw new Error(`Could not resolve invoice line item for invoice ${allocation.invoiceId}`);
+                    // Validate agency if provided
+                    if (line.agencyId) {
+                        const agency = await Agency.findByPk(line.agencyId);
+                        if (!agency) {
+                            throw new Error(`Invalid agency ID: ${line.agencyId}`);
+                        }
+                        logger.info(`Validated agency ID: ${line.agencyId}`);
                     }
 
-                    // Create allocation data - only using fields that exist in settlement line model
-                    const allocationData = {
-                        amount: allocation.amount,
+                    // Validate applicant if provided
+                    if (line.applicantId) {
+                        const applicant = await Applicant.findByPk(line.applicantId);
+                        if (!applicant) {
+                            throw new Error(`Invalid applicant ID: ${line.applicantId}`);
+                        }
+                        logger.info(`Validated applicant ID: ${line.applicantId}`);
+                    }
+
+                    // Validate amount
+                    if (!line.amount || line.amount <= 0) {
+                        throw new Error(`Invalid amount for line ${i + 1}: ${line.amount}`);
+                    }
+
+                    // Create settlement line data
+                    const lineData = {
+                        amount: line.amount,
                         status: 'active',
                         settlementId: settlement.id,
-                        invoiceLineItemId: invoiceLineItemId
+                        invoiceLineItemId: invoiceLineItemId,
+                        agencyId: line.agencyId || null,
+                        applicantId: line.applicantId || null
                     };
 
-                    logger.info('Allocation data to create:', {
-                        allocationData,
-                        originalInvoiceId: allocation.invoiceId,
+                    logger.info('Settlement line data to create:', {
+                        lineData,
+                        lineType: line.type,
+                        originalInvoiceId: line.invoiceId,
                         mappedInvoiceLineItemId: invoiceLineItemId
                     });
 
                     try {
-                        await apInvoiceSettlementLine.create(allocationData, { transaction });
-                        logger.info(`Allocation ${i + 1} created successfully with invoice line item ${invoiceLineItemId}`);
+                        await apInvoiceSettlementLine.create(lineData, { transaction });
+                        logger.info(`Settlement line ${i + 1} created successfully`);
 
-                    } catch (allocationError) {
-                        logger.error('Error creating allocation:', {
-                            allocationIndex: i,
-                            allocationData,
-                            originalInvoiceId: allocation.invoiceId,
+                    } catch (lineError) {
+                        logger.error('Error creating settlement line:', {
+                            lineIndex: i,
+                            lineData,
+                            lineType: line.type,
+                            originalInvoiceId: line.invoiceId,
                             mappedInvoiceLineItemId: invoiceLineItemId,
                             error: {
-                                message: allocationError.message,
-                                stack: allocationError.stack,
-                                sql: allocationError.sql,
-                                parameters: allocationError.parameters
+                                message: lineError.message,
+                                stack: lineError.stack,
+                                sql: lineError.sql,
+                                parameters: lineError.parameters
                             }
                         });
-                        throw allocationError;
+                        throw lineError;
                     }
                 }
 
-                logger.info('All invoice allocations created successfully');
+                logger.info('All settlement lines created successfully');
             } else {
-                logger.info('No invoice allocations to process');
+                logger.info('No settlement lines to process');
             }
 
             await transaction.commit();
@@ -348,6 +447,8 @@ class APSettlementController {
             const createdSettlement = await apInvoiceSettlement.findByPk(settlement.id, {
                 include: [
                     { model: user, as: 'maker', required: false },
+                    { model: user, as: 'checker', required: false },
+                    { model: currency, as: 'currency', required: false },
                     {
                         model: apInvoiceSettlementLine,
                         as: 'invoiceSettlements',
@@ -355,6 +456,7 @@ class APSettlementController {
                             {
                                 model: InvoiceLineItem,
                                 as: 'invoiceLineItem',
+                                required: false,
                                 include: [
                                     {
                                         model: apInvoice,
@@ -364,6 +466,16 @@ class APSettlementController {
                                         ]
                                     }
                                 ]
+                            },
+                            {
+                                model: Agency,
+                                as: 'agency',
+                                required: false
+                            },
+                            {
+                                model: Applicant,
+                                as: 'applicant',
+                                required: false
                             }
                         ]
                     }
@@ -406,10 +518,6 @@ class APSettlementController {
             });
         }
     }
-
-    // ===============================================================
-    // UPDATE SETTLEMENT - UPDATED FOR YOUR MODEL
-    // ===============================================================
     static async updateSettlement(req, res) {
         const transaction = await sequelize.transaction();
 
@@ -423,13 +531,31 @@ class APSettlementController {
                 reference,
                 description,
                 note,
+                currencyId,
                 paymentMethodId,
                 bankAccountId,
                 makerId,
-                invoiceAllocations = []
+                checkerId,
+                approvalNote,
+                reason = 'UPDATE ',
+                settlementLines = [],
+                invoiceAllocations = [] // Keep for backward compatibility
             } = req.body;
 
-            logger.info(`Updating AP Settlement ID: ${id}`);
+            // Use settlementLines if provided, otherwise fall back to invoiceAllocations
+            const lines = settlementLines.length > 0 ? settlementLines : invoiceAllocations;
+
+            logger.info(`=== UPDATING AP SETTLEMENT ID: ${id} ===`);
+            logger.info('Update data received:', {
+                settlementDate,
+                paymentAmount,
+                baseAmount,
+                currencyId,
+                paymentMethodId,
+                bankAccountId,
+                status,
+                settlementLinesCount: lines.length
+            });
 
             // Find existing settlement
             const existingSettlement = await apInvoiceSettlement.findByPk(id);
@@ -441,6 +567,17 @@ class APSettlementController {
                 });
             }
 
+            // Store old values for audit
+            const oldValues = {
+                settlementDate: existingSettlement.settlementDate,
+                paymentAmount: existingSettlement.paymentAmount,
+                baseAmount: existingSettlement.baseAmount,
+                status: existingSettlement.status,
+                currencyId: existingSettlement.currencyId,
+                paymentMethodId: existingSettlement.paymentMethodId,
+                bankAccountId: existingSettlement.bankAccountId
+            };
+
             // Check if settlement can be modified
             if (existingSettlement.canBeModified && !existingSettlement.canBeModified()) {
                 await transaction.rollback();
@@ -450,78 +587,149 @@ class APSettlementController {
                 });
             }
 
-            // Update settlement - only using fields from your model
-            await existingSettlement.update({
+            // Update settlement
+            const updateData = {
                 settlementDate,
                 paymentAmount,
                 baseAmount,
                 status,
                 reference,
                 description,
+                currencyId,
                 paymentMethodId,
                 bankAccountId,
                 makerId,
+                checkerId,
                 note
-            }, { transaction });
+            };
 
-            // Update invoice allocations
-            if (invoiceAllocations && invoiceAllocations.length > 0) {
-                // Delete existing allocations
+            await existingSettlement.update(updateData, { transaction });
+            logger.info('Settlement header updated successfully');
+
+            // Create audit record if reason is provided
+// Create audit record if reason is provided
+            if (reason) {
+                await apSettlementAudit.create({
+                    settlementId: id,
+                    userId: makerId || req.user?.id,
+                    action: 'update',
+                    reason: reason,
+                    oldValue: JSON.stringify(oldValues),
+                    newValue: JSON.stringify(updateData),
+                    recordData: JSON.stringify({
+                        settlementId: id,
+                        action: 'update',
+                        timestamp: new Date(),
+                        user: makerId || req.user?.id,
+                        changes: {
+                            before: oldValues,
+                            after: updateData
+                        }
+                    })
+                }, { transaction });
+                logger.info('Settlement audit record created for update');
+            }
+
+
+            // Update settlement lines
+            if (lines && lines.length > 0) {
+                logger.info('=== UPDATING SETTLEMENT LINES ===');
+                
+                // Delete existing lines
                 await apInvoiceSettlementLine.destroy({
                     where: { settlementId: id },
                     transaction
                 });
+                logger.info('Existing settlement lines deleted');
 
-                // Create new allocations with mapping
-                for (const allocation of invoiceAllocations) {
-                    // Map invoiceId to invoiceLineItemId (same logic as create)
+                // Create new lines
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i];
+
+                    logger.info(`Processing line ${i + 1}/${lines.length}:`, { line });
+
                     let invoiceLineItemId = null;
-                    if (allocation.invoiceId) {
+
+                    // Handle invoice-linked lines
+                    if (line.invoiceId) {
                         const invoiceLineItem = await InvoiceLineItem.findOne({
-                            where: { invoiceId: allocation.invoiceId },
+                            where: { invoiceId: line.invoiceId },
                             order: [['id', 'ASC']]
                         });
 
                         if (invoiceLineItem) {
                             invoiceLineItemId = invoiceLineItem.id;
+                            logger.info(`Mapped invoice ${line.invoiceId} to invoice line item ${invoiceLineItemId}`);
                         } else {
                             // Create default if not exists
-                            const invoice = await apInvoice.findByPk(allocation.invoiceId);
+                            const invoice = await apInvoice.findByPk(line.invoiceId);
                             if (invoice) {
                                 const defaultLineItem = await InvoiceLineItem.create({
-                                    invoiceId: allocation.invoiceId,
+                                    invoiceId: line.invoiceId,
                                     lineNumber: 1,
-                                    description: 'Default settlement line',
+                                    description: line.description || 'Default settlement line',
                                     quantity: 1,
-                                    unitPrice: invoice.totalAmount || allocation.amount,
-                                    lineTotal: invoice.totalAmount || allocation.amount,
+                                    unitPrice: invoice.totalAmount || line.amount,
+                                    lineTotal: invoice.totalAmount || line.amount,
                                     status: 'active'
                                 }, { transaction });
                                 invoiceLineItemId = defaultLineItem.id;
+                                logger.info(`Created default invoice line item ${invoiceLineItemId}`);
                             }
                         }
                     }
-
-                    if (invoiceLineItemId) {
-                        const allocationData = {
-                            amount: allocation.amount,
-                            status: 'active',
-                            settlementId: id,
-                            invoiceLineItemId: invoiceLineItemId
-                        };
-
-                        await apInvoiceSettlementLine.create(allocationData, { transaction });
+                    // Handle manual lines
+                    else if (line.type === 'manual') {
+                        logger.info('Processing manual settlement line without invoice');
+                        invoiceLineItemId = null;
                     }
+
+                    // Validate agency if provided
+                    if (line.agencyId) {
+                        const agency = await Agency.findByPk(line.agencyId);
+                        if (!agency) {
+                            throw new Error(`Invalid agency ID: ${line.agencyId}`);
+                        }
+                    }
+
+                    // Validate applicant if provided
+                    if (line.applicantId) {
+                        const applicant = await Applicant.findByPk(line.applicantId);
+                        if (!applicant) {
+                            throw new Error(`Invalid applicant ID: ${line.applicantId}`);
+                        }
+                    }
+
+                    // Validate amount
+                    if (!line.amount || line.amount <= 0) {
+                        throw new Error(`Invalid amount for line ${i + 1}: ${line.amount}`);
+                    }
+
+                    const lineData = {
+                        amount: line.amount,
+                        status: 'active',
+                        settlementId: id,
+                        invoiceLineItemId: invoiceLineItemId,
+                        agencyId: line.agencyId || null,
+                        applicantId: line.applicantId || null
+                    };
+
+                    await apInvoiceSettlementLine.create(lineData, { transaction });
+                    logger.info(`Settlement line ${i + 1} created successfully`);
                 }
+
+                logger.info('All settlement lines updated successfully');
             }
 
             await transaction.commit();
+            logger.info('Transaction committed successfully');
 
             // Fetch updated settlement
             const updatedSettlement = await apInvoiceSettlement.findByPk(id, {
                 include: [
                     { model: user, as: 'maker', required: false },
                     { model: user, as: 'checker', required: false },
+                    { model: currency, as: 'currency', required: false },
                     {
                         model: apInvoiceSettlementLine,
                         as: 'invoiceSettlements',
@@ -529,6 +737,7 @@ class APSettlementController {
                             {
                                 model: InvoiceLineItem,
                                 as: 'invoiceLineItem',
+                                required: false,
                                 include: [
                                     {
                                         model: apInvoice,
@@ -538,13 +747,23 @@ class APSettlementController {
                                         ]
                                     }
                                 ]
+                            },
+                            {
+                                model: Agency,
+                                as: 'agency',
+                                required: false
+                            },
+                            {
+                                model: Applicant,
+                                as: 'applicant',
+                                required: false
                             }
                         ]
                     }
                 ]
             });
 
-            logger.info(`AP Settlement updated successfully with ID: ${id}`);
+            logger.info(`=== AP SETTLEMENT UPDATED SUCCESSFULLY: ${id} ===`);
 
             res.status(200).json({
                 success: true,
@@ -554,7 +773,19 @@ class APSettlementController {
 
         } catch (error) {
             await transaction.rollback();
-            logger.error('Error updating AP Settlement:', error);
+            logger.error('=== ERROR UPDATING AP SETTLEMENT ===', {
+                error: {
+                    message: error.message,
+                    stack: error.stack,
+                    name: error.name,
+                    sql: error.sql,
+                    parameters: error.parameters
+                },
+                settlementId: req.params.id,
+                requestBody: req.body,
+                userId: req.user?.id
+            });
+
             res.status(500).json({
                 success: false,
                 message: 'Internal server error',
@@ -562,6 +793,7 @@ class APSettlementController {
             });
         }
     }
+
 
     // ===============================================================
     // DELETE SETTLEMENT - UPDATED FOR YOUR MODEL

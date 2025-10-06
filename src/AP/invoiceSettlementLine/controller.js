@@ -3,7 +3,7 @@
 // File: /AP/settlement/controller.js (or wherever you want to place it)
 // ===============================================================
 const logger = require("../../api/logger");
-const { apInvoiceSettlementLine, apInvoice, user, vendor, sequelize } = require("../../models");
+const { apInvoiceSettlementLine, apInvoice, user, vendor, Applicant, Agency, sequelize } = require("../../models");
 
 class APSettlementController {
 
@@ -18,7 +18,9 @@ class APSettlementController {
                 status,
                 startDate,
                 endDate,
-                search
+                search,
+                applicantId,
+                agencyId
             } = req.query;
 
             const offset = (page - 1) * limit;
@@ -27,6 +29,16 @@ class APSettlementController {
             // Filter by status
             if (status) {
                 whereClause.status = status;
+            }
+
+            // Filter by applicant
+            if (applicantId) {
+                whereClause.applicantId = applicantId;
+            }
+
+            // Filter by agency
+            if (agencyId) {
+                whereClause.agencyId = agencyId;
             }
 
             // Filter by date range
@@ -48,7 +60,9 @@ class APSettlementController {
                 where: whereClause,
                 include: [
                     { model: user, as: 'maker' },
-                    { model: user, as: 'checker' }
+                    { model: user, as: 'checker' },
+                    { model: Applicant, as: 'applicant', attributes: ['id', 'name', 'code'] },
+                    { model: Agency, as: 'agency', attributes: ['id', 'name', 'code'] }
                 ],
                 limit: parseInt(limit),
                 offset: parseInt(offset),
@@ -92,6 +106,8 @@ class APSettlementController {
                 include: [
                     { model: user, as: 'maker' },
                     { model: user, as: 'checker' },
+                    { model: Applicant, as: 'applicant', attributes: ['id', 'name', 'code', 'email', 'phone'] },
+                    { model: Agency, as: 'agency', attributes: ['id', 'name', 'code', 'email', 'phone'] },
                     {
                         model: invoiceSettlement,
                         as: 'invoiceSettlements',
@@ -151,6 +167,8 @@ class APSettlementController {
                 description,
                 note,
                 makerId,
+                applicantId,
+                agencyId,
                 invoiceAllocations = []
             } = req.body;
 
@@ -161,6 +179,30 @@ class APSettlementController {
                     success: false,
                     message: 'Missing required fields: settlementNumber, settlementDate, paymentAmount, baseAmount'
                 });
+            }
+
+            // Validate applicant if provided
+            if (applicantId) {
+                const applicant = await Applicant.findByPk(applicantId);
+                if (!applicant) {
+                    await transaction.rollback();
+                    return res.status(400).json({
+                        success: false,
+                        message: 'Invalid applicant ID'
+                    });
+                }
+            }
+
+            // Validate agency if provided
+            if (agencyId) {
+                const agency = await Agency.findByPk(agencyId);
+                if (!agency) {
+                    await transaction.rollback();
+                    return res.status(400).json({
+                        success: false,
+                        message: 'Invalid agency ID'
+                    });
+                }
             }
 
             // Check if settlement number exists
@@ -187,7 +229,9 @@ class APSettlementController {
                 reference,
                 description,
                 note,
-                makerId: makerId || req.user?.id
+                makerId: makerId || req.user?.id,
+                applicantId,
+                agencyId
             }, { transaction });
 
             // Create invoice allocations if provided
@@ -212,6 +256,8 @@ class APSettlementController {
             const createdSettlement = await apInvoiceSettlementLine.findByPk(settlement.id, {
                 include: [
                     { model: user, as: 'maker' },
+                    { model: Applicant, as: 'applicant' },
+                    { model: Agency, as: 'agency' },
                     { model: invoiceSettlement, as: 'invoiceSettlements' }
                 ]
             });
@@ -253,6 +299,8 @@ class APSettlementController {
                 reference,
                 description,
                 note,
+                applicantId,
+                agencyId,
                 invoiceAllocations = []
             } = req.body;
 
@@ -277,6 +325,30 @@ class APSettlementController {
                 });
             }
 
+            // Validate applicant if provided
+            if (applicantId) {
+                const applicant = await Applicant.findByPk(applicantId);
+                if (!applicant) {
+                    await transaction.rollback();
+                    return res.status(400).json({
+                        success: false,
+                        message: 'Invalid applicant ID'
+                    });
+                }
+            }
+
+            // Validate agency if provided
+            if (agencyId) {
+                const agency = await Agency.findByPk(agencyId);
+                if (!agency) {
+                    await transaction.rollback();
+                    return res.status(400).json({
+                        success: false,
+                        message: 'Invalid agency ID'
+                    });
+                }
+            }
+
             // Update settlement
             await existingSettlement.update({
                 settlementNumber,
@@ -287,7 +359,9 @@ class APSettlementController {
                 status,
                 reference,
                 description,
-                note
+                note,
+                applicantId,
+                agencyId
             }, { transaction });
 
             // Update invoice allocations
@@ -320,6 +394,8 @@ class APSettlementController {
                 include: [
                     { model: user, as: 'maker' },
                     { model: user, as: 'checker' },
+                    { model: Applicant, as: 'applicant' },
+                    { model: Agency, as: 'agency' },
                     { model: invoiceSettlement, as: 'invoiceSettlements' }
                 ]
             });
@@ -496,7 +572,7 @@ class APSettlementController {
     // ===============================================================
     static async getOutstandingInvoices(req, res) {
         try {
-            const { vendorId, currencyId } = req.query;
+            const { vendorId, currencyId, applicantId, agencyId } = req.query;
             const whereClause = {
                 status: ['approved', 'partially_paid', 'overdue']
             };
@@ -509,6 +585,14 @@ class APSettlementController {
                 whereClause.currencyId = currencyId;
             }
 
+            if (applicantId) {
+                whereClause.applicantId = applicantId;
+            }
+
+            if (agencyId) {
+                whereClause.agencyId = agencyId;
+            }
+
             const invoices = await apInvoice.findAll({
                 where: whereClause,
                 attributes: [
@@ -517,7 +601,9 @@ class APSettlementController {
                     [sequelize.literal('totalAmount - paidAmount'), 'outstandingAmount']
                 ],
                 include: [
-                    { model: vendor, as: 'vendor', attributes: ['id', 'name', 'vendorCode'] }
+                    { model: vendor, as: 'vendor', attributes: ['id', 'name', 'vendorCode'] },
+                    { model: Applicant, as: 'applicant', attributes: ['id', 'name', 'code'] },
+                    { model: Agency, as: 'agency', attributes: ['id', 'name', 'code'] }
                 ],
                 having: sequelize.literal('outstandingAmount > 0'),
                 order: [['dueDate', 'ASC'], ['invoiceNumber', 'ASC']]
@@ -572,6 +658,108 @@ class APSettlementController {
 
         } catch (error) {
             logger.error('Error generating settlement number:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Internal server error',
+                error: error.message
+            });
+        }
+    }
+
+    // ===============================================================
+    // GET SETTLEMENTS BY APPLICANT
+    // ===============================================================
+    static async getSettlementsByApplicant(req, res) {
+        try {
+            const { applicantId } = req.params;
+            const { status, page = 1, limit = 10 } = req.query;
+
+            const whereClause = { applicantId };
+            if (status) {
+                whereClause.status = status;
+            }
+
+            const offset = (page - 1) * limit;
+
+            const { count, rows } = await apInvoiceSettlementLine.findAndCountAll({
+                where: whereClause,
+                include: [
+                    { model: Applicant, as: 'applicant' },
+                    { model: Agency, as: 'agency' },
+                    { model: user, as: 'maker' }
+                ],
+                limit: parseInt(limit),
+                offset: parseInt(offset),
+                order: [['settlementDate', 'DESC']]
+            });
+
+            res.status(200).json({
+                success: true,
+                message: 'Settlements fetched successfully',
+                data: {
+                    settlements: rows,
+                    pagination: {
+                        currentPage: parseInt(page),
+                        totalPages: Math.ceil(count / limit),
+                        totalItems: count,
+                        itemsPerPage: parseInt(limit)
+                    }
+                }
+            });
+
+        } catch (error) {
+            logger.error('Error fetching settlements by applicant:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Internal server error',
+                error: error.message
+            });
+        }
+    }
+
+    // ===============================================================
+    // GET SETTLEMENTS BY AGENCY
+    // ===============================================================
+    static async getSettlementsByAgency(req, res) {
+        try {
+            const { agencyId } = req.params;
+            const { status, page = 1, limit = 10 } = req.query;
+
+            const whereClause = { agencyId };
+            if (status) {
+                whereClause.status = status;
+            }
+
+            const offset = (page - 1) * limit;
+
+            const { count, rows } = await apInvoiceSettlementLine.findAndCountAll({
+                where: whereClause,
+                include: [
+                    { model: Applicant, as: 'applicant' },
+                    { model: Agency, as: 'agency' },
+                    { model: user, as: 'maker' }
+                ],
+                limit: parseInt(limit),
+                offset: parseInt(offset),
+                order: [['settlementDate', 'DESC']]
+            });
+
+            res.status(200).json({
+                success: true,
+                message: 'Settlements fetched successfully',
+                data: {
+                    settlements: rows,
+                    pagination: {
+                        currentPage: parseInt(page),
+                        totalPages: Math.ceil(count / limit),
+                        totalItems: count,
+                        itemsPerPage: parseInt(limit)
+                    }
+                }
+            });
+
+        } catch (error) {
+            logger.error('Error fetching settlements by agency:', error);
             res.status(500).json({
                 success: false,
                 message: 'Internal server error',

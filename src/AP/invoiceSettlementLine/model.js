@@ -91,6 +91,14 @@ module.exports = (sequelize, DataTypes) => {
             foreignKey: 'settlementId',
             as: 'settlement'
         });
+        InvoiceSettlementLine.belongsTo(models.Applicant, {
+            foreignKey: 'applicantId',
+            as: 'applicant'
+        });
+        InvoiceSettlementLine.belongsTo(models.Agency, {
+            foreignKey: 'agencyId',
+            as: 'agency'
+        });
 
         // Settlement Line belongs to Invoice Line Item (if you have this model)
         if (models.invoiceLineItem) {

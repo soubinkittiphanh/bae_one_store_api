@@ -40,6 +40,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.DATEONLY,
       allowNull: true
     },
+    batchDeliveryDate: {
+      type: DataTypes.DATEONLY,
+      allowNull: true
+    },
     deploymentDate: {
       type: DataTypes.DATEONLY,
       allowNull: true

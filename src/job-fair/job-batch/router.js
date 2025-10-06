@@ -65,7 +65,8 @@ router.put('/:id', JobBatchController.update);
  * @body    status
  */
 router.patch('/:id/status', JobBatchController.updateStatus);
-
+// In your routes file (e.g., jobBatchRoutes.js)
+router.get('/next-running-no/:mouId', JobBatchController.getNextRunningNo);
 /**
  * @route   DELETE /api/job-batch/:id
  * @desc    Soft delete job batch (set isActive to false)

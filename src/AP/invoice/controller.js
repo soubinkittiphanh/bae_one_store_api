@@ -2,7 +2,7 @@
 // AP INVOICE CONTROLLER
 // ===============================================================
 const logger = require("../../api/logger");
-const { apInvoice, apInvoiceAudit, vendor, currency, user, invoiceLineItem, apInvoiceSettlement, sequelize } = require("../../models");
+const { apInvoice, apInvoiceAudit, vendor, currency, user, invoiceLineItem, apInvoiceSettlement, sequelize,Agency } = require("../../models");
 const db = require('../../models');
 const { Op } = require('sequelize');
 
@@ -28,6 +28,7 @@ class APInvoiceController {
                 totalAmount,
                 exchangeRate = 1.00,
                 vendorId,
+                agencyId,
                 currencyId,
                 makerId,
                 note,
@@ -87,6 +88,7 @@ class APInvoiceController {
                 totalAmount,
                 exchangeRate,
                 vendorId,
+                agencyId,
                 currencyId,
                 makerId,
                 note,
@@ -123,6 +125,7 @@ class APInvoiceController {
             const createdInvoice = await db.apInvoice.findByPk(invoice.id, {
                 include: [
                     { model: db.vendor, as: 'vendor' },
+                        { model: db.Agency, as: 'agency' },
                     { model: db.currency, as: 'currency' },
                     { model: db.user, as: 'maker' },
                     {
@@ -173,6 +176,7 @@ class APInvoiceController {
                 totalAmount,
                 exchangeRate = 1.00,
                 vendorId,
+                agencyId,
                 currencyId,
                 note,
                 reason,
@@ -210,6 +214,7 @@ class APInvoiceController {
                 totalAmount,
                 exchangeRate,
                 vendorId,
+                agencyId,
                 currencyId,
                 note
             }, { transaction });
@@ -245,6 +250,7 @@ class APInvoiceController {
             const updatedInvoice = await db.apInvoice.findByPk(id, {
                 include: [
                     { model: db.vendor, as: 'vendor' },
+                    { model: db.Agency, as: 'agency' },
                     { model: db.currency, as: 'currency' },
                     { model: db.user, as: 'maker' },
                     {
@@ -324,6 +330,7 @@ class APInvoiceController {
                 where: whereClause,
                 include: [
                     { model: vendor, as: 'vendor' },
+                    { model: Agency, as: 'agency' },
                     { model: currency, as: 'currency' },
                     { model: user, as: 'maker' },
                     { model: user, as: 'checker' }
@@ -368,6 +375,7 @@ class APInvoiceController {
             const invoice = await apInvoice.findByPk(id, {
                 include: [
                     { model: vendor, as: 'vendor' },
+                    { model: Agency, as: 'agency' },
                     { model: currency, as: 'currency' },
                     { model: user, as: 'maker' },
                     { model: user, as: 'checker' },
@@ -485,6 +493,7 @@ class APInvoiceController {
             const approvedInvoice = await apInvoice.findByPk(id, {
                 include: [
                     { model: vendor, as: 'vendor' },
+                    { model: Agency, as: 'agency' },
                     { model: user, as: 'checker' }
                 ]
             });
@@ -574,6 +583,7 @@ class APInvoiceController {
                 },
                 include: [
                     { model: vendor, as: 'vendor' },
+                        { model: Agency, as: 'agency' },
                     { model: currency, as: 'currency' }
                 ],
                 order: [['dueDate', 'ASC']]
@@ -671,6 +681,7 @@ class APInvoiceController {
                 where: whereClause,
                 include: [
                     { model: vendor, as: 'vendor' },
+                        { model: Agency, as: 'agency' },
                     { model: currency, as: 'currency' }
                 ],
                 order: [['dueDate', 'ASC']]

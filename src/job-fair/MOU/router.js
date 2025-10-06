@@ -24,7 +24,9 @@ router.get('/', MOUController.getAllMOUs);
 router.get('/statistics', MOUController.getStatistics);
 router.get('/status/:status', MOUController.getMOUsByStatus);
 router.get('/:id', MOUController.getMOUById);
-router.patch('/:id/status', MOUController.updateMOUStatus);
+router.get('/:id/batch', MOUController.getBatchByMouId);
+router.patch('/:mouId/status', MOUController.updateMOUStatus);
+router.patch('/:id/invoice-stats', MOUController.getInvoiceStat);
 router.delete('/:id', MOUController.deleteMOU);
 
 

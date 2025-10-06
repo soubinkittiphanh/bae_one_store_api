@@ -3,7 +3,7 @@
 // ===============================================================
 
 const logger = require('../../../api/logger');
-const { user, client, currency, arInvoiceLine, arReceiveHeader, arInvoiceHeaderAudit, sequelize } = require('../../../models');
+const { user,JobBatch, client, currency, arInvoiceLine, arReceiveHeader, arInvoiceHeaderAudit, sequelize } = require('../../../models');
 const InvoiceHeader = require('../../../models').arInvoiceHeader;
 const { Op, where } = require('sequelize');
 class InvoiceHeaderController {
@@ -205,6 +205,7 @@ class InvoiceHeaderController {
                 dueDate,
                 clientId,
                 currencyId,
+                jobBatchId,
                 exchangeRate = 1,
                 totalAmount = 0,
                 taxAmount = 0,
@@ -268,6 +269,7 @@ class InvoiceHeaderController {
             // Create invoice header
             const invoice = await InvoiceHeader.create({
                 invoiceNumber,
+                jobBatchId,
                 invoiceDate,
                 dueDate,
                 clientId,

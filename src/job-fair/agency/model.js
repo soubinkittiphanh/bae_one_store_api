@@ -30,7 +30,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: true
     },
     agencyType: {
-      type: DataTypes.ENUM('Agency', 'Broker'),
+      type: DataTypes.ENUM('Agency', 'Broker','Employee'),
       allowNull: false
     },
     // ===============================================================

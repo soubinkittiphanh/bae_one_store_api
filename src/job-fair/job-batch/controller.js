@@ -13,6 +13,7 @@ class JobBatchController {
         totalPositions,
         batchStartDate,
         batchEndDate,
+        batchDeliveryDate,
         deploymentDate,
         status,
         priority,
@@ -41,6 +42,7 @@ class JobBatchController {
         totalPositions: totalPositions || 0,
         batchStartDate,
         batchEndDate,
+        batchDeliveryDate,
         deploymentDate,
         status: status || 'draft',
         priority: priority || 'medium',
@@ -156,7 +158,7 @@ class JobBatchController {
           {
             model: MOU,
             as: 'mou',
-            attributes: ['id', 'jobCode', 'mouNumber', 'jobTitle', 'employerCompany', 'workLocation', 'numberOfWorkers', 'workerType', 'jobStatus'],
+            attributes: ['id', 'jobCode','pmCharge','currencyId', 'mouNumber', 'jobTitle', 'employerCompany', 'workLocation', 'numberOfWorkers', 'workerType', 'jobStatus'],
             required: false
           }
         ],
@@ -356,6 +358,7 @@ class JobBatchController {
         totalPositions,
         batchStartDate,
         batchEndDate,
+        batchDeliveryDate,
         deploymentDate,
         status,
         priority,
@@ -394,6 +397,7 @@ class JobBatchController {
         totalPositions: totalPositions !== undefined ? totalPositions : jobBatch.totalPositions,
         batchStartDate: batchStartDate !== undefined ? batchStartDate : jobBatch.batchStartDate,
         batchEndDate: batchEndDate !== undefined ? batchEndDate : jobBatch.batchEndDate,
+        batchDeliveryDate: batchDeliveryDate !== undefined ? batchDeliveryDate : jobBatch.batchDeliveryDate,
         deploymentDate: deploymentDate !== undefined ? deploymentDate : jobBatch.deploymentDate,
         status: status || jobBatch.status,
         priority: priority || jobBatch.priority,
@@ -493,7 +497,55 @@ class JobBatchController {
       });
     }
   }
+  // In JobBatchController.js, add this method:
 
+  static async getNextRunningNo(req, res) {
+    try {
+      const { mouId } = req.params;
+
+      if (!mouId) {
+        return res.status(400).json({
+          success: false,
+          message: "MOU ID is required"
+        });
+      }
+
+      // Get the MOU to get jobCode
+      const mou = await MOU.findByPk(mouId);
+      if (!mou) {
+        return res.status(404).json({
+          success: false,
+          message: "MOU not found"
+        });
+      }
+
+      // Count existing batches for this MOU
+      const batchCount = await JobBatch.count({
+        where: { mouId }
+      });
+
+      // Generate next running number
+      const nextNumber = batchCount + 1;
+      const paddedNumber = String(nextNumber).padStart(2, '0');
+      const nextRunningNo = `${mou.jobCode}-${paddedNumber}`;
+
+      return res.status(200).json({
+        success: true,
+        message: "Next running number retrieved successfully",
+        data: {
+          nextRunningNo,
+          currentCount: batchCount
+        }
+      });
+
+    } catch (error) {
+      logger.error("Error getting next running number:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Internal server error"
+      });
+    }
+  }
   // Enhanced dashboard statistics with MOU data
   static async getDashboardStats(req, res) {
     try {

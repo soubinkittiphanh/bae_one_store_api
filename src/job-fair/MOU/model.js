@@ -50,6 +50,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: true
     },
+    isPaidByEmployer: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false
+    },
 
     // ສະຖານທີ່ເຮັດວຽກ - Work Location
     workLocation: {

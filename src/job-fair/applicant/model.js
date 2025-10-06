@@ -105,6 +105,11 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       defaultValue: false
     },
+    passportRecieve: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false
+    },
 
     // เลขพาสปอร์ต - Passport Number
     passportNo: {

@@ -327,6 +327,11 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: 'currencyId',
       as: 'currency',
     });
+    // ---- batch job for job fair
+    InvoiceHeader.belongsTo(models.JobBatch, {
+      foreignKey: 'jobBatchId',
+      as: 'jobbatch',
+    });
     
     InvoiceHeader.belongsTo(models.user, {
       foreignKey: 'makerId',

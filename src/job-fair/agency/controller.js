@@ -102,7 +102,8 @@ class AgencyController {
       const {
         page = 1,
         limit = 10,
-        status,
+        status = 'active',
+        agencyType,
         city,
         district,
         isActive = 'true', // Query params are strings, not booleans
@@ -121,6 +122,7 @@ class AgencyController {
       // Add filters
       if (status) whereClause.status = status;
       if (city) whereClause.city = city;
+      if (agencyType) whereClause.agencyType = agencyType;
       if (district) whereClause.district = district;
 
       if (search) {

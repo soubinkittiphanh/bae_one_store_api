@@ -294,6 +294,11 @@ module.exports = (sequelize, DataTypes) => {
             foreignKey: 'vendorId',
             as: 'vendor',
         });
+        // Invoice belongs to vendor
+        APInvoice.belongsTo(models.Agency, {
+            foreignKey: 'agencyId',
+            as: 'agency',
+        });
 
         // Invoice belongs to currency
         APInvoice.belongsTo(models.currency, {
