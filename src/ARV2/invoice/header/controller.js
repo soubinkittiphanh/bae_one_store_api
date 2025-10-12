@@ -7,6 +7,30 @@ const { Agency, user, JobBatch, client, currency, arInvoiceLine, arReceiveHeader
 const InvoiceHeader = require('../../../models').arInvoiceHeader;
 const { Op, where } = require('sequelize');
 class InvoiceHeaderController {
+
+    static async getNextInvoiceNumber(req, res) {
+        try {
+            const { prefix, year } = req.query;
+
+            // Call model method (pass only business data)
+            const result = await InvoiceHeader.getNextInvoiceNumber(
+                prefix || 'AR-INV',
+                year ? parseInt(year) : null
+            );
+
+            res.status(200).json({
+                success: true,
+                data: result
+            });
+
+        } catch (error) {
+            logger.error('Controller error:', error);
+            res.status(500).json({
+                success: false,
+                message: error.message
+            });
+        }
+    }
     // GET ALL INVOICES WITH FILTERS AND PAGINATION
     static async findAll(req, res) {
         try {

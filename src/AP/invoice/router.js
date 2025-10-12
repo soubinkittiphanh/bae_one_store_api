@@ -4,7 +4,7 @@
 const express = require('express');
 const router = express.Router();
 const APInvoiceController = require('./controller');
-
+const {apInvoice}  = require("../../models");
 // ===============================================================
 // MIDDLEWARE (Add your authentication/authorization middleware here)
 // ===============================================================
@@ -22,6 +22,7 @@ router.post('/', APInvoiceController.createInvoice);
 // GET ALL AP INVOICES WITH FILTERS
 // GET /api/ap-invoices?page=1&limit=10&status=draft&vendorId=123&startDate=2025-01-01&endDate=2025-12-31&search=INV
 router.get('/', APInvoiceController.getAllInvoices);
+router.get('/sequence', APInvoiceController.getNextInvoiceNumber);
 
 // GET AP INVOICE BY ID
 // GET /api/ap-invoices/:id

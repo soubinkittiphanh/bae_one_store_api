@@ -12,8 +12,8 @@ const sequelize = new Sequelize(
         dialect: 'mariadb',
         port: env.port,
         pool: {
-            max: 10,
-            min: 10,
+            max: 5,
+            min: 2,
             acquire: 30000,
             idle: 10000
         },

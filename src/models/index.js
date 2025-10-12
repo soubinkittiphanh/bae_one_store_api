@@ -132,6 +132,7 @@ const initializeModels = () => {
     ticketLine: require("../pos/ticketLine/model")(sequelize, DataTypes),
 
     // Financial models
+    Transaction: require("../transaction/model")(sequelize, DataTypes),
     gl: require("../GL/model")(sequelize, DataTypes),
     chartAccount: require("../account/model")(sequelize, DataTypes),
     apPaymentHeader: require("../AP/payment/header/model")(sequelize, DataTypes),
@@ -154,7 +155,7 @@ const initializeModels = () => {
     arReceiveHeaderV2: require("../ARV2/receive/header/model")(sequelize, DataTypes),
     arReceiveHeaderAudit: require("../ARV2/receive/headerAudit/model")(sequelize, DataTypes),
     arReceiveLine: require("../ARV2/receive/line/model")(sequelize, DataTypes),
-    Transaction: require("../transaction/model")(sequelize, DataTypes),
+    
 
     // Other models
     vendor: require("../vendor/model")(sequelize, DataTypes),

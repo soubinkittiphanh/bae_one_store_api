@@ -364,6 +364,30 @@ module.exports = (sequelize, DataTypes) => {
     });
   };
 
+  // Static methods
+  InvoiceHeader.getNextInvoiceNumber = async function (prefix = 'AR-INV') {
+        const currentYear = new Date().getFullYear();
+
+        // Get the maximum ID from the database
+        const maxInvoice = await this.findOne({
+            attributes: [[sequelize.fn('MAX', sequelize.col('id')), 'maxId']],
+            raw: true
+        });
+
+        const nextId = (maxInvoice.maxId || 0) + 1;
+
+        // Format: INV-2025-00001
+        const paddedNumber = String(nextId).padStart(5, '0');
+        const invoiceNumber = `${prefix}-${currentYear}-${paddedNumber}`;
+
+        logger.info(`Next invoice number: ${invoiceNumber}`);
+
+        return {
+            invoiceNumber,
+            nextId: nextId,
+            year: currentYear
+        };
+    };
   // Instance methods
   InvoiceHeader.prototype.getOutstandingAmount = function() {
     const totalPaid = this.receiveHeaders?.reduce((sum, receive) => {

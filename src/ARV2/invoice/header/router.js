@@ -9,6 +9,7 @@ const InvoiceHeaderController = require('./controller');
 // GET /api/invoices - Get all invoices with pagination and filtering
 router.get('/', InvoiceHeaderController.findAll);
 
+router.get('/sequence', InvoiceHeaderController.getNextInvoiceNumber);
 // GET /api/invoices/search - Search invoices
 router.get('/search', InvoiceHeaderController.search);
 

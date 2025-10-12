@@ -2,12 +2,36 @@
 // AP INVOICE CONTROLLER
 // ===============================================================
 const logger = require("../../api/logger");
-const { apInvoice, apInvoiceAudit, vendor, currency, user, invoiceLineItem, apInvoiceSettlement, sequelize,Agency } = require("../../models");
+const { apInvoice, apInvoiceAudit, vendor, currency, user, invoiceLineItem, apInvoiceSettlement, sequelize, Agency } = require("../../models");
 const db = require('../../models');
 const { Op } = require('sequelize');
 
 class APInvoiceController {
 
+
+    static async getNextInvoiceNumber(req, res) {
+        try {
+            const { prefix, year } = req.query;
+
+            // Call model method (pass only business data)
+            const result = await apInvoice.getNextInvoiceNumber(
+                prefix || 'AP-INV',
+                year ? parseInt(year) : null
+            );
+
+            res.status(200).json({
+                success: true,
+                data: result
+            });
+
+        } catch (error) {
+            logger.error('Controller error:', error);
+            res.status(500).json({
+                success: false,
+                message: error.message
+            });
+        }
+    }
     // ===============================================================
     // FIXED: CREATE INVOICE WITH LINE ITEMS
     // ===============================================================
@@ -36,11 +60,11 @@ class APInvoiceController {
             } = req.body;
 
             // Validation for header
-            if (!invoiceNumber || !vendorInvoiceNumber || !invoiceDate || !dueDate || !totalAmount ) {
+            if (!invoiceNumber || !invoiceDate || !dueDate || !totalAmount) {
                 await transaction.rollback();
                 return res.status(400).json({
                     success: false,
-                    message: 'Missing required fields: invoiceNumber, vendorInvoiceNumber, invoiceDate, dueDate, totalAmount, vendorId'
+                    message: 'Missing required fields: invoiceNumber, invoiceDate, dueDate, totalAmount, vendorId'
                 });
             }
 
@@ -56,11 +80,11 @@ class APInvoiceController {
             // Validate each line item
             for (let i = 0; i < lineItems.length; i++) {
                 const line = lineItems[i];
-                if (!line.description || !line.quantity || !line.unitPrice || !line.DRglAccountId || !line.CRglAccountId) {
+                if (!line.description || !line.quantity || !line.unitPrice) {
                     await transaction.rollback();
                     return res.status(400).json({
                         success: false,
-                        message: `Line item ${i + 1} is missing required fields: description, quantity, unitPrice, DRglAccountId, CRglAccountId`
+                        message: `Line item ${i + 1} is missing required fields: description, quantity, unitPrice`
                     });
                 }
             }
@@ -125,7 +149,7 @@ class APInvoiceController {
             const createdInvoice = await db.apInvoice.findByPk(invoice.id, {
                 include: [
                     { model: db.vendor, as: 'vendor' },
-                        { model: db.Agency, as: 'agency' },
+                    { model: db.Agency, as: 'agency' },
                     { model: db.currency, as: 'currency' },
                     { model: db.user, as: 'maker' },
                     {
@@ -583,7 +607,7 @@ class APInvoiceController {
                 },
                 include: [
                     { model: vendor, as: 'vendor' },
-                        { model: Agency, as: 'agency' },
+                    { model: Agency, as: 'agency' },
                     { model: currency, as: 'currency' }
                 ],
                 order: [['dueDate', 'ASC']]
@@ -681,7 +705,7 @@ class APInvoiceController {
                 where: whereClause,
                 include: [
                     { model: vendor, as: 'vendor' },
-                        { model: Agency, as: 'agency' },
+                    { model: Agency, as: 'agency' },
                     { model: currency, as: 'currency' }
                 ],
                 order: [['dueDate', 'ASC']]

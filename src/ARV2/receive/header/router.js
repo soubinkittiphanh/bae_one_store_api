@@ -9,6 +9,7 @@ const ReceiveHeaderController = require('./controller');
 // GET /api/receive-headers - Get all receive headers with pagination and filtering
 router.get('/', ReceiveHeaderController.findAll);
 
+router.get('/sequence', ReceiveHeaderController.getNextReceiveNumber);
 // GET /api/receive-headers/search - Search receive headers
 router.get('/search', ReceiveHeaderController.search);
 

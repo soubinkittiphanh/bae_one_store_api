@@ -131,7 +131,7 @@ module.exports = (sequelize, DataTypes) => {
                     // Check if audit model exists and has the method
                     const AuditModel = sequelize.models.APInvoiceAudit;
                     if (currentRecord && AuditModel && typeof AuditModel.createAuditRecord === 'function') {
-                        const userId =  invoice.updateUserId || 1;
+                        const userId = invoice.updateUserId || 1;
                         const reason = options.context?.reason || 'Record updated';
 
                         await AuditModel.createAuditRecord(
@@ -337,10 +337,35 @@ module.exports = (sequelize, DataTypes) => {
         });
     };
 
+    APInvoice.getNextInvoiceNumber = async function (prefix = 'AP-INV') {
+        const currentYear = new Date().getFullYear();
+
+        // Get the maximum ID from the database
+        const maxInvoice = await this.findOne({
+            attributes: [[sequelize.fn('MAX', sequelize.col('id')), 'maxId']],
+            raw: true
+        });
+
+        const nextId = (maxInvoice.maxId || 0) + 1;
+
+        // Format: INV-2025-00001
+        const paddedNumber = String(nextId).padStart(5, '0');
+        const invoiceNumber = `${prefix}-${currentYear}-${paddedNumber}`;
+
+        logger.info(`Next invoice number: ${invoiceNumber}`);
+
+        return {
+            invoiceNumber,
+            nextId: nextId,
+            year: currentYear
+        };
+    };
     // Instance methods
     APInvoice.prototype.getOutstandingAmount = function () {
         return parseFloat(this.totalAmount) - parseFloat(this.paidAmount);
     };
+    // Instance method - get next sequence for THIS invoice
+
 
     APInvoice.prototype.isOverdue = function () {
         return new Date() > this.dueDate && this.status !== 'paid';

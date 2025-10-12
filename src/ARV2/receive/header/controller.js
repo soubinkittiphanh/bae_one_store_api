@@ -2,12 +2,34 @@
 // AR RECEIVE HEADER CONTROLLER
 // ===============================================================
 const logger = require("../../../api/logger");
-const { user, arReceiveHeaderV2, arInvoiceLine, arReceiveLine, sequelize,arInvoiceHeader } = require('../../../models');
+const { user, arReceiveHeaderV2, arInvoiceLine, arReceiveLine, sequelize, arInvoiceHeader } = require('../../../models');
 const ReceiveHeader = require('../../../models').arReceiveHeaderV2;
 const { Op } = require('sequelize');
 
 class ReceiveHeaderController {
+  static async getNextReceiveNumber(req, res) {
+    try {
+      const { prefix, year } = req.query;
 
+      // Call model method (pass only business data)
+      const result = await arReceiveHeaderV2.getNextReceiveNumber(
+        prefix || 'AR-RCP',
+        year ? parseInt(year) : null
+      );
+
+      res.status(200).json({
+        success: true,
+        data: result
+      });
+
+    } catch (error) {
+      logger.error('Controller error:', error);
+      res.status(500).json({
+        success: false,
+        message: error.message
+      });
+    }
+  }
   // GET ALL RECEIVE HEADERS WITH FILTERS AND PAGINATION
   static async findAll(req, res) {
     try {
@@ -192,7 +214,7 @@ class ReceiveHeaderController {
         receivedDate,
         invoiceHeaderId, // NOW OPTIONAL
         totalReceivedAmount = 0.00,
-        paymentId ,
+        paymentId,
         exchangeRate = 1,
         currencyId,
         referenceNumber,
