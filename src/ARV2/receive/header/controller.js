@@ -2,8 +2,8 @@
 // AR RECEIVE HEADER CONTROLLER
 // ===============================================================
 const logger = require("../../../api/logger");
-const { user, arInvoiceHeader,arInvoiceLine, arReceiveLine, sequelize } = require('../../../models');
-const ReceiveHeader = require('../../../models').arReceiveHeader;
+const { user, arReceiveHeaderV2, arInvoiceLine, arReceiveLine, sequelize,arInvoiceHeader } = require('../../../models');
+const ReceiveHeader = require('../../../models').arReceiveHeaderV2;
 const { Op } = require('sequelize');
 
 class ReceiveHeaderController {
@@ -15,7 +15,7 @@ class ReceiveHeaderController {
         page = 1,
         limit = 25,
         search = '',
-        paymentMethod = '',
+        paymentId = '',
         invoiceHeaderId = '',
         bookingDateFrom = '',
         bookingDateTo = '',
@@ -40,8 +40,8 @@ class ReceiveHeaderController {
       }
 
       // Payment method filter
-      if (paymentMethod) {
-        whereClause.paymentMethod = paymentMethod;
+      if (paymentId) {
+        whereClause.paymentId = paymentId;
       }
 
       // Invoice header filter
@@ -181,8 +181,8 @@ class ReceiveHeaderController {
     }
   }
   // CREATE NEW RECEIVE HEADER WITH ALLOCATION LINES
+  // UPDATED CREATE METHOD - Invoice is now optional
   static async create(req, res) {
-   
     const transaction = await sequelize.transaction();
 
     try {
@@ -190,9 +190,11 @@ class ReceiveHeaderController {
         receiptNumber,
         bookingDate,
         receivedDate,
-        invoiceHeaderId,
+        invoiceHeaderId, // NOW OPTIONAL
         totalReceivedAmount = 0.00,
-        paymentMethod = 'cash',
+        paymentId ,
+        exchangeRate = 1,
+        currencyId,
         referenceNumber,
         notes,
         inputterId,
@@ -201,17 +203,17 @@ class ReceiveHeaderController {
 
       logger.info('Create receive header request:', {
         receiptNumber,
-        invoiceHeaderId,
+        invoiceHeaderId: invoiceHeaderId || 'none',
         totalReceivedAmount,
         allocationLinesCount: allocationLines.length
       });
 
       // Validate required fields
-      if (!receiptNumber || !bookingDate || !receivedDate || !invoiceHeaderId) {
+      if (!receiptNumber || !bookingDate || !receivedDate) {
         await transaction.rollback();
         return res.status(400).json({
           success: false,
-          message: 'Receipt number, booking date, received date, and invoice header ID are required'
+          message: 'Receipt number, booking date, and received date are required'
         });
       }
 
@@ -240,14 +242,16 @@ class ReceiveHeaderController {
         });
       }
 
-      // Verify invoice header exists
-      const invoiceHeaderExists = await arInvoiceHeader.findByPk(invoiceHeaderId);
-      if (!invoiceHeaderExists) {
-        await transaction.rollback();
-        return res.status(400).json({
-          success: false,
-          message: 'Invoice header not found'
-        });
+      // Verify invoice header exists ONLY if provided
+      if (invoiceHeaderId) {
+        const invoiceHeaderExists = await arReceiveHeaderV2.findByPk(invoiceHeaderId);
+        if (!invoiceHeaderExists) {
+          await transaction.rollback();
+          return res.status(400).json({
+            success: false,
+            message: 'Invoice header not found'
+          });
+        }
       }
 
       // Verify inputter exists if provided (only check if not null/empty)
@@ -262,27 +266,33 @@ class ReceiveHeaderController {
         }
       }
 
-      // Validate allocation lines
+      // Validate allocation lines - UPDATED to support manual lines
       for (const allocation of allocationLines) {
-        if (!allocation.invoiceLineId || !allocation.allocatedAmount) {
-          await transaction.rollback();
-          return res.status(400).json({
-            success: false,
-            message: 'Each allocation line must have invoiceLineId and allocatedAmount'
-          });
+        // Check if it's a manual line (no invoiceLineId) or invoice-based line
+        const isManualLine = !allocation.invoiceLineId || allocation.isManual;
+
+        if (isManualLine) {
+          // For manual lines, require description and allocatedAmount
+          if (!allocation.description || !allocation.allocatedAmount) {
+            await transaction.rollback();
+            return res.status(400).json({
+              success: false,
+              message: 'Manual allocation lines must have description and allocatedAmount'
+            });
+          }
+        } else {
+          // For invoice-based lines, verify invoice line exists
+          const invoiceLineExists = await arInvoiceLine.findByPk(allocation.invoiceLineId);
+          if (!invoiceLineExists) {
+            await transaction.rollback();
+            return res.status(400).json({
+              success: false,
+              message: `Invoice line ${allocation.invoiceLineId} not found`
+            });
+          }
         }
 
-        // Verify invoice line exists
-        const invoiceLineExists = await arInvoiceLine.findByPk(allocation.invoiceLineId);
-        if (!invoiceLineExists) {
-          await transaction.rollback();
-          return res.status(400).json({
-            success: false,
-            message: `Invoice line ${allocation.invoiceLineId} not found`
-          });
-        }
-
-        // Validate allocated amount
+        // Validate allocated amount for all lines
         const allocatedAmount = parseFloat(allocation.allocatedAmount);
         if (allocatedAmount <= 0) {
           await transaction.rollback();
@@ -293,14 +303,16 @@ class ReceiveHeaderController {
         }
       }
 
-      // Create receive header
+      // Create receive header with optional invoiceHeaderId
       const receiveHeader = await ReceiveHeader.create({
         receiptNumber,
         bookingDate,
         receivedDate,
-        invoiceHeaderId,
+        invoiceHeaderId: invoiceHeaderId || null, // Allow null
         totalReceivedAmount,
-        paymentMethod,
+        paymentId,
+        exchangeRate,
+        currencyId,
         referenceNumber,
         notes,
         inputterId: validInputterId,
@@ -309,14 +321,19 @@ class ReceiveHeaderController {
 
       logger.info('Receive header created:', { id: receiveHeader.id });
 
-      // Create allocation lines (receive lines)
+      // Create allocation lines (receive lines) - UPDATED to handle manual lines
       const allocationLinesData = allocationLines.map(allocation => ({
         receiveHeaderId: receiveHeader.id,
         lineNumber: allocation.lineNumber,
-        invoiceLineId: allocation.invoiceLineId,
+        invoiceLineId: allocation.invoiceLineId || null, // Allow null for manual lines
+        txnId: allocation.txnId || null, // Allow null for manual lines
+        DRglAccountId: allocation.DRglAccountId,
+        CRglAccountId: allocation.CRglAccountId,
+        description: allocation.description || null, // Store description for manual lines
         allocatedAmount: parseFloat(allocation.allocatedAmount),
         allocationDate: allocation.allocationDate || receivedDate,
         notes: allocation.notes || '',
+        isManual: !allocation.invoiceLineId, // Flag manual lines
         makerId: req.user?.id
       }));
 
@@ -332,15 +349,18 @@ class ReceiveHeaderController {
           {
             model: arInvoiceHeader,
             as: 'invoiceHeader',
-            attributes: ['id', 'invoiceNumber', 'invoiceDate']
+            attributes: ['id', 'invoiceNumber', 'invoiceDate'],
+            required: false // LEFT JOIN - don't require invoice
           },
           {
             model: user,
-            as: 'inputter'
+            as: 'inputter',
+            required: false
           },
           {
             model: user,
-            as: 'maker'
+            as: 'maker',
+            required: false
           },
           {
             model: arReceiveLine,
@@ -348,7 +368,8 @@ class ReceiveHeaderController {
             include: [
               {
                 model: arInvoiceLine,
-                as: 'invoiceLine'
+                as: 'invoiceLine',
+                required: false // LEFT JOIN - manual lines won't have this
               }
             ]
           }
@@ -372,7 +393,7 @@ class ReceiveHeaderController {
     }
   }
 
-  // UPDATE RECEIVE HEADER WITH ALLOCATION LINES
+  // UPDATED UPDATE METHOD - Support manual lines and optional invoice
   static async update(req, res) {
     const transaction = await sequelize.transaction();
 
@@ -405,6 +426,13 @@ class ReceiveHeaderController {
           : null;
       }
 
+      // Handle empty string invoiceHeaderId
+      if ('invoiceHeaderId' in updateData) {
+        updateData.invoiceHeaderId = updateData.invoiceHeaderId && updateData.invoiceHeaderId.toString().trim() !== ''
+          ? updateData.invoiceHeaderId
+          : null;
+      }
+
       // Check receipt number uniqueness if being updated
       if (updateData.receiptNumber && updateData.receiptNumber !== receiveHeader.receiptNumber) {
         const existingReceipt = await ReceiveHeader.findOne({
@@ -425,7 +453,7 @@ class ReceiveHeaderController {
 
       // Verify foreign key references if being updated
       if (updateData.invoiceHeaderId) {
-        const invoiceHeaderExists = await arInvoiceHeader.findByPk(updateData.invoiceHeaderId);
+        const invoiceHeaderExists = await arReceiveHeaderV2.findByPk(updateData.invoiceHeaderId);
         if (!invoiceHeaderExists) {
           await transaction.rollback();
           return res.status(400).json({
@@ -452,7 +480,7 @@ class ReceiveHeaderController {
       // Update receive header
       await receiveHeader.update(updateData, { transaction });
 
-      // Handle allocation lines if provided
+      // Handle allocation lines if provided - UPDATED to support manual lines
       if (allocationLines && Array.isArray(allocationLines)) {
         // Delete existing receive lines
         await arReceiveLine.destroy({
@@ -462,24 +490,29 @@ class ReceiveHeaderController {
 
         // Create new allocation lines
         if (allocationLines.length > 0) {
-          // Validate allocation lines
+          // Validate allocation lines - UPDATED
           for (const allocation of allocationLines) {
-            if (!allocation.invoiceLineId || !allocation.allocatedAmount) {
-              await transaction.rollback();
-              return res.status(400).json({
-                success: false,
-                message: 'Each allocation line must have invoiceLineId and allocatedAmount'
-              });
-            }
+            const isManualLine = !allocation.invoiceLineId || allocation.isManual;
 
-            // Verify invoice line exists
-            const invoiceLineExists = await arInvoiceLine.findByPk(allocation.invoiceLineId);
-            if (!invoiceLineExists) {
-              await transaction.rollback();
-              return res.status(400).json({
-                success: false,
-                message: `Invoice line ${allocation.invoiceLineId} not found`
-              });
+            if (isManualLine) {
+              // For manual lines, require description and allocatedAmount
+              if (!allocation.description || !allocation.allocatedAmount) {
+                await transaction.rollback();
+                return res.status(400).json({
+                  success: false,
+                  message: 'Manual allocation lines must have description and allocatedAmount'
+                });
+              }
+            } else {
+              // For invoice-based lines, verify invoice line exists
+              const invoiceLineExists = await arInvoiceLine.findByPk(allocation.invoiceLineId);
+              if (!invoiceLineExists) {
+                await transaction.rollback();
+                return res.status(400).json({
+                  success: false,
+                  message: `Invoice line ${allocation.invoiceLineId} not found`
+                });
+              }
             }
 
             // Validate allocated amount
@@ -496,10 +529,15 @@ class ReceiveHeaderController {
           const allocationLinesData = allocationLines.map(allocation => ({
             receiveHeaderId: id,
             lineNumber: allocation.lineNumber,
-            invoiceLineId: allocation.invoiceLineId,
+            invoiceLineId: allocation.invoiceLineId || null, // Allow null for manual lines
+            txnId: allocation.txnId || null, // Allow null for manual lines
+            DRglAccountId: allocation.DRglAccountId,
+            CRglAccountId: allocation.CRglAccountId,
+            description: allocation.description || null, // Store description for manual lines
             allocatedAmount: parseFloat(allocation.allocatedAmount),
             allocationDate: allocation.allocationDate || receiveHeader.receivedDate,
             notes: allocation.notes || '',
+            isManual: !allocation.invoiceLineId, // Flag manual lines
             makerId: req.user?.id
           }));
 
@@ -515,19 +553,23 @@ class ReceiveHeaderController {
           {
             model: arInvoiceHeader,
             as: 'invoiceHeader',
-            attributes: ['id', 'invoiceNumber', 'invoiceDate']
+            attributes: ['id', 'invoiceNumber', 'invoiceDate'],
+            required: false // LEFT JOIN
           },
           {
             model: user,
-            as: 'inputter'
+            as: 'inputter',
+            required: false
           },
           {
             model: user,
-            as: 'maker'
+            as: 'maker',
+            required: false
           },
           {
             model: user,
-            as: 'updateUser'
+            as: 'updateUser',
+            required: false
           },
           {
             model: arReceiveLine,
@@ -535,7 +577,8 @@ class ReceiveHeaderController {
             include: [
               {
                 model: arInvoiceLine,
-                as: 'invoiceLine'
+                as: 'invoiceLine',
+                required: false // LEFT JOIN
               }
             ]
           }
@@ -620,11 +663,11 @@ class ReceiveHeaderController {
       const paymentMethodStats = await ReceiveHeader.findAll({
         where: whereClause,
         attributes: [
-          'paymentMethod',
-          [sequelize.fn('COUNT', sequelize.col('paymentMethod')), 'count'],
+          'paymentId',
+          [sequelize.fn('COUNT', sequelize.col('paymentId')), 'count'],
           [sequelize.fn('SUM', sequelize.col('totalReceivedAmount')), 'totalAmount']
         ],
-        group: ['paymentMethod'],
+        group: ['paymentId'],
         raw: true
       });
 
@@ -729,7 +772,7 @@ class ReceiveHeaderController {
           }
         ],
         limit: 10,
-        attributes: ['id', 'receiptNumber', 'bookingDate', 'totalReceivedAmount', 'paymentMethod']
+        attributes: ['id', 'receiptNumber', 'bookingDate', 'totalReceivedAmount', 'paymentId']
       });
 
       res.status(200).json({
@@ -790,11 +833,11 @@ class ReceiveHeaderController {
   static async getPaymentMethodStats() {
     const stats = await ReceiveHeader.findAll({
       attributes: [
-        'paymentMethod',
+        'paymentId',
         [sequelize.fn('COUNT', '*'), 'count'],
         [sequelize.fn('SUM', sequelize.col('totalReceivedAmount')), 'totalAmount']
       ],
-      group: ['paymentMethod'],
+      group: ['paymentId'],
       raw: true
     });
 

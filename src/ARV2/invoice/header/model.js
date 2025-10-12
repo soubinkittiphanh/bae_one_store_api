@@ -322,6 +322,10 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: 'clientId',
       as: 'client',
     });
+    InvoiceHeader.belongsTo(models.Agency, {
+      foreignKey: 'agencyId',
+      as: 'agency',
+    });
     
     InvoiceHeader.belongsTo(models.currency, {
       foreignKey: 'currencyId',
@@ -348,7 +352,7 @@ module.exports = (sequelize, DataTypes) => {
       as: 'invoiceLines',
     });
     
-    InvoiceHeader.hasMany(models.arReceiveHeader, {
+    InvoiceHeader.hasMany(models.arReceiveHeaderV2, {
       foreignKey: 'invoiceHeaderId',
       as: 'receiveHeaders',
     });

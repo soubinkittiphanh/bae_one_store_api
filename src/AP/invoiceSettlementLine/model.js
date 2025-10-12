@@ -18,7 +18,13 @@ module.exports = (sequelize, DataTypes) => {
         status: {
             type: DataTypes.ENUM('active', 'cancelled'),
             defaultValue: 'active'
-        }
+        },
+        description: {
+            type: DataTypes.TEXT
+        },
+        type: {
+            type: DataTypes.STRING
+        },
 
     }, {
         sequelize,
@@ -26,7 +32,7 @@ module.exports = (sequelize, DataTypes) => {
         createdAt: true,
         updatedAt: 'updateTimestamp',
         freezeTableName: true,
-        
+
         // Model validation - Only for your fields
         validate: {
             // Ensure amounts are positive
@@ -55,7 +61,7 @@ module.exports = (sequelize, DataTypes) => {
 
             afterCreate: async (settlementLine) => {
                 logger.info(`Settlement line created: ${settlementLine.id} with amount ${settlementLine.amount}`);
-                
+
                 // Update settlement totals if needed
                 if (settlementLine.settlementId) {
                     await settlementLine.updateSettlementTotals();
@@ -64,7 +70,7 @@ module.exports = (sequelize, DataTypes) => {
 
             afterUpdate: async (settlementLine) => {
                 logger.info(`Settlement line updated: ${settlementLine.id} with amount ${settlementLine.amount}`);
-                
+
                 // Update settlement totals if needed
                 if (settlementLine.settlementId) {
                     await settlementLine.updateSettlementTotals();
@@ -73,7 +79,7 @@ module.exports = (sequelize, DataTypes) => {
 
             afterDestroy: async (settlementLine) => {
                 logger.info(`Settlement line deleted: ${settlementLine.id}`);
-                
+
                 // Update settlement totals if needed
                 if (settlementLine.settlementId) {
                     await settlementLine.updateSettlementTotals();
@@ -112,6 +118,19 @@ module.exports = (sequelize, DataTypes) => {
         InvoiceSettlementLine.belongsTo(models.user, {
             foreignKey: 'createdBy',
             as: 'creator'
+        });
+        InvoiceSettlementLine.belongsTo(models.Transaction, {
+            foreignKey: 'txnId',
+            as: 'transaction'
+        });
+        InvoiceSettlementLine.belongsTo(models.chartAccount, {
+            foreignKey: 'DRglAccountId',
+            as: 'DRglAccount',
+        });
+        // Line item belongs to GL account
+        InvoiceSettlementLine.belongsTo(models.chartAccount, {
+            foreignKey: 'CRglAccountId',
+            as: 'CRglAccount',
         });
     };
 

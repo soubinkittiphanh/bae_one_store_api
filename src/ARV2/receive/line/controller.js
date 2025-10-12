@@ -2,7 +2,7 @@
 // AR RECEIVE LINE CONTROLLER
 // ===============================================================
 const logger = require("../../../api/logger");
-const { user, arReceiveHeader, arInvoiceLine } = require('../../../models');
+const { user, arReceiveHeaderV2, arInvoiceLine } = require('../../../models');
 const ReceiveLine = require('../../../models').arReceiveLine;
 const { Op } = require('sequelize');
 
@@ -63,7 +63,7 @@ class ReceiveLineController {
         where: whereClause,
         include: [
           {
-            model: arReceiveHeader,
+            model: arReceiveHeaderV2,
             as: 'receiveHeader',
             attributes: ['id', 'receiptNumber', 'bookingDate', 'paymentMethod']
           },
@@ -122,7 +122,7 @@ class ReceiveLineController {
       const receiveLine = await ReceiveLine.findByPk(id, {
         include: [
           {
-            model: arReceiveHeader,
+            model: arReceiveHeaderV2,
             as: 'receiveHeader'
           },
           {
@@ -183,7 +183,7 @@ class ReceiveLineController {
       }
 
       // Verify receive header exists
-      const receiveHeaderExists = await arReceiveHeader.findByPk(receiveHeaderId);
+      const receiveHeaderExists = await arReceiveHeaderV2.findByPk(receiveHeaderId);
       if (!receiveHeaderExists) {
         return res.status(400).json({
           success: false,
@@ -239,7 +239,7 @@ class ReceiveLineController {
       const createdReceiveLine = await ReceiveLine.findByPk(receiveLine.id, {
         include: [
           {
-            model: arReceiveHeader,
+            model: arReceiveHeaderV2,
             as: 'receiveHeader',
             attributes: ['id', 'receiptNumber', 'bookingDate']
           },
@@ -309,7 +309,7 @@ class ReceiveLineController {
 
       // Verify foreign key references if being updated
       if (updateData.receiveHeaderId) {
-        const receiveHeaderExists = await arReceiveHeader.findByPk(updateData.receiveHeaderId);
+        const receiveHeaderExists = await arReceiveHeaderV2.findByPk(updateData.receiveHeaderId);
         if (!receiveHeaderExists) {
           return res.status(400).json({
             success: false,
@@ -351,7 +351,7 @@ class ReceiveLineController {
       const updatedReceiveLine = await ReceiveLine.findByPk(id, {
         include: [
           {
-            model: arReceiveHeader,
+            model: arReceiveHeaderV2,
             as: 'receiveHeader',
             attributes: ['id', 'receiptNumber', 'bookingDate']
           },
@@ -460,7 +460,7 @@ class ReceiveLineController {
         where: whereClause,
         include: [
           {
-            model: arReceiveHeader,
+            model: arReceiveHeaderV2,
             as: 'receiveHeader',
             attributes: ['receiptNumber']
           },
@@ -537,7 +537,7 @@ class ReceiveLineController {
         },
         include: [
           {
-            model: arReceiveHeader,
+            model: arReceiveHeaderV2,
             as: 'receiveHeader',
             attributes: ['id', 'receiptNumber']
           },
@@ -614,7 +614,7 @@ class ReceiveLineController {
         where: { invoiceLineId },
         include: [
           {
-            model: arReceiveHeader,
+            model: arReceiveHeaderV2,
             as: 'receiveHeader'
           },
           {

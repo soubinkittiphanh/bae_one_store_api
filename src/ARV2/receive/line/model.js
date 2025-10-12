@@ -22,6 +22,10 @@ module.exports = (sequelize, DataTypes) => {
     notes: {
       type: DataTypes.TEXT,
       allowNull: true
+    },
+    description: {
+      type: DataTypes.STRING,
+      allowNull: true
     }
   }, {
     sequelize,
@@ -56,6 +60,19 @@ module.exports = (sequelize, DataTypes) => {
     ReceiveLine.belongsTo(models.user, {
       foreignKey: 'updateUserId',
       as: 'updateUser',
+    });
+    ReceiveLine.belongsTo(models.Transaction, {
+      foreignKey: 'txnId',
+      as: 'transaction'
+    });
+    ReceiveLine.belongsTo(models.chartAccount, {
+      foreignKey: 'DRglAccountId',
+      as: 'DRglAccount',
+    });
+    // Line item belongs to GL account
+    ReceiveLine.belongsTo(models.chartAccount, {
+      foreignKey: 'CRglAccountId',
+      as: 'CRglAccount',
     });
   };
 

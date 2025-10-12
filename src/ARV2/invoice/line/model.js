@@ -70,6 +70,15 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: 'invoiceLineId',
       as: 'receiveLines',
     });
+    InvoiceLine.belongsTo(models.chartAccount, {
+      foreignKey: 'DRglAccountId',
+      as: 'DRglAccount',
+    });
+    // Line item belongs to GL account
+    InvoiceLine.belongsTo(models.chartAccount, {
+      foreignKey: 'CRglAccountId',
+      as: 'CRglAccount',
+    });
   };
 
   return InvoiceLine;

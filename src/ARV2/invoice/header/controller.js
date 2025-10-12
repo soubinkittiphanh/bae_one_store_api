@@ -3,7 +3,7 @@
 // ===============================================================
 
 const logger = require('../../../api/logger');
-const { user,JobBatch, client, currency, arInvoiceLine, arReceiveHeader, arInvoiceHeaderAudit, sequelize } = require('../../../models');
+const { Agency, user, JobBatch, client, currency, arInvoiceLine, arReceiveHeaderV2, arInvoiceHeaderAudit, sequelize } = require('../../../models');
 const InvoiceHeader = require('../../../models').arInvoiceHeader;
 const { Op, where } = require('sequelize');
 class InvoiceHeaderController {
@@ -15,7 +15,7 @@ class InvoiceHeaderController {
                 limit = 25,
                 search = '',
                 status = '',
-                clientId = '',
+                agencyId = '',
                 dateFrom = '',
                 dateTo = '',
                 sortBy = 'invoiceDate',
@@ -38,8 +38,8 @@ class InvoiceHeaderController {
             }
 
             // Customer filter
-            if (clientId) {
-                whereClause.clientId = clientId;
+            if (agencyId) {
+                whereClause.agencyId = agencyId;
             }
 
             // Date range filter
@@ -55,6 +55,10 @@ class InvoiceHeaderController {
                     {
                         model: client,
                         as: 'client'
+                    },
+                    {
+                        model: Agency,
+                        as: 'agency'
                     },
                     {
                         model: currency,
@@ -118,6 +122,10 @@ class InvoiceHeaderController {
                         as: 'client'
                     },
                     {
+                        model: Agency,
+                        as: 'agency'
+                    },
+                    {
                         model: currency,
                         as: 'currency'
                     },
@@ -134,7 +142,7 @@ class InvoiceHeaderController {
                         as: 'invoiceLines'
                     },
                     {
-                        model: arReceiveHeader,
+                        model: arReceiveHeaderV2,
                         as: 'receiveHeaders'
                     }
                 ]
@@ -203,7 +211,7 @@ class InvoiceHeaderController {
                 invoiceNumber,
                 invoiceDate,
                 dueDate,
-                clientId,
+                agencyId,
                 currencyId,
                 jobBatchId,
                 exchangeRate = 1,
@@ -216,7 +224,7 @@ class InvoiceHeaderController {
             } = req.body;
 
             // Validate required fields
-            if (!invoiceNumber || !invoiceDate || !clientId) {
+            if (!invoiceNumber || !invoiceDate || !agencyId) {
                 return res.status(400).json({
                     success: false,
                     message: 'Invoice number, invoice date, and customer ID are required'
@@ -245,7 +253,7 @@ class InvoiceHeaderController {
             }
 
             // Verify customer exists
-            const customerExists = await client.findByPk(clientId);
+            const customerExists = await Agency.findByPk(agencyId);
             if (!customerExists) {
                 await transaction.rollback();
                 return res.status(400).json({
@@ -272,7 +280,7 @@ class InvoiceHeaderController {
                 jobBatchId,
                 invoiceDate,
                 dueDate,
-                clientId,
+                agencyId,
                 currencyId,
                 exchangeRate,
                 totalAmount,
@@ -289,6 +297,8 @@ class InvoiceHeaderController {
                 lineNumber: item.lineNumber,
                 description: item.description,
                 quantity: item.quantity,
+                DRglAccountId: item.DRglAccountId,
+                CRglAccountId: item.CRglAccountId,
                 unitPrice: item.unitPrice,
                 taxRate: item.taxRate || 0,
                 taxAmount: item.taxAmount || 0,
@@ -307,6 +317,10 @@ class InvoiceHeaderController {
                     {
                         model: client,
                         as: 'client'
+                    },
+                    {
+                        model: Agency,
+                        as: 'agency'
                     },
                     {
                         model: currency,
@@ -379,8 +393,8 @@ class InvoiceHeaderController {
             }
 
             // Verify foreign key references if being updated
-            if (updateData.clientId) {
-                const customerExists = await client.findByPk(updateData.clientId);
+            if (updateData.agencyId) {
+                const customerExists = await Agency.findByPk(updateData.agencyId);
                 if (!customerExists) {
                     await transaction.rollback();
                     return res.status(400).json({
@@ -422,6 +436,8 @@ class InvoiceHeaderController {
                         lineNumber: item.lineNumber,
                         description: item.description,
                         quantity: item.quantity,
+                        DRglAccountId: item.DRglAccountId,
+                        CRglAccountId: item.CRglAccountId,
                         unitPrice: item.unitPrice,
                         taxRate: item.taxRate || 0,
                         taxAmount: item.taxAmount || 0,
@@ -441,6 +457,10 @@ class InvoiceHeaderController {
                     {
                         model: client,
                         as: 'client'
+                    },
+                    {
+                        model: Agency,
+                        as: 'agency'
                     },
                     {
                         model: currency,
@@ -563,10 +583,10 @@ class InvoiceHeaderController {
     // GET INVOICE STATISTICS
     static async getStatistics(req, res) {
         try {
-            const { clientId, dateFrom, dateTo } = req.query;
+            const { agencyId, dateFrom, dateTo } = req.query;
             const whereClause = {};
 
-            if (clientId) whereClause.clientId = clientId;
+            if (agencyId) whereClause.agencyId = agencyId;
             if (dateFrom || dateTo) {
                 whereClause.invoiceDate = {};
                 if (dateFrom) whereClause.invoiceDate[Op.gte] = dateFrom;
@@ -704,9 +724,9 @@ class InvoiceHeaderController {
     }
 
     // HELPER: Get invoice totals by customer
-    static async getCustomerTotals(clientId) {
+    static async getCustomerTotals(agencyId) {
         const totals = await InvoiceHeader.findAll({
-            where: { clientId },
+            where: { agencyId },
             attributes: [
                 [sequelize.fn('COUNT', '*'), 'invoiceCount'],
                 [sequelize.fn('SUM', sequelize.col('totalAmount')), 'totalAmount'],

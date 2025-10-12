@@ -36,7 +36,7 @@ class APInvoiceController {
             } = req.body;
 
             // Validation for header
-            if (!invoiceNumber || !vendorInvoiceNumber || !invoiceDate || !dueDate || !totalAmount || !vendorId) {
+            if (!invoiceNumber || !vendorInvoiceNumber || !invoiceDate || !dueDate || !totalAmount ) {
                 await transaction.rollback();
                 return res.status(400).json({
                     success: false,

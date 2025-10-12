@@ -24,6 +24,11 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       defaultValue: 0.00
     },
+    exchangeRate: {
+      type: DataTypes.DECIMAL(15, 2),
+      allowNull: false,
+      defaultValue: 1
+    },
     paymentMethod: {
       type: DataTypes.ENUM('cash', 'check', 'bank_transfer', 'credit_card', 'other'),
       allowNull: false,
@@ -101,7 +106,7 @@ module.exports = (sequelize, DataTypes) => {
       beforeUpdate: async (receipt, options) => {
         try {
           const ARReceiveHeaderAudit = sequelize.models.ARReceiveHeaderAudit;
-          
+
           if (!ARReceiveHeaderAudit) {
             logger.warn('ARReceiveHeaderAudit model not found');
             return;
@@ -153,15 +158,15 @@ module.exports = (sequelize, DataTypes) => {
 
           if (currentRecord && typeof ARReceiveHeaderAudit.createAuditRecord === 'function') {
             const userId = options.userId || receipt.updateUserId || receipt.inputterId || receipt.makerId || 1;
-            
+
             // Determine action based on status change
             let action = 'UPDATE';
             let reason = options.reason || 'Payment receipt updated';
-            
+
             if (receipt.changed('status')) {
               const newStatus = receipt.status;
               const oldStatus = receipt._previousDataValues?.status;
-              
+
               switch (newStatus) {
                 case 'voided':
                   action = 'VOID';
@@ -205,7 +210,7 @@ module.exports = (sequelize, DataTypes) => {
       afterCreate: async (receipt, options) => {
         try {
           const ARReceiveHeaderAudit = sequelize.models.ARReceiveHeaderAudit;
-          
+
           if (!ARReceiveHeaderAudit || !receipt._isNewRecord) {
             return;
           }
@@ -262,7 +267,7 @@ module.exports = (sequelize, DataTypes) => {
       beforeDestroy: async (receipt, options) => {
         try {
           const ARReceiveHeaderAudit = sequelize.models.ARReceiveHeaderAudit;
-          
+
           if (!ARReceiveHeaderAudit) {
             logger.warn('ARReceiveHeaderAudit model not found');
             return;
@@ -335,27 +340,27 @@ module.exports = (sequelize, DataTypes) => {
 
   ReceiveHeader.associate = models => {
     logger.info(`Associating table ARReceiveHeader with models`);
-    
+
     ReceiveHeader.belongsTo(models.arInvoiceHeader, {
       foreignKey: 'invoiceHeaderId',
       as: 'invoiceHeader',
     });
-    
+
     ReceiveHeader.belongsTo(models.user, {
       foreignKey: 'inputterId',
       as: 'inputter',
     });
-    
+
     ReceiveHeader.belongsTo(models.user, {
       foreignKey: 'makerId',
       as: 'maker',
     });
-    
+
     ReceiveHeader.belongsTo(models.user, {
       foreignKey: 'updateUserId',
       as: 'updateUser',
     });
-    
+
     ReceiveHeader.hasMany(models.arReceiveLine, {
       foreignKey: 'receiveHeaderId',
       as: 'receiveLines',
@@ -366,56 +371,64 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: 'receiveHeaderId',
       as: 'auditTrail',
     });
+    ReceiveHeader.belongsTo(models.currency, {
+      foreignKey: 'currencyId',
+      as: 'currency',
+    });
+    ReceiveHeader.belongsTo(models.payment, {
+      foreignKey: 'paymentId',
+      as: 'payment',
+    });
   };
 
   // Instance methods
-  ReceiveHeader.prototype.isActive = function() {
+  ReceiveHeader.prototype.isActive = function () {
     return this.status === 'active';
   };
 
-  ReceiveHeader.prototype.isVoided = function() {
+  ReceiveHeader.prototype.isVoided = function () {
     return this.status === 'voided';
   };
 
-  ReceiveHeader.prototype.isCancelled = function() {
+  ReceiveHeader.prototype.isCancelled = function () {
     return this.status === 'cancelled';
   };
 
-  ReceiveHeader.prototype.canBeModified = function() {
+  ReceiveHeader.prototype.canBeModified = function () {
     return this.status === 'active';
   };
 
-  ReceiveHeader.prototype.canBeVoided = function() {
+  ReceiveHeader.prototype.canBeVoided = function () {
     return this.status === 'active';
   };
 
-  ReceiveHeader.prototype.canBeCancelled = function() {
+  ReceiveHeader.prototype.canBeCancelled = function () {
     return ['active', 'voided'].includes(this.status);
   };
 
-  ReceiveHeader.prototype.canBeReactivated = function() {
+  ReceiveHeader.prototype.canBeReactivated = function () {
     return ['voided', 'cancelled'].includes(this.status);
   };
 
   // Enhanced methods with consistent audit pattern
-  ReceiveHeader.prototype.voidReceipt = async function(userId, reason = null) {
+  ReceiveHeader.prototype.voidReceipt = async function (userId, reason = null) {
     if (!this.canBeVoided()) {
       throw new Error('Payment receipt cannot be voided in current status');
     }
-    
+
     const transaction = await sequelize.transaction();
-    
+
     try {
       // The beforeUpdate hook will automatically create audit record
       await this.update({
         status: 'voided',
         updateUserId: userId
-      }, { 
+      }, {
         transaction,
         userId: userId,
         reason: reason || 'Payment receipt voided'
       });
-      
+
       await transaction.commit();
       return this;
     } catch (error) {
@@ -424,24 +437,24 @@ module.exports = (sequelize, DataTypes) => {
     }
   };
 
-  ReceiveHeader.prototype.cancelReceipt = async function(userId, reason = null) {
+  ReceiveHeader.prototype.cancelReceipt = async function (userId, reason = null) {
     if (!this.canBeCancelled()) {
       throw new Error('Payment receipt cannot be cancelled in current status');
     }
-    
+
     const transaction = await sequelize.transaction();
-    
+
     try {
       // The beforeUpdate hook will automatically create audit record
       await this.update({
         status: 'cancelled',
         updateUserId: userId
-      }, { 
+      }, {
         transaction,
         userId: userId,
         reason: reason || 'Payment receipt cancelled'
       });
-      
+
       await transaction.commit();
       return this;
     } catch (error) {
@@ -450,24 +463,24 @@ module.exports = (sequelize, DataTypes) => {
     }
   };
 
-  ReceiveHeader.prototype.reactivateReceipt = async function(userId, reason = null) {
+  ReceiveHeader.prototype.reactivateReceipt = async function (userId, reason = null) {
     if (!this.canBeReactivated()) {
       throw new Error('Payment receipt cannot be reactivated in current status');
     }
-    
+
     const transaction = await sequelize.transaction();
-    
+
     try {
       // The beforeUpdate hook will automatically create audit record
       await this.update({
         status: 'active',
         updateUserId: userId
-      }, { 
+      }, {
         transaction,
         userId: userId,
         reason: reason || 'Payment receipt reactivated'
       });
-      
+
       await transaction.commit();
       return this;
     } catch (error) {
@@ -477,32 +490,32 @@ module.exports = (sequelize, DataTypes) => {
   };
 
   // Get total amount allocated to invoice lines
-  ReceiveHeader.prototype.getTotalAllocatedAmount = async function() {
+  ReceiveHeader.prototype.getTotalAllocatedAmount = async function () {
     if (!this.receiveLines) {
       await this.reload({
         include: [{ association: 'receiveLines' }]
       });
     }
-    
+
     return this.receiveLines?.reduce((sum, line) => {
       return sum + parseFloat(line.allocatedAmount || 0);
     }, 0) || 0;
   };
 
   // Get unallocated amount
-  ReceiveHeader.prototype.getUnallocatedAmount = async function() {
+  ReceiveHeader.prototype.getUnallocatedAmount = async function () {
     const totalAllocated = await this.getTotalAllocatedAmount();
     return parseFloat(this.totalReceivedAmount) - totalAllocated;
   };
 
   // Check if receipt is fully allocated
-  ReceiveHeader.prototype.isFullyAllocated = async function() {
+  ReceiveHeader.prototype.isFullyAllocated = async function () {
     const unallocated = await this.getUnallocatedAmount();
     return Math.abs(unallocated) < 0.01; // Allow for minor rounding differences
   };
 
   // Get audit history for this receipt
-  ReceiveHeader.prototype.getAuditHistory = async function(limit = 10) {
+  ReceiveHeader.prototype.getAuditHistory = async function (limit = 10) {
     const ARReceiveHeaderAudit = sequelize.models.ARReceiveHeaderAudit;
     if (!ARReceiveHeaderAudit) {
       logger.warn('ARReceiveHeaderAudit model not found');
@@ -530,7 +543,7 @@ module.exports = (sequelize, DataTypes) => {
   };
 
   // Class method to get receipts by payment method
-  ReceiveHeader.getReceiptsByPaymentMethod = async function(paymentMethod, dateFrom = null, dateTo = null) {
+  ReceiveHeader.getReceiptsByPaymentMethod = async function (paymentMethod, dateFrom = null, dateTo = null) {
     try {
       const whereClause = {
         paymentMethod: paymentMethod,
@@ -571,7 +584,7 @@ module.exports = (sequelize, DataTypes) => {
   };
 
   // Class method to get daily receipt summary
-  ReceiveHeader.getDailyReceiptSummary = async function(date) {
+  ReceiveHeader.getDailyReceiptSummary = async function (date) {
     try {
       const summary = await this.findAll({
         where: {

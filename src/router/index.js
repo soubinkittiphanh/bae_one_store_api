@@ -50,6 +50,7 @@ const table = require("../pos/table").router
 const ticket = require("../pos/ticket").router
 const ticketLine = require("../pos/ticketLine").router
 const tax = require("../tax/router")
+const transaction = require("../transaction/router")
 const moneyAdvance = require("../PWT/moneyAdvance/router")
 const moneySettlement = require("../PWT/moneySettlement/router")
 const bankAccount = require("../bankAccount/router")
@@ -142,4 +143,5 @@ module.exports={
     batchJob,
     agency,
     MOU,
+    transaction
 }

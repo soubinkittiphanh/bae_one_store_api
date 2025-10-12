@@ -3,7 +3,7 @@
 // File: /AP/settlement/controller.js
 // ===============================================================
 const logger = require("../../api/logger");
-const { apInvoiceSettlement,currency, apSettlementAudit, apInvoiceSettlementLine, apInvoice, user, vendor, sequelize, Applicant, Agency } = require("../../models");
+const { apInvoiceSettlement, currency, apSettlementAudit, apInvoiceSettlementLine, apInvoice, user, vendor, sequelize, Applicant, Agency } = require("../../models");
 const InvoiceLineItem = require("../../models").invoiceLineItem;
 
 class APSettlementController {
@@ -219,6 +219,7 @@ class APSettlementController {
 
             const {
                 settlementDate,
+                exchangeRate,
                 paymentAmount,
                 baseAmount,
                 currencyId,
@@ -241,6 +242,7 @@ class APSettlementController {
 
             logger.info('Extracted data:', {
                 settlementDate,
+                exchangeRate,
                 paymentAmount,
                 baseAmount,
                 currencyId,
@@ -275,6 +277,7 @@ class APSettlementController {
             // Create main settlement record
             const settlementData = {
                 settlementDate,
+                exchangeRate,
                 paymentAmount,
                 baseAmount,
                 currencyId,
@@ -297,18 +300,6 @@ class APSettlementController {
                 settlementDate: settlement.settlementDate
             });
 
-            // Create settlement audit if reason is provided
-            if (reason) {
-                await apSettlementAudit.create({
-                    settlementId: settlement.id,
-                    userId: makerId || req.user?.id,
-                    action: 'create',
-                    reason: reason,
-                    oldValue: null,
-                    newValue: JSON.stringify(settlementData)
-                }, { transaction });
-                logger.info('Settlement audit record created');
-            }
 
             // Create settlement lines if provided
             if (lines && lines.length > 0) {
@@ -346,6 +337,10 @@ class APSettlementController {
 
                                 const defaultLineItem = await InvoiceLineItem.create({
                                     invoiceId: line.invoiceId,
+                                    type: line.type,
+                                    DRglAccountId: line.DRglAccountId,
+                                    CRglAccountId: line.CRglAccountId,
+                                    txnId: line.txnId,
                                     lineNumber: 1,
                                     description: line.description || 'Default settlement line',
                                     quantity: 1,
@@ -364,7 +359,7 @@ class APSettlementController {
                             });
                             throw new Error(`Failed to map invoice ${line.invoiceId} to invoice line item: ${mappingError.message}`);
                         }
-                    } 
+                    }
                     // Handle manual lines (type === 'manual' and no invoiceId)
                     else if (line.type === 'manual') {
                         logger.info(`Processing manual settlement line without invoice`);
@@ -397,10 +392,15 @@ class APSettlementController {
                     // Create settlement line data
                     const lineData = {
                         amount: line.amount,
+                        type: line.type,
+                        DRglAccountId: line.DRglAccountId,
+                        CRglAccountId: line.CRglAccountId,
+                        txnId: line.txnId,
                         status: 'active',
                         settlementId: settlement.id,
                         invoiceLineItemId: invoiceLineItemId,
                         agencyId: line.agencyId || null,
+                        description: line.description || null,
                         applicantId: line.applicantId || null
                     };
 
@@ -525,6 +525,7 @@ class APSettlementController {
             const { id } = req.params;
             const {
                 settlementDate,
+                exchangeRate,
                 paymentAmount,
                 baseAmount,
                 status,
@@ -548,6 +549,7 @@ class APSettlementController {
             logger.info(`=== UPDATING AP SETTLEMENT ID: ${id} ===`);
             logger.info('Update data received:', {
                 settlementDate,
+                exchangeRate,
                 paymentAmount,
                 baseAmount,
                 currencyId,
@@ -570,6 +572,7 @@ class APSettlementController {
             // Store old values for audit
             const oldValues = {
                 settlementDate: existingSettlement.settlementDate,
+                exchangeRate: existingSettlement.exchangeRate,
                 paymentAmount: existingSettlement.paymentAmount,
                 baseAmount: existingSettlement.baseAmount,
                 status: existingSettlement.status,
@@ -590,6 +593,7 @@ class APSettlementController {
             // Update settlement
             const updateData = {
                 settlementDate,
+                exchangeRate,
                 paymentAmount,
                 baseAmount,
                 status,
@@ -603,11 +607,11 @@ class APSettlementController {
                 note
             };
 
-            await existingSettlement.update(updateData, { transaction });
-            logger.info('Settlement header updated successfully');
+            const updatedSettlementData = await existingSettlement.update(updateData, { transaction });
+            logger.info(`Settlement header updated successfully ${JSON.stringify(updatedSettlementData)}`);
 
             // Create audit record if reason is provided
-// Create audit record if reason is provided
+            // Create audit record if reason is provided
             if (reason) {
                 await apSettlementAudit.create({
                     settlementId: id,
@@ -634,7 +638,7 @@ class APSettlementController {
             // Update settlement lines
             if (lines && lines.length > 0) {
                 logger.info('=== UPDATING SETTLEMENT LINES ===');
-                
+
                 // Delete existing lines
                 await apInvoiceSettlementLine.destroy({
                     where: { settlementId: id },
@@ -671,7 +675,11 @@ class APSettlementController {
                                     quantity: 1,
                                     unitPrice: invoice.totalAmount || line.amount,
                                     lineTotal: invoice.totalAmount || line.amount,
-                                    status: 'active'
+                                    status: 'active',
+                                    type: line.type,
+                                    DRglAccountId: line.DRglAccountId,
+                                    CRglAccountId: line.CRglAccountId,
+                                    txnId: line.txnId
                                 }, { transaction });
                                 invoiceLineItemId = defaultLineItem.id;
                                 logger.info(`Created default invoice line item ${invoiceLineItemId}`);
@@ -707,7 +715,12 @@ class APSettlementController {
 
                     const lineData = {
                         amount: line.amount,
+                        type: line.type,
+                        DRglAccountId: line.DRglAccountId,
+                        CRglAccountId: line.CRglAccountId,
+                        txnId: line.txnId,
                         status: 'active',
+                        description: line.description,
                         settlementId: id,
                         invoiceLineItemId: invoiceLineItemId,
                         agencyId: line.agencyId || null,

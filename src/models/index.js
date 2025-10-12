@@ -151,9 +151,10 @@ const initializeModels = () => {
     arInvoiceHeader: require("../ARV2/invoice/header/model")(sequelize, DataTypes),
     arInvoiceHeaderAudit: require("../ARV2/invoice/headerAudit/model")(sequelize, DataTypes),
     arInvoiceLine: require("../ARV2/invoice/line/model")(sequelize, DataTypes),
-    arReceiveHeader: require("../ARV2/receive/header/model")(sequelize, DataTypes),
+    arReceiveHeaderV2: require("../ARV2/receive/header/model")(sequelize, DataTypes),
     arReceiveHeaderAudit: require("../ARV2/receive/headerAudit/model")(sequelize, DataTypes),
     arReceiveLine: require("../ARV2/receive/line/model")(sequelize, DataTypes),
+    Transaction: require("../transaction/model")(sequelize, DataTypes),
 
     // Other models
     vendor: require("../vendor/model")(sequelize, DataTypes),

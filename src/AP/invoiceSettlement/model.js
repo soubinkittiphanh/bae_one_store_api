@@ -22,6 +22,11 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.ENUM('draft', 'pending', 'approved', 'completed', 'cancelled'),
       defaultValue: 'draft'
     },
+    exchangeRate: {
+      type: DataTypes.DECIMAL(20, 2),
+      allowNull: false,
+      defaultValue: 1.00
+    },
     reference: {
       type: DataTypes.STRING(100),
       allowNull: true
@@ -41,14 +46,15 @@ module.exports = (sequelize, DataTypes) => {
     hooks: {
       // BUSINESS LOGIC HOOK
       beforeSave: (settlement) => {
+        logger.info(`SYSTEM CHECK BEFORE SAVE `)
         // Auto-calculate base amount if same currency
         if (settlement.paymentCurrencyId === settlement.baseCurrencyId) {
           settlement.baseAmount = settlement.paymentAmount;
-          settlement.exchangeRate = 1.000000;
+          // settlement.exchangeRate = 1.000000;
         } else if (settlement.paymentAmount && settlement.exchangeRate) {
           settlement.baseAmount = settlement.paymentAmount / settlement.exchangeRate;
         }
-        
+
         // Set exchange date to settlement date if not provided
         if (!settlement.exchangeDate) {
           settlement.exchangeDate = settlement.settlementDate;
@@ -74,7 +80,7 @@ module.exports = (sequelize, DataTypes) => {
 
         // try {
         //   const APSettlementAudit = sequelize.models.APSettlementAudit;
-          
+
         //   if (!APSettlementAudit) {
         //     logger.warn('APSettlementAudit model not found');
         //     return;
@@ -118,15 +124,15 @@ module.exports = (sequelize, DataTypes) => {
 
         //   if (currentRecord && typeof APSettlementAudit.createAuditRecord === 'function') {
         //     const userId =  settlement.updateUserId || settlement.makerId || 1;
-            
+
         //     // Determine action based on status change
         //     let action = 'UPDATE';
         //     let reason = options.reason || 'Settlement updated';
-            
+
         //     if (settlement.changed('status')) {
         //       const newStatus = settlement.status;
         //       const oldStatus = settlement._previousDataValues?.status;
-              
+
         //       switch (newStatus) {
         //         case 'pending':
         //           action = 'UPDATE';
@@ -170,7 +176,7 @@ module.exports = (sequelize, DataTypes) => {
       afterCreate: async (settlement, options) => {
         try {
           const APSettlementAudit = sequelize.models.APSettlementAudit;
-          
+
           if (!APSettlementAudit || !settlement._isNewRecord) {
             return;
           }
@@ -219,7 +225,7 @@ module.exports = (sequelize, DataTypes) => {
       beforeDestroy: async (settlement, options) => {
         try {
           const APSettlementAudit = sequelize.models.APSettlementAudit;
-          
+
           if (!APSettlementAudit) {
             logger.warn('APSettlementAudit model not found');
             return;
@@ -284,7 +290,7 @@ module.exports = (sequelize, DataTypes) => {
 
   APSettlement.associate = models => {
     logger.info(`Associating table APInvoiceSettlement with models`);
-    
+
     // Settlement belongs to payment method
     APSettlement.belongsTo(models.payment, {
       foreignKey: 'paymentMethodId',
@@ -294,25 +300,25 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: 'currencyId',
       as: 'currency',
     });
-    
+
     // Settlement belongs to bank account
     APSettlement.belongsTo(models.bankAccount, {
       foreignKey: 'bankAccountId',
       as: 'bankAccount',
     });
-    
+
     // Settlement created by user (maker)
     APSettlement.belongsTo(models.user, {
       foreignKey: 'makerId',
       as: 'maker',
     });
-    
+
     // Settlement approved by user (checker)
     APSettlement.belongsTo(models.user, {
       foreignKey: 'checkerId',
       as: 'checker',
     });
-    
+
     // Settlement has many settlement lines
     APSettlement.hasMany(models.apInvoiceSettlementLine, {
       foreignKey: 'settlementId',
@@ -327,7 +333,7 @@ module.exports = (sequelize, DataTypes) => {
   };
 
   // Instance methods
-  APSettlement.prototype.getUnallocatedAmount = async function() {
+  APSettlement.prototype.getUnallocatedAmount = async function () {
     const InvoiceSettlementLine = sequelize.models.apInvoiceSettlementLine;
     const allocated = await InvoiceSettlementLine.sum('amount', {
       where: {
@@ -338,37 +344,37 @@ module.exports = (sequelize, DataTypes) => {
     return parseFloat(this.baseAmount) - (parseFloat(allocated) || 0);
   };
 
-  APSettlement.prototype.canBeModified = function() {
+  APSettlement.prototype.canBeModified = function () {
     return ['draft', 'pending'].includes(this.status);
   };
 
-  APSettlement.prototype.canBeApproved = function() {
+  APSettlement.prototype.canBeApproved = function () {
     return this.status === 'pending';
   };
 
-  APSettlement.prototype.canBeCompleted = function() {
+  APSettlement.prototype.canBeCompleted = function () {
     return ['pending', 'approved'].includes(this.status);
   };
 
   // Enhanced methods with consistent audit pattern
-  APSettlement.prototype.approve = async function(userId, reason = null) {
+  APSettlement.prototype.approve = async function (userId, reason = null) {
     if (!this.canBeApproved()) {
       throw new Error('Settlement cannot be approved in current status');
     }
-    
+
     const transaction = await sequelize.transaction();
-    
+
     try {
       // The beforeUpdate hook will automatically create audit record
       await this.update({
         status: 'approved',
         checkerId: userId
-      }, { 
+      }, {
         transaction,
         userId: userId,
         reason: reason || 'Settlement approved'
       });
-      
+
       await transaction.commit();
       return this;
     } catch (error) {
@@ -377,23 +383,23 @@ module.exports = (sequelize, DataTypes) => {
     }
   };
 
-  APSettlement.prototype.complete = async function(userId, reason = null) {
+  APSettlement.prototype.complete = async function (userId, reason = null) {
     if (!this.canBeCompleted()) {
       throw new Error('Settlement cannot be completed in current status');
     }
-    
+
     const transaction = await sequelize.transaction();
-    
+
     try {
       // The beforeUpdate hook will automatically create audit record
       await this.update({
         status: 'completed'
-      }, { 
+      }, {
         transaction,
         userId: userId,
         reason: reason || 'Settlement completed'
       });
-      
+
       await transaction.commit();
       return this;
     } catch (error) {
@@ -402,23 +408,23 @@ module.exports = (sequelize, DataTypes) => {
     }
   };
 
-  APSettlement.prototype.cancel = async function(userId, reason = null) {
+  APSettlement.prototype.cancel = async function (userId, reason = null) {
     if (!this.canBeModified()) {
       throw new Error('Settlement cannot be cancelled in current status');
     }
-    
+
     const transaction = await sequelize.transaction();
-    
+
     try {
       // The beforeUpdate hook will automatically create audit record
       await this.update({
         status: 'cancelled'
-      }, { 
+      }, {
         transaction,
         userId: userId,
         reason: reason || 'Settlement cancelled'
       });
-      
+
       await transaction.commit();
       return this;
     } catch (error) {
@@ -428,7 +434,7 @@ module.exports = (sequelize, DataTypes) => {
   };
 
   // Get audit history for this settlement
-  APSettlement.prototype.getAuditHistory = async function(limit = 10) {
+  APSettlement.prototype.getAuditHistory = async function (limit = 10) {
     const APSettlementAudit = sequelize.models.APSettlementAudit;
     if (!APSettlementAudit) {
       logger.warn('APSettlementAudit model not found');
