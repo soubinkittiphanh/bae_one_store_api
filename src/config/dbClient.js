@@ -111,7 +111,7 @@ const clientDB = {
         "host": "150.95.31.23",
         "user": "root",
         "password": "sdat@3480",
-        "database": "dcommerce_pheuanmit",
+        "database": "dcommerce_pro_pheuanmit",
         "port": 3306,
     },
 }
