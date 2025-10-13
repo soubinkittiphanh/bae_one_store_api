@@ -1,5 +1,5 @@
 // ===============================================================
-// SIMPLE AUDIT TRAIL MODEL
+// SIMPLE AUDIT TRAIL MODEL - FIXED VERSION
 // ===============================================================
 const logger = require("../../api/logger");
 
@@ -11,40 +11,34 @@ module.exports = (sequelize, DataTypes) => {
             primaryKey: true,
             autoIncrement: true
         },
-        
         // Basic audit information
         action: {
             type: DataTypes.ENUM('CREATE', 'UPDATE', 'DELETE', 'APPROVE', 'REJECT'),
             allowNull: false,
             defaultValue: 'UPDATE'
         },
-        
         // Store the complete record as JSON
         recordData: {
             type: DataTypes.JSON,
             allowNull: false,
             comment: 'Complete invoice record at time of change'
         },
-        
         // Optional reason for change
         reason: {
             type: DataTypes.TEXT,
             allowNull: true
         },
-        
         // Who made the change
         userId: {
             type: DataTypes.INTEGER,
             allowNull: false
         },
-        
         // When the change was made
         auditDate: {
             type: DataTypes.DATE,
             allowNull: false,
             defaultValue: DataTypes.NOW
         }
-        
     }, {
         sequelize,
         timestamps: false, // We handle our own timestamp
@@ -64,7 +58,7 @@ module.exports = (sequelize, DataTypes) => {
 
     APInvoiceAudit.associate = models => {
         logger.info(`Associating table APInvoiceAudit with models`);
-
+        
         // Audit belongs to invoice
         APInvoiceAudit.belongsTo(models.apInvoice, {
             foreignKey: 'invoiceId',
@@ -78,20 +72,25 @@ module.exports = (sequelize, DataTypes) => {
         });
     };
 
-    // Simple method to create audit record
-    APInvoiceAudit.createAuditRecord = async function(invoiceData, userId, action = 'UPDATE', reason = null) {
+    // 🔧 FIXED: Simple method to create audit record with transaction support
+    APInvoiceAudit.createAuditRecord = async function(invoiceData, userId, action = 'UPDATE', reason = null, transaction = null) {
         try {
-            return await this.create({
+            const auditRecord = await this.create({
                 invoiceId: invoiceData.id,
                 action: action,
                 recordData: invoiceData,
-                reason: reason,
                 userId: userId,
+                reason: reason,
                 auditDate: new Date()
+            }, {
+                transaction: transaction // 🔧 CRITICAL FIX: Pass transaction to create operation
             });
+
+            return auditRecord;
         } catch (error) {
             logger.error('Failed to create audit record:', error);
             // Don't throw error - audit shouldn't break main functionality
+            return null;
         }
     };
 
