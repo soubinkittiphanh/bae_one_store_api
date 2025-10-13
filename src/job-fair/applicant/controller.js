@@ -58,6 +58,84 @@ class ApplicantController {
     });
   }
 
+
+
+static async toggleRefund(req, res) {
+  try {
+    const { id } = req.params;
+    const { isRefund } = req.body;
+    const updateUserId = req.user?.id || req.userId;
+
+    // Validate isRefund parameter
+    if (typeof isRefund !== 'boolean') {
+      return res.status(400).json({
+        success: false,
+        message: "isRefund must be a boolean value"
+      });
+    }
+
+    const applicant = await Applicant.findOne({
+      where: { id, isActive: true }
+    });
+
+    if (!applicant) {
+      return res.status(404).json({
+        success: false,
+        message: "Applicant not found"
+      });
+    }
+
+    // Check if deposit amount exists
+    if (!applicant.depositAmount || applicant.depositAmount <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "No deposit amount found for this applicant"
+      });
+    }
+
+    // Update refund status
+    await applicant.update({ 
+      isRefund,
+      updateUserId 
+    });
+
+    logger.info(
+      `Applicant refund status updated to ${isRefund} for ID: ${id} by user: ${updateUserId}`
+    );
+
+    // Fetch updated applicant with associations
+    const updatedApplicant = await Applicant.findByPk(id, {
+      include: [
+        {
+          model: JobBatch,
+          as: 'jobBatch',
+          attributes: ['id', 'batchName', 'jobDescription', 'status', 'batchStartDate', 'batchEndDate']
+        },
+        {
+          model: Agency,
+          as: 'agency',
+          required: false
+        }
+      ]
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: isRefund 
+        ? "Deposit refunded successfully" 
+        : "Refund status reverted successfully",
+      data: updatedApplicant
+    });
+
+  } catch (error) {
+    logger.error("Error toggling refund status:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error"
+    });
+  }
+}
+
   /**
    * Clean up uploaded files on error
    * @param {Object} files - Files object from multer
@@ -659,6 +737,7 @@ class ApplicantController {
         city,
         district,
         depositAmount,
+        isRefund,
         education,
         passportAvailability,
         passportRecieve,
@@ -725,6 +804,7 @@ class ApplicantController {
         contactEndDate,
         registertDate,
         depositAmount,
+        isRefund,
         education,
         interviewExamDate,
         status: status || 'INTERVIEW',

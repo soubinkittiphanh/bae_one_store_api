@@ -141,7 +141,7 @@ router.put('/:id',
  * @body status
  */
 router.patch('/:id/status', ApplicantController.updateStatus);
-
+router.patch('/:id/refund', ApplicantController.toggleRefund);
 /**
  * @route PATCH /api/applicant/:id/photos
  * @desc Update applicant photos only
