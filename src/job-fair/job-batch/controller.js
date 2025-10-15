@@ -11,6 +11,7 @@ class JobBatchController {
         runningNo,
         jobDescription,
         totalPositions,
+        principalAmount,
         batchStartDate,
         batchEndDate,
         batchDeliveryDate,
@@ -18,6 +19,7 @@ class JobBatchController {
         status,
         priority,
         notes,
+        inchargePerson,
         mouId // NEW: MOU association
       } = req.body;
 
@@ -40,6 +42,7 @@ class JobBatchController {
         runningNo, // Will be auto-generated if not provided
         jobDescription,
         totalPositions: totalPositions || 0,
+        principalAmount: principalAmount || 0,
         batchStartDate,
         batchEndDate,
         batchDeliveryDate,
@@ -47,6 +50,7 @@ class JobBatchController {
         status: status || 'draft',
         priority: priority || 'medium',
         notes,
+        inchargePerson,
         mouId, // NEW: Include MOU ID
         makerId,
         updateUserId: makerId
@@ -314,7 +318,7 @@ class JobBatchController {
             // NEW: Include full MOU details for single record
             model: MOU,
             as: 'mou',
-            attributes: ['id', 'jobCode', 'mouNumber', 'jobTitle', 'employerCompany', 'workLocation', 'numberOfWorkers', 'workerType', 'jobStatus', 'pmCharge', 'exchangeRate', 'documents', 'notes']
+            attributes: ['id', 'jobCode', 'mouNumber', 'jobTitle', 'employerCompany', 'workLocation', 'numberOfWorkers', 'workerType', 'jobStatus', 'pmCharge', 'exchangeRate', 'documents', 'notes','inchargePerson']
           }
         ]
       });
@@ -356,6 +360,7 @@ class JobBatchController {
         runningNo,
         jobDescription,
         totalPositions,
+        principalAmount,
         batchStartDate,
         batchEndDate,
         batchDeliveryDate,
@@ -363,6 +368,7 @@ class JobBatchController {
         status,
         priority,
         notes,
+        inchargePerson,
         mouId // NEW: MOU ID for updates
       } = req.body;
 
@@ -395,6 +401,7 @@ class JobBatchController {
         runningNo: runningNo || jobBatch.runningNo,
         jobDescription: jobDescription !== undefined ? jobDescription : jobBatch.jobDescription,
         totalPositions: totalPositions !== undefined ? totalPositions : jobBatch.totalPositions,
+        principalAmount: principalAmount !== undefined ? principalAmount : jobBatch.principalAmount,
         batchStartDate: batchStartDate !== undefined ? batchStartDate : jobBatch.batchStartDate,
         batchEndDate: batchEndDate !== undefined ? batchEndDate : jobBatch.batchEndDate,
         batchDeliveryDate: batchDeliveryDate !== undefined ? batchDeliveryDate : jobBatch.batchDeliveryDate,
@@ -402,6 +409,7 @@ class JobBatchController {
         status: status || jobBatch.status,
         priority: priority || jobBatch.priority,
         notes: notes !== undefined ? notes : jobBatch.notes,
+        notes: inchargePerson !== undefined ? inchargePerson : jobBatch.inchargePerson,
         mouId: mouId !== undefined ? mouId : jobBatch.mouId, // NEW: Update MOU ID
         updateUserId
       });

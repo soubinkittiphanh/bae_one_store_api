@@ -27,6 +27,10 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.BOOLEAN,
             defaultValue: false
         },
+        validateStockOnSale: {
+            type: DataTypes.BOOLEAN,
+            defaultValue: false
+        },
         pro_image_path: {
             type: DataTypes.STRING,
         },

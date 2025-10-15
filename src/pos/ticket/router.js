@@ -22,14 +22,14 @@ router.get('/table/:tableId/current', ticketController.getCurrentTicketByTable);
 router.get('/filter/pending', ticketController.getPendingTickets);
 router.get('/reports/sales', ticketController.getSalesReport);
 
-// Basic CRUD - Specific ID routes (AFTER specific routes)
+// Status management routes (BEFORE /:id routes!)
+router.patch('/:id/status', ticketController.updateTicketStatus);
+router.patch('/:id/payment-status', ticketController.updatePaymentStatus);
+
+// Basic CRUD - Specific ID routes (AFTER all specific routes)
 router.get('/:id', ticketController.getTicketById);
 router.post('/', ticketController.createTicket);
 router.put('/:id', ticketController.updateTicket);
 router.delete('/:id', ticketController.deleteTicket);
-
-// Status management routes
-router.patch('/:id/status', ticketController.updateTicketStatus);
-router.patch('/:id/payment-status', ticketController.updatePaymentStatus);
 
 module.exports = router

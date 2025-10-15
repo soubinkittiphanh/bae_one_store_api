@@ -30,6 +30,11 @@ module.exports = (sequelize, DataTypes) => {
         min: 0
       }
     },
+    principalAmount: {
+      type: DataTypes.DOUBLE,
+      allowNull: false,
+      defaultValue: 0,
+    },
 
     // Dates
     batchStartDate: {
@@ -51,7 +56,7 @@ module.exports = (sequelize, DataTypes) => {
 
     // Status and Priority
     status: {
-      type: DataTypes.ENUM('draft', 'active','completed','settled'),
+      type: DataTypes.ENUM('draft', 'active','completed','settled','submit'),
       allowNull: false,
       defaultValue: 'draft'
     },
@@ -63,6 +68,10 @@ module.exports = (sequelize, DataTypes) => {
 
 
     notes: {
+      type: DataTypes.TEXT,
+      allowNull: true
+    },
+    inchargePerson: {
       type: DataTypes.TEXT,
       allowNull: true
     },

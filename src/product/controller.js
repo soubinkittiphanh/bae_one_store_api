@@ -79,7 +79,7 @@ const createProduct = async (req, res) => {
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
   }
-  let { pro_id, pro_name, pro_price, pro_desc, pro_status,
+  let { pro_id, pro_name, pro_price, pro_desc, pro_status,validateStockOnSale,
     pro_image_path, retail_cost_percent, cost_price,
     stock_count, locking_session_id, isActive, minStock, barCode, saleCurrencyId, costCurrencyId, companyId,vendorName } = req.body;
   locking_session_id = Date.now()
@@ -90,6 +90,7 @@ const createProduct = async (req, res) => {
       pro_price,
       pro_desc,
       pro_status,
+      validateStockOnSale,
       pro_image_path,
       retail_cost_percent,
       cost_price,
@@ -117,7 +118,7 @@ const updateProductById = async (req, res) => {
     return res.status(400).json({ errors: errors.array() });
   }
   const { id } = req.params;
-  const { pro_id, pro_name, pro_price, pro_desc, pro_status,
+  const { pro_id, pro_name, pro_price, pro_desc, pro_status,validateStockOnSale,
     pro_image_path, retail_cost_percent, cost_price, stock_count,
     isActive, minStock, barCode, saleCurrencyId, costCurrencyId, companyId,vendorName } = req.body;
   try {
@@ -132,6 +133,7 @@ const updateProductById = async (req, res) => {
         pro_price,
         pro_desc,
         pro_status,
+        validateStockOnSale,
         pro_image_path,
         retail_cost_percent,
         cost_price,

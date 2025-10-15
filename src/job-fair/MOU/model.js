@@ -76,10 +76,16 @@ module.exports = (sequelize, DataTypes) => {
 
     // ປະເພດແຮງງານ - Worker Type
     workerType: {
-      type: DataTypes.ENUM('Man', 'Woman', 'Spous', 'Any'),
+      type: DataTypes.ENUM('Man', 'Woman', 'Spous', 'Any', 'Single man', ' Single woman'),
       allowNull: false,
       defaultValue: 'Any'
     },
+    country: {
+      type: DataTypes.ENUM('LAO', 'THAI', 'KOREA', 'SINGAPORE', 'JAPAN', 'ISRAEL', 'OTHER'),
+      allowNull: false,
+      defaultValue: 'OTHER'
+    },
+
 
     // ສະຖານະງານ - Job Status
     jobStatus: {

@@ -13,10 +13,15 @@ const Product = require('../../models').product;
 const SaleHeader = require('../../models').saleHeader;
 const SaleLine = require('../../models').saleLine;
 
-// Service function to convert ticket to sale
-const postTicketToSale = async (ticketId, transaction = null) => {
+const Card = require('../../models').card;
+const common = require('../../common');
+const productService = require('../../product/service');
+
+
+// Service function to convert ticket to sale// Helper function to post ticket to sale tables
+const postTicketToSale = async (ticketId, transaction) => {
     try {
-        // Get the ticket with all ticket lines
+        // Get the ticket with all related data
         const ticket = await Ticket.findByPk(ticketId, {
             include: [
                 {
@@ -30,8 +35,8 @@ const postTicketToSale = async (ticketId, transaction = null) => {
                     ]
                 },
                 {
-                    model: Client,
-                    as: 'client'
+                    model: Table,
+                    as: 'table'
                 }
             ],
             transaction
@@ -41,11 +46,7 @@ const postTicketToSale = async (ticketId, transaction = null) => {
             throw new Error('Ticket not found');
         }
 
-        if (ticket.status !== 'paid' || ticket.paymentStatus !== 'paid') {
-            throw new Error('Ticket must be paid to post to sales');
-        }
-
-        // Check if this ticket has already been posted to sales
+        // Check if ticket has already been posted to sales
         const existingSale = await SaleHeader.findOne({
             where: { ticketId: ticketId },
             transaction
@@ -55,49 +56,352 @@ const postTicketToSale = async (ticketId, transaction = null) => {
             throw new Error('Ticket has already been posted to sales');
         }
 
-        // Create sale header
+        // Generate locking session for card reservation
+        const lockingSessionId = common.generateLockingSessionId();
+        const locationId = 1; // Get from ticket.table.locationId or config
+
+        // Prepare lines for processing
+        const lines = ticket.ticketLines.map(ticketLine => ({
+            productId: ticketLine.productId,
+            quantity: ticketLine.quantity,
+            price: parseFloat(ticketLine.unitPrice),
+            total: parseFloat(ticketLine.totalPrice),
+            unitRate: 1, // Default unit rate
+            specialInstructions: ticketLine.specialInstructions,
+            product: ticketLine.product // Keep product reference
+        }));
+
+        logger.info(`Processing ${lines.length} items for ticket ${ticketId}`);
+
+        // ============================================================
+        // STEP 1: VALIDATE ALL STOCK REQUIREMENTS FIRST (CRITICAL!)
+        // If ANY product requiring validation has insufficient stock,
+        // the ENTIRE ticket will be rejected
+        // ============================================================
+        const stockValidationErrors = [];
+        let productsRequiringValidation = 0;
+        let productsNotRequiringValidation = 0;
+
+        logger.info('=== STARTING STOCK VALIDATION ===');
+
+        for (const line of lines) {
+            // Check if product requires stock validation
+            if (line.product.validateStockOnSale) {
+                productsRequiringValidation++;
+                const qty = line.unitRate * line.quantity;
+
+                logger.info(`✓ Product ${line.productId} (${line.product.name}) REQUIRES stock validation - checking inventory...`);
+
+                const availableCards = await Card.findAll({
+                    limit: qty,
+                    order: [['createdAt', 'DESC']],
+                    where: {
+                        productId: line.productId,
+                        saleLineId: null,
+                        card_isused: 0,
+                        locationId
+                    },
+                    transaction
+                });
+
+                const availableQty = availableCards ? availableCards.length : 0;
+
+                if (availableQty < qty) {
+                    // Stock insufficient - add to error list
+                    const error = {
+                        productId: line.productId,
+                        productName: line.product.name,
+                        required: qty,
+                        available: availableQty,
+                        shortage: qty - availableQty
+                    };
+                    stockValidationErrors.push(error);
+                    logger.error(`✗ INSUFFICIENT STOCK - Product ${line.productId} (${line.product.name}): Required ${qty}, Available ${availableQty}, Short by ${error.shortage}`);
+                } else {
+                    logger.info(`✓ SUFFICIENT STOCK - Product ${line.productId} (${line.product.name}): Required ${qty}, Available ${availableQty}`);
+                }
+            } else {
+                productsNotRequiringValidation++;
+                logger.info(`○ Product ${line.productId} (${line.product.name}) does NOT require stock validation - skipping check`);
+            }
+        }
+
+        logger.info(`=== VALIDATION SUMMARY ===`);
+        logger.info(`Products requiring validation: ${productsRequiringValidation}`);
+        logger.info(`Products NOT requiring validation: ${productsNotRequiringValidation}`);
+        logger.info(`Total products: ${lines.length}`);
+
+        // If there are ANY stock validation errors, REJECT the entire ticket
+        if (stockValidationErrors.length > 0) {
+            logger.error(`=== STOCK VALIDATION FAILED ===`);
+            logger.error(`${stockValidationErrors.length} product(s) have insufficient stock`);
+
+            // Build detailed error message
+            const errorDetails = stockValidationErrors.map(err =>
+                `Product #${err.productId} (${err.productName}): Need ${err.required}, Available ${err.available}, Short ${err.shortage}`
+            ).join('; ');
+
+            throw new Error(`Cannot post ticket to sale - Insufficient stock: ${errorDetails}`);
+        }
+
+        logger.info('=== STOCK VALIDATION PASSED ===');
+        logger.info('All products have sufficient stock - proceeding with sale creation');
+
+        // ============================================================
+        // STEP 2: CREATE SALE HEADER (Only after validation passes)
+        // ============================================================
         const saleHeaderData = {
-            ticketId: ticket.id,
-            paymentId: ticket.paymentId,
-            bookingDate: new Date().toISOString().split('T')[0], // Today's date
-            referenceNo: `TKT-${ticket.id}-${Date.now()}`, // Generate reference number
-            remark: ticket.notes || `Sale from Ticket #${ticket.id}`,
-            discount: 0, // You can calculate this if needed
+            bookingDate: new Date(),
+            referenceNo: `TICKET-${ticket.id}`,
+            remark: ticket.notes || 'Posted from Ticket',
+            discount: 0,
             total: parseFloat(ticket.total),
-            exchangeRate: 1, // Default exchange rate
-            isActive: true
+            exchangeRate: 1,
+            isActive: true,
+            clientId: ticket.clientId || null,
+            paymentId: ticket.paymentId || null,
+            currencyId: 1, // Set default or get from config
+            userId: 1, // Set from req.user.id if available
+            locationId: locationId,
+            ticketId: ticket.id // Link back to ticket
         };
 
         const saleHeader = await SaleHeader.create(saleHeaderData, { transaction });
+        logger.info(`✓ Sale header created with ID: ${saleHeader.id}`);
 
-        // Create sale lines from ticket lines
-        const saleLines = [];
-        logger.info(`ticket ${JSON.stringify(ticket)}`)
-        logger.info(`Sale line from ticketLine ${ticket.ticketLines}`)
-        for (const ticketLine of ticket.ticketLines) {
-            const saleLineData = {
+        // ============================================================
+        // STEP 3: CREATE SALE LINES AND RESERVE CARDS
+        // ============================================================
+        const createdSaleLines = [];
+
+        for (const line of lines) {
+            line.headerId = saleHeader.id;
+            line.saleHeaderId = saleHeader.id;
+
+            // Only reserve cards if product requires stock validation
+            if (line.product.validateStockOnSale) {
+                const qty = line.unitRate * line.quantity;
+                logger.info(`Reserving ${qty} cards for product ${line.productId} (${line.product.name})`);
+                await reserveCardForTicket(line, lockingSessionId, qty, locationId, transaction);
+            } else {
+                logger.info(`Skipping card reservation for product ${line.productId} (${line.product.name}) - no validation required`);
+            }
+
+            // Create sale line
+            const saleLine = await SaleLine.create({
+                headerId: saleHeader.id,
                 saleHeaderId: saleHeader.id,
-                productId: ticketLine.productId,
-                quantity: parseFloat(ticketLine.quantity),
-                unitRate: parseFloat(ticketLine.unitPrice),
-                price: parseFloat(ticketLine.unitPrice),
-                discount: 0, // You can calculate this if needed
-                total: parseFloat(ticketLine.totalPrice),
+                productId: line.productId,
+                quantity: line.quantity,
+                price: line.price,
+                total: line.total,
+                unitRate: line.unitRate,
+                specialInstructions: line.specialInstructions,
                 isActive: true
-            };
+            }, { transaction });
 
-            const saleLine = await SaleLine.create(saleLineData, { transaction });
-            saleLines.push(saleLine);
+            // Update cards with the actual saleLineId (only if cards were reserved)
+            if (line.product.validateStockOnSale) {
+                const updatedCards = await Card.update(
+                    { saleLineId: saleLine.id },
+                    {
+                        where: {
+                            locking_session_id: lockingSessionId,
+                            productId: line.productId,
+                            card_isused: true,
+                            saleLineId: null
+                        },
+                        transaction
+                    }
+                );
+                logger.info(`✓ ${updatedCards[0]} cards linked to sale line ${saleLine.id}`);
+            }
+
+            createdSaleLines.push(saleLine);
+            logger.info(`✓ Sale line created for product ${line.productId}`);
         }
+
+        // ============================================================
+        // STEP 4: UPDATE PRODUCT STOCK COUNTS
+        // ============================================================
+        const productIdsForStockUpdate = lines
+            .filter(line => line.product.validateStockOnSale)
+            .map(line => line.productId);
+
+        if (productIdsForStockUpdate.length > 0) {
+            await productService.updateProductCountGroup(productIdsForStockUpdate);
+            logger.info(`✓ Updated stock count for ${productIdsForStockUpdate.length} products`);
+        }
+
+        logger.info(`=== SUCCESS ===`);
+        logger.info(`Ticket ${ticketId} successfully posted to sales as Sale Header #${saleHeader.id}`);
 
         return {
             saleHeader,
-            saleLines,
-            originalTicket: ticket
+            saleLines: createdSaleLines,
+            summary: {
+                totalLines: lines.length,
+                linesWithStockValidation: productsRequiringValidation,
+                linesWithoutStockValidation: productsNotRequiringValidation
+            }
         };
 
     } catch (error) {
-        throw new Error(`Failed to post ticket to sale: ${error.message}`);
+        logger.error(`=== ERROR ===`);
+        logger.error(`Failed to post ticket ${ticketId} to sale: ${error.message}`);
+        throw error;
+    }
+};
+
+// Helper function to reserve cards (only called for products with validateStockOnSale = true)
+const reserveCardForTicket = async (line, lockingSessionId, qty, locationId, transaction) => {
+    const cards = await Card.findAll({
+        limit: qty,
+        order: [['createdAt', 'DESC']],
+        where: {
+            productId: line.productId,
+            saleLineId: null,
+            card_isused: 0,
+            locationId
+        },
+        transaction
+    });
+
+    logger.info(`Product Id: ${line.productId}, Location: ${locationId}`);
+    logger.info(`Cards available: ${cards.length}, Required: ${qty}`);
+
+    // This should never fail since we validated earlier, but keep as safety check
+    if (!cards || cards.length < qty) {
+        throw new Error(`Stock not enough for product #${line.productId} - this should have been caught in validation`);
+    }
+
+    const entryOption = {
+        locking_session_id: lockingSessionId,
+        card_isused: true,
+    };
+
+    const cardReserved = await Card.update(entryOption, {
+        where: {
+            id: {
+                [Op.in]: cards.map(el => el.id)
+            }
+        },
+        transaction
+    });
+
+    logger.info(`✓ Reserved ${cardReserved[0]} cards for product ${line.productId}`);
+};
+
+// Helper function to reverse sale when ticket is cancelled
+const reverseSaleFromTicket = async (ticketId, cancelReason, transaction) => {
+    try {
+        logger.info(`=== STARTING SALE REVERSAL FOR TICKET ${ticketId} ===`);
+
+        // Find the sale header associated with this ticket
+        const saleHeader = await SaleHeader.findOne({
+            where: { ticketId: ticketId },
+            include: [{
+                model: SaleLine,
+                as: "lines",
+                include: [
+                    {
+                        model: Product,
+                        as: "product"
+                    },
+                    {
+                        model: Card,
+                        as: "cards"
+                    }
+                ]
+            }],
+            transaction
+        });
+
+        if (!saleHeader) {
+            logger.warn(`No sale found for ticket ${ticketId} - nothing to reverse`);
+            return null;
+        }
+
+        logger.info(`Found sale header ${saleHeader.id} to reverse`);
+
+        // Collect card IDs to reverse (only for products that had stock validation)
+        const cardIds = saleHeader.lines.flatMap(line =>
+            line.cards ? line.cards.map(card => card.id) : []
+        );
+
+        const lineIds = saleHeader.lines.map(line => line.id);
+
+        logger.info(`Cards to reverse: ${cardIds.length}`);
+        logger.info(`Sale lines to deactivate: ${lineIds.length}`);
+
+        // Update sale header to inactive with cancellation remark
+        await saleHeader.update({
+            isActive: false,
+            remark: cancelReason || 'Cancelled from Ticket'
+        }, { transaction });
+
+        logger.info(`✓ Sale header ${saleHeader.id} marked as inactive`);
+
+        // Update sale lines to inactive
+        if (lineIds.length > 0) {
+            await SaleLine.update(
+                { isActive: false },
+                {
+                    where: { id: { [Op.in]: lineIds } },
+                    transaction
+                }
+            );
+            logger.info(`✓ ${lineIds.length} sale lines marked as inactive`);
+        }
+
+        // Reverse cards ONLY if there are cards (products with stock validation)
+        if (cardIds.length > 0) {
+            const [numUpdated] = await Card.update(
+                {
+                    card_isused: 0,
+                    saleLineId: null,
+                    isActive: true,
+                },
+                {
+                    where: {
+                        id: {
+                            [Op.in]: cardIds,
+                        },
+                    },
+                    transaction
+                }
+            );
+            logger.info(`✓ ${numUpdated} cards returned to inventory`);
+        } else {
+            logger.info(`○ No cards to reverse (all products were non-stock validated)`);
+        }
+
+        // Update product stock counts ONLY for products that had stock validation
+        const productsWithStockValidation = saleHeader.lines.filter(line =>
+            line.product && line.product.validateStockOnSale && line.cards && line.cards.length > 0
+        );
+
+        if (productsWithStockValidation.length > 0) {
+            const productIdsForStockUpdate = productsWithStockValidation.map(line => line.productId);
+            await productService.updateProductCountGroup(productIdsForStockUpdate);
+            logger.info(`✓ Updated stock count for ${productIdsForStockUpdate.length} products`);
+        } else {
+            logger.info(`○ No product stock counts to update`);
+        }
+
+        logger.info(`=== SALE REVERSAL COMPLETED FOR TICKET ${ticketId} ===`);
+
+        return {
+            saleHeaderId: saleHeader.id,
+            linesReversed: lineIds.length,
+            cardsReversed: cardIds.length,
+            productsStockUpdated: productsWithStockValidation.length
+        };
+
+    } catch (error) {
+        logger.error(`=== ERROR REVERSING SALE ===`);
+        logger.error(`Failed to reverse sale for ticket ${ticketId}: ${error.message}`);
+        throw error;
     }
 };
 
@@ -287,32 +591,38 @@ const ticketController = {
 
         try {
             const {
-                tableId,
-                clientId,
-                paymentId,
+                tableId = null,
+                clientId = null,
+                paymentId = null,
                 status = 'pending',
                 paymentStatus = 'pending',
                 notes,
                 ticketLines = []
             } = req.body;
 
-            // Validation
-            if (!tableId) {
-                await transaction.rollback();
-                return res.status(400).json({
-                    success: false,
-                    message: 'Table ID is required'
-                });
-            }
+            let table = null;
 
-            // Check if table exists and is available
-            const table = await Table.findByPk(tableId);
-            if (!table) {
-                await transaction.rollback();
-                return res.status(404).json({
-                    success: false,
-                    message: 'Table not found'
-                });
+            // Validation - only check table if tableId is provided
+            if (tableId) {
+                // Check if table exists and is available
+                table = await Table.findByPk(tableId, { transaction });
+
+                if (!table) {
+                    await transaction.rollback();
+                    return res.status(404).json({
+                        success: false,
+                        message: 'Table not found'
+                    });
+                }
+
+                // Optional: Check if table is already occupied
+                if (table.status === 'occupied' && table.currentOrderId) {
+                    logger.warn(`Table ${tableId} is already occupied with order ${table.currentOrderId}`);
+                    // You can either reject or allow based on business rules
+                    // For now, we'll allow it with a warning
+                }
+            } else {
+                logger.info('Creating ticket without table assignment (Walk-in/Takeaway)');
             }
 
             // Calculate totals from ticket lines
@@ -330,18 +640,24 @@ const ticketController = {
                 total = subtotal + tax;
             }
 
+            // Generate ticket number
+            const ticketNumber = await Ticket.generateTicketNumber();
+
             // Create the ticket
             const newTicket = await Ticket.create({
-                tableId,
-                clientId,
-                paymentId,
+                tableId: tableId || null, // Explicitly set null if no table
+                ticketNumber,
+                clientId: clientId || null,
+                paymentId: paymentId || null,
                 status,
                 paymentStatus,
                 subtotal: subtotal.toFixed(2),
                 tax: tax.toFixed(2),
                 total: total.toFixed(2),
-                notes
+                notes: notes || (tableId ? null : 'Walk-in customer - No table assigned')
             }, { transaction });
+
+            logger.info(`Ticket ${newTicket.id} created successfully${tableId ? ` for table ${tableId}` : ' without table'}`);
 
             // Create ticket lines if provided
             if (ticketLines.length > 0) {
@@ -352,35 +668,55 @@ const ticketController = {
                 }));
 
                 await TicketLine.bulkCreate(ticketLinesData, { transaction });
+                logger.info(`Created ${ticketLinesData.length} ticket lines for ticket ${newTicket.id}`);
             }
 
-            // Update table status to occupied if ticket is created
-            if (status !== 'paid' && status !== 'served') {
+            // Update table status to occupied ONLY if table exists and ticket is created
+            if (tableId && table && status !== 'paid' && status !== 'served' && status !== 'cancel') {
                 await table.update({
                     status: 'occupied',
                     currentOrderId: newTicket.id,
                     timeOccupied: new Date()
                 }, { transaction });
+
+                logger.info(`Table ${tableId} status updated to occupied`);
             }
 
             await transaction.commit();
 
             // Fetch the complete ticket with associations
+            const includeOptions = [
+                { model: Client, as: 'client', required: false },
+                { model: Payment, as: 'payment', required: false },
+                {
+                    model: TicketLine,
+                    as: 'ticketLines',
+                    include: [
+                        { model: Product, as: 'product', required: false }
+                    ]
+                }
+            ];
+
+            // Only include table if tableId exists
+            if (tableId) {
+                includeOptions.unshift({ model: Table, as: 'table', required: false });
+            }
+
             const createdTicket = await Ticket.findByPk(newTicket.id, {
-                include: [
-                    { model: Table, as: 'table' },
-                    { model: Client, as: 'client' },
-                    { model: TicketLine, as: 'ticketLines' }
-                ]
+                include: includeOptions
             });
 
             res.status(201).json({
                 success: true,
-                message: 'Ticket created successfully',
+                message: tableId
+                    ? `Ticket created successfully for Table ${table.number}`
+                    : 'Ticket created successfully (Walk-in/No table)',
                 data: createdTicket
             });
         } catch (error) {
             await transaction.rollback();
+
+            logger.error(`Error creating ticket: ${error.message}`);
 
             if (error.name === 'SequelizeValidationError') {
                 return res.status(400).json({
@@ -403,87 +739,149 @@ const ticketController = {
 
     // Update ticket
     updateTicket: async (req, res) => {
-        const transaction = await sequelize.transaction();
+    const transaction = await sequelize.transaction();
 
-        try {
-            const { id } = req.params;
-            const updateData = req.body;
+    try {
+        const { id } = req.params;
+        const updateData = req.body;
 
-            const ticket = await Ticket.findByPk(id, { transaction });
+        const ticket = await Ticket.findByPk(id, { 
+            include: [{ model: Table, as: 'table', required: false }],
+            transaction 
+        });
 
-            if (!ticket) {
-                await transaction.rollback();
-                return res.status(404).json({
-                    success: false,
-                    message: 'Ticket not found'
-                });
-            }
-
-            // If updating ticket lines, recalculate totals
-            if (updateData.ticketLines) {
-                const subtotal = updateData.ticketLines.reduce((sum, line) => {
-                    return sum + (parseFloat(line.quantity) * parseFloat(line.unitPrice || 0));
-                }, 0);
-
-                const tax = subtotal * 0.10; // Adjust tax rate as needed
-                const total = subtotal + tax;
-
-                updateData.subtotal = subtotal.toFixed(2);
-                updateData.tax = tax.toFixed(2);
-                updateData.total = total.toFixed(2);
-
-                // Delete existing ticket lines and create new ones
-                await TicketLine.destroy({
-                    where: { ticketId: id },
-                    transaction
-                });
-
-                const ticketLinesData = updateData.ticketLines.map(line => ({
-                    ...line,
-                    ticketId: id,
-                    totalPrice: (parseFloat(line.quantity) * parseFloat(line.unitPrice || 0)).toFixed(2)
-                }));
-
-                await TicketLine.bulkCreate(ticketLinesData, { transaction });
-                delete updateData.ticketLines; // Remove from update data
-            }
-
-            await ticket.update(updateData, { transaction });
-
-            await transaction.commit();
-
-            // Fetch updated ticket with associations
-            const updatedTicket = await Ticket.findByPk(id, {
-                include: [
-                    { model: Table, as: 'table' },
-                    { model: Client, as: 'client' },
-                    { model: TicketLine, as: 'ticketLines' }
-                ]
-            });
-
-            res.status(200).json({
-                success: true,
-                message: 'Ticket updated successfully',
-                data: updatedTicket
-            });
-        } catch (error) {
+        if (!ticket) {
             await transaction.rollback();
-
-            res.status(500).json({
+            return res.status(404).json({
                 success: false,
-                message: 'Error updating ticket',
-                error: error.message
+                message: 'Ticket not found'
             });
         }
-    },
 
+        // If updating ticket lines, recalculate totals
+        if (updateData.ticketLines) {
+            const subtotal = updateData.ticketLines.reduce((sum, line) => {
+                return sum + (parseFloat(line.quantity) * parseFloat(line.unitPrice || 0));
+            }, 0);
+
+            const tax = subtotal * 0.10; // Adjust tax rate as needed
+            const total = subtotal + tax;
+
+            updateData.subtotal = subtotal.toFixed(2);
+            updateData.tax = tax.toFixed(2);
+            updateData.total = total.toFixed(2);
+
+            // Delete existing ticket lines and create new ones
+            await TicketLine.destroy({
+                where: { ticketId: id },
+                transaction
+            });
+
+            const ticketLinesData = updateData.ticketLines.map(line => ({
+                ...line,
+                ticketId: id,
+                totalPrice: (parseFloat(line.quantity) * parseFloat(line.unitPrice || 0)).toFixed(2)
+            }));
+
+            await TicketLine.bulkCreate(ticketLinesData, { transaction });
+            delete updateData.ticketLines; // Remove from update data
+            
+            logger.info(`Updated ticket lines for ticket ${id}`);
+        }
+
+        // Handle table assignment changes
+        if ('tableId' in updateData) {
+            const oldTableId = ticket.tableId;
+            const newTableId = updateData.tableId;
+
+            // If changing from one table to another or adding/removing table
+            if (oldTableId !== newTableId) {
+                // Release old table if exists
+                if (oldTableId && ticket.table) {
+                    await ticket.table.update({
+                        status: 'available',
+                        currentOrderId: null,
+                        timeOccupied: null
+                    }, { transaction });
+                    
+                    logger.info(`Released old table ${oldTableId}`);
+                }
+
+                // Occupy new table if specified
+                if (newTableId) {
+                    const newTable = await Table.findByPk(newTableId, { transaction });
+                    
+                    if (!newTable) {
+                        await transaction.rollback();
+                        return res.status(404).json({
+                            success: false,
+                            message: 'New table not found'
+                        });
+                    }
+
+                    await newTable.update({
+                        status: 'occupied',
+                        currentOrderId: ticket.id,
+                        timeOccupied: new Date()
+                    }, { transaction });
+                    
+                    logger.info(`Assigned ticket ${id} to new table ${newTableId}`);
+                }
+            }
+        }
+
+        await ticket.update(updateData, { transaction });
+
+        await transaction.commit();
+
+        // Fetch updated ticket with associations
+        const includeOptions = [
+            { model: Client, as: 'client', required: false },
+            { model: Payment, as: 'payment', required: false },
+            { 
+                model: TicketLine, 
+                as: 'ticketLines',
+                include: [
+                    { model: Product, as: 'product', required: false }
+                ]
+            }
+        ];
+
+        // Include table if it exists
+        if (ticket.tableId || updateData.tableId) {
+            includeOptions.unshift({ model: Table, as: 'table', required: false });
+        }
+
+        const updatedTicket = await Ticket.findByPk(id, {
+            include: includeOptions
+        });
+
+        res.status(200).json({
+            success: true,
+            message: 'Ticket updated successfully',
+            data: updatedTicket
+        });
+    } catch (error) {
+        await transaction.rollback();
+        
+        logger.error(`Error updating ticket: ${error.message}`);
+
+        res.status(500).json({
+            success: false,
+            message: 'Error updating ticket',
+            error: error.message
+        });
+    }
+},
+
+    // Update ticket status
     // Update ticket status
     updateTicketStatus: async (req, res) => {
         const transaction = await sequelize.transaction();
 
         try {
             const { id } = req.params;
-            const { status } = req.body;
+            const { status, cancelReason } = req.body;
 
             if (!status) {
                 await transaction.rollback();
@@ -493,13 +891,24 @@ const ticketController = {
                 });
             }
 
-            const validStatuses = ['pending', 'preparing', 'ready', 'served', 'paid'];
+            const validStatuses = ['pending', 'preparing', 'ready', 'served', 'paid', 'cancel', 'void'];
             if (!validStatuses.includes(status)) {
                 await transaction.rollback();
                 return res.status(400).json({
                     success: false,
                     message: 'Invalid status. Must be one of: ' + validStatuses.join(', ')
                 });
+            }
+
+            // Validate cancel reason if status is cancel
+            if (status === 'cancel') {
+                if (!cancelReason || cancelReason.trim() === '') {
+                    await transaction.rollback();
+                    return res.status(400).json({
+                        success: false,
+                        message: 'Cancel reason is required when cancelling a ticket'
+                    });
+                }
             }
 
             const ticket = await Ticket.findByPk(id, {
@@ -515,7 +924,47 @@ const ticketController = {
                 });
             }
 
-            await ticket.update({ status }, { transaction });
+            let reversalResult = null;
+
+            // IF STATUS = CANCEL THEN:
+            // 1. Update payment status to cancel
+            // 2. Reverse sale if it exists
+            // 3. Return stock cards
+            if (status === 'cancel') {
+                logger.info(`=== CANCELLING TICKET ${id} ===`);
+
+                // Update ticket status and payment status
+                await ticket.update({
+                    status,
+                    paymentStatus: 'cancel',
+                    notes: cancelReason
+                }, { transaction });
+
+                logger.info(`✓ Ticket ${id} status updated to cancelled`);
+
+                // Reverse the sale if it was posted
+                try {
+                    reversalResult = await reverseSaleFromTicket(id, cancelReason, transaction);
+
+                    if (reversalResult) {
+                        logger.info(`✓ Sale reversed successfully for ticket ${id}`);
+                    } else {
+                        logger.info(`○ No sale to reverse for ticket ${id}`);
+                    }
+                } catch (reversalError) {
+                    logger.error(`Error reversing sale: ${reversalError.message}`);
+                    // Rollback everything if sale reversal fails
+                    await transaction.rollback();
+                    return res.status(500).json({
+                        success: false,
+                        message: 'Error reversing sale during cancellation',
+                        error: reversalError.message
+                    });
+                }
+            } else {
+                // Normal status update (not cancellation)
+                await ticket.update({ status }, { transaction });
+            }
 
             // Update table status based on ticket status
             if (ticket.table) {
@@ -525,23 +974,36 @@ const ticketController = {
                 if (status === 'paid' || status === 'served') {
                     tableStatus = 'cleaning';
                     currentOrderId = null;
+                } else if (status === 'cancel' || status === 'void') {
+                    tableStatus = 'available';
+                    currentOrderId = null;
                 }
 
                 await ticket.table.update({
                     status: tableStatus,
                     currentOrderId: currentOrderId
                 }, { transaction });
+
+                logger.info(`✓ Table ${ticket.table.id} status updated to ${tableStatus}`);
             }
 
             await transaction.commit();
 
+            const responseMessage = status === 'cancel'
+                ? 'Ticket cancelled and sale reversed successfully'
+                : 'Ticket status updated successfully';
+
             res.status(200).json({
                 success: true,
-                message: 'Ticket status updated successfully',
-                data: ticket
+                message: responseMessage,
+                data: {
+                    ticket,
+                    reversal: reversalResult
+                }
             });
         } catch (error) {
             await transaction.rollback();
+            logger.error(`Error updating ticket status: ${error.message}`);
 
             res.status(500).json({
                 success: false,
@@ -555,7 +1017,7 @@ const ticketController = {
     updatePaymentStatus: async (req, res) => {
         // Use database transaction for data consistency
         const t = await sequelize.transaction();
-        
+
         try {
             const { id } = req.params;
             const { paymentStatus, paymentId } = req.body;
@@ -626,8 +1088,8 @@ const ticketController = {
 
             res.status(200).json({
                 success: true,
-                message: paymentStatus === 'paid' 
-                    ? 'Payment status updated and posted to sales successfully' 
+                message: paymentStatus === 'paid'
+                    ? 'Payment status updated and posted to sales successfully'
                     : 'Payment status updated successfully',
                 data: {
                     ticket,
@@ -869,40 +1331,12 @@ const ticketController = {
         }
     },
 
-    // NEW METHODS FOR SALE INTEGRATION
-
-    // Utility function to manually post a ticket to sales (if needed)
-    manualPostTicketToSale: async (req, res) => {
-        const t = await sequelize.transaction();
-        
-        try {
-            const { ticketId } = req.params;
-            
-            const saleData = await postTicketToSale(ticketId, t);
-            
-            await t.commit();
-            
-            res.status(200).json({
-                success: true,
-                message: 'Ticket posted to sales successfully',
-                data: saleData
-            });
-            
-        } catch (error) {
-            await t.rollback();
-            res.status(500).json({
-                success: false,
-                message: 'Error posting ticket to sales',
-                error: error.message
-            });
-        }
-    },
 
     // Function to get sale data by ticket ID
     getSaleByTicketId: async (req, res) => {
         try {
             const { ticketId } = req.params;
-            
+
             const saleHeader = await SaleHeader.findOne({
                 where: { ticketId },
                 include: [
@@ -918,19 +1352,19 @@ const ticketController = {
                     }
                 ]
             });
-            
+
             if (!saleHeader) {
                 return res.status(404).json({
                     success: false,
                     message: 'Sale not found for this ticket'
                 });
             }
-            
+
             res.status(200).json({
                 success: true,
                 data: saleHeader
             });
-            
+
         } catch (error) {
             res.status(500).json({
                 success: false,

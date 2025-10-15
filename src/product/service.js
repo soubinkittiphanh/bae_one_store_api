@@ -232,6 +232,7 @@ const createProdV1 = async (req, imagesObj) => {
         const retail_percent = body.pro_retail_price || 0.0;
         const locking_session_id = Date.now()
         const isActive = body.isActive;
+        const validateStockOnSale = body.validateStockOnSale;
         const companyId = body.companyId;
         const vendorName = body.vendorName;
         const category = body._category; // 'product' or 'service'
@@ -255,9 +256,9 @@ const createProdV1 = async (req, imagesObj) => {
                         pro_category, pro_id, pro_name, pro_price, pro_desc, pro_status, 
                         retail_cost_percent, cost_price, locking_session_id, createdAt, 
                         updateTimestamp, minStock, barCode, receiveUnitId, stockUnitId, 
-                        costCurrencyId, saleCurrencyId, isActive, companyId,vendorName,_category,duration_minutes
+                        costCurrencyId, saleCurrencyId, isActive,validateStockOnSale, companyId,vendorName,_category,duration_minutes
                     )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
                 `;
 
                 // Values array to pass into the query
@@ -280,6 +281,7 @@ const createProdV1 = async (req, imagesObj) => {
                     costCurrencyId,
                     saleCurrencyId,
                     isActive,
+                    validateStockOnSale,
                     companyId,
                     vendorName,
                     category ?? 'product',
@@ -344,6 +346,7 @@ const updateProd = async (req, imagesObj) => {
     const costCurrencyId = body.costCurrencyId;
     const saleCurrencyId = body.saleCurrencyId;
     const isActive = body.isActive;
+    const validateStockOnSale = body.validateStockOnSale;
     const companyId = body.companyId;
     const vendorName = body.vendorName;
     const taxId = body.taxId;
@@ -392,6 +395,7 @@ const updateProd = async (req, imagesObj) => {
       pro_status = ?, 
       retail_cost_percent = ?, 
       isActive = ?, 
+      validateStockOnSale = ?, 
       cost_price = ?, 
       minStock = ?, 
       barCode = ?, 
@@ -417,6 +421,7 @@ const updateProd = async (req, imagesObj) => {
         pro_status,
         retail_percent,
         isActive,
+        validateStockOnSale,
         cost_price,
         minStock,
         barCode,

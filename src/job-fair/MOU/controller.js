@@ -33,6 +33,7 @@ class MOUController {
         jobTitle,
         numberOfWorkers,
         workerType,
+        country,
         jobStatus,
         notes,
         currencyId
@@ -124,6 +125,7 @@ class MOUController {
         jobTitle,
         numberOfWorkers,
         workerType: workerType || 'Any',
+        country: country || 'OTHER',
         jobStatus: jobStatus || 'draft',
         documents: documentsData,
         notes,

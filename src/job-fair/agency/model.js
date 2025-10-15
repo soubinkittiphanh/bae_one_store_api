@@ -106,6 +106,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: true
     },
+    bankAccount: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
 
     // ตำแหน่งผู้ติดต่อ - Contact Person Position
     contactPersonPosition: {
