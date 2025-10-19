@@ -180,6 +180,7 @@ const fetchProductFromLocation = async (req, res) => {
     p.cost_price,
     p.saleCurrencyId,
     p.costCurrencyId,
+    p.validateStockOnSale,
     t.categ_name,
     co.name as co_name,
     co.id as companyId,

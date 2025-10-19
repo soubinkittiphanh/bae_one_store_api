@@ -63,6 +63,7 @@ const initializeModels = () => {
     spf: require("../spf/model")(sequelize, DataTypes),
     client: require("../client/model")(sequelize, DataTypes),
     group: require("../group/model")(sequelize, DataTypes),
+    role: require("../userRole/model")(sequelize, DataTypes),
     user: require("../user/model")(sequelize, DataTypes),
     Applicant: require("../job-fair/applicant/model")(sequelize, DataTypes),
     Agency: require("../job-fair/agency/model")(sequelize, DataTypes),
@@ -129,6 +130,7 @@ const initializeModels = () => {
     // POS models
     table: require("../pos/table/model")(sequelize, DataTypes),
     ticket: require("../pos/ticket/model")(sequelize, DataTypes),
+    promotion: require("../pos/promotion/model")(sequelize, DataTypes),
     ticketLine: require("../pos/ticketLine/model")(sequelize, DataTypes),
 
     // Financial models

@@ -85,6 +85,8 @@ const buildApp = async () => {
     app.use("/api/ap-invoices-settlement-line",myRouter.apInvoiceSettlementLine)
     app.use("/api/batch-job",myRouter.batchJob)
     app.use("/api/mous",myRouter.MOU)
+    app.use("/api/role",myRouter.userRole)
+    app.use("/api/promotions",myRouter.promotions)
     app.use("/api/transaction-codes",myRouter.transaction)
 
     Router.category(app);

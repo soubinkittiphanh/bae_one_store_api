@@ -12,6 +12,11 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: false,
             unique: true
         },
+        ticketCancel: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false,
+        },
         isActive: {
             type: DataTypes.BOOLEAN,
             allowNull: false,

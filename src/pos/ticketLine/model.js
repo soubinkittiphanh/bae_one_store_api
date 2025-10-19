@@ -26,6 +26,28 @@ module.exports = (sequelize, DataTypes) => {
         status: {
             type: DataTypes.ENUM('ordered', 'preparing', 'ready', 'served'),
             defaultValue: 'ordered'
+        },
+        is_promotion_item: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false,
+            comment: 'Whether this line item is a promotional item (free/discounted)'
+        },
+        original_price: {
+            type: DataTypes.DECIMAL(10, 2),
+            allowNull: true,
+            comment: 'Original price before promotion discount'
+        },
+        discount_amount: {
+            type: DataTypes.DECIMAL(10, 2),
+            allowNull: false,
+            defaultValue: 0,
+            comment: 'Amount discounted due to promotion'
+        },
+        promotion_note: {
+            type: DataTypes.STRING,
+            allowNull: true,
+            comment: 'Note about the promotion applied'
         }
     }, {
         sequelize,
@@ -50,6 +72,10 @@ module.exports = (sequelize, DataTypes) => {
         TicketLine.belongsTo(models.product, {
             foreignKey: 'productId',
             as: 'product',
+        });
+        TicketLine.belongsTo(models.promotion, {
+            foreignKey: 'promotionId',
+            as: 'promotion',
         });
     };
 

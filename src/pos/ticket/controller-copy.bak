@@ -1,8 +1,7 @@
 const { body, validationResult } = require('express-validator');
 const logger = require('../../api/logger');
 const { Op } = require('sequelize');
-
-// Model imports
+// Option 2: Individual assignments (following your sample format)
 const Ticket = require('../../models').ticket;
 const TicketLine = require('../../models').ticketLine;
 const Table = require('../../models').table;
@@ -10,17 +9,16 @@ const sequelize = require('../../models').sequelize;
 const Payment = require('../../models').payment;
 const Client = require('../../models').client;
 const Product = require('../../models').product;
-const Promotion = require('../../models').promotion; // Added promotion model
-
-// Sale integration models
+// Add these for sale integration
 const SaleHeader = require('../../models').saleHeader;
 const SaleLine = require('../../models').saleLine;
-const Card = require('../../models').card;
 
+const Card = require('../../models').card;
 const common = require('../../common');
 const productService = require('../../product/service');
 
-// Helper function to post ticket to sale tables
+
+// Service function to convert ticket to sale// Helper function to post ticket to sale tables
 const postTicketToSale = async (ticketId, transaction) => {
     try {
         // Get the ticket with all related data
@@ -33,10 +31,6 @@ const postTicketToSale = async (ticketId, transaction) => {
                         {
                             model: Product,
                             as: 'product'
-                        },
-                        {
-                            model: Promotion,
-                            as: 'promotion'
                         }
                     ]
                 },
@@ -74,15 +68,16 @@ const postTicketToSale = async (ticketId, transaction) => {
             total: parseFloat(ticketLine.totalPrice),
             unitRate: 1, // Default unit rate
             specialInstructions: ticketLine.specialInstructions,
-            product: ticketLine.product, // Keep product reference
-            promotion: ticketLine.promotion,
-            is_promotion_item: ticketLine.is_promotion_item,
-            discount_amount: parseFloat(ticketLine.discount_amount || 0)
+            product: ticketLine.product // Keep product reference
         }));
 
         logger.info(`Processing ${lines.length} items for ticket ${ticketId}`);
 
-        // Stock validation logic (same as before)
+        // ============================================================
+        // STEP 1: VALIDATE ALL STOCK REQUIREMENTS FIRST (CRITICAL!)
+        // If ANY product requiring validation has insufficient stock,
+        // the ENTIRE ticket will be rejected
+        // ============================================================
         const stockValidationErrors = [];
         let productsRequiringValidation = 0;
         let productsNotRequiringValidation = 0;
@@ -90,6 +85,7 @@ const postTicketToSale = async (ticketId, transaction) => {
         logger.info('=== STARTING STOCK VALIDATION ===');
 
         for (const line of lines) {
+            // Check if product requires stock validation
             if (line.product.validateStockOnSale) {
                 productsRequiringValidation++;
                 const qty = line.unitRate * line.quantity;
@@ -111,6 +107,7 @@ const postTicketToSale = async (ticketId, transaction) => {
                 const availableQty = availableCards ? availableCards.length : 0;
 
                 if (availableQty < qty) {
+                    // Stock insufficient - add to error list
                     const error = {
                         productId: line.productId,
                         productName: line.product.name,
@@ -134,10 +131,12 @@ const postTicketToSale = async (ticketId, transaction) => {
         logger.info(`Products NOT requiring validation: ${productsNotRequiringValidation}`);
         logger.info(`Total products: ${lines.length}`);
 
+        // If there are ANY stock validation errors, REJECT the entire ticket
         if (stockValidationErrors.length > 0) {
             logger.error(`=== STOCK VALIDATION FAILED ===`);
             logger.error(`${stockValidationErrors.length} product(s) have insufficient stock`);
 
+            // Build detailed error message
             const errorDetails = stockValidationErrors.map(err =>
                 `Product #${err.productId} (${err.productName}): Need ${err.required}, Available ${err.available}, Short ${err.shortage}`
             ).join('; ');
@@ -148,36 +147,38 @@ const postTicketToSale = async (ticketId, transaction) => {
         logger.info('=== STOCK VALIDATION PASSED ===');
         logger.info('All products have sufficient stock - proceeding with sale creation');
 
-        // Calculate total discount from promotional items
-        const totalDiscount = lines.reduce((sum, line) => sum + line.discount_amount, 0);
-
-        // Create sale header
+        // ============================================================
+        // STEP 2: CREATE SALE HEADER (Only after validation passes)
+        // ============================================================
         const saleHeaderData = {
             bookingDate: new Date(),
             referenceNo: `TICKET-${ticket.id}`,
             remark: ticket.notes || 'Posted from Ticket',
-            discount: totalDiscount,
+            discount: 0,
             total: parseFloat(ticket.total),
             exchangeRate: 1,
             isActive: true,
             clientId: ticket.clientId || null,
             paymentId: ticket.paymentId || null,
-            currencyId: 1,
-            userId: 1,
+            currencyId: 1, // Set default or get from config
+            userId: 1, // Set from req.user.id if available
             locationId: locationId,
-            ticketId: ticket.id
+            ticketId: ticket.id // Link back to ticket
         };
 
         const saleHeader = await SaleHeader.create(saleHeaderData, { transaction });
         logger.info(`✓ Sale header created with ID: ${saleHeader.id}`);
 
-        // Create sale lines and reserve cards
+        // ============================================================
+        // STEP 3: CREATE SALE LINES AND RESERVE CARDS
+        // ============================================================
         const createdSaleLines = [];
 
         for (const line of lines) {
             line.headerId = saleHeader.id;
             line.saleHeaderId = saleHeader.id;
 
+            // Only reserve cards if product requires stock validation
             if (line.product.validateStockOnSale) {
                 const qty = line.unitRate * line.quantity;
                 logger.info(`Reserving ${qty} cards for product ${line.productId} (${line.product.name})`);
@@ -186,6 +187,7 @@ const postTicketToSale = async (ticketId, transaction) => {
                 logger.info(`Skipping card reservation for product ${line.productId} (${line.product.name}) - no validation required`);
             }
 
+            // Create sale line
             const saleLine = await SaleLine.create({
                 headerId: saleHeader.id,
                 saleHeaderId: saleHeader.id,
@@ -195,13 +197,10 @@ const postTicketToSale = async (ticketId, transaction) => {
                 total: line.total,
                 unitRate: line.unitRate,
                 specialInstructions: line.specialInstructions,
-                isActive: true,
-                // Add promotion fields if they exist
-                promotionId: line.promotion ? line.promotion.id : null,
-                discount_amount: line.discount_amount,
-                is_promotion_item: line.is_promotion_item
+                isActive: true
             }, { transaction });
 
+            // Update cards with the actual saleLineId (only if cards were reserved)
             if (line.product.validateStockOnSale) {
                 const updatedCards = await Card.update(
                     { saleLineId: saleLine.id },
@@ -222,7 +221,9 @@ const postTicketToSale = async (ticketId, transaction) => {
             logger.info(`✓ Sale line created for product ${line.productId}`);
         }
 
-        // Update product stock counts
+        // ============================================================
+        // STEP 4: UPDATE PRODUCT STOCK COUNTS
+        // ============================================================
         const productIdsForStockUpdate = lines
             .filter(line => line.product.validateStockOnSale)
             .map(line => line.productId);
@@ -241,8 +242,7 @@ const postTicketToSale = async (ticketId, transaction) => {
             summary: {
                 totalLines: lines.length,
                 linesWithStockValidation: productsRequiringValidation,
-                linesWithoutStockValidation: productsNotRequiringValidation,
-                totalDiscount: totalDiscount
+                linesWithoutStockValidation: productsNotRequiringValidation
             }
         };
 
@@ -253,7 +253,7 @@ const postTicketToSale = async (ticketId, transaction) => {
     }
 };
 
-// Helper function to reserve cards
+// Helper function to reserve cards (only called for products with validateStockOnSale = true)
 const reserveCardForTicket = async (line, lockingSessionId, qty, locationId, transaction) => {
     const cards = await Card.findAll({
         limit: qty,
@@ -270,6 +270,7 @@ const reserveCardForTicket = async (line, lockingSessionId, qty, locationId, tra
     logger.info(`Product Id: ${line.productId}, Location: ${locationId}`);
     logger.info(`Cards available: ${cards.length}, Required: ${qty}`);
 
+    // This should never fail since we validated earlier, but keep as safety check
     if (!cards || cards.length < qty) {
         throw new Error(`Stock not enough for product #${line.productId} - this should have been caught in validation`);
     }
@@ -296,6 +297,7 @@ const reverseSaleFromTicket = async (ticketId, cancelReason, transaction) => {
     try {
         logger.info(`=== STARTING SALE REVERSAL FOR TICKET ${ticketId} ===`);
 
+        // Find the sale header associated with this ticket
         const saleHeader = await SaleHeader.findOne({
             where: { ticketId: ticketId },
             include: [{
@@ -322,6 +324,7 @@ const reverseSaleFromTicket = async (ticketId, cancelReason, transaction) => {
 
         logger.info(`Found sale header ${saleHeader.id} to reverse`);
 
+        // Collect card IDs to reverse (only for products that had stock validation)
         const cardIds = saleHeader.lines.flatMap(line =>
             line.cards ? line.cards.map(card => card.id) : []
         );
@@ -331,6 +334,7 @@ const reverseSaleFromTicket = async (ticketId, cancelReason, transaction) => {
         logger.info(`Cards to reverse: ${cardIds.length}`);
         logger.info(`Sale lines to deactivate: ${lineIds.length}`);
 
+        // Update sale header to inactive with cancellation remark
         await saleHeader.update({
             isActive: false,
             remark: cancelReason || 'Cancelled from Ticket'
@@ -338,6 +342,7 @@ const reverseSaleFromTicket = async (ticketId, cancelReason, transaction) => {
 
         logger.info(`✓ Sale header ${saleHeader.id} marked as inactive`);
 
+        // Update sale lines to inactive
         if (lineIds.length > 0) {
             await SaleLine.update(
                 { isActive: false },
@@ -349,6 +354,7 @@ const reverseSaleFromTicket = async (ticketId, cancelReason, transaction) => {
             logger.info(`✓ ${lineIds.length} sale lines marked as inactive`);
         }
 
+        // Reverse cards ONLY if there are cards (products with stock validation)
         if (cardIds.length > 0) {
             const [numUpdated] = await Card.update(
                 {
@@ -370,6 +376,7 @@ const reverseSaleFromTicket = async (ticketId, cancelReason, transaction) => {
             logger.info(`○ No cards to reverse (all products were non-stock validated)`);
         }
 
+        // Update product stock counts ONLY for products that had stock validation
         const productsWithStockValidation = saleHeader.lines.filter(line =>
             line.product && line.product.validateStockOnSale && line.cards && line.cards.length > 0
         );
@@ -400,7 +407,7 @@ const reverseSaleFromTicket = async (ticketId, cancelReason, transaction) => {
 
 const ticketController = {
 
-    // Get all tickets with promotion support
+    // Fixed getAllTickets method
     getAllTickets: async (req, res) => {
         try {
             const {
@@ -411,17 +418,19 @@ const ticketController = {
                 startDate,
                 endDate,
                 page = 1,
-                limit = 20,
-                include,
-                sort = 'createdAt:desc'
+                limit = 20, // Changed to match frontend default
+                include, // Handle include as sent from frontend
+                sort = 'createdAt:desc' // Handle sort parameter
             } = req.query;
 
+            // Build where condition
             const whereCondition = {};
             if (status) whereCondition.status = status;
             if (paymentStatus) whereCondition.paymentStatus = paymentStatus;
             if (tableId) whereCondition.tableId = tableId;
             if (clientId) whereCondition.clientId = clientId;
 
+            // Date range filter
             if (startDate || endDate) {
                 whereCondition.createdAt = {};
                 if (startDate) whereCondition.createdAt[Op.gte] = new Date(startDate);
@@ -429,8 +438,11 @@ const ticketController = {
             }
 
             const offset = (page - 1) * limit;
+
+            // Build include array based on frontend request
             const includeArray = [];
 
+            // Parse include parameter (can be string or array)
             let includeParams = [];
             if (include) {
                 if (typeof include === 'string') {
@@ -440,10 +452,12 @@ const ticketController = {
                 }
             }
 
+            // Always include basic associations or based on include parameter
             if (includeParams.length === 0 || includeParams.includes('client')) {
                 includeArray.push({
                     model: Client,
                     as: 'client',
+                    // attributes: ['id', 'name', 'email', 'phone'],
                     required: false
                 });
             }
@@ -461,6 +475,7 @@ const ticketController = {
                 includeArray.push({
                     model: Payment,
                     as: 'payment',
+                    // attributes: ['id', 'method', 'amount', 'status', 'transactionId'],
                     required: false
                 });
             }
@@ -469,15 +484,12 @@ const ticketController = {
                 includeArray.push({
                     model: TicketLine,
                     as: 'ticketLines',
+                    // attributes: ['id', 'quantity', 'unitPrice', 'total', 'notes', 'productId'],
                     include: [
                         {
                             model: Product,
                             as: 'product',
-                            required: false
-                        },
-                        {
-                            model: Promotion,
-                            as: 'promotion',
+                            // attributes: ['id', 'name', 'price'],
                             required: false
                         }
                     ],
@@ -485,7 +497,8 @@ const ticketController = {
                 });
             }
 
-            let orderArray = [['createdAt', 'DESC']];
+            // Handle sort parameter
+            let orderArray = [['createdAt', 'DESC']]; // default
             if (sort) {
                 const [sortField, sortDirection] = sort.split(':');
                 if (sortField && sortDirection) {
@@ -499,16 +512,18 @@ const ticketController = {
                 limit: parseInt(limit),
                 offset: parseInt(offset),
                 order: orderArray,
-                distinct: true
+                distinct: true // Important when using includes to get correct count
             });
 
+            // Format response to match frontend expectations
             res.status(200).json({
                 success: true,
-                tickets: tickets.rows,
+                tickets: tickets.rows, // Frontend expects 'tickets' property
                 totalPages: Math.ceil(tickets.count / limit),
                 currentPage: parseInt(page),
                 totalItems: tickets.count,
                 limit: parseInt(limit),
+                // Alternative format that also works
                 data: tickets.rows,
                 pagination: {
                     total: tickets.count,
@@ -519,7 +534,7 @@ const ticketController = {
             });
 
         } catch (error) {
-            console.error('Error fetching tickets:', error);
+            console.error('Error fetching tickets:', error); // Add logging
             res.status(500).json({
                 success: false,
                 message: 'Error fetching tickets',
@@ -528,13 +543,12 @@ const ticketController = {
             });
         }
     },
-
-    // Update ticket notes
     updateTicketNotes: async (req, res) => {
         try {
             const { id } = req.params;
             const { notes } = req.body;
 
+            // Validate input
             if (notes === undefined || notes === null) {
                 return res.status(400).json({
                     success: false,
@@ -542,6 +556,7 @@ const ticketController = {
                 });
             }
 
+            // Find ticket
             const ticket = await Ticket.findByPk(id);
 
             if (!ticket) {
@@ -551,12 +566,14 @@ const ticketController = {
                 });
             }
 
+            // Update only the notes field
             await ticket.update({
                 notes: notes.trim()
             });
 
             logger.info(`Notes updated for ticket ${id}`);
 
+            // Return updated ticket with associations
             const updatedTicket = await Ticket.findByPk(id, {
                 include: [
                     { model: Client, as: 'client', required: false },
@@ -566,8 +583,7 @@ const ticketController = {
                         model: TicketLine,
                         as: 'ticketLines',
                         include: [
-                            { model: Product, as: 'product', required: false },
-                            { model: Promotion, as: 'promotion', required: false }
+                            { model: Product, as: 'product', required: false }
                         ]
                     }
                 ]
@@ -589,8 +605,7 @@ const ticketController = {
             });
         }
     },
-
-    // Get ticket by ID with full details including promotions
+    // Get ticket by ID with full details
     getTicketById: async (req, res) => {
         try {
             const { id } = req.params;
@@ -604,16 +619,7 @@ const ticketController = {
                         model: TicketLine,
                         as: 'ticketLines',
                         include: [
-                            {
-                                model: Product,
-                                as: 'product',
-                                attributes: ['id', 'pro_name', 'pro_price']
-                            },
-                            {
-                                model: Promotion,
-                                as: 'promotion',
-                                required: false
-                            }
+                            { model: Product, as: 'product', attributes: ['id', 'pro_name', 'pro_price'] }
                         ]
                     }
                 ]
@@ -640,11 +646,12 @@ const ticketController = {
         }
     },
 
-    // Create new ticket with promotion support
+    // Create new ticket
     createTicket: async (req, res) => {
         const transaction = await sequelize.transaction();
 
         try {
+            // ✅ Fixed logging - concatenate the message with data
             console.log('=== CREATE TICKET REQUEST ===');
             console.log('Request body:', JSON.stringify(req.body, null, 2));
 
@@ -655,12 +662,10 @@ const ticketController = {
                 status = 'pending',
                 paymentStatus = 'pending',
                 notes,
-                ticketLines = [],
-                // ADD THESE PROMOTION FIELDS
-                promotionDiscount = 0,
-                appliedPromotions = []
+                ticketLines = []
             } = req.body;
 
+            // ✅ Fixed logging
             console.log('Extracted values:', {
                 tableId,
                 clientId,
@@ -668,15 +673,15 @@ const ticketController = {
                 status,
                 paymentStatus,
                 notes,
-                ticketLinesCount: ticketLines.length,
-                promotionDiscount,
-                appliedPromotionsCount: appliedPromotions.length
+                ticketLinesCount: ticketLines.length
             });
 
             let table = null;
 
+            // Validation - only check table if tableId is provided
             if (tableId) {
                 console.log(`Looking up table with ID: ${tableId}`);
+
                 table = await Table.findByPk(tableId, { transaction });
 
                 if (!table) {
@@ -689,11 +694,15 @@ const ticketController = {
                 }
 
                 console.log(`Table found: ${table.number}, status: ${table.status}`);
+
+                if (table.status === 'occupied' && table.currentOrderId) {
+                    console.warn(`Table ${tableId} is already occupied with order ${table.currentOrderId}`);
+                }
             } else {
                 console.log('Creating ticket without table assignment (Walk-in/Takeaway)');
             }
 
-            // Calculate totals from ticket lines (FIXED to handle promotions)
+            // Calculate totals from ticket lines
             let subtotal = 0;
             let tax = 0;
             let total = 0;
@@ -701,23 +710,15 @@ const ticketController = {
             if (ticketLines.length > 0) {
                 console.log('Calculating totals from ticket lines...');
 
-                ticketLines.forEach(line => {
-                    const lineSubtotal = parseFloat(line.quantity) * parseFloat(line.unitPrice || 0);
-                    subtotal += lineSubtotal;
-                });
+                subtotal = ticketLines.reduce((sum, line) => {
+                    return sum + (parseFloat(line.quantity) * parseFloat(line.unitPrice || 0));
+                }, 0);
 
-                // FIXED: Apply promotion discount and calculate tax on discounted amount
-                const promotionDiscountAmount = parseFloat(promotionDiscount || 0);
-                const afterPromotions = Math.max(0, subtotal - promotionDiscountAmount);
-
-                // Use 8.5% tax rate to match frontend
-                tax = afterPromotions * 0.085;
-                total = afterPromotions + tax;
+                tax = subtotal * 0.10;
+                total = subtotal + tax;
 
                 console.log('Calculated totals:', {
                     subtotal: subtotal.toFixed(2),
-                    promotionDiscount: promotionDiscountAmount.toFixed(2),
-                    afterPromotions: afterPromotions.toFixed(2),
                     tax: tax.toFixed(2),
                     total: total.toFixed(2)
                 });
@@ -725,10 +726,12 @@ const ticketController = {
                 console.warn('No ticket lines provided');
             }
 
+            // Generate ticket number
             console.log('Generating ticket number...');
             const ticketNumber = await Ticket.generateTicketNumber();
             console.log(`Generated ticket number: ${ticketNumber}`);
 
+            // ✅ Prepare ticket data
             const ticketData = {
                 tableId: tableId || null,
                 ticketNumber,
@@ -737,42 +740,31 @@ const ticketController = {
                 status,
                 paymentStatus,
                 subtotal: subtotal.toFixed(2),
-                promotionDiscount: parseFloat(promotionDiscount || 0).toFixed(2), // ADD THIS
                 tax: tax.toFixed(2),
                 total: total.toFixed(2),
-                notes: notes || (tableId ? null : 'Walk-in customer - No table assigned'),
-                // ADD THIS: Store applied promotions as JSON
-                appliedPromotions: appliedPromotions.length > 0 ? JSON.stringify(appliedPromotions) : null
+                notes: notes || (tableId ? null : 'Walk-in customer - No table assigned')
             };
 
             console.log('Creating ticket with data:', JSON.stringify(ticketData, null, 2));
+            console.log('About to call Ticket.create()...');
 
+            // Create the ticket
             const newTicket = await Ticket.create(ticketData, {
                 transaction,
-                validate: true
+                validate: true // Enable validation
             });
 
             console.log(`✅ Ticket created successfully:`, newTicket.toJSON());
 
-            // Create ticket lines with promotion support
+            // Create ticket lines if provided
             if (ticketLines.length > 0) {
                 console.log('Creating ticket lines...');
 
                 const ticketLinesData = ticketLines.map((line, index) => {
                     const lineData = {
+                        ...line,
                         ticketId: newTicket.id,
-                        productId: line.productId,
-                        quantity: line.quantity,
-                        unitPrice: line.unitPrice,
-                        totalPrice: (parseFloat(line.quantity) * parseFloat(line.unitPrice || 0)).toFixed(2),
-                        specialInstructions: line.specialInstructions || null,
-                        status: line.status || 'ordered',
-                        // Promotion fields - these should come from frontend if items have promotions applied
-                        promotionId: line.promotionId || null,
-                        is_promotion_item: line.is_promotion_item || false,
-                        original_price: line.original_price || null,
-                        discount_amount: line.discount_amount || 0,
-                        promotion_note: line.promotion_note || null
+                        totalPrice: (parseFloat(line.quantity) * parseFloat(line.unitPrice || 0)).toFixed(2)
                     };
 
                     console.log(`Line ${index + 1}:`, lineData);
@@ -796,10 +788,13 @@ const ticketController = {
                 console.log(`✅ Table ${tableId} updated`);
             }
 
+            console.log('Committing transaction...');
             await transaction.commit();
             console.log('✅ Transaction committed');
 
-            // Fetch complete ticket with promotion data
+            // Fetch complete ticket
+            console.log('Fetching complete ticket...');
+
             const includeOptions = [
                 { model: Client, as: 'client', required: false },
                 { model: Payment, as: 'payment', required: false },
@@ -807,8 +802,7 @@ const ticketController = {
                     model: TicketLine,
                     as: 'ticketLines',
                     include: [
-                        { model: Product, as: 'product', required: false },
-                        { model: Promotion, as: 'promotion', required: false }
+                        { model: Product, as: 'product', required: false }
                     ]
                 }
             ];
@@ -833,6 +827,7 @@ const ticketController = {
         } catch (error) {
             await transaction.rollback();
 
+            // ✅ Enhanced error logging
             console.error('=== TICKET CREATION FAILED ===');
             console.error('Error name:', error.name);
             console.error('Error message:', error.message);
@@ -889,7 +884,7 @@ const ticketController = {
         }
     },
 
-    // Update ticket with promotion support
+    // Update ticket
     updateTicket: async (req, res) => {
         const transaction = await sequelize.transaction();
 
@@ -910,21 +905,13 @@ const ticketController = {
                 });
             }
 
-            // If updating ticket lines, recalculate totals with promotion support
+            // If updating ticket lines, recalculate totals
             if (updateData.ticketLines) {
-                let subtotal = 0;
-                let totalDiscount = 0;
+                const subtotal = updateData.ticketLines.reduce((sum, line) => {
+                    return sum + (parseFloat(line.quantity) * parseFloat(line.unitPrice || 0));
+                }, 0);
 
-                updateData.ticketLines.forEach(line => {
-                    const lineSubtotal = parseFloat(line.quantity) * parseFloat(line.unitPrice || 0);
-                    subtotal += lineSubtotal;
-
-                    if (line.discount_amount) {
-                        totalDiscount += parseFloat(line.discount_amount);
-                    }
-                });
-
-                const tax = subtotal * 0.10;
+                const tax = subtotal * 0.10; // Adjust tax rate as needed
                 const total = subtotal + tax;
 
                 updateData.subtotal = subtotal.toFixed(2);
@@ -938,23 +925,13 @@ const ticketController = {
                 });
 
                 const ticketLinesData = updateData.ticketLines.map(line => ({
+                    ...line,
                     ticketId: id,
-                    productId: line.productId,
-                    quantity: line.quantity,
-                    unitPrice: line.unitPrice,
-                    totalPrice: (parseFloat(line.quantity) * parseFloat(line.unitPrice || 0)).toFixed(2),
-                    specialInstructions: line.specialInstructions || null,
-                    status: line.status || 'ordered',
-                    // Promotion fields
-                    promotionId: line.promotionId || null,
-                    is_promotion_item: line.is_promotion_item || false,
-                    original_price: line.original_price || null,
-                    discount_amount: line.discount_amount || 0,
-                    promotion_note: line.promotion_note || null
+                    totalPrice: (parseFloat(line.quantity) * parseFloat(line.unitPrice || 0)).toFixed(2)
                 }));
 
                 await TicketLine.bulkCreate(ticketLinesData, { transaction });
-                delete updateData.ticketLines;
+                delete updateData.ticketLines; // Remove from update data
 
                 logger.info(`Updated ticket lines for ticket ${id}`);
             }
@@ -964,7 +941,9 @@ const ticketController = {
                 const oldTableId = ticket.tableId;
                 const newTableId = updateData.tableId;
 
+                // If changing from one table to another or adding/removing table
                 if (oldTableId !== newTableId) {
+                    // Release old table if exists
                     if (oldTableId && ticket.table) {
                         await ticket.table.update({
                             status: 'available',
@@ -975,6 +954,7 @@ const ticketController = {
                         logger.info(`Released old table ${oldTableId}`);
                     }
 
+                    // Occupy new table if specified
                     if (newTableId) {
                         const newTable = await Table.findByPk(newTableId, { transaction });
 
@@ -1001,7 +981,7 @@ const ticketController = {
 
             await transaction.commit();
 
-            // Fetch updated ticket with all associations including promotions
+            // Fetch updated ticket with associations
             const includeOptions = [
                 { model: Client, as: 'client', required: false },
                 { model: Payment, as: 'payment', required: false },
@@ -1009,12 +989,12 @@ const ticketController = {
                     model: TicketLine,
                     as: 'ticketLines',
                     include: [
-                        { model: Product, as: 'product', required: false },
-                        { model: Promotion, as: 'promotion', required: false }
+                        { model: Product, as: 'product', required: false }
                     ]
                 }
             ];
 
+            // Include table if it exists
             if (ticket.tableId || updateData.tableId) {
                 includeOptions.unshift({ model: Table, as: 'table', required: false });
             }
@@ -1041,7 +1021,8 @@ const ticketController = {
         }
     },
 
-    // Update ticket status with sale integration
+    // Update ticket status
+    // Update ticket status
     updateTicketStatus: async (req, res) => {
         const transaction = await sequelize.transaction();
 
@@ -1066,6 +1047,7 @@ const ticketController = {
                 });
             }
 
+            // Validate cancel reason if status is cancel
             if (status === 'cancel') {
                 if (!cancelReason || cancelReason.trim() === '') {
                     await transaction.rollback();
@@ -1091,9 +1073,14 @@ const ticketController = {
 
             let reversalResult = null;
 
+            // IF STATUS = CANCEL THEN:
+            // 1. Update payment status to cancel
+            // 2. Reverse sale if it exists
+            // 3. Return stock cards
             if (status === 'cancel') {
                 logger.info(`=== CANCELLING TICKET ${id} ===`);
 
+                // Update ticket status and payment status
                 await ticket.update({
                     status,
                     paymentStatus: 'cancel',
@@ -1102,6 +1089,7 @@ const ticketController = {
 
                 logger.info(`✓ Ticket ${id} status updated to cancelled`);
 
+                // Reverse the sale if it was posted
                 try {
                     reversalResult = await reverseSaleFromTicket(id, cancelReason, transaction);
 
@@ -1112,6 +1100,7 @@ const ticketController = {
                     }
                 } catch (reversalError) {
                     logger.error(`Error reversing sale: ${reversalError.message}`);
+                    // Rollback everything if sale reversal fails
                     await transaction.rollback();
                     return res.status(500).json({
                         success: false,
@@ -1120,9 +1109,11 @@ const ticketController = {
                     });
                 }
             } else {
+                // Normal status update (not cancellation)
                 await ticket.update({ status }, { transaction });
             }
 
+            // Update table status based on ticket status
             if (ticket.table) {
                 let tableStatus = 'occupied';
                 let currentOrderId = ticket.id;
@@ -1169,8 +1160,9 @@ const ticketController = {
         }
     },
 
-    // Update payment status with sale integration
+    // Update payment status - UPDATED WITH SALE INTEGRATION
     updatePaymentStatus: async (req, res) => {
+        // Use database transaction for data consistency
         const t = await sequelize.transaction();
 
         try {
@@ -1206,23 +1198,28 @@ const ticketController = {
             const updateData = { paymentStatus };
             if (paymentId) updateData.paymentId = paymentId;
 
+            // If payment is completed, update ticket status to paid
             if (paymentStatus === 'paid') {
                 updateData.status = 'paid';
             }
 
+            // Update the ticket
             await ticket.update(updateData, { transaction: t });
 
             let saleData = null;
 
+            // If status is paid, post to sale tables
             if (paymentStatus === 'paid') {
                 try {
                     saleData = await postTicketToSale(id, t);
                     console.log(`Ticket ${id} successfully posted to sales`);
                 } catch (saleError) {
+                    // If it's already posted, that's okay, just log it
                     logger.error(`POST TO Sale incompleted. with error ${saleError}`)
                     if (saleError.message.includes('already been posted')) {
                         console.log(`Ticket ${id} has already been posted to sales`);
                     } else {
+                        // For other errors, rollback the transaction
                         await t.rollback();
                         return res.status(500).json({
                             success: false,
@@ -1233,6 +1230,7 @@ const ticketController = {
                 }
             }
 
+            // Commit the transaction
             await t.commit();
 
             res.status(200).json({
@@ -1251,88 +1249,6 @@ const ticketController = {
             res.status(500).json({
                 success: false,
                 message: 'Error updating payment status',
-                error: error.message
-            });
-        }
-    },
-
-    // Apply promotion to ticket
-    applyPromotionToTicket: async (req, res) => {
-        const transaction = await sequelize.transaction();
-
-        try {
-            const { id } = req.params;
-            const { promotionId, applicableLineIds } = req.body;
-
-            const ticket = await Ticket.findByPk(id, {
-                include: [{
-                    model: TicketLine,
-                    as: 'ticketLines',
-                    include: [{ model: Product, as: 'product' }]
-                }],
-                transaction
-            });
-
-            if (!ticket) {
-                await transaction.rollback();
-                return res.status(404).json({
-                    success: false,
-                    message: 'Ticket not found'
-                });
-            }
-
-            const promotion = await Promotion.findByPk(promotionId, { transaction });
-            if (!promotion) {
-                await transaction.rollback();
-                return res.status(404).json({
-                    success: false,
-                    message: 'Promotion not found'
-                });
-            }
-
-            // Here you would implement the promotion logic
-            // This could integrate with your promotion controller's evaluatePromotion method
-
-            await transaction.commit();
-
-            res.status(200).json({
-                success: true,
-                message: 'Promotion applied successfully',
-                data: ticket
-            });
-
-        } catch (error) {
-            await transaction.rollback();
-            res.status(500).json({
-                success: false,
-                message: 'Error applying promotion',
-                error: error.message
-            });
-        }
-    },
-
-    // Remove promotion from ticket
-    removePromotionFromTicket: async (req, res) => {
-        const transaction = await sequelize.transaction();
-
-        try {
-            const { id } = req.params;
-            const { promotionId } = req.body;
-
-            // Logic to remove promotion and recalculate totals
-
-            await transaction.commit();
-
-            res.status(200).json({
-                success: true,
-                message: 'Promotion removed successfully'
-            });
-
-        } catch (error) {
-            await transaction.rollback();
-            res.status(500).json({
-                success: false,
-                message: 'Error removing promotion',
                 error: error.message
             });
         }
@@ -1358,6 +1274,7 @@ const ticketController = {
                 });
             }
 
+            // Check if ticket can be deleted (business rule)
             if (ticket.paymentStatus === 'paid' && ticket.status === 'served') {
                 await transaction.rollback();
                 return res.status(400).json({
@@ -1366,11 +1283,13 @@ const ticketController = {
                 });
             }
 
+            // Delete associated ticket lines first
             await TicketLine.destroy({
                 where: { ticketId: id },
                 transaction
             });
 
+            // Update table status if needed
             if (ticket.table && ticket.table.currentOrderId === ticket.id) {
                 await ticket.table.update({
                     status: 'available',
@@ -1411,13 +1330,7 @@ const ticketController = {
                 where: whereCondition,
                 include: [
                     { model: Client, as: 'client' },
-                    {
-                        model: TicketLine,
-                        as: 'ticketLines',
-                        include: [
-                            { model: Promotion, as: 'promotion', required: false }
-                        ]
-                    }
+                    { model: TicketLine, as: 'ticketLines' }
                 ],
                 order: [['createdAt', 'DESC']]
             });
@@ -1447,13 +1360,7 @@ const ticketController = {
                 },
                 include: [
                     { model: Table, as: 'table', attributes: ['id', 'name', 'number'] },
-                    {
-                        model: TicketLine,
-                        as: 'ticketLines',
-                        include: [
-                            { model: Promotion, as: 'promotion', required: false }
-                        ]
-                    }
+                    { model: TicketLine, as: 'ticketLines' }
                 ],
                 order: [['createdAt', 'ASC']]
             });
@@ -1522,24 +1429,15 @@ const ticketController = {
         }
     },
 
-    // Get tickets by table and status
     async getTicketsByTableAndStatus(req, res) {
         try {
             const { tableId } = req.params;
             const tickets = await Ticket.findAll({
                 where: {
                     tableId: tableId,
-                    status: 'pending'
+                    status: 'pending' // or paymentStatus: 'pending'
                 },
-                include: [
-                    {
-                        model: TicketLine,
-                        as: 'ticketLines',
-                        include: [
-                            { model: Promotion, as: 'promotion', required: false }
-                        ]
-                    }
-                ]
+                include: ['ticketLines'] // Include related ticket lines if needed
             });
             res.json(tickets);
         } catch (error) {
@@ -1547,7 +1445,7 @@ const ticketController = {
         }
     },
 
-    // Get current ticket by table
+    // Then add this controller method
     async getCurrentTicketByTable(req, res) {
         try {
             const { tableId } = req.params;
@@ -1555,22 +1453,20 @@ const ticketController = {
             const currentTicket = await Ticket.findOne({
                 where: {
                     tableId: tableId,
-                    paymentStatus: 'pending'
+                    paymentStatus: 'pending' // or status: 'pending'
                 },
                 include: [{
                     model: TicketLine,
-                    as: 'ticketLines',
-                    include: [
-                        { model: Promotion, as: 'promotion', required: false }
-                    ]
+                    as: 'ticketLines'
                 }],
-                order: [['createdAt', 'DESC']]
+                order: [['createdAt', 'DESC']] // Get the most recent
             });
 
             if (!currentTicket) {
                 return res.status(404).json({ message: 'No current ticket found for this table' });
             }
 
+            // Calculate item count
             const itemCount = currentTicket.ticketLines.reduce((sum, line) => sum + line.quantity, 0);
 
             res.json({
@@ -1582,7 +1478,8 @@ const ticketController = {
         }
     },
 
-    // Get sale data by ticket ID
+
+    // Function to get sale data by ticket ID
     getSaleByTicketId: async (req, res) => {
         try {
             const { ticketId } = req.params;

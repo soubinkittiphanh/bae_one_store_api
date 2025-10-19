@@ -25,7 +25,7 @@ router.get('/reports/sales', ticketController.getSalesReport);
 // Status management routes (BEFORE /:id routes!)
 router.patch('/:id/status', ticketController.updateTicketStatus);
 router.patch('/:id/payment-status', ticketController.updatePaymentStatus);
-
+router.patch('/:id/notes', ticketController.updateTicketNotes);
 // Basic CRUD - Specific ID routes (AFTER all specific routes)
 router.get('/:id', ticketController.getTicketById);
 router.post('/', ticketController.createTicket);

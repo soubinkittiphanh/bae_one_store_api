@@ -8,11 +8,12 @@ const { Op } = require('sequelize');
 const controller = {
   async create(req, res) {
     try {
-      const { name, code, isActive, menuHeaders } = req.body;
+      const { name, code, isActive, menuHeaders,ticketCancel } = req.body;
       const group = await Group.create({
         name,
         code,
         isActive,
+        ticketCancel,
       });
       try {
         // await group.setAuthorities(authorityList);
@@ -100,7 +101,7 @@ const controller = {
   async update(req, res) {
     try {
       const { id } = req.params;
-      const { name, code, isActive, menuHeaders } = req.body;
+      const { name, code,ticketCancel, isActive, menuHeaders } = req.body;
       const group = await Group.findByPk(id, {
         include: [{
           model: MenuHeader,
@@ -112,6 +113,7 @@ const controller = {
       }
       group.name = name;
       group.code = code;
+      group.ticketCancel = ticketCancel;
       group.isActive = isActive;
 
       logger.info(`Authories list ${menuHeaders.length}`)

@@ -20,7 +20,7 @@ const getUserById = async (cus_id, cus_pass) => {
                 {
                     model: Group,
                     as: 'userGroup',
-                    attributes: ['code', 'name', 'id'],
+                    attributes: ['code', 'name', 'id','ticketCancel'],
                     // include: [
                     //     {
                     //         model: Authority,
