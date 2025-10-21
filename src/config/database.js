@@ -18,6 +18,9 @@ const sequelize = new Sequelize(
             idle: 10000
         },
         timezone: '+07:00',
+        dialectOptions: {
+            useUTC: false, // ✅ Do not convert date to UTC
+        },
         define: {
             indexes: false,
         }
@@ -42,7 +45,7 @@ const authenticateConnections = async () => {
     try {
         await tutorialDB.authenticate();
         logger.info("tutorial_db Connection established");
-        
+
         await sequelize.authenticate();
         logger.info("client_db Connection established");
     } catch (err) {

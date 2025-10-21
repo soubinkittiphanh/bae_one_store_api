@@ -20,6 +20,11 @@ module.exports = (sequelize, DataTypes) => {
       },
       comment: 'VAT rate as decimal (e.g., 0.0850 for 8.5%)'
     },
+    taxType: {
+      type: DataTypes.ENUM('INC', 'EXC'),
+      allowNull: false,
+      defaultValue: 'INC'
+    },
     code: {
       type: DataTypes.STRING(20),
       allowNull: false,
@@ -62,23 +67,23 @@ module.exports = (sequelize, DataTypes) => {
           if (value === null || value === undefined || value === '') {
             return true;
           }
-          
+
           // Validate it's a proper date format
           const date = new Date(value);
           if (isNaN(date.getTime())) {
             throw new Error('Effective to date must be a valid date');
           }
-          
+
           // Check if it's after effectiveFrom
           if (this.effectiveFrom) {
             const fromDate = new Date(this.effectiveFrom);
             const toDate = new Date(value);
-            
+
             if (toDate <= fromDate) {
               throw new Error('Effective to date must be after effective from date');
             }
           }
-          
+
           return true;
         }
       }
@@ -89,7 +94,7 @@ module.exports = (sequelize, DataTypes) => {
     createdAt: true,
     updatedAt: 'updateTimestamp',
     freezeTableName: true,
-    
+
     // ✅ ADD: Hooks to clean up data before validation and saving
     hooks: {
       beforeValidate: (tax, options) => {
@@ -97,32 +102,32 @@ module.exports = (sequelize, DataTypes) => {
         if (tax.name && typeof tax.name === 'string') {
           tax.name = tax.name.trim();
         }
-        
+
         if (tax.code && typeof tax.code === 'string') {
           tax.code = tax.code.toUpperCase().trim();
         }
-        
+
         if (tax.description === '') {
           tax.description = null;
         } else if (tax.description && typeof tax.description === 'string') {
           tax.description = tax.description.trim();
         }
-        
+
         // ✅ CRITICAL FIX: Convert empty effectiveTo to null
         if (tax.effectiveTo === '' || tax.effectiveTo === undefined) {
           tax.effectiveTo = null;
         }
-        
+
         console.log('Before validation - effectiveTo:', tax.effectiveTo); // Debug log
       },
-      
+
       beforeSave: async (tax, options) => {
         // Ensure only one default tax rate exists
         if (tax.isDefault) {
           await Tax.update(
             { isDefault: false },
-            { 
-              where: { 
+            {
+              where: {
                 isDefault: true,
                 id: { [sequelize.Sequelize.Op.ne]: tax.id || 0 }
               },
@@ -130,14 +135,14 @@ module.exports = (sequelize, DataTypes) => {
             }
           );
         }
-        
+
         console.log('Before save - effectiveTo:', tax.effectiveTo); // Debug log
       }
     }
   });
 
   // ✅ ADD: Useful class methods
-  Tax.getActiveRates = async function(date = new Date()) {
+  Tax.getActiveRates = async function (date = new Date()) {
     const { Op } = sequelize.Sequelize;
     return await this.findAll({
       where: {
@@ -152,7 +157,7 @@ module.exports = (sequelize, DataTypes) => {
     });
   };
 
-  Tax.getDefaultRate = async function(date = new Date()) {
+  Tax.getDefaultRate = async function (date = new Date()) {
     const { Op } = sequelize.Sequelize;
     return await this.findOne({
       where: {
@@ -167,7 +172,7 @@ module.exports = (sequelize, DataTypes) => {
     });
   };
 
-  Tax.getRateByCode = async function(code, date = new Date()) {
+  Tax.getRateByCode = async function (code, date = new Date()) {
     const { Op } = sequelize.Sequelize;
     return await this.findOne({
       where: {
@@ -183,18 +188,18 @@ module.exports = (sequelize, DataTypes) => {
   };
 
   // ✅ ADD: Useful instance methods
-  Tax.prototype.isValidForDate = function(date = new Date()) {
+  Tax.prototype.isValidForDate = function (date = new Date()) {
     if (!this.isActive) return false;
     if (new Date(this.effectiveFrom) > date) return false;
     if (this.effectiveTo && new Date(this.effectiveTo) < date) return false;
     return true;
   };
 
-  Tax.prototype.getDisplayRate = function() {
+  Tax.prototype.getDisplayRate = function () {
     return (parseFloat(this.rate) * 100).toFixed(2) + '%';
   };
 
-  Tax.prototype.getDaysUntilExpiry = function() {
+  Tax.prototype.getDaysUntilExpiry = function () {
     if (!this.effectiveTo) return null;
     const today = new Date();
     const expiryDate = new Date(this.effectiveTo);
@@ -203,7 +208,7 @@ module.exports = (sequelize, DataTypes) => {
     return diffDays > 0 ? diffDays : 0;
   };
 
-  Tax.prototype.isExpiringSoon = function(days = 30) {
+  Tax.prototype.isExpiringSoon = function (days = 30) {
     const daysUntilExpiry = this.getDaysUntilExpiry();
     return daysUntilExpiry !== null && daysUntilExpiry <= days && daysUntilExpiry > 0;
   };
@@ -211,12 +216,12 @@ module.exports = (sequelize, DataTypes) => {
   // ✅ ADD: Associate method for relationships (if needed)
   Tax.associate = (models) => {
     // Example associations - uncomment if you have these models
-    
+
     // Tax.hasMany(models.Product, {
     //   foreignKey: 'taxRateId',
     //   as: 'products'
     // });
-    
+
     // Tax.hasMany(models.TicketLine, {
     //   foreignKey: 'taxCode',
     //   sourceKey: 'code',

@@ -12,23 +12,23 @@ const jwt = require('jsonwebtoken');
 const Token = require('../config');
 const Upload = require('../controllers/admin/upload')
 const Auth = require('../controllers/admin/authen')
-const OrderUser=require('../controllers/client/userOrder')
-const UserInfo=require('../controllers/mobile/userInfo')
-const WalletTxn=require('../controllers/mobile/walletTxn')
-const StockCate=require('../controllers/admin/stockCategory')
-const StockMethod=require('../controllers/admin/stockTransaction')
-const Card=require('../controllers/admin/card')
-const Adv=require('../controllers/admin/advertise')
-const UserInbox=require('../controllers/client/userInbox')
-const Bank=require('../controllers/client/bank')
-const Ticket=require('../controllers/client/ticket')
-const ChatType=require('../controllers/client/chatType')
-const Chat=require('../controllers/client/chats')
-const RegisterCustomer=require('../controllers/client/register')
-const Report=require("../controllers/admin/report")
+const OrderUser = require('../controllers/client/userOrder')
+const UserInfo = require('../controllers/mobile/userInfo')
+const WalletTxn = require('../controllers/mobile/walletTxn')
+const StockCate = require('../controllers/admin/stockCategory')
+const StockMethod = require('../controllers/admin/stockTransaction')
+const Card = require('../controllers/admin/card')
+const Adv = require('../controllers/admin/advertise')
+const UserInbox = require('../controllers/client/userInbox')
+const Bank = require('../controllers/client/bank')
+const Ticket = require('../controllers/client/ticket')
+const ChatType = require('../controllers/client/chatType')
+const Chat = require('../controllers/client/chats')
+const RegisterCustomer = require('../controllers/client/register')
+const Report = require("../controllers/admin/report")
 const multer = require('multer')
-const tokenHook=require('../api/jwtApi').validateToken;
-const jwtUtil =require('../api/jwtApi');
+const tokenHook = require('../api/jwtApi').validateToken;
+const jwtUtil = require('../api/jwtApi');
 const Outlet = require("../controllers/admin/outlet")
 const Payment = require("../controllers/admin/payment");
 const Shipping = require("../controllers/admin/shipping");
@@ -36,7 +36,7 @@ const productController = require('../product/controller')
 const logger = require('../api/logger')
 
 const fileFilter = (req, file, cb) => {
-    const allowedTypes = ['image/img', 'image/png', 'image/jpeg', 'image/gif','image/jpg','image/webp']
+    const allowedTypes = ['image/img', 'image/png', 'image/jpeg', 'image/gif', 'image/jpg', 'image/webp']
     logger.info(`FILE TYPE: ${file.mimetype}`)
     if (!allowedTypes.includes(file.mimetype)) {
         const error = new Error("Wrong file type");
@@ -68,6 +68,7 @@ const product = async (app) => {
     app.put('/product_e', ProdCtr.updateProd);
     // app.get('/product_f', ProdCtr.fetchProd);
     app.get('/product_f/:locationId', ProdCtr.fetchProductFromLocation);
+    app.get('/api/tax/find', ProdCtr.fetchTaxes);
     app.get('/product_mobile_f', ProdCtr.fetchProdMobile);
     app.post('/product_f_id', ProdCtr.fetchProdId);
     app.get('/product/find/:id', productController.getProductById);
@@ -98,8 +99,8 @@ const txn = async (app) => {
     app.get('/txn_f', Txn.fetchTxn)
 }
 const txnHis = async (app) => {
-    app.post('/txn_his_i',tokenHook, TxnHis.createTxnHis)
-    app.put('/txn_his_e',tokenHook, TxnHis.updateTxnHis)
+    app.post('/txn_his_i', tokenHook, TxnHis.createTxnHis)
+    app.put('/txn_his_e', tokenHook, TxnHis.updateTxnHis)
     app.get('/txn_his_f', TxnHis.fetchTxnHis)
 }
 const authenticate = async (app) => {
@@ -109,99 +110,99 @@ const authenticate = async (app) => {
 const login = async (app) => {
     // app.get('/login', Login.login),
     app.get('/logout', jwtUtil.deleteToken),
-    app.get('/me',jwtUtil.getUserFromToken)
+        app.get('/me', jwtUtil.getUserFromToken)
 
 }
-const userorder=async (app)=>{
+const userorder = async (app) => {
     // app.post('/order_i',tokenHook,OrderUser.createOrder)
-    app.post('/order_i',OrderUser.createOrder)
-    app.get('/order_f',OrderUser.fetchOrder)
-    app.get('/order_date_f',OrderUser.fetchOrderByDate)
-    app.get('/max_order_f',OrderUser.fetchMaxOrderByUserId)
-    app.get('/order_by_payment',OrderUser.findOrderByPaymentType)
-    app.post('/order_cod_settle',OrderUser.orderSettlement)
+    app.post('/order_i', OrderUser.createOrder)
+    app.get('/order_f', OrderUser.fetchOrder)
+    app.get('/order_date_f', OrderUser.fetchOrderByDate)
+    app.get('/max_order_f', OrderUser.fetchMaxOrderByUserId)
+    app.get('/order_by_payment', OrderUser.findOrderByPaymentType)
+    app.post('/order_cod_settle', OrderUser.orderSettlement)
 }
-const updateUserInfo=async (app)=>{
-    app.post('/username_e',UserInfo.updateUserName)
-    app.post('/usertel_e',UserInfo.updateTel)
-    app.post('/userpass_e',UserInfo.updatePassword)
-    app.post('/useremail_e',UserInfo.updateEmail)
-    app.post('/userbalance_f',UserInfo.balanceInquiry)
-    app.post('/resetpassword_e',UserInfo.resetPasswordByPhone)
+const updateUserInfo = async (app) => {
+    app.post('/username_e', UserInfo.updateUserName)
+    app.post('/usertel_e', UserInfo.updateTel)
+    app.post('/userpass_e', UserInfo.updatePassword)
+    app.post('/useremail_e', UserInfo.updateEmail)
+    app.post('/userbalance_f', UserInfo.balanceInquiry)
+    app.post('/resetpassword_e', UserInfo.resetPasswordByPhone)
 }
-const fetchStockCategory=async (app)=>{
-    app.get('/stockcate_f',StockCate.fetchStockCategory)
+const fetchStockCategory = async (app) => {
+    app.get('/stockcate_f', StockCate.fetchStockCategory)
 
 }
-const stockAction=async (app)=>{
-    app.post('/stock_action_i',StockMethod.createStockTransaction)
+const stockAction = async (app) => {
+    app.post('/stock_action_i', StockMethod.createStockTransaction)
 
 }
-const userIbox=async (app)=>{
-    app.get('/user_inbox_f',UserInbox.fetchInbox)
-    app.post('/user_inbox_markreaded_u',UserInbox.markReaded)
+const userIbox = async (app) => {
+    app.get('/user_inbox_f', UserInbox.fetchInbox)
+    app.post('/user_inbox_markreaded_u', UserInbox.markReaded)
 
 }
-const registerCus=async (app)=>{
+const registerCus = async (app) => {
 
-    app.post('/register_i',RegisterCustomer.createCustomer)
-
-}
-const card=async (app)=>{
-
-    app.post('/card_x',Card.deleteCard)
-    app.get('/card_f',Card.fetchCard)
-    app.get('/card_his_f',Card.fetchDeletedCard)
-    app.get('/card_his_today_f',Card.fetchDeletedCardToday)
+    app.post('/register_i', RegisterCustomer.createCustomer)
 
 }
-const advertise=async (app)=>{
+const card = async (app) => {
 
-    app.get('/ad_f',Adv.fetchAd)
-    app.post('/ad_u',Adv.updateAd)
-
-}
-const bank=async (app)=>{
-
-    app.post('/bank_acc_c',Bank.createBankAcc)
-    app.get('/bank_acc_f_id',Bank.fetchBankAccByID)
-    app.get('/bank_acc_f_user_id',Bank.fetchBankAccByUserID)
-    app.get('/bank_acc_u',Bank.updateBankAcc)
-    app.get('/bank_com_f',Bank.fetchBanks)
-    app.post('/bank_com_c',Bank.createBankID)
-    app.post('/bank_com_u',Bank.updateBankID)
-
+    app.post('/card_x', Card.deleteCard)
+    app.get('/card_f', Card.fetchCard)
+    app.get('/card_his_f', Card.fetchDeletedCard)
+    app.get('/card_his_today_f', Card.fetchDeletedCardToday)
 
 }
-const ticket=async(app)=>{
-    app.get('/ticket_f',Ticket.getTicketHeaderInfo);
+const advertise = async (app) => {
+
+    app.get('/ad_f', Adv.fetchAd)
+    app.post('/ad_u', Adv.updateAd)
+
 }
-const chatType=async(app)=>{
-    app.get('/chattype_f',ChatType.fetchChatType)
-    app.post('/chattype_u',ChatType.updateChatType)
-    app.post('/chattype_c',ChatType.createChatType)
+const bank = async (app) => {
+
+    app.post('/bank_acc_c', Bank.createBankAcc)
+    app.get('/bank_acc_f_id', Bank.fetchBankAccByID)
+    app.get('/bank_acc_f_user_id', Bank.fetchBankAccByUserID)
+    app.get('/bank_acc_u', Bank.updateBankAcc)
+    app.get('/bank_com_f', Bank.fetchBanks)
+    app.post('/bank_com_c', Bank.createBankID)
+    app.post('/bank_com_u', Bank.updateBankID)
+
+
 }
-const chat=async(app)=>{
-    app.post('/chat_c',Chat.createChat)
-    app.get('/chat_f',Chat.fetchChat)
-    app.post('/chat_m',Chat.markChatAsReaded)
-    app.get('/chat_f_id',Chat.fetchChatByID)
+const ticket = async (app) => {
+    app.get('/ticket_f', Ticket.getTicketHeaderInfo);
 }
-const walletTxn=async(app)=>{
-    app.get('/wallettxn_crndr_f',WalletTxn.fetchWaletTxnCRnDR)
-    app.get('/wallettxn_order_f',WalletTxn.fetchWalletOrderTxn)
+const chatType = async (app) => {
+    app.get('/chattype_f', ChatType.fetchChatType)
+    app.post('/chattype_u', ChatType.updateChatType)
+    app.post('/chattype_c', ChatType.createChatType)
 }
-const report=async(app)=>{
-    app.get('/report_txn',Report.txnReport);
+const chat = async (app) => {
+    app.post('/chat_c', Chat.createChat)
+    app.get('/chat_f', Chat.fetchChat)
+    app.post('/chat_m', Chat.markChatAsReaded)
+    app.get('/chat_f_id', Chat.fetchChatByID)
 }
-const outlet = async(app)=>{
-    app.get("/outlet",Outlet.getOutletList)
+const walletTxn = async (app) => {
+    app.get('/wallettxn_crndr_f', WalletTxn.fetchWaletTxnCRnDR)
+    app.get('/wallettxn_order_f', WalletTxn.fetchWalletOrderTxn)
 }
-const payment = async(app)=>{
-    app.get("/payment",Payment.getPaymentList)
+const report = async (app) => {
+    app.get('/report_txn', Report.txnReport);
 }
-const shipping = async(app)=>{
-    app.get("/shipping",Shipping.getShippingList)
+const outlet = async (app) => {
+    app.get("/outlet", Outlet.getOutletList)
+}
+const payment = async (app) => {
+    app.get("/payment", Payment.getPaymentList)
+}
+const shipping = async (app) => {
+    app.get("/shipping", Shipping.getShippingList)
 }
 
 module.exports = {

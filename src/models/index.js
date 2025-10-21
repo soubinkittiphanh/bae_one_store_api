@@ -15,6 +15,9 @@ const createSequelizeInstance = (database, options = {}) => {
       idle: 10000
     },
     timezone: '+07:00',
+    dialectOptions: {
+      useUTC: false, // ✅ Do not convert date to UTC
+    },
     ...options
   };
 
@@ -157,7 +160,7 @@ const initializeModels = () => {
     arReceiveHeaderV2: require("../ARV2/receive/header/model")(sequelize, DataTypes),
     arReceiveHeaderAudit: require("../ARV2/receive/headerAudit/model")(sequelize, DataTypes),
     arReceiveLine: require("../ARV2/receive/line/model")(sequelize, DataTypes),
-    
+
 
     // Other models
     vendor: require("../vendor/model")(sequelize, DataTypes),

@@ -6,6 +6,10 @@ const env = require('../config/env').db;
 const sequelize = new Sequelize(env.database, env.user, env.password, {
   host: env.host,
   dialect: 'mariadb',
+  timezone: '+07:00',
+  dialectOptions: {
+    useUTC: false, // ✅ Do not convert date to UTC
+  },
   port: env.port,
   pool: { max: 10, min: 10, acquire: 30000, idle: 10000 },
 });

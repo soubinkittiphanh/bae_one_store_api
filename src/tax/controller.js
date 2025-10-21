@@ -57,7 +57,7 @@ const TaxController = {
       const offset = (page - 1) * limit;
 
       // Validate sort fields
-      const allowedSortFields = ['name', 'code', 'rate', 'effectiveFrom', 'isDefault', 'createdAt'];
+      const allowedSortFields = ['name', 'code', 'rate','taxType', 'effectiveFrom', 'isDefault', 'createdAt'];
       const sortField = allowedSortFields.includes(sortBy) ? sortBy : 'name';
       const sortDirection = ['ASC', 'DESC'].includes(sortOrder.toUpperCase()) ? sortOrder.toUpperCase() : 'ASC';
 
@@ -276,6 +276,7 @@ createTaxRate: async (req, res) => {
       name,
       rate,
       code,
+      taxType,
       description,
       isActive = true,
       isDefault = false,
@@ -326,6 +327,7 @@ createTaxRate: async (req, res) => {
       name: name.trim(),
       rate: parseFloat(rate),
       code: code.toUpperCase().trim(),
+      taxType: taxType,
       description: description ? description.trim() : null,
       isActive,
       isDefault,

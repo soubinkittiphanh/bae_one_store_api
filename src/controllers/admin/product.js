@@ -164,8 +164,11 @@ const fetchProd = async (req, res) => {
     })
 }
 const fetchProductFromLocation = async (req, res) => {
-    const { locationId } = req.params
-    const sqlCom = `SELECT DISTINCT
+  const { locationId } = req.params;
+  const { include } = req.query; // Get include parameter from query string
+  
+  // Base SQL for products - removed createdAt and updatedAt since they don't exist
+  let sqlCom = `SELECT DISTINCT
     p.id,
     p.pro_id,
     p.minStock,
@@ -181,46 +184,192 @@ const fetchProductFromLocation = async (req, res) => {
     p.saleCurrencyId,
     p.costCurrencyId,
     p.validateStockOnSale,
+    p.taxId,
+    p.pro_desc,
+    p.duration_minutes,
+    p.retail_cost_percent,
+    p.locking_session_id,
+    p.isActive,
     t.categ_name,
     co.name as co_name,
     co.id as companyId,
     IFNULL(i.img_name, 'No image') AS img_name,
     i.img_path,
-    IFNULL(c.stock, 0) AS card_count
-FROM
+    IFNULL(c.stock, 0) AS card_count`;
+
+  // Add tax fields if tax is included
+  if (include && include.includes('tax')) {
+    sqlCom += `,
+    tax.id as tax_id,
+    tax.name as tax_name,
+    tax.rate as tax_rate,
+    tax.taxType as tax_type,
+    tax.code as tax_code,
+    tax.description as tax_description,
+    tax.isActive as tax_isActive,
+    tax.isDefault as tax_isDefault`;
+  }
+
+  sqlCom += `
+  FROM
     product p
-LEFT JOIN company co ON co.id = p.companyId
-
-
-LEFT JOIN(
+  LEFT JOIN company co ON co.id = p.companyId
+  LEFT JOIN(
     SELECT
-        COUNT(c.card_number) AS stock,
-        c.productId
+      COUNT(c.card_number) AS stock,
+      c.productId
     FROM
-        card c
+      card c
     WHERE
-        c.card_isused = 0 AND c.locationId = ${locationId}
+      c.card_isused = 0 AND c.locationId = ${locationId}
     GROUP BY
-        c.productId
-) c
-ON
-    c.productId = p.id
-LEFT JOIN category t ON
-    t.categ_id = p.pro_category
+      c.productId
+  ) c ON c.productId = p.id
+  LEFT JOIN category t ON t.categ_id = p.pro_category
+  LEFT JOIN image_path i ON i.pro_id = p.pro_id`;
 
-LEFT JOIN image_path i ON
-    i.pro_id = p.pro_id
-WHERE p.isActive = true
-GROUP BY
-    p.pro_id
-ORDER BY
-    p.pro_price;`
-    Db.query(sqlCom, (er, re) => {
-        if (er) return res.send('SQL ' + er)
-        res.send(re)
-    })
+  // Add tax join if tax is included
+  if (include && include.includes('tax')) {
+    sqlCom += `
+  LEFT JOIN tax ON tax.id = p.taxId 
+    AND tax.isActive = true 
+    AND tax.effectiveFrom <= CURDATE()
+    AND (tax.effectiveTo IS NULL OR tax.effectiveTo >= CURDATE())`;
+  }
 
-}
+  sqlCom += `
+  WHERE p.isActive = true
+  GROUP BY p.pro_id
+  ORDER BY p.pro_price`;
+
+  try {
+    Db.query(sqlCom, (er, results) => {
+      if (er) {
+        console.error('SQL Error:', er);
+        return res.status(500).json({
+          success: false,
+          message: 'Database error',
+          error: er.message
+        });
+      }
+
+      // Transform results to include tax object if tax data is present
+      const transformedResults = results.map(product => {
+        const transformedProduct = {
+          id: product.id,
+          pro_id: product.pro_id,
+          pro_name: product.pro_name,
+          pro_price: product.pro_price,
+          duration_minutes: product.duration_minutes || 0,
+          pro_desc: product.pro_desc || '',
+          pro_status: product.pro_status,
+          img_path: product.img_path,
+          retail_cost_percent: product.retail_cost_percent || 0,
+          cost_price: product.cost_price,
+          card_count: product.card_count || 0,
+          minStock: product.minStock || 0,
+          locking_session_id: product.locking_session_id,
+          barCode: product.barCode,
+          vendorName: product.vendorName,
+          categ_name: product.categ_name,
+          co_name: product.co_name,
+          companyId: product.companyId,
+          img_name: product.img_name,
+          receiveUnitId: product.receiveUnitId,
+          stockUnitId: product.stockUnitId,
+          pro_category: product.pro_category,
+          validateStockOnSale: product.validateStockOnSale,
+          saleCurrencyId: product.saleCurrencyId,
+          costCurrencyId: product.costCurrencyId,
+          taxId: product.taxId,
+          isActive: product.isActive,
+          // Set default values for timestamp fields that don't exist
+          createdAt: null,
+          updatedAt: null
+        };
+
+        // Add tax object if tax data is present
+        if (include && include.includes('tax') && product.tax_id) {
+          transformedProduct.tax = {
+            id: product.tax_id,
+            name: product.tax_name,
+            rate: product.tax_rate,
+            taxType: product.tax_type,
+            code: product.tax_code,
+            description: product.tax_description,
+            isActive: product.tax_isActive,
+            isDefault: product.tax_isDefault
+          };
+        } else {
+          transformedProduct.tax = null;
+        }
+
+        return transformedProduct;
+      });
+
+      res.status(200).json({
+        success: true,
+        data: transformedResults,
+        count: transformedResults.length
+      });
+    });
+  } catch (error) {
+    console.error('Error in fetchProductFromLocation:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+};
+// Also create a separate Tax API controller
+const fetchTaxes = async (req, res) => {
+  const sqlCom = `SELECT 
+    id,
+    name,
+    rate,
+    taxType,
+    code,
+    description,
+    isActive,
+    isDefault,
+    effectiveFrom,
+    effectiveTo,
+    createdAt,
+    updatedAt
+  FROM tax 
+  WHERE isActive = true 
+    AND effectiveFrom <= CURDATE()
+    AND (effectiveTo IS NULL OR effectiveTo >= CURDATE())
+  ORDER BY isDefault DESC, name ASC`;
+
+  try {
+    Db.query(sqlCom, (er, results) => {
+      if (er) {
+        console.error('SQL Error:', er);
+        return res.status(500).json({
+          success: false,
+          message: 'Database error',
+          error: er.message
+        });
+      }
+
+      res.status(200).json({
+        success: true,
+        data: results,
+        count: results.length
+      });
+    });
+  } catch (error) {
+    console.error('Error in fetchTaxes:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+};
+
 const fetchProdMobileV0 = async (req, res) => {
     logger.info("*************** FETCH PRODUCT ***************");
     logger.info(`*************Payload: *****************ss`);
@@ -334,4 +483,5 @@ module.exports = {
     fetchProdId,
     fetchProdMobile,
     fetchProductFromLocation,
+    fetchTaxes
 }

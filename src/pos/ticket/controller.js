@@ -656,9 +656,13 @@ const ticketController = {
                 paymentStatus = 'pending',
                 notes,
                 ticketLines = [],
+                tax,
                 // ADD THESE PROMOTION FIELDS
                 promotionDiscount = 0,
-                appliedPromotions = []
+                taxType,
+                appliedPromotions = [],
+                total,
+                subtotal,
             } = req.body;
 
             console.log('Extracted values:', {
@@ -694,25 +698,22 @@ const ticketController = {
             }
 
             // Calculate totals from ticket lines (FIXED to handle promotions)
-            let subtotal = 0;
-            let tax = 0;
-            let total = 0;
+        
 
             if (ticketLines.length > 0) {
                 console.log('Calculating totals from ticket lines...');
 
-                ticketLines.forEach(line => {
-                    const lineSubtotal = parseFloat(line.quantity) * parseFloat(line.unitPrice || 0);
-                    subtotal += lineSubtotal;
-                });
+                // ticketLines.forEach(line => {
+                //     const lineSubtotal = parseFloat(line.quantity) * parseFloat(line.unitPrice || 0);
+                //     subtotal += lineSubtotal;
+                // });
 
                 // FIXED: Apply promotion discount and calculate tax on discounted amount
                 const promotionDiscountAmount = parseFloat(promotionDiscount || 0);
                 const afterPromotions = Math.max(0, subtotal - promotionDiscountAmount);
 
                 // Use 8.5% tax rate to match frontend
-                tax = afterPromotions * 0.085;
-                total = afterPromotions + tax;
+                // total = afterPromotions + tax;
 
                 console.log('Calculated totals:', {
                     subtotal: subtotal.toFixed(2),
@@ -736,6 +737,7 @@ const ticketController = {
                 paymentId: paymentId || null,
                 status,
                 paymentStatus,
+                taxType,
                 subtotal: subtotal.toFixed(2),
                 promotionDiscount: parseFloat(promotionDiscount || 0).toFixed(2), // ADD THIS
                 tax: tax.toFixed(2),
@@ -912,24 +914,22 @@ const ticketController = {
 
             // If updating ticket lines, recalculate totals with promotion support
             if (updateData.ticketLines) {
-                let subtotal = 0;
-                let totalDiscount = 0;
+                // let subtotal = 0;
+                // let totalDiscount = 0;
 
-                updateData.ticketLines.forEach(line => {
-                    const lineSubtotal = parseFloat(line.quantity) * parseFloat(line.unitPrice || 0);
-                    subtotal += lineSubtotal;
+                // updateData.ticketLines.forEach(line => {
+                //     const lineSubtotal = parseFloat(line.quantity) * parseFloat(line.unitPrice || 0);
+                //     subtotal += lineSubtotal;
 
-                    if (line.discount_amount) {
-                        totalDiscount += parseFloat(line.discount_amount);
-                    }
-                });
+                //     if (line.discount_amount) {
+                //         totalDiscount += parseFloat(line.discount_amount);
+                //     }
+                // });
 
-                const tax = subtotal * 0.10;
-                const total = subtotal + tax;
+                // const total = subtotal + updateData.tax;
 
-                updateData.subtotal = subtotal.toFixed(2);
-                updateData.tax = tax.toFixed(2);
-                updateData.total = total.toFixed(2);
+                // updateData.subtotal = subtotal.toFixed(2);
+                // updateData.total = total.toFixed(2);
 
                 // Delete existing ticket lines and create new ones
                 await TicketLine.destroy({
