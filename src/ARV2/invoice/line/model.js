@@ -79,6 +79,10 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: 'CRglAccountId',
       as: 'CRglAccount',
     });
+    InvoiceLine.belongsTo(models.Transaction, {
+      foreignKey: 'txnId',
+      as: 'transaction'
+    });
   };
 
   return InvoiceLine;

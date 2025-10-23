@@ -134,6 +134,7 @@ class APInvoiceController {
                     taxRate: parseFloat(line.taxRate) || 0,
                     DRglAccountId: line.DRglAccountId,
                     CRglAccountId: line.CRglAccountId,
+                    txnId: line.txnId,
                     note: line.note || null,
                     makerId: makerId
                     // lineTotal, discountAmount, taxAmount will be calculated by beforeSave hook
@@ -263,6 +264,7 @@ class APInvoiceController {
                     taxRate: parseFloat(line.taxRate) || 0,
                     DRglAccountId: line.DRglAccountId,
                     CRglAccountId: line.CRglAccountId,
+                    txnId: line.txnId,
                     note: line.note || null,
                     makerId: req.body.makerId || req.user?.id
                 }, { transaction });
