@@ -12,12 +12,10 @@ const validator = require("./validator")
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     const uploadPath = 'uploads/company-profiles/';
-    
     // Create directory if it doesn't exist
     if (!fs.existsSync(uploadPath)) {
       fs.mkdirSync(uploadPath, { recursive: true });
     }
-    
     cb(null, uploadPath);
   },
   filename: function (req, file, cb) {
@@ -59,24 +57,26 @@ const upload = multer({
   }
 });
 
+// OPTION 1: PUBLIC ROUTES FIRST (RECOMMENDED)
+// Define public routes that don't need authentication BEFORE applying validateToken middleware
+
+// Public routes (no authentication required)
+router.get("/findAll", controller.getAllActiveCompanies) // This route is now public
+router.get("/find", controller.getAllCompanies) // Made this public too for logo loading
+
+// Apply token validation to all subsequent routes
 router.use(validateToken)
-// No auth
-// router.use((req,res,next)=>{
-// next()
-// })
 
-// Existing routes
+// Protected routes (authentication required)
 router.post("/create", controller.createCompany)
- .put("/update/:id", controller.updateCompanyById)
- .delete("/find/:id", controller.deleteCompanyById)
- .get("/find", controller.getAllCompanies)
- .get("/findAll", controller.getAllActiveCompanies)
- .get("/find/:id", controller.getCompanyById)
+  .put("/update/:id", controller.updateCompanyById)
+  .delete("/find/:id", controller.deleteCompanyById)
+  .get("/find/:id", controller.getCompanyById)
 
-// New image upload routes
+// Image upload routes (protected)
 router.post("/upload-profile-image/:id", upload.single('profile_image'), controller.uploadProfileImage)
- .put("/update-profile-image/:id", controller.updateCompanyProfileImage)
- .delete("/delete-profile-image/:id", controller.deleteProfileImage)
+  .put("/update-profile-image/:id", controller.updateCompanyProfileImage)
+  .delete("/delete-profile-image/:id", controller.deleteProfileImage)
 
 // Error handling middleware for multer
 router.use((error, req, res, next) => {
@@ -86,13 +86,10 @@ router.use((error, req, res, next) => {
     }
     return res.status(400).json({ message: 'File upload error: ' + error.message });
   }
-  
   if (error.message === 'Only image files are allowed') {
     return res.status(400).json({ message: 'Only image files are allowed' });
   }
-  
   next(error);
 });
 
-// .post("/bulkCreate",service.createHulkStockCard)
 module.exports = router

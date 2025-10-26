@@ -83,7 +83,8 @@ const controller = {
           include: [
             {
               model: MenuLine,
-              attributes: ['name', 'llname', 'icon', 'path'],
+              attributes: ['name', 'llname', 'icon', 'path','id'],
+              // order: [['createdAt', 'ASC']] // Add this line
             }
           ]
         }]

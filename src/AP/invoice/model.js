@@ -22,7 +22,7 @@ module.exports = (sequelize, DataTypes) => {
         },
         dueDate: {
             type: DataTypes.DATEONLY,
-            allowNull: false
+            // allowNull: false
         },
         description: {
             type: DataTypes.TEXT
