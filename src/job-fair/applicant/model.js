@@ -259,6 +259,10 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: 'currencyId',
       as: 'currency',
     });
+    Applicant.belongsTo(models.Agency, {
+      foreignKey: 'employeeId',
+      as: 'employee',
+    });
   };
 
   return Applicant;
