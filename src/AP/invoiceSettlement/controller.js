@@ -976,11 +976,14 @@ class APSettlementController {
                 where: whereClause,
                 attributes: [
                     'id', 'invoiceNumber', 'vendorInvoiceNumber', 'invoiceDate',
-                    'dueDate', 'totalAmount', 'paidAmount', 'status',
+                    'dueDate', 'totalAmount', 'paidAmount', 'status','currencyId','agencyId','vendorId',
                     [sequelize.literal('totalAmount - paidAmount'), 'outstandingAmount']
                 ],
                 include: [
-                    { model: vendor, as: 'vendor' }
+                    { model: vendor, as: 'vendor' },
+                    { model: currency, as: 'currency' },
+                    { model: Agency, as: 'agency' },
+                    { model: InvoiceLineItem, as: 'lineItems' },
                 ],
                 having: sequelize.literal('outstandingAmount > 0'),
                 order: [['dueDate', 'ASC'], ['invoiceNumber', 'ASC']]

@@ -266,7 +266,7 @@ class ReceiveHeaderController {
 
       // Verify invoice header exists ONLY if provided
       if (invoiceHeaderId) {
-        const invoiceHeaderExists = await arReceiveHeaderV2.findByPk(invoiceHeaderId);
+        const invoiceHeaderExists = await arInvoiceHeader.findByPk(invoiceHeaderId);
         if (!invoiceHeaderExists) {
           await transaction.rollback();
           return res.status(400).json({

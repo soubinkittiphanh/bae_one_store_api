@@ -206,12 +206,13 @@ const createProdV1 = async (req, imagesObj) => {
             ('00' + date.getHours()).slice(-2) + ':' +
             ('00' + date.getMinutes()).slice(-2) + ':' +
             ('00' + date.getSeconds()).slice(-2);
-        logger.info("===> sql time " + mysqlDateTime); // Outputs: YYYY-MM-DD HH:MM:SS
+        logger.info("===> sql time " + mysqlDateTime);
         logger.info("*************** CREATE PRODUCT  ***************");
         logger.info(`*************** CREATE PRODUCT SERVICE 1 ${req} ***************`);
         logger.info(`*************** CREATE PRODUCT SERVICE 2 ${JSON.stringify(req.body)} ***************`);
         logger.info(`*************Payload: ${req.body.FORM}*****************`);
         logger.info(req.body.FORM);
+        
         const body = JSON.parse(req.body.FORM);
         const pro_cat = body.pro_category;
         let pro_id = body.pro_id;
@@ -230,13 +231,18 @@ const createProdV1 = async (req, imagesObj) => {
         const costCurrencyId = body.costCurrencyId;
         const saleCurrencyId = body.saleCurrencyId;
         const retail_percent = body.pro_retail_price || 0.0;
-        const locking_session_id = Date.now()
+        const locking_session_id = Date.now();
         const isActive = body.isActive;
         const validateStockOnSale = body.validateStockOnSale;
         const companyId = body.companyId;
         const vendorName = body.vendorName;
         const category = body._category; // 'product' or 'service'
-        const durationMinutes = body.duration_minutes || 0; // default to 0 if not provided
+        const durationMinutes = body.duration_minutes || 0;
+        
+        // ✅ ADD: Extract tax information
+        const taxId = body.taxId || null; // Tax ID from frontend
+        const calculatedTaxAmount = body.calculatedTaxAmount || 0;
+        const totalWithTax = body.totalWithTax || body.pro_price;
 
         let sqlComImages = 'INSERT INTO image_path(pro_id, img_name, img_path, createdAt, updateTimestamp, productId) VALUES';
 
@@ -251,52 +257,59 @@ const createProdV1 = async (req, imagesObj) => {
                 if (re.length < 1) pro_id = 1000;
                 else pro_id = parseInt(re[0]['ID']) + 1;
 
+                // ✅ FIXED: Added taxId field to the INSERT statement
                 const sqlCom = `
                     INSERT INTO product (
                         pro_category, pro_id, pro_name, pro_price, pro_desc, pro_status, 
                         retail_cost_percent, cost_price, locking_session_id, createdAt, 
                         updateTimestamp, minStock, barCode, receiveUnitId, stockUnitId, 
-                        costCurrencyId, saleCurrencyId, isActive,validateStockOnSale, companyId,vendorName,_category,duration_minutes
+                        costCurrencyId, saleCurrencyId, isActive, validateStockOnSale, 
+                        companyId, vendorName, _category, duration_minutes, taxId
                     )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
                 `;
 
-                // Values array to pass into the query
+                // ✅ FIXED: Values array with proper null/undefined handling and added taxId
                 const values = [
-                    pro_cat,
-                    pro_id,
-                    pro_name,
-                    pro_price,
-                    pro_desc,
-                    pro_status,
-                    retail_percent,
-                    costPrice,
+                    pro_cat || null,
+                    pro_id || null,
+                    pro_name || '',
+                    parseFloat(pro_price) || 0,
+                    pro_desc || '',
+                    isNaN(pro_status) ? 1 : pro_status,
+                    parseFloat(retail_percent) || 0,
+                    parseFloat(costPrice) || 0,
                     locking_session_id,
                     mysqlDateTime,
                     mysqlDateTime,
-                    minStock,
-                    barCode,
-                    receiveUnitId,
-                    stockUnitId,
-                    costCurrencyId,
-                    saleCurrencyId,
-                    isActive,
-                    validateStockOnSale,
-                    companyId,
-                    vendorName,
-                    category ?? 'product',
-                    durationMinutes
+                    parseInt(minStock) || 0,
+                    barCode || '',
+                    parseInt(receiveUnitId) || null,
+                    parseInt(stockUnitId) || null,
+                    parseInt(costCurrencyId) || null,
+                    parseInt(saleCurrencyId) || null,
+                    isActive ? 1 : 0,
+                    validateStockOnSale ? 1 : 0,
+                    parseInt(companyId) || null,
+                    vendorName || '',
+                    category || 'product',
+                    parseInt(durationMinutes) || 0,
+                    parseInt(taxId) || null  // ✅ ADD: Tax ID
                 ];
+
+                // ✅ ADD: Log the values for debugging
+                logger.info("Values being inserted:", JSON.stringify(values));
 
                 //*****************  INSERT PRODUCT SQL  *****************//
                 logger.info("SQL CREATE PRODUCT SERVICE: " + sqlCom);
                 Db.query(sqlCom, values, (er, re) => {
                     if (er) {
+                        logger.error("Database insertion error:", er);
                         reject(`productservice create product fail #####0002 ${er}`);
                     } else if (re) {
                         const productId = re.insertId;
-                        logger.warn(`${productId} create product response ${JSON.stringify(re)}`)
-                        logger.warn(`Image len ${image_path.length}`)
+                        logger.warn(`${productId} create product response ${JSON.stringify(re)}`);
+                        logger.warn(`Image len ${image_path.length}`);
 
                         if (image_path.length > 0) {
                             image_path.forEach((i, idx, element) => {
@@ -315,10 +328,10 @@ const createProdV1 = async (req, imagesObj) => {
                         // Resolve with the productId
                         resolve(productId);
                     }
-                })
-            })
+                });
+            });
         } catch (error) {
-            logger.error(`Create product service error ${error}`)
+            logger.error(`Create product service error ${error}`);
             reject(`productservice create product fail 0001 ${error}`);
         }
     });
