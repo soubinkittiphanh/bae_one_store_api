@@ -324,9 +324,9 @@ const fetchProd = async (req, res) => {
 // };
 const fetchProductFromLocation = async (req, res) => {
   const { locationId } = req.params;
-  const { include, companyId, grade } = req.query; // Added grade parameter
+  const { include, companyId } = req.query; // Get include and companyId parameters from query string
   
-  // Base SQL for products
+  // Base SQL for products - removed createdAt and updatedAt since they don't exist
   let sqlCom = `SELECT DISTINCT
     p.id,
     p.pro_id,
@@ -369,20 +369,6 @@ const fetchProductFromLocation = async (req, res) => {
     tax.isDefault as tax_isDefault`;
   }
   
-  // Add price list fields if priceList is included
-  if (include && include.includes('priceList')) {
-    sqlCom += `,
-    pl.id as priceList_id,
-    pl.name as priceList_name,
-    pl.grade as priceList_grade,
-    pl.amount as priceList_amount,
-    pl.type as priceList_type,
-    pl.isActive as priceList_isActive,
-    pl.currencyId as priceList_currencyId,
-    pl.createdAt as priceList_createdAt,
-    pl.updateTimestamp as priceList_updateTimestamp`;
-  }
-  
   sqlCom += `
   FROM
     product p
@@ -410,18 +396,6 @@ const fetchProductFromLocation = async (req, res) => {
     AND (tax.effectiveTo IS NULL OR tax.effectiveTo >= CURDATE())`;
   }
   
-  // Add price list join if priceList is included
-  if (include && include.includes('priceList')) {
-    sqlCom += `
-  LEFT JOIN priceList pl ON pl.productId = p.id 
-    AND pl.isActive = true`;
-    
-    // Add grade filter if specified
-    if (grade) {
-      sqlCom += ` AND pl.grade = '${grade}'`;
-    }
-  }
-  
   sqlCom += `
   WHERE p.isActive = true`;
   
@@ -445,7 +419,7 @@ const fetchProductFromLocation = async (req, res) => {
         });
       }
       
-      // Transform results to include tax and priceList objects
+      // Transform results to include tax object if tax data is present
       const transformedResults = results.map(product => {
         const transformedProduct = {
           id: product.id,
@@ -475,6 +449,7 @@ const fetchProductFromLocation = async (req, res) => {
           costCurrencyId: product.costCurrencyId,
           taxId: product.taxId,
           isActive: product.isActive,
+          // Set default values for timestamp fields that don't exist
           createdAt: null,
           updatedAt: null
         };
@@ -493,35 +468,6 @@ const fetchProductFromLocation = async (req, res) => {
           };
         } else {
           transformedProduct.tax = null;
-        }
-        
-        // Add priceList object if priceList data is present
-        if (include && include.includes('priceList') && product.priceList_id) {
-          transformedProduct.priceList = {
-            id: product.priceList_id,
-            name: product.priceList_name,
-            grade: product.priceList_grade,
-            amount: product.priceList_amount,
-            type: product.priceList_type,
-            isActive: product.priceList_isActive,
-            currencyId: product.priceList_currencyId,
-            createdAt: product.priceList_createdAt,
-            updateTimestamp: product.priceList_updateTimestamp
-          };
-          
-          // Calculate effective price based on priceList type
-          if (product.priceList_type === 'Price') {
-            // Direct price override
-            transformedProduct.effectivePrice = product.priceList_amount;
-          } else if (product.priceList_type === 'Percent') {
-            // Percentage adjustment
-            transformedProduct.effectivePrice = product.pro_price * (1 + product.priceList_amount / 100);
-          } else {
-            transformedProduct.effectivePrice = product.pro_price;
-          }
-        } else {
-          transformedProduct.priceList = null;
-          transformedProduct.effectivePrice = product.pro_price;
         }
         
         return transformedProduct;
