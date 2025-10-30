@@ -62,18 +62,28 @@ module.exports = (sequelize, DataTypes) => {
     // Static method to generate ticket number// Static method to generate ticket number with date for uniqueness
     Ticket.generateTicketNumber = async function () {
         const { Op } = require('sequelize');
-
         let attempts = 0;
         const maxAttempts = 50;
 
         while (attempts < maxAttempts) {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            const tomorrow = new Date(today);
-            tomorrow.setDate(tomorrow.getDate() + 1);
+            // ✅ FIX: Use local timezone instead of UTC
+            const now = new Date();
 
-            // Get date string (YYMMDD format)
-            const dateStr = today.toISOString().slice(2, 10).replace(/-/g, ''); // 251015
+            // Create today's date in local timezone
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+            const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0, 0);
+
+            // ✅ FIX: Generate date string from local date components instead of ISO string
+            const year = now.getFullYear().toString().slice(-2); // Last 2 digits of year
+            const month = (now.getMonth() + 1).toString().padStart(2, '0'); // Month (1-12)
+            const day = now.getDate().toString().padStart(2, '0'); // Day (1-31)
+            const dateStr = year + month + day; // YYMMDD format
+
+            console.log('Debug date generation:');
+            console.log('Now:', now.toString());
+            console.log('Today (local):', today.toString());
+            console.log('Tomorrow (local):', tomorrow.toString());
+            console.log('Date string:', dateStr);
 
             // Count tickets created today
             const todayTicketCount = await Ticket.count({
@@ -89,10 +99,12 @@ module.exports = (sequelize, DataTypes) => {
             const ticketInDay = (todayTicketCount % 30) + 1; // 1-30
             const round = Math.floor(todayTicketCount / 30) + 1; // Round starts at 1
 
-            // Format: DD/TT-YYMMDD (e.g., 01/01-251015)
+            // Format: DD/TT-YYMMDD (e.g., 01/01-251030)
             const paddedTicket = String(ticketInDay).padStart(2, '0');
             const paddedRound = String(round).padStart(2, '0');
             const ticketNumber = `${paddedTicket}/${paddedRound}-${dateStr}`;
+
+            console.log('Generated ticket number:', ticketNumber);
 
             // Check if this ticket number already exists
             const existingTicket = await Ticket.findOne({
@@ -115,8 +127,11 @@ module.exports = (sequelize, DataTypes) => {
 
         // Fallback: Add timestamp if all attempts failed
         const timestamp = Date.now().toString().slice(-4);
-        const today = new Date();
-        const dateStr = today.toISOString().slice(2, 10).replace(/-/g, '');
+        const now = new Date();
+        const year = now.getFullYear().toString().slice(-2);
+        const month = (now.getMonth() + 1).toString().padStart(2, '0');
+        const day = now.getDate().toString().padStart(2, '0');
+        const dateStr = year + month + day;
         const fallbackNumber = `99/99-${dateStr}-${timestamp}`;
 
         console.error(`Failed to generate unique ticket number after ${maxAttempts} attempts. Using fallback: ${fallbackNumber}`);
@@ -139,6 +154,18 @@ module.exports = (sequelize, DataTypes) => {
         Ticket.hasMany(models.ticketLine, {
             foreignKey: 'ticketId',
             as: 'ticketLines',
+        });
+        Ticket.belongsTo(models.user, {
+            foreignKey: 'createUserId',
+            as: 'createUser',
+        });
+        Ticket.belongsTo(models.user, {
+            foreignKey: 'updateUserId',
+            as: 'updateUser',
+        });
+        Ticket.belongsTo(models.user, {
+            foreignKey: 'cancelUserId',
+            as: 'cancelUser',
         });
     };
 

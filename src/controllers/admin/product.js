@@ -322,11 +322,12 @@ const fetchProd = async (req, res) => {
 //     });
 //   }
 // };
+
 const fetchProductFromLocation = async (req, res) => {
   const { locationId } = req.params;
-  const { include, companyId, grade } = req.query; // Added grade parameter
+  const { include, companyId, grade } = req.query;
   
-  // Base SQL for products
+  // Base SQL for products (without priceList join to avoid duplication)
   let sqlCom = `SELECT DISTINCT
     p.id,
     p.pro_id,
@@ -369,20 +370,6 @@ const fetchProductFromLocation = async (req, res) => {
     tax.isDefault as tax_isDefault`;
   }
   
-  // Add price list fields if priceList is included
-  if (include && include.includes('priceList')) {
-    sqlCom += `,
-    pl.id as priceList_id,
-    pl.name as priceList_name,
-    pl.grade as priceList_grade,
-    pl.amount as priceList_amount,
-    pl.type as priceList_type,
-    pl.isActive as priceList_isActive,
-    pl.currencyId as priceList_currencyId,
-    pl.createdAt as priceList_createdAt,
-    pl.updateTimestamp as priceList_updateTimestamp`;
-  }
-  
   sqlCom += `
   FROM
     product p
@@ -410,18 +397,6 @@ const fetchProductFromLocation = async (req, res) => {
     AND (tax.effectiveTo IS NULL OR tax.effectiveTo >= CURDATE())`;
   }
   
-  // Add price list join if priceList is included
-  if (include && include.includes('priceList')) {
-    sqlCom += `
-  LEFT JOIN priceList pl ON pl.productId = p.id 
-    AND pl.isActive = true`;
-    
-    // Add grade filter if specified
-    if (grade) {
-      sqlCom += ` AND pl.grade = '${grade}'`;
-    }
-  }
-  
   sqlCom += `
   WHERE p.isActive = true`;
   
@@ -433,9 +408,42 @@ const fetchProductFromLocation = async (req, res) => {
   sqlCom += `
   GROUP BY p.pro_id
   ORDER BY p.pro_price`;
+
+  // Separate SQL for price lists (to handle multiple price lists per product)
+  let priceListSql = '';
+  if (include && include.includes('priceList')) {
+    priceListSql = `SELECT 
+      pl.productId,
+      pl.id as priceList_id,
+      pl.name as priceList_name,
+      pl.grade as priceList_grade,
+      pl.amount as priceList_amount,
+      pl.type as priceList_type,
+      pl.isActive as priceList_isActive,
+      pl.currencyId as priceList_currencyId,
+      pl.createdAt as priceList_createdAt,
+      pl.updateTimestamp as priceList_updateTimestamp
+    FROM priceList pl
+    INNER JOIN product p ON p.id = pl.productId
+    WHERE pl.isActive = true 
+      AND p.isActive = true`;
+    
+    // Add companyId filter for price lists
+    if (companyId) {
+      priceListSql += ` AND p.companyId = ${parseInt(companyId)}`;
+    }
+    
+    // Add grade filter if specified
+    if (grade) {
+      priceListSql += ` AND pl.grade = '${grade}'`;
+    }
+    
+    priceListSql += ` ORDER BY pl.productId, pl.grade, pl.createdAt DESC`;
+  }
   
   try {
-    Db.query(sqlCom, (er, results) => {
+    // Execute main product query
+    Db.query(sqlCom, async (er, productResults) => {
       if (er) {
         console.error('SQL Error:', er);
         return res.status(500).json({
@@ -445,8 +453,48 @@ const fetchProductFromLocation = async (req, res) => {
         });
       }
       
-      // Transform results to include tax and priceList objects
-      const transformedResults = results.map(product => {
+      let priceListData = {};
+      
+      // Execute price list query if needed
+      if (include && include.includes('priceList') && priceListSql) {
+        try {
+          const priceListResults = await new Promise((resolve, reject) => {
+            Db.query(priceListSql, (err, results) => {
+              if (err) reject(err);
+              else resolve(results);
+            });
+          });
+          
+          // Group price lists by productId
+          priceListData = priceListResults.reduce((acc, priceList) => {
+            const productId = priceList.productId;
+            if (!acc[productId]) {
+              acc[productId] = [];
+            }
+            
+            acc[productId].push({
+              id: priceList.priceList_id,
+              name: priceList.priceList_name,
+              grade: priceList.priceList_grade,
+              amount: priceList.priceList_amount,
+              type: priceList.priceList_type,
+              isActive: priceList.priceList_isActive,
+              currencyId: priceList.priceList_currencyId,
+              createdAt: priceList.priceList_createdAt,
+              updateTimestamp: priceList.priceList_updateTimestamp
+            });
+            
+            return acc;
+          }, {});
+          
+        } catch (priceListError) {
+          console.error('Price List Query Error:', priceListError);
+          // Continue without price lists if there's an error
+        }
+      }
+      
+      // Transform results to include tax and priceList arrays
+      const transformedResults = productResults.map(product => {
         const transformedProduct = {
           id: product.id,
           pro_id: product.pro_id,
@@ -495,31 +543,23 @@ const fetchProductFromLocation = async (req, res) => {
           transformedProduct.tax = null;
         }
         
-        // Add priceList object if priceList data is present
-        if (include && include.includes('priceList') && product.priceList_id) {
-          transformedProduct.priceList = {
-            id: product.priceList_id,
-            name: product.priceList_name,
-            grade: product.priceList_grade,
-            amount: product.priceList_amount,
-            type: product.priceList_type,
-            isActive: product.priceList_isActive,
-            currencyId: product.priceList_currencyId,
-            createdAt: product.priceList_createdAt,
-            updateTimestamp: product.priceList_updateTimestamp
-          };
+        // Add priceList array if priceList data is requested
+        if (include && include.includes('priceList')) {
+          transformedProduct.priceLists = priceListData[product.id] || [];
           
-          // Calculate effective price based on priceList type
-          if (product.priceList_type === 'Price') {
-            // Direct price override
-            transformedProduct.effectivePrice = product.priceList_amount;
-          } else if (product.priceList_type === 'Percent') {
-            // Percentage adjustment
-            transformedProduct.effectivePrice = product.pro_price * (1 + product.priceList_amount / 100);
-          } else {
-            transformedProduct.effectivePrice = product.pro_price;
-          }
+          // Calculate effective price based on the best applicable price list
+          transformedProduct.effectivePrice = calculateEffectivePrice(
+            product.pro_price, 
+            transformedProduct.priceLists,
+            grade
+          );
+          
+          // For backward compatibility, also include the first/best priceList as single object
+          transformedProduct.priceList = transformedProduct.priceLists.length > 0 
+            ? transformedProduct.priceLists[0] 
+            : null;
         } else {
+          transformedProduct.priceLists = [];
           transformedProduct.priceList = null;
           transformedProduct.effectivePrice = product.pro_price;
         }
@@ -530,7 +570,13 @@ const fetchProductFromLocation = async (req, res) => {
       res.status(200).json({
         success: true,
         data: transformedResults,
-        count: transformedResults.length
+        count: transformedResults.length,
+        filters: {
+          locationId: parseInt(locationId),
+          companyId: companyId ? parseInt(companyId) : null,
+          grade: grade || null,
+          include: include ? include.split(',') : []
+        }
       });
     });
   } catch (error) {
@@ -542,6 +588,50 @@ const fetchProductFromLocation = async (req, res) => {
     });
   }
 };
+
+// Helper function to calculate effective price based on price lists
+function calculateEffectivePrice(basePrice, priceLists, requestedGrade = null) {
+  if (!priceLists || priceLists.length === 0) {
+    return basePrice;
+  }
+  
+  // Filter price lists by requested grade if specified
+  let applicablePriceLists = priceLists;
+  if (requestedGrade) {
+    applicablePriceLists = priceLists.filter(pl => pl.grade === requestedGrade);
+  }
+  
+  // If no price lists match the requested grade, fall back to all price lists
+  if (applicablePriceLists.length === 0) {
+    applicablePriceLists = priceLists;
+  }
+  
+  // Sort by priority: Direct price overrides first, then percentage adjustments
+  // Also prioritize by creation date (newer first)
+  applicablePriceLists.sort((a, b) => {
+    // Priority order: Price type first, then Percent type
+    if (a.type === 'Price' && b.type !== 'Price') return -1;
+    if (a.type !== 'Price' && b.type === 'Price') return 1;
+    
+    // If same type, sort by creation date (newer first)
+    return new Date(b.createdAt) - new Date(a.createdAt);
+  });
+  
+  // Use the first (highest priority) price list
+  const bestPriceList = applicablePriceLists[0];
+  
+  if (bestPriceList.type === 'Price') {
+    // Direct price override
+    return bestPriceList.amount;
+  } else if (bestPriceList.type === 'Percent') {
+    // Percentage adjustment
+    return basePrice * (1 + bestPriceList.amount / 100);
+  }
+  
+  return basePrice;
+}
+
+
 // Also create a separate Tax API controller
 const fetchTaxes = async (req, res) => {
   const sqlCom = `SELECT 

@@ -3,6 +3,7 @@ const logger = require('../../api/logger');
 const { Op } = require('sequelize');
 
 // Model imports
+const User = require('../../models').user;
 const Ticket = require('../../models').ticket;
 const TicketLine = require('../../models').ticketLine;
 const Table = require('../../models').table;
@@ -424,8 +425,18 @@ const ticketController = {
 
             if (startDate || endDate) {
                 whereCondition.createdAt = {};
-                if (startDate) whereCondition.createdAt[Op.gte] = new Date(startDate);
-                if (endDate) whereCondition.createdAt[Op.lte] = new Date(endDate);
+                if (startDate) {
+                    // Set start time to beginning of day (00:00:00)
+                    const start = new Date(startDate);
+                    start.setHours(0, 0, 0, 0);
+                    whereCondition.createdAt[Op.gte] = start;
+                }
+                if (endDate) {
+                    // Set end time to end of day (23:59:59.999)
+                    const end = new Date(endDate);
+                    end.setHours(23, 59, 59, 999);
+                    whereCondition.createdAt[Op.lte] = end;
+                }
             }
 
             const offset = (page - 1) * limit;
@@ -464,6 +475,21 @@ const ticketController = {
                     required: false
                 });
             }
+            includeArray.push({
+                model: User,
+                as: 'createUser',
+                required: false
+            });
+            includeArray.push({
+                model: User,
+                as: 'cancelUser',
+                required: false
+            });
+            includeArray.push({
+                model: User,
+                as: 'updateUser',
+                required: false
+            });
 
             if (includeParams.includes('ticketLines')) {
                 includeArray.push({
@@ -663,12 +689,14 @@ const ticketController = {
                 appliedPromotions = [],
                 total,
                 subtotal,
+                createUserId,
             } = req.body;
 
             console.log('Extracted values:', {
                 tableId,
                 clientId,
                 paymentId,
+                createUserId,
                 status,
                 paymentStatus,
                 notes,
@@ -698,7 +726,7 @@ const ticketController = {
             }
 
             // Calculate totals from ticket lines (FIXED to handle promotions)
-        
+
 
             if (ticketLines.length > 0) {
                 console.log('Calculating totals from ticket lines...');
@@ -735,6 +763,7 @@ const ticketController = {
                 ticketNumber,
                 clientId: clientId || null,
                 paymentId: paymentId || null,
+                createUserId: createUserId || null,
                 status,
                 paymentStatus,
                 taxType,
@@ -1047,7 +1076,7 @@ const ticketController = {
 
         try {
             const { id } = req.params;
-            const { status, cancelReason } = req.body;
+            const { status, cancelReason, updateUserId } = req.body;
 
             if (!status) {
                 await transaction.rollback();
@@ -1065,8 +1094,10 @@ const ticketController = {
                     message: 'Invalid status. Must be one of: ' + validStatuses.join(', ')
                 });
             }
-
+            // Track cancel userID
+            let cancelUserId = null
             if (status === 'cancel') {
+                cancelUserId = updateUserId;
                 if (!cancelReason || cancelReason.trim() === '') {
                     await transaction.rollback();
                     return res.status(400).json({
@@ -1097,7 +1128,8 @@ const ticketController = {
                 await ticket.update({
                     status,
                     paymentStatus: 'cancel',
-                    notes: cancelReason
+                    notes: cancelReason,
+                    cancelUserId,
                 }, { transaction });
 
                 logger.info(`✓ Ticket ${id} status updated to cancelled`);
