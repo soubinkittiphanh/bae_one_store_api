@@ -10,6 +10,7 @@ const Table = require('../../models').table;
 const sequelize = require('../../models').sequelize;
 const Payment = require('../../models').payment;
 const Client = require('../../models').client;
+const Category = require('../../models').category;
 const Product = require('../../models').product;
 const Promotion = require('../../models').promotion; // Added promotion model
 
@@ -499,7 +500,13 @@ const ticketController = {
                         {
                             model: Product,
                             as: 'product',
-                            required: false
+                            required: false,
+                            include: [
+                                {
+                                    model: Category,
+                                    as: 'category',
+                                }
+                            ]
                         },
                         {
                             model: Promotion,

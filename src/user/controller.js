@@ -1,9 +1,9 @@
-
 const User = require('../models').user;
 const Terminal = require('../models').terminal;
 const { body, validationResult } = require('express-validator');
 const logger = require('../api/logger');
 const { Op } = require('sequelize');
+const bcrypt = require('bcrypt'); // You may need to install this: npm install bcrypt
 
 const createCustomer = async (req, res) => {
   try {
@@ -47,6 +47,7 @@ const getCustomerById = async (req, res) => {
     res.status(500).json({ message: error });
   }
 };
+
 const setTerminals = async (userId, terminalList,res) => {
   // const terminal = await Terminal.findByPk(terminalId)
   // if (!terminal) {
@@ -103,6 +104,7 @@ const linkTerminal = async (req, res) => {
     res.status(500).json({ message: error });
   }
 };
+
 const unlinkTerminal = async (req, res) => {
   const { id } = req.params;
   const { terminalId } = req.body
@@ -169,6 +171,194 @@ const deleteCustomer = async (req, res) => {
   }
 };
 
+// NEW FUNCTION: Change Password
+const changePassword = async (req, res) => {
+  try {
+    // Validate input
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Validation failed', 
+        errors: errors.array() 
+      });
+    }
+
+    const { userId, currentPassword, newPassword } = req.body;
+
+    logger.info(`Password change request for user ID: ${userId}`);
+
+    // Find user by ID or cus_id
+    const user = await User.findOne({
+      where: {
+        [Op.or]: [
+          { id: userId },
+          { cus_id: userId }
+        ]
+      }
+    });
+
+    if (!user) {
+      logger.warn(`User not found for ID: ${userId}`);
+      return res.status(404).json({ 
+        success: false, 
+        message: 'User not found' 
+      });
+    }
+
+    // Check if current password is correct
+    // Note: If your passwords are stored as plain text (which is not recommended),
+    // use this simple comparison:
+    if (user.cus_pass !== currentPassword) {
+      logger.warn(`Invalid current password for user ID: ${userId}`);
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Current password is incorrect' 
+      });
+    }
+
+    // If you want to use bcrypt for password hashing (recommended):
+    // const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.cus_pass);
+    // if (!isCurrentPasswordValid) {
+    //   logger.warn(`Invalid current password for user ID: ${userId}`);
+    //   return res.status(401).json({ 
+    //     success: false, 
+    //     message: 'Current password is incorrect' 
+    //   });
+    // }
+
+    // Validate new password requirements
+    if (newPassword.length < 4) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password must be at least 4 characters long'
+      });
+    }
+
+    if (newPassword === currentPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password must be different from current password'
+      });
+    }
+
+    // Update password
+    // For plain text storage (current approach):
+    user.cus_pass = newPassword;
+
+    // For bcrypt hashing (recommended):
+    // const saltRounds = 10;
+    // user.cus_pass = await bcrypt.hash(newPassword, saltRounds);
+
+    user.updateTimestamp = new Date();
+    await user.save();
+
+    logger.info(`Password successfully changed for user ID: ${userId}`);
+
+    res.status(200).json({ 
+      success: true, 
+      message: 'Password changed successfully' 
+    });
+
+  } catch (error) {
+    logger.error(`Error changing password: ${error.message}`);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Internal server error while changing password' 
+    });
+  }
+};
+
+// NEW FUNCTION: Reset Password (Admin function)
+const resetPassword = async (req, res) => {
+  try {
+    const { userId, newPassword } = req.body;
+
+    logger.info(`Password reset request for user ID: ${userId}`);
+
+    // Find user by ID or cus_id
+    const user = await User.findOne({
+      where: {
+        [Op.or]: [
+          { id: userId },
+          { cus_id: userId }
+        ]
+      }
+    });
+
+    if (!user) {
+      logger.warn(`User not found for reset, ID: ${userId}`);
+      return res.status(404).json({ 
+        success: false, 
+        message: 'User not found' 
+      });
+    }
+
+    // Validate new password
+    if (!newPassword || newPassword.length < 4) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password must be at least 4 characters long'
+      });
+    }
+
+    // Update password
+    // For plain text storage (current approach):
+    user.cus_pass = newPassword;
+
+    // For bcrypt hashing (recommended):
+    // const saltRounds = 10;
+    // user.cus_pass = await bcrypt.hash(newPassword, saltRounds);
+
+    user.updateTimestamp = new Date();
+    await user.save();
+
+    logger.info(`Password successfully reset for user ID: ${userId}`);
+
+    res.status(200).json({ 
+      success: true, 
+      message: 'Password reset successfully',
+      newPassword: newPassword // Consider removing this in production for security
+    });
+
+  } catch (error) {
+    logger.error(`Error resetting password: ${error.message}`);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Internal server error while resetting password' 
+    });
+  }
+};
+
+// Validation middleware for change password
+const validateChangePassword = [
+  body('userId')
+    .notEmpty()
+    .withMessage('User ID is required'),
+  body('currentPassword')
+    .notEmpty()
+    .withMessage('Current password is required'),
+  body('newPassword')
+    .isLength({ min: 4 })
+    .withMessage('New password must be at least 4 characters long')
+    .custom((value, { req }) => {
+      if (value === req.body.currentPassword) {
+        throw new Error('New password must be different from current password');
+      }
+      return true;
+    })
+];
+
+// Validation middleware for reset password
+const validateResetPassword = [
+  body('userId')
+    .notEmpty()
+    .withMessage('User ID is required'),
+  body('newPassword')
+    .isLength({ min: 4 })
+    .withMessage('New password must be at least 4 characters long')
+];
+
 module.exports = {
   createCustomer,
   getCustomers,
@@ -176,5 +366,9 @@ module.exports = {
   deleteCustomer,
   getCustomerById,
   linkTerminal,
-  unlinkTerminal
+  unlinkTerminal,
+  changePassword,
+  resetPassword,
+  validateChangePassword,
+  validateResetPassword
 };

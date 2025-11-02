@@ -9,6 +9,8 @@ router.use(validateToken)
 
 router
 .post("/create", controller.createCustomer)
+.post("/change-password", controller.changePassword)
+.post("/reset-password", controller.resetPassword)
 .post("/linkterminal/:id", controller.linkTerminal)
 .post("/unlinkterminal/:id", controller.unlinkTerminal)
 .put("/update/:id", controller.updateCustomer)
