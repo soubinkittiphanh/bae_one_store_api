@@ -504,6 +504,11 @@ static async toggleRefund(req, res) {
           },
           {
             model: Agency,
+            as: 'employee',
+            required: false
+          },
+          {
+            model: Agency,
             as: 'agency',
             // attributes: ['cus_id', 'cus_name', 'cus_email'],
             required: false
