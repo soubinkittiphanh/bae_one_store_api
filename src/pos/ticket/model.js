@@ -167,6 +167,10 @@ module.exports = (sequelize, DataTypes) => {
             foreignKey: 'cancelUserId',
             as: 'cancelUser',
         });
+        Ticket.belongsTo(models.location, {
+            foreignKey: 'locationId',
+            as: 'location',
+        });
     };
 
     return Ticket;

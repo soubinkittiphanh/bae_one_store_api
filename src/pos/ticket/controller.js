@@ -66,7 +66,7 @@ const postTicketToSale = async (ticketId, transaction) => {
 
         // Generate locking session for card reservation
         const lockingSessionId = common.generateLockingSessionId();
-        const locationId = 1; // Get from ticket.table.locationId or config
+        const locationId = ticket.locationId; // Get from ticket.table.locationId or config
 
         // Prepare lines for processing
         const lines = ticket.ticketLines.map(ticketLine => ({
@@ -697,6 +697,7 @@ const ticketController = {
                 total,
                 subtotal,
                 createUserId,
+                locationId,
             } = req.body;
 
             console.log('Extracted values:', {
@@ -704,6 +705,7 @@ const ticketController = {
                 clientId,
                 paymentId,
                 createUserId,
+                locationId,
                 status,
                 paymentStatus,
                 notes,
@@ -771,6 +773,7 @@ const ticketController = {
                 clientId: clientId || null,
                 paymentId: paymentId || null,
                 createUserId: createUserId || null,
+                locationId: locationId || null,
                 status,
                 paymentStatus,
                 taxType,
