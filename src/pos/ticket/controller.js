@@ -12,6 +12,7 @@ const Payment = require('../../models').payment;
 const Client = require('../../models').client;
 const Category = require('../../models').category;
 const Product = require('../../models').product;
+const Location = require('../../models').location;
 const Promotion = require('../../models').promotion; // Added promotion model
 
 // Sale integration models
@@ -415,6 +416,7 @@ const ticketController = {
                 page = 1,
                 limit = 200,
                 include,
+                locationId,
                 sort = 'createdAt:desc'
             } = req.query;
 
@@ -423,7 +425,7 @@ const ticketController = {
             if (paymentStatus) whereCondition.paymentStatus = paymentStatus;
             if (tableId) whereCondition.tableId = tableId;
             if (clientId) whereCondition.clientId = clientId;
-
+            if (locationId) whereCondition.locationId = locationId;
             if (startDate || endDate) {
                 whereCondition.createdAt = {};
                 if (startDate) {
@@ -489,6 +491,11 @@ const ticketController = {
             includeArray.push({
                 model: User,
                 as: 'updateUser',
+                required: false
+            });
+            includeArray.push({
+                model: Location,
+                as: 'location',
                 required: false
             });
 
