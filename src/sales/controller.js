@@ -193,7 +193,7 @@ exports.reverseSaleHeader = async (req, res) => {
       logger.info(`Reversing the washJob ${saleHeader.washJobId}`)
       const washJob = await WashJob.findByPk(saleHeader.washJobId)
       await washJob.update({
-        status:'CANCELLED',
+        status: 'CANCELLED',
       });
       logger.info(`Currency wash job version ${JSON.stringify(washJob)}`)
     }
@@ -625,6 +625,8 @@ exports.getSaleHeadersByDateAndProduct = async (req, res) => {
             '$saleLine.productId$': { // Assuming `productId` is the correct field name
               [productId < 1 ? Op.ne : Op.eq]: productId,
             },
+            'locationId': date.locationId,
+
           },
         }
       ],
