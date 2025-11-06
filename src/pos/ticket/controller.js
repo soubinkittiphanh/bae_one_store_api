@@ -771,7 +771,7 @@ const ticketController = {
             }
 
             console.log('Generating ticket number...');
-            const ticketNumber = await Ticket.generateTicketNumber();
+            const ticketNumber = await Ticket.generateTicketNumber(locationId);
             console.log(`Generated ticket number: ${ticketNumber}`);
 
             const ticketData = {

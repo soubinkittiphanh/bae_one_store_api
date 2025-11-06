@@ -43,24 +43,70 @@ module.exports = (sequelize, DataTypes) => {
         remark: {
             type: DataTypes.STRING,
             defaultValue: 0
-            // allowNull: false,
         },
         isActive: {
             type: DataTypes.BOOLEAN,
             allowNull: false,
             defaultValue: true,
         },
+        // Theme configuration fields
+        theme_primary_color: {
+            type: DataTypes.STRING(7),
+            allowNull: true,
+            defaultValue: '#01532B',
+            validate: {
+                is: /^#[0-9A-F]{6}$/i  // Validates hex color format
+            }
+        },
+        theme_secondary_color: {
+            type: DataTypes.STRING(7),
+            allowNull: true,
+            defaultValue: '#337555',
+            validate: {
+                is: /^#[0-9A-F]{6}$/i
+            }
+        },
+        theme_lightprimary_color: {
+            type: DataTypes.STRING(7),
+            allowNull: true,
+            defaultValue: '#80a995',
+            validate: {
+                is: /^#[0-9A-F]{6}$/i
+            }
+        },
+        theme_danger_color: {
+            type: DataTypes.STRING(7),
+            allowNull: true,
+            defaultValue: '#D00505',
+            validate: {
+                is: /^#[0-9A-F]{6}$/i
+            }
+        },
+        theme_dark_primary: {
+            type: DataTypes.STRING(7),
+            allowNull: true,
+            validate: {
+                is: /^#[0-9A-F]{6}$/i
+            }
+        },
+        theme_dark_secondary: {
+            type: DataTypes.STRING(7),
+            allowNull: true,
+            validate: {
+                is: /^#[0-9A-F]{6}$/i
+            }
+        },
+        theme_enabled: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: true,
+            comment: 'Enable custom theme colors for this company'
+        },
     }, {
         sequelize,
-        // don't forget to enable timestamps!
         timestamps: true,
-        // I don't want createdAt
         createdAt: true,
-        // I want updatedAt to actually be called updateTimestamp
         updatedAt: 'updateTimestamp',
-        // disable the modification of tablenames; By default, sequelize will automatically
-        // transform all passed model names (first parameter of define) into plural.
-        // if you don't want that, set the following
         freezeTableName: true,
     })
     return Company;

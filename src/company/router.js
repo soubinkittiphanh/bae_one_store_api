@@ -63,6 +63,7 @@ const upload = multer({
 // Public routes (no authentication required)
 router.get("/findAll", controller.getAllActiveCompanies) // This route is now public
 router.get("/find", controller.getAllCompanies) // Made this public too for logo loading
+router.get('/company-theme/:id', controller.getCompanyTheme);
 
 // Apply token validation to all subsequent routes
 router.use(validateToken)
@@ -72,7 +73,7 @@ router.post("/create", controller.createCompany)
   .put("/update/:id", controller.updateCompanyById)
   .delete("/find/:id", controller.deleteCompanyById)
   .get("/find/:id", controller.getCompanyById)
-
+router.put('/company-theme/:id', controller.updateCompanyTheme);
 // Image upload routes (protected)
 router.post("/upload-profile-image/:id", upload.single('profile_image'), controller.uploadProfileImage)
   .put("/update-profile-image/:id", controller.updateCompanyProfileImage)

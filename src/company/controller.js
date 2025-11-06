@@ -209,3 +209,92 @@ exports.deleteCompanyById = async (req, res) => {
     res.status(500).json({ message: 'Server Error' });
   }
 };
+
+
+// Add this new method to get company theme
+exports.getCompanyTheme = async (req, res) => {
+  try {
+    const companyId = req.params.id;
+    const company = await Company.findByPk(companyId, {
+      attributes: [
+        'id',
+        'name',
+        'theme_primary_color',
+        'theme_secondary_color',
+        'theme_lightprimary_color',
+        'theme_danger_color',
+        'theme_dark_primary',
+        'theme_dark_secondary',
+        'theme_enabled'
+      ]
+    });
+
+    if (!company) {
+      return res.status(404).json({ message: 'Company not found' });
+    }
+
+    // Return theme data
+    res.json({
+      theme: {
+        primary_color: company.theme_primary_color,
+        secondary_color: company.theme_secondary_color,
+        lightprimary_color: company.theme_lightprimary_color,
+        danger_color: company.theme_danger_color,
+        dark_primary: company.theme_dark_primary,
+        dark_secondary: company.theme_dark_secondary,
+        enabled: company.theme_enabled
+      }
+    });
+  } catch (err) {
+    logger.error('Error fetching company theme:', err);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+// Add this new method to update company theme
+exports.updateCompanyTheme = async (req, res) => {
+  try {
+    const companyId = req.params.id;
+    const {
+      theme_primary_color,
+      theme_secondary_color,
+      theme_lightprimary_color,
+      theme_danger_color,
+      theme_dark_primary,
+      theme_dark_secondary,
+      theme_enabled
+    } = req.body;
+
+    const company = await Company.findByPk(companyId);
+    if (!company) {
+      return res.status(404).json({ message: 'Company not found' });
+    }
+
+    // Update theme fields
+    await company.update({
+      theme_primary_color,
+      theme_secondary_color,
+      theme_lightprimary_color,
+      theme_danger_color,
+      theme_dark_primary,
+      theme_dark_secondary,
+      theme_enabled
+    });
+
+    res.json({
+      message: 'Company theme updated successfully',
+      theme: {
+        primary_color: company.theme_primary_color,
+        secondary_color: company.theme_secondary_color,
+        lightprimary_color: company.theme_lightprimary_color,
+        danger_color: company.theme_danger_color,
+        dark_primary: company.theme_dark_primary,
+        dark_secondary: company.theme_dark_secondary,
+        enabled: company.theme_enabled
+      }
+    });
+  } catch (err) {
+    logger.error('Error updating company theme:', err);
+    res.status(500).json({ message: 'Server Error: ' + err.message });
+  }
+};

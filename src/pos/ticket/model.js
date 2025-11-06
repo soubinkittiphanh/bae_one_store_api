@@ -60,10 +60,13 @@ module.exports = (sequelize, DataTypes) => {
     });
 
     // Static method to generate ticket number// Static method to generate ticket number with date for uniqueness
-    Ticket.generateTicketNumber = async function () {
+    Ticket.generateTicketNumber = async function (locationId) {
         const { Op } = require('sequelize');
         let attempts = 0;
         const maxAttempts = 50;
+        if (!locationId) {
+            throw new Error('locationId is required for ticket number generation');
+        }
 
         while (attempts < maxAttempts) {
             // ✅ FIX: Use local timezone instead of UTC
@@ -88,6 +91,7 @@ module.exports = (sequelize, DataTypes) => {
             // Count tickets created today
             const todayTicketCount = await Ticket.count({
                 where: {
+                    locationId: locationId,  // ✅ Filter by location
                     createdAt: {
                         [Op.gte]: today,
                         [Op.lt]: tomorrow
@@ -102,7 +106,8 @@ module.exports = (sequelize, DataTypes) => {
             // Format: DD/TT-YYMMDD (e.g., 01/01-251030)
             const paddedTicket = String(ticketInDay).padStart(2, '0');
             const paddedRound = String(round).padStart(2, '0');
-            const ticketNumber = `${paddedTicket}/${paddedRound}-${dateStr}`;
+            const paddedLocationId = String(locationId).padStart(2, '0'); // Pad location ID to 3 digits
+            const ticketNumber = `${paddedTicket}/${paddedRound}-${dateStr}-${paddedLocationId}`;
 
             console.log('Generated ticket number:', ticketNumber);
 
