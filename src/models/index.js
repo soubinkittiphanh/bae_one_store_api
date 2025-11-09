@@ -66,6 +66,7 @@ const initializeModels = () => {
     spf: require("../spf/model")(sequelize, DataTypes),
     client: require("../client/model")(sequelize, DataTypes),
     group: require("../group/model")(sequelize, DataTypes),
+    GroupMenuHeader: require("../groupMenuHeaders/model")(sequelize, DataTypes),
     role: require("../userRole/model")(sequelize, DataTypes),
     user: require("../user/model")(sequelize, DataTypes),
     Agency: require("../job-fair/agency/model")(sequelize, DataTypes),
@@ -93,7 +94,11 @@ const initializeModels = () => {
     order: require("../order/model")(sequelize, DataTypes),
     orderHIS: require("../order_history/model")(sequelize, DataTypes),
     orderTable: require("../orderTable/model")(sequelize, DataTypes),
-
+    // POS models
+    table: require("../pos/table/model")(sequelize, DataTypes),
+    ticket: require("../pos/ticket/model")(sequelize, DataTypes),
+    promotion: require("../pos/promotion/model")(sequelize, DataTypes),
+    ticketLine: require("../pos/ticketLine/model")(sequelize, DataTypes),
     // Sales models
     saleHeader: require("../sales/model")(sequelize, DataTypes),
     saleLine: require("../sales/line/model")(sequelize, DataTypes),
@@ -128,13 +133,10 @@ const initializeModels = () => {
     // Menu models
     menuHeader: require("../menu/model")(sequelize, DataTypes),
     menuLine: require("../menu/line/model")(sequelize, DataTypes),
+    MenuHeaderLines: require("../menuHeaderLine/model")(sequelize, DataTypes),
     webMenuHeader: require("../web_menu_header/model")(sequelize, DataTypes),
 
-    // POS models
-    table: require("../pos/table/model")(sequelize, DataTypes),
-    ticket: require("../pos/ticket/model")(sequelize, DataTypes),
-    promotion: require("../pos/promotion/model")(sequelize, DataTypes),
-    ticketLine: require("../pos/ticketLine/model")(sequelize, DataTypes),
+
 
     // Financial models
     Transaction: require("../transaction/model")(sequelize, DataTypes),
@@ -472,8 +474,19 @@ const defineManyToManyAssociations = (db) => {
   db.webProductGroup.hasMany(db.product, { as: 'lines' });
 
   // Menu associations
-  db.menuHeader.belongsToMany(db.menuLine, { through: 'MenuHeaderLines' });
-  db.menuLine.belongsToMany(db.menuHeader, { through: 'MenuHeaderLines' });
+  // db.menuHeader.belongsToMany(db.menuLine, { through: 'MenuHeaderLines' });
+  // db.menuLine.belongsToMany(db.menuHeader, { through: 'MenuHeaderLines' });
+  db.menuHeader.belongsToMany(db.menuLine, {
+    through: db.MenuHeaderLines,
+    foreignKey: 'menuHeaderId',
+    otherKey: 'menuLineId'
+  });
+
+  db.menuLine.belongsToMany(db.menuHeader, {
+    through: db.MenuHeaderLines,
+    foreignKey: 'menuLineId',
+    otherKey: 'menuHeaderId'
+  });
 
   // User terminal associations
   db.user.belongsToMany(db.terminal, { through: 'UserTerminals' });
@@ -484,8 +497,19 @@ const defineManyToManyAssociations = (db) => {
   db.group.belongsToMany(db.authority, { through: 'GroupAuthorities' });
 
   // Group menu header associations
-  db.menuHeader.belongsToMany(db.group, { through: 'GroupMenuHeader' });
-  db.group.belongsToMany(db.menuHeader, { through: 'GroupMenuHeader' });
+  // db.menuHeader.belongsToMany(db.group, { through: 'GroupMenuHeader' });
+  // db.group.belongsToMany(db.menuHeader, { through: 'GroupMenuHeader' });
+  db.menuHeader.belongsToMany(db.group, {
+    through: 'GroupMenuHeader',
+    foreignKey: 'menuHeaderId',
+    otherKey: 'userGroupId'
+  });
+
+  db.group.belongsToMany(db.menuHeader, {
+    through: 'GroupMenuHeader',
+    foreignKey: 'userGroupId',
+    otherKey: 'menuHeaderId'
+  });
 };
 
 // Initialize and setup associations

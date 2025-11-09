@@ -1,5 +1,3 @@
-
-
 module.exports = (sequelize, DataTypes) => {
     const Card = sequelize.define('card', {
         card_type_code: {
@@ -16,7 +14,6 @@ module.exports = (sequelize, DataTypes) => {
         },
         costLCY: {
             type: DataTypes.DOUBLE,
-            // allowNull: false,
             defaultValue: 1
         },
         exchangeRate: {
@@ -65,37 +62,142 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: false,
             defaultValue: true,
         },
+        
+        // NEW FIELDS ADDED
+        lotNumber: {
+            type: DataTypes.STRING(50),
+            allowNull: true,
+            comment: 'Batch/Lot identification number'
+        },
+        expiryDate: {
+            type: DataTypes.DATEONLY,
+            allowNull: true,
+            comment: 'Product expiry date'
+        },
+        hasExpiry: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false,
+            comment: 'Indicates if this stock item has expiry date tracking'
+        },
+        hasLot: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false,
+            comment: 'Indicates if this stock item has lot number tracking'
+        },
+        costPerUnit: {
+            type: DataTypes.DOUBLE,
+            allowNull: true,
+            comment: 'Cost per individual unit'
+        },
+        totalCost: {
+            type: DataTypes.DOUBLE,
+            allowNull: true,
+            comment: 'Total cost for this stock entry'
+        },
+        costType: {
+            type: DataTypes.ENUM('perUnit', 'total'),
+            allowNull: true,
+            defaultValue: 'perUnit',
+            comment: 'How the cost was calculated (per unit or total)'
+        },
+        stockCardQty: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            defaultValue: 1,
+            comment: 'Quantity of items in this stock card'
+        },
+        srcLocationId: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            comment: 'Source location ID for this stock'
+        },
+        currencyId: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            comment: 'Currency ID for cost calculation'
+        },
+        
+        // COMPUTED FIELDS (can be added as virtual or calculated)
+        isExpired: {
+            type: DataTypes.VIRTUAL,
+            get() {
+                if (!this.expiryDate) return false;
+                return new Date(this.expiryDate) < new Date();
+            }
+        },
+        daysUntilExpiry: {
+            type: DataTypes.VIRTUAL,
+            get() {
+                if (!this.expiryDate) return null;
+                const today = new Date();
+                const expiry = new Date(this.expiryDate);
+                const diffTime = expiry.getTime() - today.getTime();
+                return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            }
+        }
     }, {
         sequelize,
-        // don't forget to enable timestamps!
         timestamps: true,
-        // I don't want createdAt
         createdAt: true,
-        // I want updatedAt to actually be called updateTimestamp
         updatedAt: 'updateTimestamp',
-        // disable the modification of tablenames; By default, sequelize will automatically
-        // transform all passed model names (first parameter of define) into plural.
-        // if you don't want that, set the following
         freezeTableName: true,
-    })
-
+        
+        // Add indexes for better performance
+        indexes: [
+            {
+                name: 'idx_card_expiry_date',
+                fields: ['expiryDate']
+            },
+            {
+                name: 'idx_card_lot_number',
+                fields: ['lotNumber']
+            },
+            {
+                name: 'idx_card_product_lot',
+                fields: ['product_id', 'lotNumber']
+            },
+            {
+                name: 'idx_card_expired_items',
+                fields: ['expiryDate', 'isActive']
+            }
+        ],
+        
+        // Add scopes for common queries
+        scopes: {
+            active: {
+                where: {
+                    isActive: true
+                }
+            },
+            expired: {
+                where: {
+                    expiryDate: {
+                        [sequelize.Sequelize.Op.lt]: new Date()
+                    },
+                    isActive: true
+                }
+            },
+            expiringSoon: {
+                where: {
+                    expiryDate: {
+                        [sequelize.Sequelize.Op.between]: [
+                            new Date(),
+                            new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
+                        ]
+                    },
+                    isActive: true
+                }
+            },
+            withLot: {
+                where: {
+                    hasLot: true,
+                    isActive: true
+                }
+            }
+        }
+    });
+    
     return Card;
 };
-
-// 1. STRING: A variable length string.
-// 2. CHAR: A fixed length string.
-// 3. TEXT: A long string.
-// 4. INTEGER: A 32-bit integer.
-// 5. BIGINT: A 64-bit integer.
-// 6. FLOAT: A floating point number.
-// 7. DOUBLE: A double floating point number.
-// 8. DECIMAL: A fixed-point decimal number.
-// 9. BOOLEAN: A boolean value.
-// 10. DATE: A date object.
-// 11. DATEONLY: A date object without time.
-// 12. TIME: A time object.
-// 13. UUID: A universally unique identifier.
-// 14. ENUM: A value from a predefined list of values.
-// 15. ARRAY: An array of values.
-// 16. JSON: A JSON object.
-// 17. JSONB: A JSON object stored as a binary format.

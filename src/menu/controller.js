@@ -190,37 +190,91 @@ const deleteMenuHeader = async (req, res) => {
   }
 };
 
+
 const setmenuLine = async (headerId, line, res) => {
-  logger.info(`Header ${headerId} | line ${line.length}`)
+  logger.info(`Header ${headerId} | line ${line.length}`);
+  
   try {
-    const header = await MenuHeader.findByPk(headerId, {
-      include: [{
-        model: MenuLine,
-        through: { attributes: [] }
-      }]
-    });
+    const header = await MenuHeader.findByPk(headerId);
     if (!header) {
       return res.status(404).json({ message: 'Menu header not found' });
     }
-    logger.info(`Group found ${header.name}`)
-    for (const iterator of line) {
-      logger.warn(`Group loop ${iterator['name']}`)
-    }
-
-    const menuLine = await MenuLine.findAll({
-      where: {
-        id: {
-          [Op.in]: line.map(el => el.id)
-        }
+    
+    logger.info(`Group found ${header.name}`);
+    
+    // Clear existing associations
+    await header.setMenuLines([]);
+    
+    // Add menu lines with automatic ordering
+    for (let i = 0; i < line.length; i++) {
+      const menuLine = await MenuLine.findByPk(line[i].id);
+      if (menuLine) {
+        await header.addMenuLine(menuLine, {
+          through: { order: i + 1 }
+        });
+        logger.warn(`Added: ${line[i].name} with order: ${i + 1}`);
       }
+    }
+    
+    // Fetch without ordering - we'll sort in JavaScript
+    const updatedHeader = await MenuHeader.findByPk(headerId, {
+      include: [{
+        model: MenuLine,
+        through: { 
+          attributes: ['order']
+        }
+      }]
+      // Remove the problematic order clause
     });
-    await header.setMenuLines(menuLine);
-    res.status(200).json(header);
+    
+    // Sort the menuLines by order in JavaScript
+    if (updatedHeader && updatedHeader.menuLines) {
+      updatedHeader.menuLines.sort((a, b) => {
+        const orderA = a.MenuHeaderLines?.order || 0;
+        const orderB = b.MenuHeaderLines?.order || 0;
+        return orderA - orderB;
+      });
+    }
+    
+    res.status(200).json(updatedHeader);
+    
   } catch (error) {
-    logger.error(`ERROR update terminal list ${error}`)
+    logger.error(`ERROR update terminal list ${error}`);
     res.status(500).json({ message: error });
   }
 }
+
+// const setmenuLine = async (headerId, line, res) => {
+//   logger.info(`Header ${headerId} | line ${line.length}`)
+//   try {
+//     const header = await MenuHeader.findByPk(headerId, {
+//       include: [{
+//         model: MenuLine,
+//         through: { attributes: [] }
+//       }]
+//     });
+//     if (!header) {
+//       return res.status(404).json({ message: 'Menu header not found' });
+//     }
+//     logger.info(`Group found ${header.name}`)
+//     for (const iterator of line) {
+//       logger.warn(`Group loop ${iterator['name']}`)
+//     }
+
+//     const menuLine = await MenuLine.findAll({
+//       where: {
+//         id: {
+//           [Op.in]: line.map(el => el.id)
+//         }
+//       }
+//     });
+//     await header.setMenuLines(menuLine);
+//     res.status(200).json(header);
+//   } catch (error) {
+//     logger.error(`ERROR update terminal list ${error}`)
+//     res.status(500).json({ message: error });
+//   }
+// }
 
 module.exports = {
   getMenuHeaders,
