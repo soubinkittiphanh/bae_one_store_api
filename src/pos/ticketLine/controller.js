@@ -2,16 +2,17 @@ const { body, validationResult } = require('express-validator');
 const logger = require('../../api/logger');
 const { Op } = require('sequelize');
 const { ticketLine, ticket, product, promotion } = require('../../models');
+const Payment = require('../../models').payment;
 
 const ticketLineController = {
   // Create a new ticket line
   create: async (req, res) => {
     try {
-      const { 
-        ticketId, 
-        productId, 
-        quantity, 
-        unitPrice, 
+      const {
+        ticketId,
+        productId,
+        quantity,
+        unitPrice,
         specialInstructions,
         promotionId,
         is_promotion_item,
@@ -186,7 +187,13 @@ const ticketLineController = {
       const ticketLines = await ticketLine.findAll({
         where: { ticketId },
         include: [
-          { model: ticket, as: 'ticket' },
+          {
+            model: ticket, include: [{
+              model: Payment,
+              as: 'payment',
+              required: false
+            }], as: 'ticket'
+          },
           { model: product, as: 'product' },
           { model: promotion, as: 'promotion' }
         ],
@@ -212,10 +219,10 @@ const ticketLineController = {
   update: async (req, res) => {
     try {
       const { id } = req.params;
-      const { 
-        quantity, 
-        unitPrice, 
-        specialInstructions, 
+      const {
+        quantity,
+        unitPrice,
+        specialInstructions,
         status,
         promotionId,
         is_promotion_item,
@@ -319,7 +326,7 @@ const ticketLineController = {
 
       // Store original price if not already stored
       const original_price = existingTicketLine.original_price || existingTicketLine.unitPrice;
-      
+
       // Calculate new unit price after discount
       const newUnitPrice = existingTicketLine.unitPrice - (discount_amount || 0);
       const newTotalPrice = existingTicketLine.quantity * newUnitPrice;
@@ -411,7 +418,7 @@ const ticketLineController = {
   getPromotionalLines: async (req, res) => {
     try {
       const { ticketId } = req.query;
-      
+
       const whereClause = { is_promotion_item: true };
       if (ticketId) whereClause.ticketId = ticketId;
 
