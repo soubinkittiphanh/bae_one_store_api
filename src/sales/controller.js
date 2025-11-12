@@ -2,6 +2,7 @@
 const SaleHeader = require('../models').saleHeader;
 const SaleLine = require('../models').saleLine;
 const Customer = require('../models').customer;
+const Category = require('../models').category;
 const Line = require('../models').saleLine;
 const Product = require('../models').product;
 const Card = require('../models').card;
@@ -612,7 +613,11 @@ exports.getSaleHeadersByDateAndProduct = async (req, res) => {
       include: [
         {
           model: Product,
-          as: "product"
+          as: "product",
+          include: [{
+            model: Category,
+            as: "category",
+          }]
         },
         {
           model: SaleHeader,
