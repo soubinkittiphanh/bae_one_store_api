@@ -21,6 +21,8 @@ exports.create = (req, res) => {
     credit: req.body.credit,
     lateChargePercent: req.body.lateChargePercent,
     grade: req.body.grade,
+    class: req.body.class,
+    DOB: req.body.DOB,
     email: req.body.email,
     isActive: req.body.isActive ? req.body.isActive : true
   };

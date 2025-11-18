@@ -336,6 +336,7 @@ const fetchProductFromLocation = async (req, res) => {
     p.receiveUnitId,
     p.stockUnitId,
     p.pro_name,
+    p._category,
     p.vendorName,
     p.pro_category,
     p.pro_price,

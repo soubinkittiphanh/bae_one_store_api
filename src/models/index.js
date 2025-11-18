@@ -95,10 +95,12 @@ const initializeModels = () => {
     orderHIS: require("../order_history/model")(sequelize, DataTypes),
     orderTable: require("../orderTable/model")(sequelize, DataTypes),
     // POS models
+    recipe: require("../recipe/model")(sequelize, DataTypes),
     table: require("../pos/table/model")(sequelize, DataTypes),
     ticket: require("../pos/ticket/model")(sequelize, DataTypes),
     promotion: require("../pos/promotion/model")(sequelize, DataTypes),
     ticketLine: require("../pos/ticketLine/model")(sequelize, DataTypes),
+    MemberOffer: require("../member_offer/model")(sequelize, DataTypes),
     // Sales models
     saleHeader: require("../sales/model")(sequelize, DataTypes),
     saleLine: require("../sales/line/model")(sequelize, DataTypes),
@@ -146,6 +148,7 @@ const initializeModels = () => {
     arReceiveHeader: require("../AR/receive/header/model")(sequelize, DataTypes),
     payment: require("../paymentMethod/model")(sequelize, DataTypes),
     bankAccount: require("../bankAccount/model")(sequelize, DataTypes),
+    ministry: require("../ministry/model")(sequelize, DataTypes),
     moneySettlement: require("../PWT/moneySettlement/model")(sequelize, DataTypes),
     moneyAdvanceAudit: require("../PWT/moneyAdvanceAudit/model")(sequelize, DataTypes),
     moneyAdvance: require("../PWT/moneyAdvance/model")(sequelize, DataTypes),
@@ -179,7 +182,7 @@ const initializeModels = () => {
     country: require("../country/model")(sequelize, DataTypes),
     village: require("../district/model")(sequelize, DataTypes),
     district: require("../district-village/model")(sequelize, DataTypes),
-    ministry: require("../ministry/model")(sequelize, DataTypes),
+   
 
 
     // Tutorial model (uses different DB)

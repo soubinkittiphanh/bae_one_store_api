@@ -44,6 +44,7 @@ const buildApp = async () => {
     app.use("/api/sale",myRouter.sale)
     app.use("/api/saleLine",myRouter.saleLine)
     app.use("/api/product",myRouter.product)
+    app.use("/api/recipes",myRouter.recipe)
     app.use("/api/transfer",myRouter.transfer)
     app.use("/api/terminal",myRouter.terminal)
     app.use("/api/user",myRouter.user)
@@ -89,6 +90,7 @@ const buildApp = async () => {
     app.use("/api/mous",myRouter.MOU)
     app.use("/api/role",myRouter.userRole)
     app.use("/api/promotions",myRouter.promotions)
+    app.use("/api/member-offers",myRouter.memberOffer)
     app.use("/api/transaction-codes",myRouter.transaction)
 
     Router.category(app);

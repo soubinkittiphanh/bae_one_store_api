@@ -68,7 +68,7 @@ module.exports = (sequelize, DataTypes) => {
             defaultValue: true,
         },
         _category: {
-            type: DataTypes.ENUM('product', 'service'),
+            type: DataTypes.ENUM('product', 'service','stock'),
             allowNull: false,
             defaultValue: 'product',
         },

@@ -42,6 +42,14 @@ module.exports = (sequelize, DataTypes) => {
             defaultValue: 'A'
             // allowNull: false,
         },
+        class: {
+            type: DataTypes.ENUM('BRONZE', 'SILVER', 'GOLD', 'PLATINUM', 'DIAMOND'),
+            defaultValue: 'BRONZE'
+        },
+        DOB: {
+            type: DataTypes.DATEONLY,
+            // allowNull: false
+        },
         isActive: {
             type: DataTypes.BOOLEAN,
             allowNull: false,

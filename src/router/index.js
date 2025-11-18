@@ -71,7 +71,9 @@ const arReceiveHeader = require("../ARV2/receive/header/router")
 const arReceiveLine = require("../ARV2/receive/line/router")
 const batchJob = require("../job-fair/job-batch/router")
 const userRole = require("../userRole/router")
+const recipe = require("../recipe/router")
 const promotions = require("../pos/promotion/router")
+const memberOffer = require("../member_offer/router")
 
 module.exports={
     orderRouter,
@@ -147,5 +149,7 @@ module.exports={
     MOU,
     userRole,
     transaction,
+    memberOffer,
+    recipe,
     promotions
 }
