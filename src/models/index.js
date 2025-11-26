@@ -79,6 +79,8 @@ const initializeModels = () => {
     location: require("../location/model")(sequelize, DataTypes),
     currency: require("../currency/model")(sequelize, DataTypes),
     unit: require("../unit/model")(sequelize, DataTypes),
+    stockTransactionModel: require("../stockTransaction/model")(sequelize, DataTypes),
+    // unit: require("../unit/model")(sequelize, DataTypes),
     category: require("../category/model")(sequelize, DataTypes),
 
     // Product related models
@@ -250,21 +252,21 @@ const defineUserAssociations = (db) => {
 
 // Product associations
 const defineProductAssociations = (db) => {
-  // Product core associations
-  db.product.belongsTo(db.category, { foreignKey: 'pro_category', as: 'category' });
-  db.product.belongsTo(db.company, { foreignKey: 'companyId', as: 'company' });
-  db.product.belongsTo(db.unit, { foreignKey: 'stockUnitId', as: 'stockUnit' });
-  db.product.belongsTo(db.unit, { foreignKey: 'receiveUnitId', as: 'receiveUnit' });
-  db.product.belongsTo(db.currency, { foreignKey: 'costCurrencyId', as: 'costCurrency' });
-  db.product.belongsTo(db.currency, { foreignKey: 'saleCurrencyId', as: 'saleCurrency' });
-  db.product.belongsTo(db.tax, { foreignKey: 'taxId', as: 'tax' });
+  // // Product core associations
+  // db.product.belongsTo(db.category, { foreignKey: 'pro_category', as: 'category' });
+  // db.product.belongsTo(db.company, { foreignKey: 'companyId', as: 'company' });
+  // db.product.belongsTo(db.unit, { foreignKey: 'stockUnitId', as: 'stockUnit' });
+  // db.product.belongsTo(db.unit, { foreignKey: 'receiveUnitId', as: 'receiveUnit' });
+  // db.product.belongsTo(db.currency, { foreignKey: 'costCurrencyId', as: 'costCurrency' });
+  // db.product.belongsTo(db.currency, { foreignKey: 'saleCurrencyId', as: 'saleCurrency' });
+  // db.product.belongsTo(db.tax, { foreignKey: 'taxId', as: 'tax' });
 
-  // Product has many associations
-  db.product.hasMany(db.image, { as: 'images' });
-  db.product.hasMany(db.priceList, { as: 'priceLists' });
-  db.product.hasMany(db.productSize, { as: 'sizeLists' });
-  db.product.hasMany(db.card, { as: 'cards' });
-  db.product.hasMany(db.ticketLine, { foreignKey: 'productId', as: 'ticketLines' });
+  // // Product has many associations
+  // db.product.hasMany(db.image, { as: 'images' });
+  // db.product.hasMany(db.priceList, { as: 'priceLists' });
+  // db.product.hasMany(db.productSize, { as: 'sizeLists' });
+  // db.product.hasMany(db.card, { as: 'cards' });
+  // db.product.hasMany(db.ticketLine, { foreignKey: 'productId', as: 'ticketLines' });
 
   // Related model associations
   db.category.hasMany(db.product, { as: 'products' });

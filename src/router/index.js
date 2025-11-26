@@ -74,6 +74,7 @@ const userRole = require("../userRole/router")
 const recipe = require("../recipe/router")
 const promotions = require("../pos/promotion/router")
 const memberOffer = require("../member_offer/router")
+const stockTransaction = require("../stockTransaction/router")
 
 module.exports={
     orderRouter,
@@ -151,5 +152,6 @@ module.exports={
     transaction,
     memberOffer,
     recipe,
-    promotions
+    promotions,
+    stockTransaction
 }
