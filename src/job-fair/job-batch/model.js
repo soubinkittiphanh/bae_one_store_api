@@ -158,6 +158,10 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: 'mouId',
       as: 'mou',
     });
+    JobBatch.belongsTo(models.Agency, {
+      foreignKey: 'agencyId',
+      as: 'agency',
+    });
     JobBatch.hasMany(models.Applicant, {
       foreignKey: 'jobBatchId',
       as: 'applicants',

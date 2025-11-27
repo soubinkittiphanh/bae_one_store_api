@@ -20,6 +20,7 @@ class JobBatchController {
         priority,
         notes,
         inchargePerson,
+        agencyId,
         mouId // NEW: MOU association
       } = req.body;
 
@@ -51,6 +52,7 @@ class JobBatchController {
         priority: priority || 'medium',
         notes,
         inchargePerson,
+        agencyId,
         mouId, // NEW: Include MOU ID
         makerId,
         updateUserId: makerId
@@ -369,6 +371,7 @@ class JobBatchController {
         priority,
         notes,
         inchargePerson,
+        agencyId,
         mouId // NEW: MOU ID for updates
       } = req.body;
 
@@ -409,8 +412,9 @@ class JobBatchController {
         status: status || jobBatch.status,
         priority: priority || jobBatch.priority,
         notes: notes !== undefined ? notes : jobBatch.notes,
-        notes: inchargePerson !== undefined ? inchargePerson : jobBatch.inchargePerson,
+        inchargePerson: inchargePerson !== undefined ? inchargePerson : jobBatch.inchargePerson,
         mouId: mouId !== undefined ? mouId : jobBatch.mouId, // NEW: Update MOU ID
+        agencyId: agencyId !== undefined ? agencyId : null, // NEW: Update MOU ID
         updateUserId
       });
 

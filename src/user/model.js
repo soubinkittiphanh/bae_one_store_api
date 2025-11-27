@@ -5,8 +5,8 @@ module.exports = (sequelize, DataTypes) => {
     const User = sequelize.define('user', {
         cus_id: {
             // type: DataTypes.INTEGER,
-            type: DataTypes.BIGINT,
-            // type: DataTypes.STRING,
+            // type: DataTypes.BIGINT,
+            type: DataTypes.STRING,
             allowNull: false,
             // primaryKey: true
         },

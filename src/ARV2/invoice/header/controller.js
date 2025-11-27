@@ -3,7 +3,7 @@
 // ===============================================================
 
 const logger = require('../../../api/logger');
-const { Agency, user, JobBatch, client, currency, arInvoiceLine, arReceiveHeaderV2, arInvoiceHeaderAudit, sequelize } = require('../../../models');
+const { Agency, user, JobBatch, client, currency, arInvoiceLine,arReceiveLine, arReceiveHeaderV2, arInvoiceHeaderAudit, sequelize } = require('../../../models');
 const InvoiceHeader = require('../../../models').arInvoiceHeader;
 const { Op, where } = require('sequelize');
 class InvoiceHeaderController {
@@ -100,6 +100,16 @@ class InvoiceHeaderController {
                         model: arInvoiceLine,
                         as: 'invoiceLines'
                     },
+                    {
+                        model: arReceiveHeaderV2,
+                        as: 'receiveHeaders',
+                        include: [
+                            {
+                                model: arReceiveLine,
+                                as: 'receiveLines'
+                            }
+                        ]
+                    }
                 ],
                 order: [[sortBy, sortOrder.toUpperCase()]],
                 limit: parseInt(limit),

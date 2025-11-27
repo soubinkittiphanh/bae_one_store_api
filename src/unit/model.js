@@ -1,5 +1,9 @@
 // Fixed Unit Model - /src/unit/model.js
 module.exports = (sequelize, DataTypes) => {
+    // alter table unitModel drop column unitRate;
+    // drop tablestock_transactions;
+    // drop table recipe;
+    // drop table member_offer;
     const Unit = sequelize.define('unitModel', {
         id: {
             type: DataTypes.INTEGER,
@@ -17,7 +21,7 @@ module.exports = (sequelize, DataTypes) => {
         symbol: {
             type: DataTypes.STRING(10),
             allowNull: false,
-            unique: true,
+            // unique: true,
             validate: {
                 notEmpty: true,
                 len: [1, 10]
@@ -61,10 +65,10 @@ module.exports = (sequelize, DataTypes) => {
         freezeTableName: true,
         tableName: 'unitModel',
         indexes: [
-            {
-                unique: true,
-                fields: ['symbol']
-            },
+            // {
+            //     unique: true,
+            //     fields: ['symbol']
+            // },
             {
                 fields: ['unit_type']
             },

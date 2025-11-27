@@ -43,6 +43,11 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       defaultValue: false
     },
+    depositByCensusBook: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false
+    },
 
     // อายุ - Age
     age: {
@@ -195,7 +200,7 @@ module.exports = (sequelize, DataTypes) => {
 
     // สถานะการสมัคร - Application Status
     status: {
-      type: DataTypes.ENUM('INTERVIEW', 'REGISTER', 'CONFIRM', 'SUBMITED'),
+      type: DataTypes.ENUM('INTERVIEW', 'REGISTER', 'CONFIRM', 'SUBMITED','rejected'),
       allowNull: false,
       defaultValue: 'INTERVIEW'
     },

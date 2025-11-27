@@ -2,7 +2,7 @@
 // AR RECEIVE HEADER CONTROLLER
 // ===============================================================
 const logger = require("../../../api/logger");
-const { user, arReceiveHeaderV2, arInvoiceLine, arReceiveLine, sequelize, arInvoiceHeader } = require('../../../models');
+const { user, MOU, JobBatch,Agency, arReceiveHeaderV2, arInvoiceLine, arReceiveLine, sequelize, arInvoiceHeader } = require('../../../models');
 const ReceiveHeader = require('../../../models').arReceiveHeaderV2;
 const { Op } = require('sequelize');
 
@@ -98,7 +98,25 @@ class ReceiveHeaderController {
           {
             model: arInvoiceHeader,
             as: 'invoiceHeader',
-            attributes: ['id', 'invoiceNumber', 'invoiceDate', 'status']
+            attributes: ['id', 'invoiceNumber', 'invoiceDate', 'status'],
+            include: [
+              {
+                model: JobBatch,
+                as: 'jobbatch',
+                include: [
+                  {
+                    model: MOU,
+                    as: 'mou',
+                    include: [
+                      {
+                        model: Agency,
+                        as: 'agency',
+                      }
+                    ],
+                  }
+                ],
+              }
+            ],
           },
           {
             model: user,
@@ -475,7 +493,7 @@ class ReceiveHeaderController {
 
       // Verify foreign key references if being updated
       if (updateData.invoiceHeaderId) {
-        const invoiceHeaderExists = await arReceiveHeaderV2.findByPk(updateData.invoiceHeaderId);
+        const invoiceHeaderExists = await arInvoiceHeader.findByPk(updateData.invoiceHeaderId);
         if (!invoiceHeaderExists) {
           await transaction.rollback();
           return res.status(400).json({
