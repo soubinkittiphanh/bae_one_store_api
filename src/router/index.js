@@ -21,6 +21,7 @@ const client = require("../client").router
 const unit = require("../unit").router
 const paymentMethod = require("../paymentMethod").router
 const sale = require("../sales").router
+const salePayment = require("../salePayment").router
 const menuHeader = require("../menu").router
 const menuLine = require("../menu/line").router
 const product = require("../product").router
@@ -153,5 +154,6 @@ module.exports={
     memberOffer,
     recipe,
     promotions,
-    stockTransaction
+    stockTransaction,
+    salePayment
 }

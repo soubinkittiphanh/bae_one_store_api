@@ -105,6 +105,7 @@ const initializeModels = () => {
     MemberOffer: require("../member_offer/model")(sequelize, DataTypes),
     // Sales models
     saleHeader: require("../sales/model")(sequelize, DataTypes),
+    salePayment: require("../salePayment/model")(sequelize, DataTypes),
     saleLine: require("../sales/line/model")(sequelize, DataTypes),
 
     // Quotation models
@@ -318,21 +319,7 @@ const defineOrderAssociations = (db) => {
 
 // Sales associations
 const defineSalesAssociations = (db) => {
-  // Sale header associations
-  db.saleHeader.belongsTo(db.payment, { foreignKey: 'paymentId', as: 'payment' });
-  db.saleHeader.belongsTo(db.client, { foreignKey: 'clientId', as: 'client' });
-  db.saleHeader.belongsTo(db.currency, { foreignKey: 'currencyId', as: 'currency' });
-  db.saleHeader.belongsTo(db.user, { foreignKey: 'userId', as: 'user' });
-  db.saleHeader.belongsTo(db.location, { foreignKey: 'locationId', as: 'location' });
-  db.saleHeader.belongsTo(db.orderTable, { foreignKey: 'orderTableId', as: 'orderTable' });
-  db.saleHeader.belongsTo(db.washjob, { foreignKey: 'washJobId', as: 'washJob' });
-  db.saleHeader.belongsTo(db.customer, { foreignKey: 'customerId', as: 'customer' });
-  db.saleHeader.hasMany(db.saleLine, { as: 'lines' });
-  db.saleHeader.belongsTo(db.ticket, {
-    foreignKey: 'ticketId',
-    as: 'ticket',
-  });
-  db.saleHeader.hasOne(db.customer);
+  
 
   // Sale line associations
   db.saleLine.belongsTo(db.saleHeader, { foreignKey: 'headerId', as: 'header' });

@@ -55,6 +55,25 @@ module.exports = (sequelize, DataTypes) => {
         //     foreignKey: 'saleHeaderId',
         //     as: 'saleLines',
         // });
+        // Sale header associations
+        SaleHeader.belongsTo(models.payment, { foreignKey: 'paymentId', as: 'payment' });
+        SaleHeader.belongsTo(models.client, { foreignKey: 'clientId', as: 'client' });
+        SaleHeader.belongsTo(models.currency, { foreignKey: 'currencyId', as: 'currency' });
+        SaleHeader.belongsTo(models.user, { foreignKey: 'userId', as: 'user' });
+        SaleHeader.belongsTo(models.location, { foreignKey: 'locationId', as: 'location' });
+        SaleHeader.belongsTo(models.orderTable, { foreignKey: 'orderTableId', as: 'orderTable' });
+        SaleHeader.belongsTo(models.washjob, { foreignKey: 'washJobId', as: 'washJob' });
+        SaleHeader.belongsTo(models.customer, { foreignKey: 'customerId', as: 'customer' });
+        SaleHeader.hasMany(models.saleLine, { as: 'lines' });
+        SaleHeader.belongsTo(models.ticket, {
+            foreignKey: 'ticketId',
+            as: 'ticket',
+        });
+        SaleHeader.hasOne(models.customer);
+        SaleHeader.hasMany(models.salePayment, {
+            foreignKey: 'saleHeaderId',
+            as: 'payments',
+        });
 
         // Optional: Link back to ticket for reference
 

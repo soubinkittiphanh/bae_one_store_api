@@ -64,6 +64,180 @@ const autoCreateStock = async (lines, locationId) => {
 
 }
 
+// Add this function to your controller.js file
+// Add this function to your controller.js file
+
+exports.createSaleHeaderOnly = async (req, res) => {
+  try {
+    let { 
+      bookingDate, 
+      remark, 
+      discount, 
+      total, 
+      exchangeRate, 
+      isActive, 
+      clientId, 
+      paymentId, 
+      currencyId, 
+      userId, 
+      referenceNo, 
+      locationId 
+    } = req.body;
+
+    logger.info("===== Create Sale Header Only (Multi-Payment) =====" + JSON.stringify(req.body));
+
+    // Set default remark for multi-payment transactions
+    if (!remark) {
+      remark = 'Multi-payment transaction - pending payment completion';
+    }
+
+    // For multi-payment, we need to either:
+    // 1. Use a valid default payment ID, or 
+    // 2. Set paymentId to null (if your DB allows it)
+    
+    // Option 1: Find the first available payment method as temporary
+    let tempPaymentId = paymentId;
+    if (!tempPaymentId) {
+      const firstPayment = await sequelize.models.payment.findOne({
+        where: { isActive: true },
+        order: [['id', 'ASC']]
+      });
+      
+      if (firstPayment) {
+        tempPaymentId = firstPayment.id;
+        logger.info(`Using temporary payment ID: ${tempPaymentId}`);
+      } else {
+        return res.status(400).json({
+          success: false,
+          message: 'No valid payment methods found in system',
+          error: 'Payment setup required'
+        });
+      }
+    }
+
+    // Validate that the payment ID exists
+    const paymentExists = await sequelize.models.payment.findByPk(tempPaymentId);
+    if (!paymentExists) {
+      return res.status(400).json({
+        success: false,
+        message: `Payment method with ID ${tempPaymentId} not found`,
+        error: 'Invalid payment ID'
+      });
+    }
+
+    // Create sale header with valid payment ID
+    const saleHeader = await SaleHeader.create({ 
+      bookingDate, 
+      remark, 
+      discount, 
+      total, 
+      exchangeRate, 
+      isActive, 
+      clientId, 
+      paymentId: tempPaymentId, // Use validated payment ID
+      currencyId, 
+      userId, 
+      referenceNo, 
+      locationId 
+    });
+
+    logger.info(`Sale header created successfully with ID: ${saleHeader.id}`);
+
+    // Return the created sale header with ID
+    res.status(201).json({
+      success: true,
+      saleHeaderId: saleHeader.id,
+      message: 'Sale header created successfully - ready for payment processing',
+      data: saleHeader
+    });
+
+  } catch (error) {
+    logger.error(`Error creating sale header only: ${error}`);
+    res.status(500).json({
+      success: false,
+      message: `Failed to create sale header: ${error.message}`,
+      error: error.message
+    });
+  }
+};
+
+// Optional: Add a function to complete the sale after payments are processed
+exports.completeSaleWithLines = async (req, res) => {
+  try {
+    const { saleHeaderId } = req.params;
+    const { lines, locationId } = req.body;
+
+    logger.info(`Completing sale ${saleHeaderId} with lines: ${JSON.stringify(lines)}`);
+
+    // Find the existing sale header
+    const saleHeader = await SaleHeader.findByPk(saleHeaderId);
+    
+    if (!saleHeader) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Sale header not found' 
+      });
+    }
+
+    // Check if stock check is required before sale process
+    const checking = await autoCreateStock(lines, locationId);
+
+    const result = await sequelize.transaction(async (t) => {
+      // Process the lines for this sale header
+      const lockingSessionId = common.generateLockingSessionId();
+      const errorList = [];
+
+      try {
+        const linesWithHeaderId = await assignHeaderId(lines, saleHeaderId, lockingSessionId, false, locationId);
+        await lineService.createBulkSaleLineWithoutRes(linesWithHeaderId, lockingSessionId);
+        
+        // Update sale header to mark as completed
+        await saleHeader.update({ 
+          remark: 'Multi-payment transaction completed',
+          isActive: true 
+        }, { transaction: t });
+
+      } catch (error) {
+        logger.error("Something wrong need to reverse header " + error);
+        errorList.push(error);
+        throw new Error(error);
+      }
+
+      return { saleHeader, errorList };
+    });
+
+    // Update product stock counts
+    await updateProductStockCount(lines);
+
+    logger.info(`Sale completion transaction successful for ${saleHeaderId}`);
+    
+    res.status(200).json({
+      success: true,
+      message: 'Sale completed successfully with payment processing',
+      saleHeaderId: saleHeaderId,
+      data: result.saleHeader
+    });
+
+  } catch (error) {
+    logger.error(`Error completing sale: ${error}`);
+    
+    // If there was an error, mark the sale header for review
+    try {
+      await SaleHeader.update(
+        { remark: `Multi-payment transaction failed: ${error.message}` },
+        { where: { id: req.params.saleHeaderId } }
+      );
+    } catch (updateError) {
+      logger.error(`Failed to update error status: ${updateError}`);
+    }
+
+    res.status(500).json({
+      success: false,
+      message: `Failed to complete sale: ${error.message}`,
+      error: error.message
+    });
+  }
+};
 
 exports.createSaleHeader = async (req, res) => {
   try {
