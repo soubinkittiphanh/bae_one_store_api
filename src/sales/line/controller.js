@@ -7,17 +7,19 @@ const logger = require('../../api/logger');
 
 exports.createSaleLine = async (req, res) => {
   try {
-    const { quantity, unitRate, price, discount, total, isActive, unitId, productId } = req.body;
+    const { quantity,isGift, unitRate, price, discount, total, isActive, unitId, productId } = req.body;
 
     const newSaleLine = await SaleLine.create({
       quantity,
+      isGift,
       unitRate,
       price,
       discount,
       total,
       isActive,
       unitId,
-      productId
+      productId,
+      isGift
     });
 
     res.status(200).json(newSaleLine);
@@ -58,7 +60,7 @@ exports.getSaleLineById = async (req, res) => {
 exports.updateSaleLine = async (req, res) => {
   try {
     const { id } = req.params;
-    const { quantity, unitRate, price, discount, total, isActive } = req.body;
+    const { quantity,isGift, unitRate, price, discount, total, isActive } = req.body;
 
     const saleLine = await SaleLine.findByPk(id);
 
@@ -73,6 +75,7 @@ exports.updateSaleLine = async (req, res) => {
       discount: discount || saleLine.discount,
       total: total || saleLine.total,
       isActive: isActive || saleLine.isActive,
+      isGift: isGift || saleLine.isGift,
     });
 
     res.status(200).json(saleLine);
