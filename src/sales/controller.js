@@ -85,7 +85,7 @@ const autoCreateStock = async (lines, locationId) => {
   const spfStockCheckParam = await spfService.getSPFByCode('STOCK.VAL');
   logger.warn(`PARAMETER CHECK SPF: ${JSON.stringify(spfStockCheckParam)}`);
   logger.warn(`LINE HERE: ${JSON.stringify(lines)}`);
-  logger.warn(`LINE HERE: ${lines.length}`);
+  logger.warn(`LINE LEN: ${lines.length}`);
 
   if (spfStockCheckParam) {
     if (spfStockCheckParam.value == 'N') {
@@ -137,7 +137,7 @@ exports.createSaleHeaderOnly = async (req, res) => {
       logger.info("Validating stock for provided lines before creating sale header");
       
       // Check if auto stock creation is needed
-      await autoCreateStock(lines, locationId);
+      // await autoCreateStock(lines, locationId);
       
       // Validate stock for lines that require validation
       const stockValidationErrors = await validateStockForLines(lines, locationId);
@@ -232,8 +232,132 @@ exports.createSaleHeaderOnly = async (req, res) => {
     });
   }
 };
+exports.createSaleLineOnly = async (req, res) => {
+  try {
+    let { 
+      id,
+      lines,
+      locationId,
+      validateStock = true // Optional flag to control stock validation
+    } = req.body;
 
+    logger.info("===== Create Sale Line Only =====" + JSON.stringify(req.body));
 
+    // Validate required parameters
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Sale Header ID is required',
+        error: 'Missing saleHeaderId parameter'
+      });
+    }
+
+    if (!lines || !Array.isArray(lines) || lines.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Lines array is required and cannot be empty',
+        error: 'Invalid or missing lines parameter'
+      });
+    }
+
+    if (!locationId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Location ID is required',
+        error: 'Missing locationId parameter'
+      });
+    }
+
+    // Verify that the sale header exists
+    const saleHeaderExists = await SaleHeader.findByPk(id);
+    if (!saleHeaderExists) {
+      return res.status(404).json({
+        success: false,
+        message: `Sale Header with ID ${id} not found`,
+        error: 'Invalid sale header ID'
+      });
+    }
+
+    logger.warn(`====>  lines for header ${id}: ${JSON.stringify(lines)}`);
+
+    // Validate stock if required
+    if (validateStock) {
+      const stockValidationErrors = await validateStockForLines(lines, locationId);
+      if (stockValidationErrors.length > 0) {
+        logger.error(`Stock validation failed: ${JSON.stringify(stockValidationErrors)}`);
+        return res.status(400).json({
+          success: false,
+          message: 'Insufficient stock for some items',
+          stockErrors: stockValidationErrors,
+          details: stockValidationErrors.map(err => 
+            `Product ${err.productId}: Need ${err.required}, Available ${err.available}, Short ${err.shortage}`
+          )
+        });
+      }
+
+      // Auto create stock if needed
+      // const checking = await autoCreateStock(lines, locationId);
+      logger.info("Stock validation passed and auto-stock creation completed");
+    }
+
+    // Use transaction for consistency
+    const result = await sequelize.transaction(async (t) => {
+      const lockingSessionId = common.generateLockingSessionId();
+      const errorList = [];
+      let linesCreated = false;
+
+      try {
+        // Assign header ID to lines
+        const linesWithHeaderId = await assignHeaderId(lines, id, lockingSessionId, false, locationId);
+        
+        // Create bulk sale lines - DON'T pass res to avoid double response
+        await lineService.createBulkSaleLine(res, linesWithHeaderId, lockingSessionId);
+        linesCreated = true;
+        
+        logger.info(`Sale lines created successfully for header ID: ${id}`);
+        
+      } catch (error) {
+        logger.error("Error creating sale lines: " + error);
+        errorList.push(error);
+        throw error; // Re-throw to trigger transaction rollback
+      }
+
+      return { 
+        id, 
+        linesCreated, 
+        linesCount: lines.length,
+        lockingSessionId 
+      };
+    });
+
+    logger.info(`Sale lines creation transaction complete for header ${id}`);
+    logger.info(`Saleline only create result ${JSON.stringify(result)}`)
+    // Return success response
+    // res.status(201).json({
+    //   success: true,
+    //   message: 'Sale lines created successfully',
+    //   data: {
+    //     saleHeaderId: result.id, // Fixed: was result.saleHeaderId
+    //     linesCreated: result.linesCreated,
+    //     linesCount: result.linesCount,
+    //     lockingSessionId: result.lockingSessionId,
+    //     stockValidationPerformed: validateStock
+    //   }
+    // });
+
+  } catch (error) {
+    logger.error(`Error creating sale lines only: ${error}`);
+    
+    // Check if response was already sent
+    if (!res.headersSent) {
+      res.status(500).json({
+        success: false,
+        message: `Failed to create sale lines: ${error.message}`,
+        error: error.message
+      });
+    }
+  }
+};
 // Optional: Add a function to complete the sale after payments are processed
 exports.completeSaleWithLines = async (req, res) => {
   try {
@@ -401,7 +525,101 @@ exports.createSaleHeader = async (req, res) => {
   }
 };
 
+exports.updateSaleHeaderV2 = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { bookingDate, remark, discount, total, exchangeRate, isActive, lines, clientId, paymentId, currencyId, userId, locationId } = req.body;
+    
+    const saleHeader = await SaleHeader.findByPk(id);
+    if (!saleHeader) {
+      logger.error("Order Id " + id + ' is not found');
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Sale header not found' 
+      });
+    }
 
+    logger.info("===== Update Sale Header ===== ID: " + id);
+    logger.warn(`====>  lines     ${JSON.stringify(lines)}`);
+
+    // Validate stock using the same approach as create function
+    const stockValidationErrors = await validateStockForLines(lines, locationId);
+    if (stockValidationErrors.length > 0) {
+      logger.error(`Stock validation failed: ${JSON.stringify(stockValidationErrors)}`);
+      return res.status(400).json({
+        success: false,
+        message: 'Insufficient stock for some items',
+        stockErrors: stockValidationErrors,
+        details: stockValidationErrors.map(err => 
+          `Product ${err.productId}: Need ${err.required}, Available ${err.available}, Short ${err.shortage}`
+        )
+      });
+    }
+
+    const checking = await autoCreateStock(lines, locationId);
+    
+    const result = await sequelize.transaction(async (t) => {
+      logger.info("Updating header");
+      const lockingSessionId = common.generateLockingSessionId();
+      await assignHeaderId(lines, id, lockingSessionId, true, locationId);
+      
+      // ********** Classify new or old saleLine ********** //
+      const saleLineForCreate = lines.filter(el => el['id'] == null);
+      logger.warn(`SaleLine for create count is ${saleLineForCreate.length}`);
+      
+      if (saleLineForCreate.length > 0) {
+        await lineService.createBulkSaleLineWithoutRes(saleLineForCreate, lockingSessionId);
+      }
+      
+      const updatedSaleHeader = await saleHeader.update({ 
+        bookingDate, 
+        remark, 
+        discount, 
+        total, 
+        exchangeRate, 
+        isActive, 
+        lines, 
+        clientId, 
+        paymentId, 
+        currencyId, 
+        userId 
+      }, { transaction: t });
+      
+      logger.info(`Update transaction completed ${updatedSaleHeader}`);
+      
+      // ************* UPDATE PRODUCT STOCK COUNT *************//
+      updateProductStockCount(lines);
+      
+      return { saleHeader: updatedSaleHeader };
+    });
+
+    // Send success response in the same format as create function
+    logger.info(`Transaction complete ${result}`);
+    
+    // Format response similar to create function success message
+    const successMessage = `Successfully updated sale header - ${result.saleHeader.id}`;
+    res.status(200).send(`${successMessage} - ${result.saleHeader.id}`);
+    
+  } catch (error) {
+    logger.error("Cannot update data " + error);
+    
+    // Handle different error types similar to create function
+    if (error.name === 'SequelizeValidationError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation error',
+        details: error.errors.map(err => err.message)
+      });
+    }
+    
+    // Send error response in consistent format
+    res.status(500).json({
+      success: false,
+      message: `Cannot update data: ${error.message || error}`,
+      error: error.message || error
+    });
+  }
+};
 exports.updateSaleHeader = async (req, res) => {
   try {
     const { id } = req.params;
@@ -1126,6 +1344,7 @@ exports.sumSaleCurrentMonth = async (req, res) => {
   }
 };
 exports.sumSaleCurrentYear = async (req, res) => {
+  // TODO: This query impact performance please review and optimize
   // Calculate the sum of total - discount for products between two dates
   const date = JSON.parse(req.query.date);
   logger.warn("Date " + date.startDate + " " + date.endDate)

@@ -10,8 +10,10 @@ router.use(validateToken)
 router
   .post("/create", validator.createSaleHeaderValidator, controller.createSaleHeader)
   .post("/create-header-only", validator.createSaleHeaderValidator, controller.createSaleHeaderOnly) // NEW: Multi-payment support
+  .post("/create-line-only", validator.createSaleHeaderValidator, controller.createSaleLineOnly) // NEW: Multi-payment support
   .put("/complete-sale/:saleHeaderId", controller.completeSaleWithLines) // NEW: Complete sale after payments
   .put("/update/:id", validator.updateSaleHeaderValidator, controller.updateSaleHeader)
+  .put("/update-v2/:id", validator.updateSaleHeaderValidator, controller.updateSaleHeaderV2)
   .put("/settle/:id", controller.settlement)
   .put("/reverse/:id", controller.reverseSaleHeader)
   .put("/postToInvoice/:id", validator.updateSaleHeaderValidator, controller.updateSaleHeaderPostToInvoice)
