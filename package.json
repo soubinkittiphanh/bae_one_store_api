@@ -5,8 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon src/index.js",
-    "start": "node src/index.js"
+    "dev": "cross-env TZ=Asia/Vientiane nodemon src/index.js",
+    "start": "cross-env TZ=Asia/Vientiane node src/index.js"
   },
   "author": "what the dev",
   "license": "ISC",
@@ -29,5 +29,8 @@
     "pino": "^8.14.1",
     "sequelize": "^6.37.7",
     "winston": "^3.8.2"
+  },
+  "devDependencies": {
+    "cross-env": "^7.0.3" 
   }
 }
