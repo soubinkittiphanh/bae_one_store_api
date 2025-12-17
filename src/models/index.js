@@ -144,11 +144,12 @@ const initializeModels = () => {
 
 
     // Financial models
+    card: require("../card/model")(sequelize, DataTypes),
     Transaction: require("../transaction/model")(sequelize, DataTypes),
     gl: require("../GL/model")(sequelize, DataTypes),
     chartAccount: require("../account/model")(sequelize, DataTypes),
-    apPaymentHeader: require("../AP/payment/header/model")(sequelize, DataTypes),
-    arReceiveHeader: require("../AR/receive/header/model")(sequelize, DataTypes),
+    apPaymentHeader: require("../AP/payment/header/model")(sequelize, DataTypes), //TODO:
+    arReceiveHeader: require("../AR/receive/header/model")(sequelize, DataTypes), //TODO:
     payment: require("../paymentMethod/model")(sequelize, DataTypes),
     bankAccount: require("../bankAccount/model")(sequelize, DataTypes),
     ministry: require("../ministry/model")(sequelize, DataTypes),
@@ -165,8 +166,8 @@ const initializeModels = () => {
     arInvoiceHeader: require("../ARV2/invoice/header/model")(sequelize, DataTypes),
     arInvoiceHeaderAudit: require("../ARV2/invoice/headerAudit/model")(sequelize, DataTypes),
     arInvoiceLine: require("../ARV2/invoice/line/model")(sequelize, DataTypes),
-    arReceiveHeaderV2: require("../ARV2/receive/header/model")(sequelize, DataTypes),
-    arReceiveHeaderAudit: require("../ARV2/receive/headerAudit/model")(sequelize, DataTypes),
+    arReceiveHeaderV2: require("../ARV2/receive/header/model")(sequelize, DataTypes), //TODO:
+    arReceiveHeaderAudit: require("../ARV2/receive/headerAudit/model")(sequelize, DataTypes), //TODO:
     arReceiveLine: require("../ARV2/receive/line/model")(sequelize, DataTypes),
 
 
@@ -176,7 +177,7 @@ const initializeModels = () => {
     service: require("../service/model")(sequelize, DataTypes),
     authority: require("../authority/model")(sequelize, DataTypes),
     terminal: require("../terminal/model")(sequelize, DataTypes),
-    card: require("../card/model")(sequelize, DataTypes),
+    // card: require("../card/model")(sequelize, DataTypes),
     campaign: require("../controllers/admin/campaign/model")(sequelize, DataTypes),
     campaignEntry: require("../controllers/admin/campaign/entry/model")(sequelize, DataTypes),
     rider: require("../rider/model")(sequelize, DataTypes),
