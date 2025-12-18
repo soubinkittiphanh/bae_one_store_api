@@ -1767,3 +1767,522 @@
 {"level":"info","message":"client_db Connection established","timestamp":"2025-12-17T12:20:13.879Z"}
 {"level":"error","message":"Error synchronizing database: Cannot delete property 'meta' of [object Array]","stack":"TypeError: Cannot delete property 'meta' of [object Array]\n    at Query.formatResults (/Users/soubinkittiphanh/Desktop/Pro/dcommerce/dc_api/node_modules/sequelize/lib/dialects/mariadb/query.js:110:7)\n    at Query.run (/Users/soubinkittiphanh/Desktop/Pro/dcommerce/dc_api/node_modules/sequelize/lib/dialects/mariadb/query.js:73:17)\n    at runMicrotasks (<anonymous>)\n    at processTicksAndRejections (node:internal/process/task_queues:96:5)\n    at async /Users/soubinkittiphanh/Desktop/Pro/dcommerce/dc_api/node_modules/sequelize/lib/sequelize.js:315:16\n    at async MySQLQueryInterface.removeColumn (/Users/soubinkittiphanh/Desktop/Pro/dcommerce/dc_api/node_modules/sequelize/lib/dialects/mysql/query-interface.js:27:23)\n    at async Function.sync (/Users/soubinkittiphanh/Desktop/Pro/dcommerce/dc_api/node_modules/sequelize/lib/model.js:967:13)\n    at async Sequelize._syncModelsWithCyclicReferences (/Users/soubinkittiphanh/Desktop/Pro/dcommerce/dc_api/node_modules/sequelize/lib/sequelize.js:395:7)\n    at async synchronizeDatabase (/Users/soubinkittiphanh/Desktop/Pro/dcommerce/dc_api/src/models/index.js:523:5)","timestamp":"2025-12-17T12:21:08.805Z"}
 {"level":"info","message":"Database central is synchronized","timestamp":"2025-12-17T12:21:09.046Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2025-12-18T05:43:33.007Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2025-12-18T05:43:33.011Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2025-12-18T05:43:33.012Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2025-12-18T05:43:33.013Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2025-12-18T05:43:33.014Z","username":"johndoe"}
+{"level":"info","message":"Model name sequelize","timestamp":"2025-12-18T05:43:33.922Z"}
+{"level":"info","message":"Model name Sequelize","timestamp":"2025-12-18T05:43:33.923Z"}
+{"level":"info","message":"Model name centralSequelize","timestamp":"2025-12-18T05:43:33.923Z"}
+{"level":"info","message":"Model name spf","timestamp":"2025-12-18T05:43:33.924Z"}
+{"level":"info","message":"Model name client","timestamp":"2025-12-18T05:43:33.924Z"}
+{"level":"info","message":"Model name group","timestamp":"2025-12-18T05:43:33.926Z"}
+{"level":"info","message":"Model name GroupMenuHeader","timestamp":"2025-12-18T05:43:33.927Z"}
+{"level":"info","message":"Model name role","timestamp":"2025-12-18T05:43:33.930Z"}
+{"level":"info","message":"Model name user","timestamp":"2025-12-18T05:43:33.934Z"}
+{"level":"info","message":"Model name Agency","timestamp":"2025-12-18T05:43:33.937Z"}
+{"level":"info","message":"Associating table Agency with models","timestamp":"2025-12-18T05:43:33.939Z"}
+{"level":"info","message":"Model name Applicant","timestamp":"2025-12-18T05:43:33.943Z"}
+{"level":"info","message":"Associating table Applicant with models","timestamp":"2025-12-18T05:43:33.946Z"}
+{"level":"info","message":"Model name MOU","timestamp":"2025-12-18T05:43:33.951Z"}
+{"level":"info","message":"Associating table Job with models","timestamp":"2025-12-18T05:43:33.954Z"}
+{"level":"info","message":"Model name jobAdvertise","timestamp":"2025-12-18T05:43:33.959Z"}
+{"level":"info","message":"Associating table JobAdvertise with models","timestamp":"2025-12-18T05:43:33.962Z"}
+{"level":"info","message":"Model name JobBatch","timestamp":"2025-12-18T05:43:33.966Z"}
+{"level":"info","message":"Associating table JobBatch with models","timestamp":"2025-12-18T05:43:33.969Z"}
+{"level":"info","message":"Model name benefit","timestamp":"2025-12-18T05:43:33.973Z"}
+{"level":"info","message":"Associating table Benefit with models","timestamp":"2025-12-18T05:43:33.975Z"}
+{"level":"info","message":"Model name company","timestamp":"2025-12-18T05:43:33.977Z"}
+{"level":"info","message":"Model name location","timestamp":"2025-12-18T05:43:33.977Z"}
+{"level":"info","message":"Model name currency","timestamp":"2025-12-18T05:43:33.977Z"}
+{"level":"info","message":"Model name unit","timestamp":"2025-12-18T05:43:33.977Z"}
+{"level":"info","message":"Model name stockTransactionModel","timestamp":"2025-12-18T05:43:33.985Z"}
+{"level":"info","message":"Model name category","timestamp":"2025-12-18T05:43:33.992Z"}
+{"level":"info","message":"Model name tax","timestamp":"2025-12-18T05:43:33.995Z"}
+{"level":"info","message":"Model name product","timestamp":"2025-12-18T05:43:33.995Z"}
+{"level":"info","message":"Model name productSize","timestamp":"2025-12-18T05:43:34.020Z"}
+{"level":"info","message":"Model name image","timestamp":"2025-12-18T05:43:34.024Z"}
+{"level":"info","message":"Associating table IMAGE with models","timestamp":"2025-12-18T05:43:34.026Z"}
+{"level":"info","message":"Model name priceList","timestamp":"2025-12-18T05:43:34.028Z"}
+{"level":"info","message":"Model name webProductGroup","timestamp":"2025-12-18T05:43:34.028Z"}
+{"level":"info","message":"Model name customer","timestamp":"2025-12-18T05:43:34.028Z"}
+{"level":"info","message":"Model name order","timestamp":"2025-12-18T05:43:34.028Z"}
+{"level":"info","message":"Model name orderHIS","timestamp":"2025-12-18T05:43:34.029Z"}
+{"level":"info","message":"Model name orderTable","timestamp":"2025-12-18T05:43:34.029Z"}
+{"level":"info","message":"Model name recipe","timestamp":"2025-12-18T05:43:34.029Z"}
+{"level":"info","message":"Model name table","timestamp":"2025-12-18T05:43:34.032Z"}
+{"level":"info","message":"Model name ticket","timestamp":"2025-12-18T05:43:34.036Z"}
+{"level":"info","message":"Model name promotion","timestamp":"2025-12-18T05:43:34.038Z"}
+{"level":"info","message":"Model name ticketLine","timestamp":"2025-12-18T05:43:34.038Z"}
+{"level":"info","message":"Model name MemberOffer","timestamp":"2025-12-18T05:43:34.039Z"}
+{"level":"info","message":"Model name saleHeader","timestamp":"2025-12-18T05:43:34.039Z"}
+{"level":"info","message":"Model name salePayment","timestamp":"2025-12-18T05:43:34.057Z"}
+{"level":"info","message":"Model name saleLine","timestamp":"2025-12-18T05:43:34.062Z"}
+{"level":"info","message":"Model name quotationHeader","timestamp":"2025-12-18T05:43:34.062Z"}
+{"level":"info","message":"Model name quotationLine","timestamp":"2025-12-18T05:43:34.062Z"}
+{"level":"info","message":"Model name poHeader","timestamp":"2025-12-18T05:43:34.062Z"}
+{"level":"info","message":"Model name poLine","timestamp":"2025-12-18T05:43:34.065Z"}
+{"level":"info","message":"Model name poHeaderHIS","timestamp":"2025-12-18T05:43:34.066Z"}
+{"level":"info","message":"Model name poLineHIS","timestamp":"2025-12-18T05:43:34.066Z"}
+{"level":"info","message":"Model name receivingHeader","timestamp":"2025-12-18T05:43:34.066Z"}
+{"level":"info","message":"Model name receivingLine","timestamp":"2025-12-18T05:43:34.066Z"}
+{"level":"info","message":"Model name reservation","timestamp":"2025-12-18T05:43:34.066Z"}
+{"level":"info","message":"Model name reservationLine","timestamp":"2025-12-18T05:43:34.066Z"}
+{"level":"info","message":"Model name washjob","timestamp":"2025-12-18T05:43:34.067Z"}
+{"level":"info","message":"Model name washjobHis","timestamp":"2025-12-18T05:43:34.067Z"}
+{"level":"info","message":"Model name washjobline","timestamp":"2025-12-18T05:43:34.067Z"}
+{"level":"info","message":"Model name transferHeader","timestamp":"2025-12-18T05:43:34.067Z"}
+{"level":"info","message":"Model name transferLine","timestamp":"2025-12-18T05:43:34.067Z"}
+{"level":"info","message":"Model name menuHeader","timestamp":"2025-12-18T05:43:34.067Z"}
+{"level":"info","message":"Model name menuLine","timestamp":"2025-12-18T05:43:34.067Z"}
+{"level":"info","message":"Model name MenuHeaderLines","timestamp":"2025-12-18T05:43:34.067Z"}
+{"level":"info","message":"Model name webMenuHeader","timestamp":"2025-12-18T05:43:34.067Z"}
+{"level":"info","message":"Model name card","timestamp":"2025-12-18T05:43:34.067Z"}
+{"level":"info","message":"Model name Transaction","timestamp":"2025-12-18T05:43:34.067Z"}
+{"level":"info","message":"Model name gl","timestamp":"2025-12-18T05:43:34.067Z"}
+{"level":"info","message":"Model name chartAccount","timestamp":"2025-12-18T05:43:34.067Z"}
+{"level":"info","message":"Model name apPaymentHeader","timestamp":"2025-12-18T05:43:34.067Z"}
+{"level":"info","message":"Model name arReceiveHeader","timestamp":"2025-12-18T05:43:34.067Z"}
+{"level":"info","message":"Model name payment","timestamp":"2025-12-18T05:43:34.067Z"}
+{"level":"info","message":"Model name bankAccount","timestamp":"2025-12-18T05:43:34.067Z"}
+{"level":"info","message":"Model name ministry","timestamp":"2025-12-18T05:43:34.067Z"}
+{"level":"info","message":"Model name moneySettlement","timestamp":"2025-12-18T05:43:34.074Z"}
+{"level":"info","message":"Model name moneyAdvanceAudit","timestamp":"2025-12-18T05:43:34.078Z"}
+{"level":"info","message":"Associating table MoneyAdvanceAudit with models","timestamp":"2025-12-18T05:43:34.078Z"}
+{"level":"info","message":"Model name moneyAdvance","timestamp":"2025-12-18T05:43:34.079Z"}
+{"level":"info","message":"Associating table MoneyAdvance with models","timestamp":"2025-12-18T05:43:34.079Z"}
+{"level":"info","message":"Model name revenue_target","timestamp":"2025-12-18T05:43:34.081Z"}
+{"level":"info","message":"Model name apInvoice","timestamp":"2025-12-18T05:43:34.081Z"}
+{"level":"info","message":"Associating table APInvoice with models","timestamp":"2025-12-18T05:43:34.081Z"}
+{"level":"info","message":"Model name apInvoiceAudit","timestamp":"2025-12-18T05:43:34.084Z"}
+{"level":"info","message":"Associating table APInvoiceAudit with models","timestamp":"2025-12-18T05:43:34.084Z"}
+{"level":"info","message":"Model name invoiceLineItem","timestamp":"2025-12-18T05:43:34.085Z"}
+{"level":"info","message":"Associating table InvoiceLineItem with models","timestamp":"2025-12-18T05:43:34.085Z"}
+{"level":"info","message":"Model name apInvoiceSettlement","timestamp":"2025-12-18T05:43:34.086Z"}
+{"level":"info","message":"Associating table APInvoiceSettlement with models","timestamp":"2025-12-18T05:43:34.086Z"}
+{"level":"info","message":"Model name apSettlementAudit","timestamp":"2025-12-18T05:43:34.089Z"}
+{"level":"info","message":"Associating table APSettlementAudit with models","timestamp":"2025-12-18T05:43:34.092Z"}
+{"level":"info","message":"Model name apInvoiceSettlementLine","timestamp":"2025-12-18T05:43:34.095Z"}
+{"level":"info","message":"Associating InvoiceSettlementLine with models","timestamp":"2025-12-18T05:43:34.095Z"}
+{"level":"info","message":"Model name arInvoiceHeader","timestamp":"2025-12-18T05:43:34.096Z"}
+{"level":"info","message":"Associating table ARInvoiceHeader with models","timestamp":"2025-12-18T05:43:34.097Z"}
+{"level":"info","message":"Model name arInvoiceHeaderAudit","timestamp":"2025-12-18T05:43:34.103Z"}
+{"level":"info","message":"Associating table ARInvoiceHeaderAudit with models","timestamp":"2025-12-18T05:43:34.103Z"}
+{"level":"info","message":"Model name arInvoiceLine","timestamp":"2025-12-18T05:43:34.105Z"}
+{"level":"info","message":"Associating table InvoiceLine with models","timestamp":"2025-12-18T05:43:34.105Z"}
+{"level":"info","message":"Model name arReceiveHeaderV2","timestamp":"2025-12-18T05:43:34.109Z"}
+{"level":"info","message":"Associating table ARReceiveHeader with models","timestamp":"2025-12-18T05:43:34.110Z"}
+{"level":"info","message":"Model name arReceiveHeaderAudit","timestamp":"2025-12-18T05:43:34.111Z"}
+{"level":"info","message":"Associating table ARReceiveHeaderAudit with models","timestamp":"2025-12-18T05:43:34.111Z"}
+{"level":"info","message":"Model name arReceiveLine","timestamp":"2025-12-18T05:43:34.112Z"}
+{"level":"info","message":"Associating table ReceiveLine with models","timestamp":"2025-12-18T05:43:34.112Z"}
+{"level":"info","message":"Model name vendor","timestamp":"2025-12-18T05:43:34.112Z"}
+{"level":"info","message":"Model name shipping","timestamp":"2025-12-18T05:43:34.112Z"}
+{"level":"info","message":"Model name service","timestamp":"2025-12-18T05:43:34.112Z"}
+{"level":"info","message":"Model name authority","timestamp":"2025-12-18T05:43:34.113Z"}
+{"level":"info","message":"Model name terminal","timestamp":"2025-12-18T05:43:34.113Z"}
+{"level":"info","message":"Model name campaign","timestamp":"2025-12-18T05:43:34.113Z"}
+{"level":"info","message":"Model name campaignEntry","timestamp":"2025-12-18T05:43:34.113Z"}
+{"level":"info","message":"Model name rider","timestamp":"2025-12-18T05:43:34.113Z"}
+{"level":"info","message":"Model name outlet","timestamp":"2025-12-18T05:43:34.113Z"}
+{"level":"info","message":"Model name geography","timestamp":"2025-12-18T05:43:34.113Z"}
+{"level":"info","message":"Model name country","timestamp":"2025-12-18T05:43:34.113Z"}
+{"level":"info","message":"Model name village","timestamp":"2025-12-18T05:43:34.113Z"}
+{"level":"info","message":"Model name district","timestamp":"2025-12-18T05:43:34.113Z"}
+{"level":"info","message":"Model name tuturial","timestamp":"2025-12-18T05:43:34.114Z"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2025-12-18T05:43:34.582Z"}
+{"level":"info","message":"app is runing: 8888","timestamp":"2025-12-18T05:43:34.585Z"}
+{"level":"warn","message":"env: dcommerce_dev","timestamp":"2025-12-18T05:43:34.585Z"}
+{"level":"info","message":"tutorial_db Connection established","timestamp":"2025-12-18T05:43:34.699Z"}
+{"level":"info","message":"client_db Connection established","timestamp":"2025-12-18T05:43:34.704Z"}
+{"level":"error","message":"Error synchronizing database: Cannot delete property 'meta' of [object Array]","stack":"TypeError: Cannot delete property 'meta' of [object Array]\n    at Query.formatResults (/Users/soubinkittiphanh/Desktop/Pro/dcommerce/dc_api/node_modules/sequelize/lib/dialects/mariadb/query.js:110:7)\n    at Query.run (/Users/soubinkittiphanh/Desktop/Pro/dcommerce/dc_api/node_modules/sequelize/lib/dialects/mariadb/query.js:73:17)\n    at runMicrotasks (<anonymous>)\n    at processTicksAndRejections (node:internal/process/task_queues:96:5)\n    at async /Users/soubinkittiphanh/Desktop/Pro/dcommerce/dc_api/node_modules/sequelize/lib/sequelize.js:315:16\n    at async MySQLQueryInterface.removeColumn (/Users/soubinkittiphanh/Desktop/Pro/dcommerce/dc_api/node_modules/sequelize/lib/dialects/mysql/query-interface.js:27:23)\n    at async Function.sync (/Users/soubinkittiphanh/Desktop/Pro/dcommerce/dc_api/node_modules/sequelize/lib/model.js:967:13)\n    at async Sequelize._syncModelsWithCyclicReferences (/Users/soubinkittiphanh/Desktop/Pro/dcommerce/dc_api/node_modules/sequelize/lib/sequelize.js:395:7)\n    at async synchronizeDatabase (/Users/soubinkittiphanh/Desktop/Pro/dcommerce/dc_api/src/models/index.js:523:5)","timestamp":"2025-12-18T05:44:49.612Z"}
+{"level":"info","message":"Database central is synchronized","timestamp":"2025-12-18T05:44:49.916Z"}
+{"level":"info","message":"Decrypted user request header: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NSwiY3VzX2lkIjoxMDA0LCJjdXNfbmFtZSI6IlVTRVIgTkFNRSIsImN1c190ZWwiOiJURUxFUEhPTkUiLCJ1c2VyR3JvdXAiOnsiY29kZSI6Ik1QV1QiLCJuYW1lIjoi4LqB4Lqw4LqK4Lqn4LqH4LuC4LqN4LqX4Lqy4LqX4Lq04LqB4Lqy4LqZIiwiaWQiOjcsInRpY2tldENhbmNlbCI6ZmFsc2V9LCJ0ZXJtaW5hbCI6W3siaWQiOjEsImNvZGUiOjEwMDEsIm5hbWUiOiLgu4DguoTgurfgu4jguq3guofguoLgurLguo0gMDEiLCJkZXNjcmlwdGlvbiI6IkNvbXB1dGVyIDAxIiwic2FsZVJhdGUiOjAsImlzQWN0aXZlIjp0cnVlLCJjcmVhdGVkQXQiOiIyMDIzLTA4LTI4VDA3OjQ4OjE0LjAwMFoiLCJ1cGRhdGVUaW1lc3RhbXAiOiIyMDI0LTAyLTI0VDA2OjQ3OjQ0LjAwMFoiLCJsb2NhdGlvbklkIjoxfV0sImlhdCI6MTc2NjAzNTc3NywiZXhwIjoxNzY2MDUzNzc3fQ.GpqdlGQf7mPm7PPxyt1r8qS8tKXYkynLaHnWpkpcwC4","timestamp":"2025-12-18T05:45:04.152Z"}
+{"level":"error","message":"Cannot decrypt user from token JsonWebTokenError: invalid signature","timestamp":"2025-12-18T05:45:04.160Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:04.306Z"}
+{"level":"error","message":"Something wrong in token JsonWebTokenError: invalid signature","timestamp":"2025-12-18T05:45:04.310Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:04.325Z"}
+{"level":"error","message":"Something wrong in token JsonWebTokenError: invalid signature","timestamp":"2025-12-18T05:45:04.328Z"}
+{"level":"info","message":"Decrypted user request header: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NSwiY3VzX2lkIjoxMDA0LCJjdXNfbmFtZSI6IlVTRVIgTkFNRSIsImN1c190ZWwiOiJURUxFUEhPTkUiLCJ1c2VyR3JvdXAiOnsiY29kZSI6Ik1QV1QiLCJuYW1lIjoi4LqB4Lqw4LqK4Lqn4LqH4LuC4LqN4LqX4Lqy4LqX4Lq04LqB4Lqy4LqZIiwiaWQiOjcsInRpY2tldENhbmNlbCI6ZmFsc2V9LCJ0ZXJtaW5hbCI6W3siaWQiOjEsImNvZGUiOjEwMDEsIm5hbWUiOiLgu4DguoTgurfgu4jguq3guofguoLgurLguo0gMDEiLCJkZXNjcmlwdGlvbiI6IkNvbXB1dGVyIDAxIiwic2FsZVJhdGUiOjAsImlzQWN0aXZlIjp0cnVlLCJjcmVhdGVkQXQiOiIyMDIzLTA4LTI4VDA3OjQ4OjE0LjAwMFoiLCJ1cGRhdGVUaW1lc3RhbXAiOiIyMDI0LTAyLTI0VDA2OjQ3OjQ0LjAwMFoiLCJsb2NhdGlvbklkIjoxfV0sImlhdCI6MTc2NjAzNTc3NywiZXhwIjoxNzY2MDUzNzc3fQ.GpqdlGQf7mPm7PPxyt1r8qS8tKXYkynLaHnWpkpcwC4","timestamp":"2025-12-18T05:45:07.719Z"}
+{"level":"error","message":"Cannot decrypt user from token JsonWebTokenError: invalid signature","timestamp":"2025-12-18T05:45:07.726Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:07.827Z"}
+{"level":"error","message":"Something wrong in token JsonWebTokenError: invalid signature","timestamp":"2025-12-18T05:45:07.827Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:07.832Z"}
+{"level":"error","message":"Something wrong in token JsonWebTokenError: invalid signature","timestamp":"2025-12-18T05:45:07.832Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:07.847Z"}
+{"level":"error","message":"Something wrong in token JsonWebTokenError: invalid signature","timestamp":"2025-12-18T05:45:07.848Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:07.855Z"}
+{"level":"error","message":"Something wrong in token JsonWebTokenError: invalid signature","timestamp":"2025-12-18T05:45:07.856Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:07.866Z"}
+{"level":"error","message":"Something wrong in token JsonWebTokenError: invalid signature","timestamp":"2025-12-18T05:45:07.866Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:07.872Z"}
+{"level":"error","message":"Something wrong in token JsonWebTokenError: invalid signature","timestamp":"2025-12-18T05:45:07.872Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:07.878Z"}
+{"level":"error","message":"Something wrong in token JsonWebTokenError: invalid signature","timestamp":"2025-12-18T05:45:07.878Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:07.884Z"}
+{"level":"error","message":"Something wrong in token JsonWebTokenError: invalid signature","timestamp":"2025-12-18T05:45:07.884Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:07.900Z"}
+{"level":"error","message":"Something wrong in token JsonWebTokenError: invalid signature","timestamp":"2025-12-18T05:45:07.901Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:08.007Z"}
+{"level":"error","message":"Something wrong in token JsonWebTokenError: invalid signature","timestamp":"2025-12-18T05:45:08.008Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:08.028Z"}
+{"level":"error","message":"Something wrong in token JsonWebTokenError: invalid signature","timestamp":"2025-12-18T05:45:08.030Z"}
+{"level":"info","message":"************* User auth  *****************","timestamp":"2025-12-18T05:45:14.193Z"}
+{"level":"info","message":"**********null**********","timestamp":"2025-12-18T05:45:14.233Z"}
+{"level":"info","message":"************* User auth  *****************","timestamp":"2025-12-18T05:45:19.047Z"}
+{"level":"info","message":"**********[object SequelizeInstance:user]**********","timestamp":"2025-12-18T05:45:19.071Z"}
+{"level":"info","message":"**********DC Auto**********","timestamp":"2025-12-18T05:45:19.072Z"}
+{"level":"warn","message":"Token ===> send to client eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiY3VzX2lkIjoiMTAwMCIsImN1c19uYW1lIjoiREMgQXV0byIsImN1c190ZWwiOiIxMjM0NTY3ODkiLCJ1c2VyR3JvdXAiOnsiY29kZSI6IlNVUEVSIFVTRVIiLCJuYW1lIjoi4LqX4Lq14Lqh4LqH4Lqy4LqZIOC6quC6seC6muC6nuC6reC6lOC6peC6sOC6muC6u-C6miIsImlkIjoxLCJ0aWNrZXRDYW5jZWwiOmZhbHNlfSwidGVybWluYWwiOltdLCJpYXQiOjE3NjYwMzY3MTksImV4cCI6MTc2NjA1NDcxOX0.5LXDCahuZa6q-0-N0LFZ9Zum8aFDgP36RJBsmniZSt0","timestamp":"2025-12-18T05:45:19.081Z"}
+{"level":"info","message":"Token generated succeed [object Object]","timestamp":"2025-12-18T05:45:19.082Z"}
+{"level":"info","message":"Decrypted user request header: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiY3VzX2lkIjoiMTAwMCIsImN1c19uYW1lIjoiREMgQXV0byIsImN1c190ZWwiOiIxMjM0NTY3ODkiLCJ1c2VyR3JvdXAiOnsiY29kZSI6IlNVUEVSIFVTRVIiLCJuYW1lIjoi4LqX4Lq14Lqh4LqH4Lqy4LqZIOC6quC6seC6muC6nuC6reC6lOC6peC6sOC6muC6u-C6miIsImlkIjoxLCJ0aWNrZXRDYW5jZWwiOmZhbHNlfSwidGVybWluYWwiOltdLCJpYXQiOjE3NjYwMzY3MTksImV4cCI6MTc2NjA1NDcxOX0.5LXDCahuZa6q-0-N0LFZ9Zum8aFDgP36RJBsmniZSt0","timestamp":"2025-12-18T05:45:19.099Z"}
+{"level":"warn","message":"user decrypted DC Auto","timestamp":"2025-12-18T05:45:19.101Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:19.125Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:19.126Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:19.127Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:19.127Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:19.127Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:19.127Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:19.128Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:19.128Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:19.136Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:19.137Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:19.138Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:19.138Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:19.140Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:19.140Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:19.143Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:19.143Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:19.153Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:19.153Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:19.154Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:19.154Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:19.156Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:19.156Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:19.157Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:19.157Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:19.161Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:19.161Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:19.162Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:19.162Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:19.163Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:19.163Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:19.163Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:19.163Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:19.168Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:19.168Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:19.168Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:19.168Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:19.169Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:19.169Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:19.169Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:19.169Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:19.177Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:19.177Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:19.178Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:19.178Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:19.178Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:19.178Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:19.179Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:19.179Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:19.208Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:19.209Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:19.209Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:19.209Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:19.209Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:19.210Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:19.210Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:19.210Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:19.240Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:19.240Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:19.243Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:19.244Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:19.244Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:19.244Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:19.248Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:19.248Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:19.460Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:19.463Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:19.463Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:19.463Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:19.463Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:19.464Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:19.464Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:19.464Z"}
+{"level":"warn","message":"Date 2025-05-31 2025-12-18","timestamp":"2025-12-18T05:45:19.465Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:19.490Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:19.490Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:19.490Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:19.490Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:19.491Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:19.491Z"}
+{"level":"info","message":"SELECT o.productId, SUM(o.quantity*o.unitRate) AS sale_count, o.price,SUM(o.total-o.discount) as total_sale, \n    o.createdAt,o.isActive, p.companyId,p.pro_name ,p.name, p.pro_category,p.categ_name \n    FROM saleLine o \n    LEFT JOIN (SELECT p.id,p.pro_id,p.companyId,p.pro_name,u.name,p.pro_category,c.categ_name FROM product p \n        LEFT JOIN company u ON u.id = p.companyId LEFT JOIN category c on c.categ_id=p.pro_category ) p ON p.id = o.productId \n        WHERE o.createdAt BETWEEN '2025-12-01 00:00:00' AND '2025-12-30 23:59:59' AND o.isActive = 1 \n        GROUP BY p.pro_category LIMIT 5 ","timestamp":"2025-12-18T05:45:19.491Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:19.502Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:19.502Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:19.502Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:19.502Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:19.502Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:19.502Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:19.502Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:19.503Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:19.513Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:19.513Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:19.513Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:19.513Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:19.514Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:19.514Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:19.514Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:19.514Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:19.657Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:19.661Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:19.661Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:19.661Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:19.662Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:19.662Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:19.664Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:19.665Z"}
+{"level":"info","message":"Decrypted user request header: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiY3VzX2lkIjoiMTAwMCIsImN1c19uYW1lIjoiREMgQXV0byIsImN1c190ZWwiOiIxMjM0NTY3ODkiLCJ1c2VyR3JvdXAiOnsiY29kZSI6IlNVUEVSIFVTRVIiLCJuYW1lIjoi4LqX4Lq14Lqh4LqH4Lqy4LqZIOC6quC6seC6muC6nuC6reC6lOC6peC6sOC6muC6u-C6miIsImlkIjoxLCJ0aWNrZXRDYW5jZWwiOmZhbHNlfSwidGVybWluYWwiOltdLCJpYXQiOjE3NjYwMzY3MTksImV4cCI6MTc2NjA1NDcxOX0.5LXDCahuZa6q-0-N0LFZ9Zum8aFDgP36RJBsmniZSt0","timestamp":"2025-12-18T05:45:26.686Z"}
+{"level":"warn","message":"user decrypted DC Auto","timestamp":"2025-12-18T05:45:26.692Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:26.797Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:26.797Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:26.798Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:26.798Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:26.798Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:26.798Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:26.802Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:26.805Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:26.810Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:26.810Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:26.810Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:26.810Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:26.811Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:26.811Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:26.812Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:26.812Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:28.717Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:28.720Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:28.721Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:28.721Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:28.721Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:28.721Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:28.722Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:28.722Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:28.730Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:28.731Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:28.731Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:28.731Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:28.731Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:28.731Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:28.732Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:28.732Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:28.746Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:28.746Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:28.747Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:28.747Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:28.747Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:28.747Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:28.749Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:28.749Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:28.773Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:28.773Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:28.774Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:28.774Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:28.774Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:28.774Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:28.774Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:28.775Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:28.778Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:28.778Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:28.779Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:28.779Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:28.779Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:28.779Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:28.779Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:28.779Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:28.790Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:28.790Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:28.791Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:28.791Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:28.791Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:28.791Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:28.792Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:28.792Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:28.798Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:28.798Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:28.798Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:28.799Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:28.799Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:28.799Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:28.799Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:28.799Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:28.800Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:28.800Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:28.800Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:28.800Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:28.800Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:28.800Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:28.802Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:28.806Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:28.817Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:28.820Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:28.820Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:28.821Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:28.822Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:28.822Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:28.823Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:28.824Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:28.926Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:28.930Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:28.931Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:28.931Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:28.931Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:28.931Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:28.934Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:28.934Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:29.014Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:29.014Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:29.014Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:29.014Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:29.015Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:29.015Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:29.017Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:29.017Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:29.093Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:29.094Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:29.094Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:29.094Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:29.095Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:29.095Z"}
+{"level":"warn","message":"Validating token...","timestamp":"2025-12-18T05:45:29.095Z"}
+{"level":"warn","message":"User name from token: DC Auto","timestamp":"2025-12-18T05:45:29.096Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2025-12-18T06:10:07.293Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2025-12-18T06:10:07.297Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2025-12-18T06:10:07.298Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2025-12-18T06:10:07.299Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2025-12-18T06:10:07.300Z","username":"johndoe"}
+{"level":"info","message":"Model name sequelize","timestamp":"2025-12-18T06:10:08.035Z"}
+{"level":"info","message":"Model name Sequelize","timestamp":"2025-12-18T06:10:08.036Z"}
+{"level":"info","message":"Model name centralSequelize","timestamp":"2025-12-18T06:10:08.036Z"}
+{"level":"info","message":"Model name spf","timestamp":"2025-12-18T06:10:08.037Z"}
+{"level":"info","message":"Model name client","timestamp":"2025-12-18T06:10:08.038Z"}
+{"level":"info","message":"Model name group","timestamp":"2025-12-18T06:10:08.039Z"}
+{"level":"info","message":"Model name GroupMenuHeader","timestamp":"2025-12-18T06:10:08.040Z"}
+{"level":"info","message":"Model name role","timestamp":"2025-12-18T06:10:08.044Z"}
+{"level":"info","message":"Model name user","timestamp":"2025-12-18T06:10:08.053Z"}
+{"level":"info","message":"Model name Agency","timestamp":"2025-12-18T06:10:08.053Z"}
+{"level":"info","message":"Associating table Agency with models","timestamp":"2025-12-18T06:10:08.054Z"}
+{"level":"info","message":"Model name Applicant","timestamp":"2025-12-18T06:10:08.056Z"}
+{"level":"info","message":"Associating table Applicant with models","timestamp":"2025-12-18T06:10:08.057Z"}
+{"level":"info","message":"Model name MOU","timestamp":"2025-12-18T06:10:08.062Z"}
+{"level":"info","message":"Associating table Job with models","timestamp":"2025-12-18T06:10:08.063Z"}
+{"level":"info","message":"Model name jobAdvertise","timestamp":"2025-12-18T06:10:08.068Z"}
+{"level":"info","message":"Associating table JobAdvertise with models","timestamp":"2025-12-18T06:10:08.070Z"}
+{"level":"info","message":"Model name JobBatch","timestamp":"2025-12-18T06:10:08.073Z"}
+{"level":"info","message":"Associating table JobBatch with models","timestamp":"2025-12-18T06:10:08.074Z"}
+{"level":"info","message":"Model name benefit","timestamp":"2025-12-18T06:10:08.079Z"}
+{"level":"info","message":"Associating table Benefit with models","timestamp":"2025-12-18T06:10:08.080Z"}
+{"level":"info","message":"Model name company","timestamp":"2025-12-18T06:10:08.082Z"}
+{"level":"info","message":"Model name location","timestamp":"2025-12-18T06:10:08.082Z"}
+{"level":"info","message":"Model name currency","timestamp":"2025-12-18T06:10:08.082Z"}
+{"level":"info","message":"Model name unit","timestamp":"2025-12-18T06:10:08.082Z"}
+{"level":"info","message":"Model name stockTransactionModel","timestamp":"2025-12-18T06:10:08.091Z"}
+{"level":"info","message":"Model name category","timestamp":"2025-12-18T06:10:08.097Z"}
+{"level":"info","message":"Model name tax","timestamp":"2025-12-18T06:10:08.099Z"}
+{"level":"info","message":"Model name product","timestamp":"2025-12-18T06:10:08.099Z"}
+{"level":"info","message":"Model name productSize","timestamp":"2025-12-18T06:10:08.123Z"}
+{"level":"info","message":"Model name image","timestamp":"2025-12-18T06:10:08.127Z"}
+{"level":"info","message":"Associating table IMAGE with models","timestamp":"2025-12-18T06:10:08.128Z"}
+{"level":"info","message":"Model name priceList","timestamp":"2025-12-18T06:10:08.131Z"}
+{"level":"info","message":"Model name webProductGroup","timestamp":"2025-12-18T06:10:08.131Z"}
+{"level":"info","message":"Model name customer","timestamp":"2025-12-18T06:10:08.131Z"}
+{"level":"info","message":"Model name order","timestamp":"2025-12-18T06:10:08.131Z"}
+{"level":"info","message":"Model name orderHIS","timestamp":"2025-12-18T06:10:08.131Z"}
+{"level":"info","message":"Model name orderTable","timestamp":"2025-12-18T06:10:08.131Z"}
+{"level":"info","message":"Model name recipe","timestamp":"2025-12-18T06:10:08.131Z"}
+{"level":"info","message":"Model name table","timestamp":"2025-12-18T06:10:08.134Z"}
+{"level":"info","message":"Model name ticket","timestamp":"2025-12-18T06:10:08.138Z"}
+{"level":"info","message":"Model name promotion","timestamp":"2025-12-18T06:10:08.140Z"}
+{"level":"info","message":"Model name ticketLine","timestamp":"2025-12-18T06:10:08.141Z"}
+{"level":"info","message":"Model name MemberOffer","timestamp":"2025-12-18T06:10:08.141Z"}
+{"level":"info","message":"Model name saleHeader","timestamp":"2025-12-18T06:10:08.142Z"}
+{"level":"info","message":"Model name salePayment","timestamp":"2025-12-18T06:10:08.162Z"}
+{"level":"info","message":"Model name saleLine","timestamp":"2025-12-18T06:10:08.165Z"}
+{"level":"info","message":"Model name quotationHeader","timestamp":"2025-12-18T06:10:08.165Z"}
+{"level":"info","message":"Model name quotationLine","timestamp":"2025-12-18T06:10:08.166Z"}
+{"level":"info","message":"Model name poHeader","timestamp":"2025-12-18T06:10:08.166Z"}
+{"level":"info","message":"Model name poLine","timestamp":"2025-12-18T06:10:08.168Z"}
+{"level":"info","message":"Model name poHeaderHIS","timestamp":"2025-12-18T06:10:08.168Z"}
+{"level":"info","message":"Model name poLineHIS","timestamp":"2025-12-18T06:10:08.168Z"}
+{"level":"info","message":"Model name receivingHeader","timestamp":"2025-12-18T06:10:08.168Z"}
+{"level":"info","message":"Model name receivingLine","timestamp":"2025-12-18T06:10:08.168Z"}
+{"level":"info","message":"Model name reservation","timestamp":"2025-12-18T06:10:08.168Z"}
+{"level":"info","message":"Model name reservationLine","timestamp":"2025-12-18T06:10:08.168Z"}
+{"level":"info","message":"Model name washjob","timestamp":"2025-12-18T06:10:08.168Z"}
+{"level":"info","message":"Model name washjobHis","timestamp":"2025-12-18T06:10:08.168Z"}
+{"level":"info","message":"Model name washjobline","timestamp":"2025-12-18T06:10:08.169Z"}
+{"level":"info","message":"Model name transferHeader","timestamp":"2025-12-18T06:10:08.169Z"}
+{"level":"info","message":"Model name transferLine","timestamp":"2025-12-18T06:10:08.169Z"}
+{"level":"info","message":"Model name menuHeader","timestamp":"2025-12-18T06:10:08.169Z"}
+{"level":"info","message":"Model name menuLine","timestamp":"2025-12-18T06:10:08.169Z"}
+{"level":"info","message":"Model name MenuHeaderLines","timestamp":"2025-12-18T06:10:08.169Z"}
+{"level":"info","message":"Model name webMenuHeader","timestamp":"2025-12-18T06:10:08.169Z"}
+{"level":"info","message":"Model name card","timestamp":"2025-12-18T06:10:08.169Z"}
+{"level":"info","message":"Model name Transaction","timestamp":"2025-12-18T06:10:08.169Z"}
+{"level":"info","message":"Model name gl","timestamp":"2025-12-18T06:10:08.169Z"}
+{"level":"info","message":"Model name chartAccount","timestamp":"2025-12-18T06:10:08.169Z"}
+{"level":"info","message":"Model name apPaymentHeader","timestamp":"2025-12-18T06:10:08.169Z"}
+{"level":"info","message":"Model name arReceiveHeader","timestamp":"2025-12-18T06:10:08.169Z"}
+{"level":"info","message":"Model name payment","timestamp":"2025-12-18T06:10:08.169Z"}
+{"level":"info","message":"Model name bankAccount","timestamp":"2025-12-18T06:10:08.169Z"}
+{"level":"info","message":"Model name ministry","timestamp":"2025-12-18T06:10:08.169Z"}
+{"level":"info","message":"Model name moneySettlement","timestamp":"2025-12-18T06:10:08.176Z"}
+{"level":"info","message":"Model name moneyAdvanceAudit","timestamp":"2025-12-18T06:10:08.180Z"}
+{"level":"info","message":"Associating table MoneyAdvanceAudit with models","timestamp":"2025-12-18T06:10:08.180Z"}
+{"level":"info","message":"Model name moneyAdvance","timestamp":"2025-12-18T06:10:08.181Z"}
+{"level":"info","message":"Associating table MoneyAdvance with models","timestamp":"2025-12-18T06:10:08.181Z"}
+{"level":"info","message":"Model name revenue_target","timestamp":"2025-12-18T06:10:08.183Z"}
+{"level":"info","message":"Model name apInvoice","timestamp":"2025-12-18T06:10:08.183Z"}
+{"level":"info","message":"Associating table APInvoice with models","timestamp":"2025-12-18T06:10:08.183Z"}
+{"level":"info","message":"Model name apInvoiceAudit","timestamp":"2025-12-18T06:10:08.186Z"}
+{"level":"info","message":"Associating table APInvoiceAudit with models","timestamp":"2025-12-18T06:10:08.186Z"}
+{"level":"info","message":"Model name invoiceLineItem","timestamp":"2025-12-18T06:10:08.187Z"}
+{"level":"info","message":"Associating table InvoiceLineItem with models","timestamp":"2025-12-18T06:10:08.187Z"}
+{"level":"info","message":"Model name apInvoiceSettlement","timestamp":"2025-12-18T06:10:08.188Z"}
+{"level":"info","message":"Associating table APInvoiceSettlement with models","timestamp":"2025-12-18T06:10:08.188Z"}
+{"level":"info","message":"Model name apSettlementAudit","timestamp":"2025-12-18T06:10:08.192Z"}
+{"level":"info","message":"Associating table APSettlementAudit with models","timestamp":"2025-12-18T06:10:08.195Z"}
+{"level":"info","message":"Model name apInvoiceSettlementLine","timestamp":"2025-12-18T06:10:08.198Z"}
+{"level":"info","message":"Associating InvoiceSettlementLine with models","timestamp":"2025-12-18T06:10:08.198Z"}
+{"level":"info","message":"Model name arInvoiceHeader","timestamp":"2025-12-18T06:10:08.199Z"}
+{"level":"info","message":"Associating table ARInvoiceHeader with models","timestamp":"2025-12-18T06:10:08.199Z"}
+{"level":"info","message":"Model name arInvoiceHeaderAudit","timestamp":"2025-12-18T06:10:08.203Z"}
+{"level":"info","message":"Associating table ARInvoiceHeaderAudit with models","timestamp":"2025-12-18T06:10:08.204Z"}
+{"level":"info","message":"Model name arInvoiceLine","timestamp":"2025-12-18T06:10:08.208Z"}
+{"level":"info","message":"Associating table InvoiceLine with models","timestamp":"2025-12-18T06:10:08.210Z"}
+{"level":"info","message":"Model name arReceiveHeaderV2","timestamp":"2025-12-18T06:10:08.215Z"}
+{"level":"info","message":"Associating table ARReceiveHeader with models","timestamp":"2025-12-18T06:10:08.215Z"}
+{"level":"info","message":"Model name arReceiveHeaderAudit","timestamp":"2025-12-18T06:10:08.217Z"}
+{"level":"info","message":"Associating table ARReceiveHeaderAudit with models","timestamp":"2025-12-18T06:10:08.217Z"}
+{"level":"info","message":"Model name arReceiveLine","timestamp":"2025-12-18T06:10:08.218Z"}
+{"level":"info","message":"Associating table ReceiveLine with models","timestamp":"2025-12-18T06:10:08.218Z"}
+{"level":"info","message":"Model name vendor","timestamp":"2025-12-18T06:10:08.219Z"}
+{"level":"info","message":"Model name shipping","timestamp":"2025-12-18T06:10:08.219Z"}
+{"level":"info","message":"Model name service","timestamp":"2025-12-18T06:10:08.219Z"}
+{"level":"info","message":"Model name authority","timestamp":"2025-12-18T06:10:08.219Z"}
+{"level":"info","message":"Model name terminal","timestamp":"2025-12-18T06:10:08.219Z"}
+{"level":"info","message":"Model name campaign","timestamp":"2025-12-18T06:10:08.219Z"}
+{"level":"info","message":"Model name campaignEntry","timestamp":"2025-12-18T06:10:08.219Z"}
+{"level":"info","message":"Model name rider","timestamp":"2025-12-18T06:10:08.219Z"}
+{"level":"info","message":"Model name outlet","timestamp":"2025-12-18T06:10:08.219Z"}
+{"level":"info","message":"Model name geography","timestamp":"2025-12-18T06:10:08.219Z"}
+{"level":"info","message":"Model name country","timestamp":"2025-12-18T06:10:08.219Z"}
+{"level":"info","message":"Model name village","timestamp":"2025-12-18T06:10:08.219Z"}
+{"level":"info","message":"Model name district","timestamp":"2025-12-18T06:10:08.219Z"}
+{"level":"info","message":"Model name tuturial","timestamp":"2025-12-18T06:10:08.220Z"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2025-12-18T06:10:08.682Z"}
+{"level":"info","message":"app is runing: 8888","timestamp":"2025-12-18T06:10:08.685Z"}
+{"level":"warn","message":"env: undefined","timestamp":"2025-12-18T06:10:08.686Z"}
+{"level":"info","message":"client_db Connection established","timestamp":"2025-12-18T06:10:08.935Z"}
+{"level":"error","message":"Error synchronizing database: (conn:16375, no: 1046, SQLState: 3D000) No database selected\nsql: CREATE TABLE IF NOT EXISTS `SPF` (`id` INTEGER NOT NULL auto_increment , `code` VARCHAR(255) NOT NULL UNIQUE, `value` VARCHAR(255), `remark` VARCHAR(255), `isActive` TINYINT(1) NOT NULL DEFAULT true, `createdAt` DATETIME NOT NULL, `updateTimestamp` DATETIM... - parameters:[]","name":"SequelizeDatabaseError","original":{"code":"ER_NO_DB_ERROR","errno":1046,"fatal":false,"name":"SqlError","sql":"CREATE TABLE IF NOT EXISTS `SPF` (`id` INTEGER NOT NULL auto_increment , `code` VARCHAR(255) NOT NULL UNIQUE, `value` VARCHAR(255), `remark` VARCHAR(255), `isActive` TINYINT(1) NOT NULL DEFAULT true, `createdAt` DATETIME NOT NULL, `updateTimestamp` DATETIME NOT NULL, PRIMARY KEY (`id`)) ENGINE=InnoDB;","sqlMessage":"No database selected","sqlState":"3D000"},"parameters":{},"parent":{"code":"ER_NO_DB_ERROR","errno":1046,"fatal":false,"name":"SqlError","sql":"CREATE TABLE IF NOT EXISTS `SPF` (`id` INTEGER NOT NULL auto_increment , `code` VARCHAR(255) NOT NULL UNIQUE, `value` VARCHAR(255), `remark` VARCHAR(255), `isActive` TINYINT(1) NOT NULL DEFAULT true, `createdAt` DATETIME NOT NULL, `updateTimestamp` DATETIME NOT NULL, PRIMARY KEY (`id`)) ENGINE=InnoDB;","sqlMessage":"No database selected","sqlState":"3D000"},"sql":"CREATE TABLE IF NOT EXISTS `SPF` (`id` INTEGER NOT NULL auto_increment , `code` VARCHAR(255) NOT NULL UNIQUE, `value` VARCHAR(255), `remark` VARCHAR(255), `isActive` TINYINT(1) NOT NULL DEFAULT true, `createdAt` DATETIME NOT NULL, `updateTimestamp` DATETIME NOT NULL, PRIMARY KEY (`id`)) ENGINE=InnoDB;","stack":"Error\n    at Query.run (/Users/soubinkittiphanh/Desktop/Pro/dcommerce/dc_api/node_modules/sequelize/lib/dialects/mariadb/query.js:53:25)\n    at /Users/soubinkittiphanh/Desktop/Pro/dcommerce/dc_api/node_modules/sequelize/lib/sequelize.js:315:28\n    at processTicksAndRejections (node:internal/process/task_queues:96:5)\n    at async MySQLQueryInterface.createTable (/Users/soubinkittiphanh/Desktop/Pro/dcommerce/dc_api/node_modules/sequelize/lib/dialects/abstract/query-interface.js:98:12)\n    at async Function.sync (/Users/soubinkittiphanh/Desktop/Pro/dcommerce/dc_api/node_modules/sequelize/lib/model.js:942:7)\n    at async Sequelize._syncModelsWithCyclicReferences (/Users/soubinkittiphanh/Desktop/Pro/dcommerce/dc_api/node_modules/sequelize/lib/sequelize.js:395:7)\n    at async synchronizeDatabase (/Users/soubinkittiphanh/Desktop/Pro/dcommerce/dc_api/src/models/index.js:523:5)","timestamp":"2025-12-18T06:10:08.974Z"}
+{"level":"error","message":"tutorial_db Connection error: SequelizeConnectionError: (conn:-1, no: 45012, SQLState: 08S01) Connection timeout: failed to create socket after 1003ms","timestamp":"2025-12-18T06:10:09.681Z"}
+{"level":"error","message":"Error synchronizing central database: (conn:-1, no: 45012, SQLState: 08S01) Connection timeout: failed to create socket after 1003ms","name":"SequelizeConnectionError","original":{"code":"ER_CONNECTION_TIMEOUT","errno":45012,"fatal":true,"name":"SqlError","sql":null,"sqlMessage":"Connection timeout: failed to create socket after 1003ms","sqlState":"08S01"},"parent":{"code":"ER_CONNECTION_TIMEOUT","errno":45012,"fatal":true,"name":"SqlError","sql":null,"sqlMessage":"Connection timeout: failed to create socket after 1003ms","sqlState":"08S01"},"stack":"SequelizeConnectionError: (conn:-1, no: 45012, SQLState: 08S01) Connection timeout: failed to create socket after 1003ms\n    at ConnectionManager.connect (/Users/soubinkittiphanh/Desktop/Pro/dcommerce/dc_api/node_modules/sequelize/lib/dialects/mariadb/connection-manager.js:100:17)\n    at processTicksAndRejections (node:internal/process/task_queues:96:5)\n    at async ConnectionManager._connect (/Users/soubinkittiphanh/Desktop/Pro/dcommerce/dc_api/node_modules/sequelize/lib/dialects/abstract/connection-manager.js:222:24)\n    at async /Users/soubinkittiphanh/Desktop/Pro/dcommerce/dc_api/node_modules/sequelize/lib/dialects/abstract/connection-manager.js:174:32","timestamp":"2025-12-18T06:10:09.682Z"}
