@@ -1,4 +1,5 @@
 
+const { Op } = require('sequelize');
 const logger = require('../api/logger');
 const SaleHeader = require('../models').saleHeader
 const SaleLine = require('../models').saleLine

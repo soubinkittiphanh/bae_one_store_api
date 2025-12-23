@@ -1344,20 +1344,31 @@ exports.sumSaleCurrentMonth = async (req, res) => {
   }
 };
 exports.sumSaleCurrentYear = async (req, res) => {
-  // TODO: This query impact performance please review and optimize
-  // Calculate the sum of total - discount for products between two dates
   const date = JSON.parse(req.query.date);
+  const includeCards = req.query.includeCards === 'true'; // Optional parameter
+  
   logger.warn("Date " + date.startDate + " " + date.endDate)
-  //   const startDate = new Date('2023-07-01');
-  // const endDate = new Date('2023-12-31');
-  const { startDate, endDate } = date // new Date('2022-01-01');
+  const { startDate, endDate } = date
+  
   try {
+    // Build the lines include dynamically
+    const linesInclude = {
+      model: SaleLine,
+      as: "lines"
+    };
+    
+    // Only add cards if specifically requested
+    if (includeCards) {
+      linesInclude.include = ['cards'];
+    }
+    
     const saleHeader = await SaleHeader.findAll({
-      include: [Customer, 'payment', 'lines', {
-        model: SaleLine,
-        as: "lines",
-        include: ['cards']
-      },],
+      include: [
+        Customer, 
+        'payment', 
+        'payments',
+        linesInclude
+      ],
       attributes: ['id', 'discount', 'total', 'bookingDate'],
       where: {
         bookingDate: {
@@ -1365,7 +1376,6 @@ exports.sumSaleCurrentYear = async (req, res) => {
         },
         isActive: true,
       }
-
     })
     res.send(saleHeader)
   } catch (error) {
@@ -1373,3 +1383,531 @@ exports.sumSaleCurrentYear = async (req, res) => {
     res.send(`Something went wrong with error ${error}`)
   }
 };
+
+exports.getSaleHeadersByDateWithGifts = async (req, res) => {
+  const date = JSON.parse(req.query.date);
+  logger.warn("Gift Report - Date " + date.startDate + " " + date.endDate);
+  logger.warn(`Gift Report - Request date ${date.startDate} userId ${req.user.id}`);
+  
+  try {
+    const saleHeaders = await SaleHeader.findAll({
+      include: [
+        'user', 
+        'client', 
+        'payment', 
+        'currency', 
+        'location',
+        {
+          model: Line,
+          as: "lines",
+          include: [
+            {
+              model: Product,
+              as: "product"
+            }
+          ]
+        },
+        {
+          model: Customer,
+          include: ['geography', 'shipping', 'rider']
+        },
+        {
+          model: SalePayment,
+          as: 'payments',
+          include: [
+            {
+              model: Payment,
+              as: 'paymentMethod'
+            }
+          ]
+        }
+      ],
+      where: {
+        bookingDate: {
+          [Op.between]: [date.startDate, date.endDate]
+        },
+        // Only include headers that have at least one gift line
+        id: {
+          [Op.in]: sequelize.literal(`(
+            SELECT DISTINCT saleHeaderId 
+            FROM saleLine 
+            WHERE isGift = 1 AND isActive = 1
+          )`)
+        }
+      },
+      order: [['createdAt', 'DESC']]
+    });
+
+    // Filter and enhance with gift information
+    const giftSaleHeaders = saleHeaders.map(header => {
+      // Filter only gift lines
+      const giftLines = header.lines.filter(line => line.isGift === 1);
+      
+      // Calculate gift statistics
+      const giftItemsCount = giftLines.length;
+      const giftValue = giftLines.reduce((sum, line) => sum + line.total, 0);
+      
+      return {
+        ...header.toJSON(),
+        giftItemsCount,
+        giftValue,
+        giftLines
+      };
+    });
+
+    logger.info(`Found ${giftSaleHeaders.length} sale headers with gift items`);
+    res.status(200).send(giftSaleHeaders);
+    
+  } catch (error) {
+    logger.error("===> Gift report filter by date error: " + error);
+    res.status(500).send(error);
+  }
+};
+
+/**
+ * Get sale headers that contain gift items by date range and user
+ * Similar to getSaleHeadersByDateAndUser but filters only orders with gift items
+ */
+exports.getSaleHeadersByDateAndUserWithGifts = async (req, res) => {
+  logger.warn("=============Loading gift saleHeader data=============");
+  const date = JSON.parse(req.query.date);
+  logger.warn(`Gift Report - Request date ${date.startDate} userId ${date.userId}`);
+  
+  try {
+    const saleHeaders = await SaleHeader.findAll({
+      include: [
+        'user', 
+        'client', 
+        'payment', 
+        'currency', 
+        Customer,
+        {
+          model: Line,
+          as: "lines",
+          include: [
+            {
+              model: Product,
+              as: "product"
+            },
+            {
+              model: SaleHeader,
+              as: "header",
+            },
+            {
+              model: Card,
+              as: "cards",
+            },
+          ]
+        },
+        {
+          model: Customer,
+          include: ['geography', 'shipping']
+        },
+        {
+          model: location,
+          as: "location",
+          include: [
+            {
+              model: company,
+              as: "company"
+            },
+          ]
+        },
+        {
+          model: SalePayment,
+          as: 'payments',
+          include: [
+            {
+              model: Payment,
+              as: 'paymentMethod'
+            }
+          ]
+        }
+      ],
+      where: {
+        bookingDate: {
+          [Op.between]: [date.startDate, date.endDate]
+        },
+        userId: {
+          [date.userId < 1 ? Op.ne : Op.eq]: date.userId,
+        },
+        // Only include headers that have at least one gift line
+        id: {
+          [Op.in]: sequelize.literal(`(
+            SELECT DISTINCT saleHeaderId 
+            FROM saleLine 
+            WHERE isGift = 1 AND isActive = 1
+          )`)
+        }
+      },
+      order: [['createdAt', 'DESC']]
+    });
+
+    // Filter and enhance with gift information
+    const giftSaleHeaders = saleHeaders.map(header => {
+      // Filter only gift lines
+      const giftLines = header.lines.filter(line => line.isGift === 1);
+      
+      // Calculate gift statistics
+      const giftItemsCount = giftLines.length;
+      const giftValue = giftLines.reduce((sum, line) => sum + line.total, 0);
+      
+      return {
+        ...header.toJSON(),
+        giftItemsCount,
+        giftValue,
+        giftLines
+      };
+    });
+
+    logger.info(`Found ${giftSaleHeaders.length} sale headers with gift items for user ${date.userId}`);
+    res.status(200).send(giftSaleHeaders);
+    
+  } catch (error) {
+    logger.error("===> Gift report filter by date and user error: " + error);
+    res.status(500).send(error);
+  }
+};
+
+/**
+ * Get gift statistics summary for a date range
+ * Provides aggregate data about gift transactions
+ */
+exports.getGiftStatsByDate = async (req, res) => {
+  const date = JSON.parse(req.query.date);
+  logger.warn("Gift Stats - Date " + date.startDate + " " + date.endDate);
+  
+  try {
+    // Get gift lines with their headers for the date range
+    const giftLines = await SaleLine.findAll({
+      attributes: [
+        [sequelize.fn('COUNT', sequelize.col('saleLine.id')), 'totalGiftItems'],
+        [sequelize.fn('SUM', sequelize.col('saleLine.total')), 'totalGiftValue'],
+        [sequelize.fn('COUNT', sequelize.fn('DISTINCT', sequelize.col('saleHeaderId'))), 'totalOrdersWithGifts'],
+      ],
+      include: [
+        {
+          model: SaleHeader,
+          as: "header",
+          attributes: [],
+          where: {
+            bookingDate: {
+              [Op.between]: [date.startDate, date.endDate]
+            },
+            isActive: true
+          }
+        }
+      ],
+      where: {
+        isGift: 1,
+        isActive: true
+      }
+    });
+
+    // Get detailed breakdown by product
+    const giftProductBreakdown = await SaleLine.findAll({
+      attributes: [
+        'productId',
+        [sequelize.fn('COUNT', sequelize.col('saleLine.id')), 'giftCount'],
+        [sequelize.fn('SUM', sequelize.col('saleLine.total')), 'giftValue'],
+        [sequelize.fn('SUM', sequelize.col('quantity')), 'totalQuantity'],
+      ],
+      include: [
+        {
+          model: Product,
+          as: "product",
+          attributes: ['id', 'name', 'description']
+        },
+        {
+          model: SaleHeader,
+          as: "header",
+          attributes: [],
+          where: {
+            bookingDate: {
+              [Op.between]: [date.startDate, date.endDate]
+            },
+            isActive: true
+          }
+        }
+      ],
+      where: {
+        isGift: 1,
+        isActive: true
+      },
+      group: ['productId', 'product.id'],
+      order: [[sequelize.fn('SUM', sequelize.col('saleLine.total')), 'DESC']]
+    });
+
+    const stats = {
+      summary: giftLines[0] || {
+        totalGiftItems: 0,
+        totalGiftValue: 0,
+        totalOrdersWithGifts: 0
+      },
+      productBreakdown: giftProductBreakdown,
+      dateRange: {
+        startDate: date.startDate,
+        endDate: date.endDate
+      }
+    };
+
+    logger.info(`Gift stats calculated: ${stats.summary.totalGiftItems} items, ${stats.summary.totalGiftValue} value`);
+    res.status(200).json(stats);
+    
+  } catch (error) {
+    logger.error("===> Gift stats error: " + error);
+    res.status(500).send(error);
+  }
+};
+
+/**
+ * Get gift items breakdown by customer
+ * Shows which customers received the most gifts
+ */
+exports.getGiftsByCustomer = async (req, res) => {
+  const date = JSON.parse(req.query.date);
+  logger.warn("Gift by Customer - Date " + date.startDate + " " + date.endDate);
+  
+  try {
+    const giftsByCustomer = await SaleHeader.findAll({
+      attributes: [
+        'clientId',
+        [sequelize.fn('COUNT', sequelize.fn('DISTINCT', sequelize.col('SaleHeader.id'))), 'ordersCount'],
+        [sequelize.fn('COUNT', sequelize.col('lines.id')), 'giftItemsCount'],
+        [sequelize.fn('SUM', sequelize.col('lines.total')), 'totalGiftValue'],
+      ],
+      include: [
+        {
+          model: sequelize.models.client,
+          as: 'client',
+          attributes: ['id', 'name', 'telephone', 'email']
+        },
+        {
+          model: SaleLine,
+          as: 'lines',
+          attributes: [],
+          where: {
+            isGift: 1,
+            isActive: true
+          }
+        }
+      ],
+      where: {
+        bookingDate: {
+          [Op.between]: [date.startDate, date.endDate]
+        },
+        isActive: true
+      },
+      group: ['clientId', 'client.id'],
+      order: [[sequelize.fn('SUM', sequelize.col('lines.total')), 'DESC']],
+      limit: 50 // Top 50 customers
+    });
+
+    logger.info(`Found gift data for ${giftsByCustomer.length} customers`);
+    res.status(200).json(giftsByCustomer);
+    
+  } catch (error) {
+    logger.error("===> Gift by customer error: " + error);
+    res.status(500).send(error);
+  }
+};
+
+/**
+ * Get gift trends over time (monthly breakdown)
+ * Shows gift distribution patterns over months
+ */
+exports.getGiftTrends = async (req, res) => {
+  const date = JSON.parse(req.query.date);
+  logger.warn("Gift Trends - Date " + date.startDate + " " + date.endDate);
+  
+  try {
+    const giftTrends = await SaleLine.findAll({
+      attributes: [
+        [sequelize.fn('DATE_FORMAT', sequelize.col('header.bookingDate'), '%Y-%m'), 'month'],
+        [sequelize.fn('COUNT', sequelize.col('saleLine.id')), 'giftCount'],
+        [sequelize.fn('SUM', sequelize.col('saleLine.total')), 'giftValue'],
+        [sequelize.fn('COUNT', sequelize.fn('DISTINCT', sequelize.col('saleHeaderId'))), 'ordersWithGifts'],
+      ],
+      include: [
+        {
+          model: SaleHeader,
+          as: "header",
+          attributes: [],
+          where: {
+            bookingDate: {
+              [Op.between]: [date.startDate, date.endDate]
+            },
+            isActive: true
+          }
+        }
+      ],
+      where: {
+        isGift: 1,
+        isActive: true
+      },
+      group: [sequelize.fn('DATE_FORMAT', sequelize.col('header.bookingDate'), '%Y-%m')],
+      order: [[sequelize.fn('DATE_FORMAT', sequelize.col('header.bookingDate'), '%Y-%m'), 'ASC']]
+    });
+
+    logger.info(`Gift trends calculated for ${giftTrends.length} months`);
+    res.status(200).json(giftTrends);
+    
+  } catch (error) {
+    logger.error("===> Gift trends error: " + error);
+    res.status(500).send(error);
+  }
+};
+
+/**
+ * Create a gift sale line (helper function for manual gift creation)
+ * Allows staff to add gift items to existing orders
+ */
+exports.addGiftToSale = async (req, res) => {
+  try {
+    const { saleHeaderId, productId, quantity, unitRate, remark } = req.body;
+    
+    logger.info(`Adding gift to sale ${saleHeaderId}: Product ${productId}, Qty ${quantity}`);
+    
+    // Validate sale header exists
+    const saleHeader = await SaleHeader.findByPk(saleHeaderId);
+    if (!saleHeader) {
+      return res.status(404).json({
+        success: false,
+        message: 'Sale header not found'
+      });
+    }
+    
+    // Validate product exists
+    const product = await Product.findByPk(productId);
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: 'Product not found'
+      });
+    }
+    
+    const result = await sequelize.transaction(async (t) => {
+      // Create gift sale line
+      const giftLine = await SaleLine.create({
+        saleHeaderId: saleHeaderId,
+        headerId: saleHeaderId,
+        productId: productId,
+        quantity: quantity || 1,
+        unitRate: unitRate || 0,
+        price: 0, // Gifts are free
+        discount: 0,
+        total: 0, // Gifts have zero total
+        isGift: 1, // Mark as gift
+        isActive: true
+      }, { transaction: t });
+      
+      // Update sale header remark to indicate gift was added
+      const currentRemark = saleHeader.remark || '';
+      const newRemark = currentRemark + (currentRemark ? '; ' : '') + 
+        `Gift added: ${product.name} (${quantity})` + 
+        (remark ? ` - ${remark}` : '');
+      
+      await saleHeader.update({
+        remark: newRemark
+      }, { transaction: t });
+      
+      return { giftLine, saleHeader };
+    });
+    
+    logger.info(`Gift line created successfully: ${result.giftLine.id}`);
+    
+    res.status(201).json({
+      success: true,
+      message: 'Gift added to sale successfully',
+      data: {
+        giftLine: result.giftLine,
+        saleHeader: result.saleHeader
+      }
+    });
+    
+  } catch (error) {
+    logger.error(`Error adding gift to sale: ${error}`);
+    res.status(500).json({
+      success: false,
+      message: `Failed to add gift: ${error.message}`,
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Remove gift from sale
+ * Allows staff to remove gift items from orders
+ */
+exports.removeGiftFromSale = async (req, res) => {
+  try {
+    const { saleLineId } = req.params;
+    const { remark } = req.body;
+    
+    logger.info(`Removing gift sale line: ${saleLineId}`);
+    
+    // Find the gift line
+    const giftLine = await SaleLine.findOne({
+      where: {
+        id: saleLineId,
+        isGift: 1,
+        isActive: true
+      },
+      include: [
+        {
+          model: Product,
+          as: 'product'
+        },
+        {
+          model: SaleHeader,
+          as: 'header'
+        }
+      ]
+    });
+    
+    if (!giftLine) {
+      return res.status(404).json({
+        success: false,
+        message: 'Gift line not found'
+      });
+    }
+    
+    const result = await sequelize.transaction(async (t) => {
+      // Mark gift line as inactive
+      await giftLine.update({
+        isActive: false,
+        remark: `Removed: ${remark || 'Gift removed by staff'}`
+      }, { transaction: t });
+      
+      // Update sale header remark
+      const saleHeader = giftLine.header;
+      const currentRemark = saleHeader.remark || '';
+      const newRemark = currentRemark + (currentRemark ? '; ' : '') + 
+        `Gift removed: ${giftLine.product.name}` +
+        (remark ? ` - ${remark}` : '');
+      
+      await saleHeader.update({
+        remark: newRemark
+      }, { transaction: t });
+      
+      return { giftLine, saleHeader };
+    });
+    
+    logger.info(`Gift line removed successfully: ${saleLineId}`);
+    
+    res.status(200).json({
+      success: true,
+      message: 'Gift removed from sale successfully',
+      data: result
+    });
+    
+  } catch (error) {
+    logger.error(`Error removing gift from sale: ${error}`);
+    res.status(500).json({
+      success: false,
+      message: `Failed to remove gift: ${error.message}`,
+      error: error.message
+    });
+  }
+};
+

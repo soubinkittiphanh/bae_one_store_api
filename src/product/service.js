@@ -227,6 +227,7 @@ const createProdV1 = async (req, imagesObj) => {
         const barCode = body.barCode;
         const receiveUnitId = body.receiveUnitId;
         const stockUnitId = body.stockUnitId;
+        const baseUnitId = body.baseUnitId;
         const minStock = body.minStock;
         const costCurrencyId = body.costCurrencyId;
         const saleCurrencyId = body.saleCurrencyId;
@@ -262,11 +263,11 @@ const createProdV1 = async (req, imagesObj) => {
                     INSERT INTO product (
                         pro_category, pro_id, pro_name, pro_price, pro_desc, pro_status, 
                         retail_cost_percent, cost_price, locking_session_id, createdAt, 
-                        updateTimestamp, minStock, barCode, receiveUnitId, stockUnitId, 
+                        updateTimestamp, minStock, barCode, receiveUnitId, stockUnitId,baseUnitId, 
                         costCurrencyId, saleCurrencyId, isActive, validateStockOnSale, 
                         companyId, vendorName, _category, duration_minutes, taxId
                     )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
                 `;
 
                 // ✅ FIXED: Values array with proper null/undefined handling and added taxId
@@ -286,6 +287,7 @@ const createProdV1 = async (req, imagesObj) => {
                     barCode || '',
                     parseInt(receiveUnitId) || null,
                     parseInt(stockUnitId) || null,
+                    parseInt(baseUnitId) || null,
                     parseInt(costCurrencyId) || null,
                     parseInt(saleCurrencyId) || null,
                     isActive ? 1 : 0,
