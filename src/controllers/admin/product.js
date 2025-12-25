@@ -408,7 +408,7 @@ const fetchProductFromLocation = async (req, res) => {
   
   sqlCom += `
   GROUP BY p.pro_id
-  ORDER BY p.pro_price`;
+  ORDER BY p.id`;
 
   // Separate SQL for price lists (to handle multiple price lists per product)
   let priceListSql = '';
