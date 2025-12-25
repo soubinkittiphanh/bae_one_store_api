@@ -2,6 +2,7 @@
 const Client = require('../models').client;
 const { body, validationResult } = require('express-validator');
 const logger = require('../api/logger');
+const { Op } = require('sequelize');
 
 // Create and Save a new Client
 exports.create = (req, res) => {
@@ -118,24 +119,26 @@ exports.delete = (req, res) => {
       });
     });
 };
-
 // Find all active Clients
-exports.findAllActive = (req, res) => {
-  Client.findAll({ where: { isActive: true } })
-    .then(data => {
-      res.send(data);
-    })
-    .catch(err => {
-      res.status(500).send({
-        message:
-          err.message || "Some error occurred while retrieving clients."
-      });
-    });
+exports.findAllActive = async (req, res) => {
+    try {
+        const data = await Client.findAll({
+            where: {
+                isActive: true  // Simple boolean comparison is fine
+            }
+        });
+        res.send(data);
+    } catch (error) {
+        logger.error(`Cannot select client with error ${error}`); // Fixed syntax
+        res.status(500).send({
+            message: error.message || "Some error occurred while retrieving clients."  // Changed err to error
+        });
+    }
 };
 
-exports.findAllWithCreditPayment = async(req,res)=>{
+exports.findAllWithCreditPayment = async (req, res) => {
   // { include: ['lines', 'user'], }
-  const clients = await Client.findAll({include:['header']})
+  const clients = await Client.findAll({ include: ['header'] })
   return res.send(clients)
 
 }

@@ -2,6 +2,12 @@
 
 module.exports = (sequelize, DataTypes) => {
     const Client = sequelize.define('client', {
+        id: {  // ADD THIS - it's missing in your model
+            type: DataTypes.INTEGER,
+            primaryKey: true,
+            autoIncrement: true,
+            allowNull: false
+        },
         name: {
             type: DataTypes.STRING(50),
             allowNull: false,

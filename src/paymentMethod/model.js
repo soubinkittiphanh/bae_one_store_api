@@ -4,7 +4,9 @@ module.exports = (sequelize, DataTypes) => {
     const Payment = sequelize.define('payment', {
         payment_code: {
             type: DataTypes.STRING(15),
-            allowNull: false
+            allowNull: false,
+            unique: true
+
         },
         payment_name: {
             type: DataTypes.STRING,

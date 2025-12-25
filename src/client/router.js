@@ -14,8 +14,8 @@ router
 .delete("/find/:id", controller.delete)
 .get("/find", controller.findAll)
 .get("/findWithCredit", controller.findAllWithCreditPayment)
-.get("/find/:id", controller.findOne)
-.get("/find/active", controller.findAllActive)
+.get("/find/active", controller.findAllActive)  // Move this BEFORE :id route
+.get("/find/:id", controller.findOne)          // Put this AFTER specific routes
 .post("/generate", service.createBulkClient)
 // .post("/bulkCreate",service.createHulkStockCard)
 module.exports = router
