@@ -17,6 +17,7 @@ router.post("/create",validator.createReceiveHeaderValidation, controller.create
     .delete("/find/:id", controller.deleteProductById)
     .put("/disable/:id", controller.disableProductById)
     .get("/find", controller.getAllProducts)
+    .get("/find/active", controller.getAllActiveProducts)
     .get("/find/:id", controller.getProductById)
     .put("/stockcount/:id", controller.updateProductCountById)
     .put("/stockcount", controller.updateProductCountAll)

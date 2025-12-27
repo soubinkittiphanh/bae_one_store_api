@@ -198,6 +198,95 @@ const getAllProducts = async (req, res) => {
   }
 };
 
+const getAllActiveProducts = async (req, res) => {
+  try {
+    const {
+      search,
+      categoryId,
+      sortBy = 'pro_name',
+      sortOrder = 'ASC'
+    } = req.query;
+
+    const where = {
+      isActive: 1
+    };
+
+    // Search filter
+    if (search) {
+      where[Op.or] = [
+        { pro_name: { [Op.like]: `%${search}%` } },
+        { barCode: { [Op.like]: `%${search}%` } }
+      ];
+    }
+
+    // Category filter
+    if (categoryId) {
+      where[Op.or] = [
+        { pro_category: categoryId },
+        { categoryCategId: categoryId }
+      ];
+    }
+
+    const validSortFields = ['pro_name', 'pro_price', 'createdAt'];
+    const orderField = validSortFields.includes(sortBy) ? sortBy : 'pro_name';
+    const orderDirection = sortOrder.toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
+
+    const products = await Product.findAll({
+      where,
+      include: [
+        {
+          model: Category,
+          as: 'category',
+          attributes: ['categ_id', 'categ_name'],
+          required: false
+        },
+        {
+          model: Unit,
+          as: 'stockUnit',
+          attributes: ['id', 'name', 'symbol'],
+          required: false
+        },
+        'priceLists',
+        'images'
+      ],
+      order: [[orderField, orderDirection]],
+      distinct: true,
+      subQuery: true // ✔ important for hasMany
+    });
+
+    const formattedProducts = products.map(product => ({
+      id: product.id,
+      pro_id: product.pro_id,
+      pro_name: product.pro_name,
+      pro_price: product.pro_price,
+      stock_count: product.stock_count,
+      minStock: product.minStock,
+      barCode: product.barCode,
+      isActive: product.isActive,
+
+      category: product.category,
+      unit: product.stockUnit,
+      priceLists: product.priceLists || [],
+      images: product.images || []
+    }));
+
+    res.status(200).json({
+      success: true,
+      data: {
+        products: formattedProducts,
+        totalItems: formattedProducts.length
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching active products:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+};
 
 // Get a single product by ID
 const getProductById = async (req, res) => {
@@ -369,7 +458,8 @@ module.exports = {
   deleteProductById,
   updateProductCountById,
   updateProductCountAll,
-  disableProductById
+  disableProductById,
+  getAllActiveProducts
 };
 
 
