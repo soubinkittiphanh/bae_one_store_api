@@ -35212,3 +35212,139 @@
 {"level":"warn","message":"env: dcommerce_dev","timestamp":"2025-12-31T00:05:23.442Z"}
 {"level":"info","message":"tutorial_db Connection established","timestamp":"2025-12-31T00:05:23.544Z"}
 {"level":"info","message":"client_db Connection established","timestamp":"2025-12-31T00:05:23.548Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2025-12-31T00:06:15.651Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2025-12-31T00:06:15.656Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2025-12-31T00:06:15.657Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2025-12-31T00:06:15.657Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2025-12-31T00:06:15.659Z","username":"johndoe"}
+{"level":"info","message":"Model name sequelize","timestamp":"2025-12-31T00:06:16.421Z"}
+{"level":"info","message":"Model name Sequelize","timestamp":"2025-12-31T00:06:16.422Z"}
+{"level":"info","message":"Model name centralSequelize","timestamp":"2025-12-31T00:06:16.422Z"}
+{"level":"info","message":"Model name spf","timestamp":"2025-12-31T00:06:16.423Z"}
+{"level":"info","message":"Model name client","timestamp":"2025-12-31T00:06:16.423Z"}
+{"level":"info","message":"Model name group","timestamp":"2025-12-31T00:06:16.425Z"}
+{"level":"info","message":"Model name GroupMenuHeader","timestamp":"2025-12-31T00:06:16.426Z"}
+{"level":"info","message":"Model name role","timestamp":"2025-12-31T00:06:16.428Z"}
+{"level":"info","message":"Model name user","timestamp":"2025-12-31T00:06:16.433Z"}
+{"level":"info","message":"Model name Agency","timestamp":"2025-12-31T00:06:16.436Z"}
+{"level":"info","message":"Associating table Agency with models","timestamp":"2025-12-31T00:06:16.438Z"}
+{"level":"info","message":"Model name Applicant","timestamp":"2025-12-31T00:06:16.442Z"}
+{"level":"info","message":"Associating table Applicant with models","timestamp":"2025-12-31T00:06:16.444Z"}
+{"level":"info","message":"Model name MOU","timestamp":"2025-12-31T00:06:16.449Z"}
+{"level":"info","message":"Associating table Job with models","timestamp":"2025-12-31T00:06:16.451Z"}
+{"level":"info","message":"Model name jobAdvertise","timestamp":"2025-12-31T00:06:16.457Z"}
+{"level":"info","message":"Associating table JobAdvertise with models","timestamp":"2025-12-31T00:06:16.460Z"}
+{"level":"info","message":"Model name JobBatch","timestamp":"2025-12-31T00:06:16.464Z"}
+{"level":"info","message":"Associating table JobBatch with models","timestamp":"2025-12-31T00:06:16.467Z"}
+{"level":"info","message":"Model name benefit","timestamp":"2025-12-31T00:06:16.471Z"}
+{"level":"info","message":"Associating table Benefit with models","timestamp":"2025-12-31T00:06:16.474Z"}
+{"level":"info","message":"Model name company","timestamp":"2025-12-31T00:06:16.481Z"}
+{"level":"info","message":"Model name location","timestamp":"2025-12-31T00:06:16.481Z"}
+{"level":"info","message":"Model name currency","timestamp":"2025-12-31T00:06:16.481Z"}
+{"level":"info","message":"Model name unit","timestamp":"2025-12-31T00:06:16.481Z"}
+{"level":"info","message":"Model name stockTransactionModel","timestamp":"2025-12-31T00:06:16.484Z"}
+{"level":"info","message":"Model name category","timestamp":"2025-12-31T00:06:16.492Z"}
+{"level":"info","message":"Model name tax","timestamp":"2025-12-31T00:06:16.497Z"}
+{"level":"info","message":"Model name product","timestamp":"2025-12-31T00:06:16.497Z"}
+{"level":"info","message":"Model name productTemp","timestamp":"2025-12-31T00:06:16.524Z"}
+{"level":"info","message":"Model name productSize","timestamp":"2025-12-31T00:06:16.529Z"}
+{"level":"info","message":"Model name image","timestamp":"2025-12-31T00:06:16.531Z"}
+{"level":"info","message":"Associating table IMAGE with models","timestamp":"2025-12-31T00:06:16.531Z"}
+{"level":"info","message":"Model name priceList","timestamp":"2025-12-31T00:06:16.533Z"}
+{"level":"info","message":"Model name webProductGroup","timestamp":"2025-12-31T00:06:16.533Z"}
+{"level":"info","message":"Model name customer","timestamp":"2025-12-31T00:06:16.533Z"}
+{"level":"info","message":"Model name order","timestamp":"2025-12-31T00:06:16.533Z"}
+{"level":"info","message":"Model name orderHIS","timestamp":"2025-12-31T00:06:16.533Z"}
+{"level":"info","message":"Model name orderTable","timestamp":"2025-12-31T00:06:16.533Z"}
+{"level":"info","message":"Model name recipe","timestamp":"2025-12-31T00:06:16.533Z"}
+{"level":"info","message":"Model name table","timestamp":"2025-12-31T00:06:16.534Z"}
+{"level":"info","message":"Model name ticket","timestamp":"2025-12-31T00:06:16.536Z"}
+{"level":"info","message":"Model name promotion","timestamp":"2025-12-31T00:06:16.538Z"}
+{"level":"info","message":"Model name ticketLine","timestamp":"2025-12-31T00:06:16.541Z"}
+{"level":"info","message":"Model name MemberOffer","timestamp":"2025-12-31T00:06:16.543Z"}
+{"level":"info","message":"Model name saleHeader","timestamp":"2025-12-31T00:06:16.548Z"}
+{"level":"info","message":"Model name salePayment","timestamp":"2025-12-31T00:06:16.568Z"}
+{"level":"info","message":"Model name saleLine","timestamp":"2025-12-31T00:06:16.572Z"}
+{"level":"info","message":"Model name quotationHeader","timestamp":"2025-12-31T00:06:16.572Z"}
+{"level":"info","message":"Model name quotationLine","timestamp":"2025-12-31T00:06:16.572Z"}
+{"level":"info","message":"Model name poHeader","timestamp":"2025-12-31T00:06:16.575Z"}
+{"level":"info","message":"Model name poLine","timestamp":"2025-12-31T00:06:16.577Z"}
+{"level":"info","message":"Model name poHeaderHIS","timestamp":"2025-12-31T00:06:16.577Z"}
+{"level":"info","message":"Model name poLineHIS","timestamp":"2025-12-31T00:06:16.577Z"}
+{"level":"info","message":"Model name receivingHeader","timestamp":"2025-12-31T00:06:16.577Z"}
+{"level":"info","message":"Model name receivingLine","timestamp":"2025-12-31T00:06:16.577Z"}
+{"level":"info","message":"Model name reservation","timestamp":"2025-12-31T00:06:16.577Z"}
+{"level":"info","message":"Model name reservationLine","timestamp":"2025-12-31T00:06:16.577Z"}
+{"level":"info","message":"Model name washjob","timestamp":"2025-12-31T00:06:16.577Z"}
+{"level":"info","message":"Model name washjobHis","timestamp":"2025-12-31T00:06:16.577Z"}
+{"level":"info","message":"Model name washjobline","timestamp":"2025-12-31T00:06:16.577Z"}
+{"level":"info","message":"Model name transferHeader","timestamp":"2025-12-31T00:06:16.577Z"}
+{"level":"info","message":"Model name transferLine","timestamp":"2025-12-31T00:06:16.577Z"}
+{"level":"info","message":"Model name menuHeader","timestamp":"2025-12-31T00:06:16.577Z"}
+{"level":"info","message":"Model name menuLine","timestamp":"2025-12-31T00:06:16.577Z"}
+{"level":"info","message":"Model name MenuHeaderLines","timestamp":"2025-12-31T00:06:16.577Z"}
+{"level":"info","message":"Model name webMenuHeader","timestamp":"2025-12-31T00:06:16.577Z"}
+{"level":"info","message":"Model name card","timestamp":"2025-12-31T00:06:16.577Z"}
+{"level":"info","message":"Model name Transaction","timestamp":"2025-12-31T00:06:16.577Z"}
+{"level":"info","message":"Model name gl","timestamp":"2025-12-31T00:06:16.577Z"}
+{"level":"info","message":"Model name chartAccount","timestamp":"2025-12-31T00:06:16.578Z"}
+{"level":"info","message":"Model name apPaymentHeader","timestamp":"2025-12-31T00:06:16.578Z"}
+{"level":"info","message":"Model name arReceiveHeader","timestamp":"2025-12-31T00:06:16.578Z"}
+{"level":"info","message":"Model name payment","timestamp":"2025-12-31T00:06:16.578Z"}
+{"level":"info","message":"Model name bankAccount","timestamp":"2025-12-31T00:06:16.578Z"}
+{"level":"info","message":"Model name ministry","timestamp":"2025-12-31T00:06:16.578Z"}
+{"level":"info","message":"Model name moneySettlement","timestamp":"2025-12-31T00:06:16.584Z"}
+{"level":"info","message":"Model name moneyAdvanceAudit","timestamp":"2025-12-31T00:06:16.591Z"}
+{"level":"info","message":"Associating table MoneyAdvanceAudit with models","timestamp":"2025-12-31T00:06:16.591Z"}
+{"level":"info","message":"Model name moneyAdvance","timestamp":"2025-12-31T00:06:16.591Z"}
+{"level":"info","message":"Associating table MoneyAdvance with models","timestamp":"2025-12-31T00:06:16.591Z"}
+{"level":"info","message":"Model name revenue_target","timestamp":"2025-12-31T00:06:16.594Z"}
+{"level":"info","message":"Model name apInvoice","timestamp":"2025-12-31T00:06:16.594Z"}
+{"level":"info","message":"Associating table APInvoice with models","timestamp":"2025-12-31T00:06:16.595Z"}
+{"level":"info","message":"Model name apInvoiceAudit","timestamp":"2025-12-31T00:06:16.597Z"}
+{"level":"info","message":"Associating table APInvoiceAudit with models","timestamp":"2025-12-31T00:06:16.597Z"}
+{"level":"info","message":"Model name invoiceLineItem","timestamp":"2025-12-31T00:06:16.599Z"}
+{"level":"info","message":"Associating table InvoiceLineItem with models","timestamp":"2025-12-31T00:06:16.599Z"}
+{"level":"info","message":"Model name apInvoiceSettlement","timestamp":"2025-12-31T00:06:16.600Z"}
+{"level":"info","message":"Associating table APInvoiceSettlement with models","timestamp":"2025-12-31T00:06:16.600Z"}
+{"level":"info","message":"Model name apSettlementAudit","timestamp":"2025-12-31T00:06:16.609Z"}
+{"level":"info","message":"Associating table APSettlementAudit with models","timestamp":"2025-12-31T00:06:16.612Z"}
+{"level":"info","message":"Model name apInvoiceSettlementLine","timestamp":"2025-12-31T00:06:16.613Z"}
+{"level":"info","message":"Associating InvoiceSettlementLine with models","timestamp":"2025-12-31T00:06:16.613Z"}
+{"level":"info","message":"Model name arInvoiceHeader","timestamp":"2025-12-31T00:06:16.614Z"}
+{"level":"info","message":"Associating table ARInvoiceHeader with models","timestamp":"2025-12-31T00:06:16.615Z"}
+{"level":"info","message":"Model name arInvoiceHeaderAudit","timestamp":"2025-12-31T00:06:16.623Z"}
+{"level":"info","message":"Associating table ARInvoiceHeaderAudit with models","timestamp":"2025-12-31T00:06:16.623Z"}
+{"level":"info","message":"Model name arInvoiceLine","timestamp":"2025-12-31T00:06:16.624Z"}
+{"level":"info","message":"Associating table InvoiceLine with models","timestamp":"2025-12-31T00:06:16.624Z"}
+{"level":"info","message":"Model name arReceiveHeaderV2","timestamp":"2025-12-31T00:06:16.629Z"}
+{"level":"info","message":"Associating table ARReceiveHeader with models","timestamp":"2025-12-31T00:06:16.629Z"}
+{"level":"info","message":"Model name arReceiveHeaderAudit","timestamp":"2025-12-31T00:06:16.632Z"}
+{"level":"info","message":"Associating table ARReceiveHeaderAudit with models","timestamp":"2025-12-31T00:06:16.632Z"}
+{"level":"info","message":"Model name arReceiveLine","timestamp":"2025-12-31T00:06:16.632Z"}
+{"level":"info","message":"Associating table ReceiveLine with models","timestamp":"2025-12-31T00:06:16.632Z"}
+{"level":"info","message":"Model name vendor","timestamp":"2025-12-31T00:06:16.633Z"}
+{"level":"info","message":"Model name shipping","timestamp":"2025-12-31T00:06:16.633Z"}
+{"level":"info","message":"Model name service","timestamp":"2025-12-31T00:06:16.633Z"}
+{"level":"info","message":"Model name authority","timestamp":"2025-12-31T00:06:16.634Z"}
+{"level":"info","message":"Model name terminal","timestamp":"2025-12-31T00:06:16.634Z"}
+{"level":"info","message":"Model name campaign","timestamp":"2025-12-31T00:06:16.634Z"}
+{"level":"info","message":"Model name campaignEntry","timestamp":"2025-12-31T00:06:16.634Z"}
+{"level":"info","message":"Model name rider","timestamp":"2025-12-31T00:06:16.634Z"}
+{"level":"info","message":"Model name outlet","timestamp":"2025-12-31T00:06:16.634Z"}
+{"level":"info","message":"Model name geography","timestamp":"2025-12-31T00:06:16.634Z"}
+{"level":"info","message":"Model name country","timestamp":"2025-12-31T00:06:16.634Z"}
+{"level":"info","message":"Model name village","timestamp":"2025-12-31T00:06:16.634Z"}
+{"level":"info","message":"Model name district","timestamp":"2025-12-31T00:06:16.635Z"}
+{"level":"info","message":"Model name tuturial","timestamp":"2025-12-31T00:06:16.635Z"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2025-12-31T00:06:17.098Z"}
+{"level":"info","message":"app is runing: 8888","timestamp":"2025-12-31T00:06:17.101Z"}
+{"level":"warn","message":"env: dcommerce_dev","timestamp":"2025-12-31T00:06:17.101Z"}
+{"level":"info","message":"client_db Connection established","timestamp":"2025-12-31T00:06:17.181Z"}
+{"level":"info","message":"tutorial_db Connection established","timestamp":"2025-12-31T00:06:17.194Z"}
+{"level":"info","message":"Database client is synchronized","timestamp":"2025-12-31T00:08:53.956Z"}
+{"level":"warn","message":"USER DEDTAIL TO CREATE 1000","timestamp":"2025-12-31T00:08:53.969Z"}
+{"level":"info","message":"********** Found Users: [{\"id\":1,\"cus_id\":\"1000\",\"cus_pass\":\"1111\",\"cus_name\":\"DC Auto\",\"cus_tel\":\"123456789\",\"cus_email\":\"jane.doe@example.com\",\"cus_active\":true,\"village\":\"Village Name\",\"district\":\"District Name\",\"province\":\"Province Name\",\"remark\":\"New customer\",\"isActive\":true,\"createdAt\":\"2025-01-24T18:44:38.000Z\",\"updateTimestamp\":\"2025-12-05T01:45:49.000Z\",\"roleId\":null,\"groupId\":1},{\"id\":2,\"cus_id\":\"1001\",\"cus_pass\":\"1819\",\"cus_name\":\"Manager01\",\"cus_tel\":\"TELEPHONE\",\"cus_email\":\"EMAIL\",\"cus_active\":false,\"village\":null,\"district\":null,\"province\":null,\"remark\":null,\"isActive\":true,\"createdAt\":\"2025-01-24T19:54:20.000Z\",\"updateTimestamp\":\"2025-12-05T01:46:07.000Z\",\"roleId\":null,\"groupId\":9},{\"id\":3,\"cus_id\":\"1002\",\"cus_pass\":\"12345\",\"cus_name\":\"Supervisor01\",\"cus_tel\":\"TELEPHONE\",\"cus_email\":\"EMAIL\",\"cus_active\":false,\"village\":null,\"district\":null,\"province\":null,\"remark\":null,\"isActive\":true,\"createdAt\":\"2025-03-09T02:54:41.000Z\",\"updateTimestamp\":\"2025-12-05T01:46:17.000Z\",\"roleId\":null,\"groupId\":10},{\"id\":4,\"cus_id\":\"1003\",\"cus_pass\":\"1003\",\"cus_name\":\"Cashier01\",\"cus_tel\":\"TELEPHONE\",\"cus_email\":\"EMAIL\",\"cus_active\":false,\"village\":null,\"district\":null,\"province\":null,\"remark\":null,\"isActive\":true,\"createdAt\":\"2025-03-09T02:56:33.000Z\",\"updateTimestamp\":\"2025-12-05T01:46:24.000Z\",\"roleId\":null,\"groupId\":11},{\"id\":5,\"cus_id\":\"1004\",\"cus_pass\":\"1111\",\"cus_name\":\"USER NAME\",\"cus_tel\":\"TELEPHONE\",\"cus_email\":\"EMAIL\",\"cus_active\":false,\"village\":null,\"district\":null,\"province\":null,\"remark\":null,\"isActive\":true,\"createdAt\":\"2025-08-03T03:12:33.000Z\",\"updateTimestamp\":\"2025-12-05T01:46:31.000Z\",\"roleId\":null,\"groupId\":7},{\"id\":6,\"cus_id\":\"1005\",\"cus_pass\":\"1111\",\"cus_name\":\"Happy Bun\",\"cus_tel\":\"TELEPHONE\",\"cus_email\":\"EMAIL\",\"cus_active\":true,\"village\":null,\"district\":null,\"province\":null,\"remark\":null,\"isActive\":true,\"createdAt\":\"2025-08-05T02:05:41.000Z\",\"updateTimestamp\":\"2025-12-04T05:18:20.000Z\",\"roleId\":null,\"groupId\":4},{\"id\":7,\"cus_id\":\"1006\",\"cus_pass\":\"1111\",\"cus_name\":\"ດວງຕາ\",\"cus_tel\":\"TELEPHONE\",\"cus_email\":\"EMAIL\",\"cus_active\":false,\"village\":null,\"district\":null,\"province\":null,\"remark\":\"User account\",\"isActive\":true,\"createdAt\":\"2025-10-31T04:32:53.000Z\",\"updateTimestamp\":\"2025-12-05T01:46:37.000Z\",\"roleId\":null,\"groupId\":9},{\"id\":8,\"cus_id\":\"1007\",\"cus_pass\":\"1111\",\"cus_name\":\"ແຊມ\",\"cus_tel\":\"TELEPHONE\",\"cus_email\":\"EMAIL\",\"cus_active\":false,\"village\":null,\"district\":null,\"province\":null,\"remark\":\"User account\",\"isActive\":true,\"createdAt\":\"2025-10-31T04:32:53.000Z\",\"updateTimestamp\":\"2025-12-05T01:46:42.000Z\",\"roleId\":null,\"groupId\":11},{\"id\":9,\"cus_id\":\"1008\",\"cus_pass\":\"1111\",\"cus_name\":\"ໄຊ\",\"cus_tel\":\"TELEPHONE\",\"cus_email\":\"EMAIL\",\"cus_active\":false,\"village\":null,\"district\":null,\"province\":null,\"remark\":\"User account\",\"isActive\":true,\"createdAt\":\"2025-10-31T04:32:53.000Z\",\"updateTimestamp\":\"2025-12-05T01:46:46.000Z\",\"roleId\":null,\"groupId\":9},{\"id\":10,\"cus_id\":\"1009\",\"cus_pass\":\"1111\",\"cus_name\":\"ກູດ\",\"cus_tel\":\"TELEPHONE\",\"cus_email\":\"EMAIL\",\"cus_active\":false,\"village\":null,\"district\":null,\"province\":null,\"remark\":\"User account\",\"isActive\":true,\"createdAt\":\"2025-10-31T04:32:53.000Z\",\"updateTimestamp\":\"2025-12-05T01:46:50.000Z\",\"roleId\":null,\"groupId\":11},{\"id\":11,\"cus_id\":\"1010\",\"cus_pass\":\"1111\",\"cus_name\":\"ລູເຊຍ\",\"cus_tel\":\"TELEPHONE\",\"cus_email\":\"EMAIL\",\"cus_active\":false,\"village\":null,\"district\":null,\"province\":null,\"remark\":\"User account\",\"isActive\":true,\"createdAt\":\"2025-10-31T04:32:53.000Z\",\"updateTimestamp\":\"2025-12-05T01:46:54.000Z\",\"roleId\":null,\"groupId\":11},{\"id\":12,\"cus_id\":\"1011\",\"cus_pass\":\"1111\",\"cus_name\":\"ຕົ້ນ\",\"cus_tel\":\"TELEPHONE\",\"cus_email\":\"EMAIL\",\"cus_active\":false,\"village\":null,\"district\":null,\"province\":null,\"remark\":\"User account\",\"isActive\":true,\"createdAt\":\"2025-10-31T04:32:53.000Z\",\"updateTimestamp\":\"2025-12-05T01:46:58.000Z\",\"roleId\":null,\"groupId\":9},{\"id\":13,\"cus_id\":\"1012\",\"cus_pass\":\"Keo79\",\"cus_name\":\"ແສງແກ້ວ\",\"cus_tel\":\"TELEPHONE\",\"cus_email\":\"EMAIL\",\"cus_active\":false,\"village\":null,\"district\":null,\"province\":null,\"remark\":\"User account\",\"isActive\":true,\"createdAt\":\"2025-10-31T04:32:53.000Z\",\"updateTimestamp\":\"2025-12-05T01:47:03.000Z\",\"roleId\":null,\"groupId\":9},{\"id\":14,\"cus_id\":\"1013\",\"cus_pass\":\"1111\",\"cus_name\":\"ແສງແກ້ວ\",\"cus_tel\":\"TELEPHONE\",\"cus_email\":\"EMAIL\",\"cus_active\":false,\"village\":null,\"district\":null,\"province\":null,\"remark\":null,\"isActive\":true,\"createdAt\":\"2025-11-08T03:50:53.000Z\",\"updateTimestamp\":\"2025-12-05T01:47:07.000Z\",\"roleId\":null,\"groupId\":9}] **********","timestamp":"2025-12-31T00:08:53.982Z"}
+{"level":"info","message":"Users already exist. No need to create a default user.","timestamp":"2025-12-31T00:08:53.986Z"}
+{"level":"info","message":"Default user check complete.","timestamp":"2025-12-31T00:08:53.986Z"}
+{"level":"info","message":"Database central is synchronized","timestamp":"2025-12-31T00:08:54.534Z"}
