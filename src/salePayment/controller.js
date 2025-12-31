@@ -61,7 +61,7 @@ exports.createBulkSalePayment = async (req, res) => {
     const totalPaymentAmount = paymentData.reduce((sum, payment) => sum + (payment.amount || 0), 0);
     
     // Validate total matches sale total
-    const expectedTotal = saleHeader.total - (saleHeader.discount || 0);
+    const expectedTotal = saleHeader.total ;
     const tolerance = 0.01; // Allow small rounding differences
     
     if (Math.abs(totalPaymentAmount - expectedTotal) > tolerance) {

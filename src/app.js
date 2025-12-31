@@ -46,6 +46,7 @@ const buildApp = async () => {
     app.use("/api/sale-payment",myRouter.salePayment)
     app.use("/api/saleLine",myRouter.saleLine)
     app.use("/api/product",myRouter.product)
+    app.use("/api/product-temps",myRouter.productTemp)
     app.use("/api/recipes",myRouter.recipe)
     app.use("/api/transfer",myRouter.transfer)
     app.use("/api/terminal",myRouter.terminal)

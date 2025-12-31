@@ -86,6 +86,7 @@ const initializeModels = () => {
     // Product related models
     tax: require("../tax/model")(sequelize, DataTypes),
     product: require("../product/model")(sequelize, DataTypes),
+    productTemp: require("../productTemp/model")(sequelize, DataTypes),
     productSize: require("../product_size/model")(sequelize, DataTypes),
     image: require("../image/model")(sequelize, DataTypes),
     priceList: require("../priceList/model")(sequelize, DataTypes),

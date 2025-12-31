@@ -25,6 +25,7 @@ const salePayment = require("../salePayment").router
 const menuHeader = require("../menu").router
 const menuLine = require("../menu/line").router
 const product = require("../product").router
+const productTemp = require("../productTemp").router
 const saleLine = require("../sales/line").router
 const quotation = require("../quotation").router
 const quotationLine = require("../quotation/line").router
@@ -157,5 +158,6 @@ module.exports={
     recipe,
     promotions,
     stockTransaction,
-    salePayment
+    salePayment,
+    productTemp,
 }
