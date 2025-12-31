@@ -16,6 +16,7 @@ const buildApp = async () => {
         res.send("Succeed server is ready")
     })
     app.get("/api/public/company/findAll",companyController.getAllActiveCompanies)
+    app.use("/api/product-temps", myRouter.productTemp)
     app.use("/webproductgroup/find",controller.findActive)
     app.use("/api",myRouter.dymCustomerRouter)
     app.use("/api",myRouter.orderRouter);
@@ -46,7 +47,7 @@ const buildApp = async () => {
     app.use("/api/sale-payment",myRouter.salePayment)
     app.use("/api/saleLine",myRouter.saleLine)
     app.use("/api/product",myRouter.product)
-    app.use("/api/product-temps",myRouter.productTemp)
+    // app.use("/api/product-temps",myRouter.productTemp)
     app.use("/api/recipes",myRouter.recipe)
     app.use("/api/transfer",myRouter.transfer)
     app.use("/api/terminal",myRouter.terminal)
