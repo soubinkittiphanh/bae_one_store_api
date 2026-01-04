@@ -17,6 +17,7 @@ module.exports = (sequelize, DataTypes) => {
         },
         barCode: {
             type: DataTypes.STRING(40),
+            unique: true
             // allowNull: false,
         },
         isActive: {

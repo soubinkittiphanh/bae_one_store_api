@@ -1345,10 +1345,12 @@ exports.sumSaleCurrentMonth = async (req, res) => {
 };
 exports.sumSaleCurrentYear = async (req, res) => {
   const date = JSON.parse(req.query.date);
+    const locationId = req.query.locationId;  // Get locationId directly
   const includeCards = req.query.includeCards === 'true'; // Optional parameter
   
   logger.warn("Date " + date.startDate + " " + date.endDate)
   const { startDate, endDate } = date
+
   
   try {
     // Build the lines include dynamically
@@ -1372,8 +1374,9 @@ exports.sumSaleCurrentYear = async (req, res) => {
       attributes: ['id', 'discount', 'total', 'bookingDate'],
       where: {
         bookingDate: {
-          [Op.between]: [startDate, endDate]
+          [Op.between]: [startDate, endDate],
         },
+        locationId:locationId,
         isActive: true,
       }
     })
