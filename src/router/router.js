@@ -68,6 +68,7 @@ const product = async (app) => {
     app.put('/product_e', ProdCtr.updateProd);
     // app.get('/product_f', ProdCtr.fetchProd);
     app.get('/product_f/:locationId', ProdCtr.fetchProductFromLocation);
+    app.get('/product_f_v1/:locationId', ProdCtr.fetchProductFromLocationV1);
     app.get('/api/tax/find', ProdCtr.fetchTaxes);
     app.get('/product_mobile_f', ProdCtr.fetchProdMobile);
     app.post('/product_f_id', ProdCtr.fetchProdId);

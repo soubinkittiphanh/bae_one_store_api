@@ -590,6 +590,79 @@ const fetchProductFromLocation = async (req, res) => {
   }
 };
 
+const fetchProductFromLocationV1 = async (req, res) => {
+  const { locationId } = req.params;
+  const { companyId } = req.query;
+
+  // Only select fields you actually need
+  const sqlCom = `
+    SELECT DISTINCT
+      p.id,
+      p.pro_id,
+      p.barCode,
+      p.pro_name,
+      p.pro_price,
+      p.pro_status,
+      p.validateStockOnSale,
+      p.saleCurrencyId,
+      p.isActive,
+      p.pro_category,
+      co.id as companyId,
+      i.img_path,
+      IFNULL(c.stock, 0) AS card_count
+    FROM product p
+    LEFT JOIN company co ON co.id = p.companyId
+    LEFT JOIN (
+      SELECT 
+        COUNT(c.card_number) AS stock,
+        c.productId
+      FROM card c
+      WHERE c.card_isused = 0 AND c.locationId = ?
+      GROUP BY c.productId
+    ) c ON c.productId = p.id
+    LEFT JOIN image_path i ON i.pro_id = p.pro_id
+    WHERE p.isActive = true
+    ${companyId ? 'AND p.companyId = ?' : ''}
+    GROUP BY p.pro_id
+    ORDER BY p.id
+  `;
+
+  try {
+    // Use parameterized queries to prevent SQL injection
+    const params = [locationId];
+    if (companyId) {
+      params.push(parseInt(companyId));
+    }
+
+    // Convert to Promise-based approach
+    const productResults = await new Promise((resolve, reject) => {
+      Db.query(sqlCom, params, (er, results) => {
+        if (er) reject(er);
+        else resolve(results);
+      });
+    });
+
+    // Return results directly without unnecessary transformation
+    res.status(200).json({
+      success: true,
+      data: productResults,
+      count: productResults.length,
+      filters: {
+        locationId: parseInt(locationId),
+        companyId: companyId ? parseInt(companyId) : null
+      }
+    });
+
+  } catch (error) {
+    console.error('Error in fetchProductFromLocation:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Database error',
+      error: error.message
+    });
+  }
+};
+
 // Helper function to calculate effective price based on price lists
 function calculateEffectivePrice(basePrice, priceLists, requestedGrade = null) {
   if (!priceLists || priceLists.length === 0) {
@@ -794,5 +867,6 @@ module.exports = {
     fetchProdId,
     fetchProdMobile,
     fetchProductFromLocation,
-    fetchTaxes
+    fetchTaxes,
+    fetchProductFromLocationV1
 }
