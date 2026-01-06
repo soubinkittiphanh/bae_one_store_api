@@ -608,6 +608,8 @@ const fetchProductFromLocationV1 = async (req, res) => {
       p.isActive,
       p.pro_category,
       co.id as companyId,
+          IFNULL(i.img_name, 'No image') AS img_name,
+
       i.img_path,
       IFNULL(c.stock, 0) AS card_count
     FROM product p
