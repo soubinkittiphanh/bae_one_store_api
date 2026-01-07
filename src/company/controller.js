@@ -140,6 +140,72 @@ exports.uploadProfileImage = async (req, res) => {
   }
 };
 
+// NEW: Upload company bank QR image
+exports.uploadBankQRImage = async (req, res) => {
+  try {
+    const companyId = req.params.id;
+
+    console.log('Bank QR upload request received for company:', companyId);
+    console.log('Request file:', req.file);
+
+    if (!req.file) {
+      console.log('No file provided in request');
+      return res.status(400).json({ message: 'No QR image file provided' });
+    }
+
+    console.log('File details:', {
+      fieldname: req.file.fieldname,
+      originalname: req.file.originalname,
+      mimetype: req.file.mimetype,
+      size: req.file.size,
+      filename: req.file.filename
+    });
+
+    // Find the company
+    const company = await Company.findByPk(companyId);
+    if (!company) {
+      console.log('Company not found:', companyId);
+      // Delete uploaded file if company not found
+      if (fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+      }
+      return res.status(404).json({ message: 'Company not found' });
+    }
+
+    // Delete old bank QR image if exists
+    if (company.bank_qr_image_path) {
+      const oldImagePath = path.join(__dirname, '..', company.bank_qr_image_path);
+      if (fs.existsSync(oldImagePath)) {
+        fs.unlinkSync(oldImagePath);
+        console.log('Deleted old bank QR image:', oldImagePath);
+      }
+    }
+
+    // Update company with new bank QR image path
+    const imagePath = `uploads/company-qr/${req.file.filename}`;
+    await company.update({ bank_qr_image_path: imagePath });
+
+    console.log('Bank QR image uploaded successfully:', imagePath);
+
+    res.json({
+      message: 'Bank QR image uploaded successfully',
+      bank_qr_image_path: imagePath,
+      company: company
+    });
+
+  } catch (err) {
+    console.error('Error uploading bank QR image:', err);
+    logger.error('Error uploading bank QR image:', err);
+
+    // Delete uploaded file on error
+    if (req.file && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+
+    res.status(500).json({ message: 'Server Error: ' + err.message });
+  }
+};
+
 // Update company profile image path only
 exports.updateCompanyProfileImage = async (req, res) => {
   try {
@@ -151,6 +217,28 @@ exports.updateCompanyProfileImage = async (req, res) => {
       await company.update({ profile_image_path });
       res.json({
         message: 'Profile image updated successfully',
+        company: company
+      });
+    } else {
+      res.status(404).json({ message: 'Company not found' });
+    }
+  } catch (err) {
+    logger.error(err);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+// NEW: Update company bank QR image path only
+exports.updateCompanyBankQRImage = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { bank_qr_image_path } = req.body;
+
+    const company = await Company.findByPk(id);
+    if (company) {
+      await company.update({ bank_qr_image_path });
+      res.json({
+        message: 'Bank QR image updated successfully',
         company: company
       });
     } else {
@@ -194,11 +282,58 @@ exports.deleteProfileImage = async (req, res) => {
   }
 };
 
+// NEW: Delete company bank QR image
+exports.deleteBankQRImage = async (req, res) => {
+  try {
+    const companyId = req.params.id;
+
+    const company = await Company.findByPk(companyId);
+    if (!company) {
+      return res.status(404).json({ message: 'Company not found' });
+    }
+
+    // Delete bank QR image file if exists
+    if (company.bank_qr_image_path) {
+      const imagePath = path.join(__dirname, '..', company.bank_qr_image_path);
+      if (fs.existsSync(imagePath)) {
+        fs.unlinkSync(imagePath);
+      }
+    }
+
+    // Remove bank QR image path from database
+    await company.update({ bank_qr_image_path: null });
+
+    res.json({
+      message: 'Bank QR image deleted successfully',
+      company: company
+    });
+
+  } catch (err) {
+    logger.error('Error deleting bank QR image:', err);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
 // Delete a company by ID
 exports.deleteCompanyById = async (req, res) => {
   try {
     const company = await Company.findByPk(req.params.id);
     if (company) {
+      // Delete associated images before deleting company
+      if (company.profile_image_path) {
+        const profileImagePath = path.join(__dirname, '..', company.profile_image_path);
+        if (fs.existsSync(profileImagePath)) {
+          fs.unlinkSync(profileImagePath);
+        }
+      }
+      
+      if (company.bank_qr_image_path) {
+        const qrImagePath = path.join(__dirname, '..', company.bank_qr_image_path);
+        if (fs.existsSync(qrImagePath)) {
+          fs.unlinkSync(qrImagePath);
+        }
+      }
+      
       await company.destroy();
       res.json({ message: 'Company deleted' });
     } else {
@@ -209,7 +344,6 @@ exports.deleteCompanyById = async (req, res) => {
     res.status(500).json({ message: 'Server Error' });
   }
 };
-
 
 // Add this new method to get company theme
 exports.getCompanyTheme = async (req, res) => {
