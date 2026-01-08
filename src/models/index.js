@@ -157,6 +157,7 @@ const initializeModels = () => {
     moneySettlement: require("../PWT/moneySettlement/model")(sequelize, DataTypes),
     moneyAdvanceAudit: require("../PWT/moneyAdvanceAudit/model")(sequelize, DataTypes),
     moneyAdvance: require("../PWT/moneyAdvance/model")(sequelize, DataTypes),
+    AccountStatement: require("../PWT/accountStatement/model")(sequelize, DataTypes),
     revenue_target: require("../revenueTarget/model")(sequelize, DataTypes),
     apInvoice: require("../AP/invoice/model")(sequelize, DataTypes),
     apInvoiceAudit: require("../AP/invoiceAudit/model")(sequelize, DataTypes),

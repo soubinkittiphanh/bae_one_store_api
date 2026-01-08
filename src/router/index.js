@@ -56,6 +56,7 @@ const transaction = require("../transaction/router")
 const moneyAdvance = require("../PWT/moneyAdvance/router")
 const moneyAdvanceReport = require("../PWT/moneyAdvanceReport/router")
 const moneySettlement = require("../PWT/moneySettlement/router")
+const accountStatement = require("../PWT/accountStatement/router")
 const bankAccount = require("../bankAccount/router")
 const ministry = require("../ministry/router")
 const revenueTarget = require("../revenueTarget/router")
@@ -160,4 +161,5 @@ module.exports={
     stockTransaction,
     salePayment,
     productTemp,
+    accountStatement,
 }

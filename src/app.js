@@ -75,6 +75,7 @@ const buildApp = async () => {
     app.use("/api/ticketLine",myRouter.ticketLine)
     app.use("/api/tax",myRouter.tax)
     app.use("/api/money-advances",myRouter.moneyAdvance)
+    app.use("/api/ac-statement",myRouter.accountStatement)
     app.use("/api/money-advances/report",myRouter.moneyAdvanceReport)
     app.use("/api/settlements",myRouter.moneySettlement)
     app.use("/api/ministries",myRouter.ministry)
