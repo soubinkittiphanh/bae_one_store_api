@@ -2,7 +2,7 @@
 // AR RECEIVE HEADER CONTROLLER
 // ===============================================================
 const logger = require("../../../api/logger");
-const { user, MOU, JobBatch,Agency, arReceiveHeaderV2, arInvoiceLine, arReceiveLine, sequelize, arInvoiceHeader } = require('../../../models');
+const { user, MOU, JobBatch,Agency, arReceiveHeaderV2, arInvoiceLine, arReceiveLine, sequelize, arInvoiceHeader,currency } = require('../../../models');
 const ReceiveHeader = require('../../../models').arReceiveHeaderV2;
 const { Op } = require('sequelize');
 
@@ -125,6 +125,10 @@ class ReceiveHeaderController {
           {
             model: user,
             as: 'maker'
+          },
+          {
+            model: currency,
+            as: 'currency'
           },
           {
             model: user,
