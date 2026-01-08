@@ -104,6 +104,10 @@ const initializeModels = () => {
     promotion: require("../pos/promotion/model")(sequelize, DataTypes),
     ticketLine: require("../pos/ticketLine/model")(sequelize, DataTypes),
     MemberOffer: require("../member_offer/model")(sequelize, DataTypes),
+    // Wash job models
+    washjob: require("../carcare/washJob/model")(sequelize, DataTypes),
+    washjobHis: require("../carcare/washJob-history/model")(sequelize, DataTypes),
+    washjobline: require("../carcare/washJobLine/model")(sequelize, DataTypes),
     // Sales models
     saleHeader: require("../sales/model")(sequelize, DataTypes),
     salePayment: require("../salePayment/model")(sequelize, DataTypes),
@@ -127,10 +131,7 @@ const initializeModels = () => {
     reservation: require("../reservation/model")(sequelize, DataTypes),
     reservationLine: require("../reservation/line/model")(sequelize, DataTypes),
 
-    // Wash job models
-    washjob: require("../carcare/washJob/model")(sequelize, DataTypes),
-    washjobHis: require("../carcare/washJob-history/model")(sequelize, DataTypes),
-    washjobline: require("../carcare/washJobLine/model")(sequelize, DataTypes),
+
 
     // Transfer models
     transferHeader: require("../transfer/model")(sequelize, DataTypes),
