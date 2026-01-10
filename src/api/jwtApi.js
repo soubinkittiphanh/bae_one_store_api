@@ -20,7 +20,7 @@ function validateToken(req, res, next) {
 
 const generateToken = (user) => {
     // const user = { name: u_name,tel:u_phone,id:u_id };
-    const accessToken = jwt.sign(user, secretKey, { expiresIn: '5h' });
+    const accessToken = jwt.sign(user, secretKey, { expiresIn: '24h' });
     logger.warn("Token ===> send to client " + accessToken)
     return { accessToken, user }
 }
