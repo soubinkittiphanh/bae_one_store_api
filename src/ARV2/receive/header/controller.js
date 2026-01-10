@@ -2,7 +2,7 @@
 // AR RECEIVE HEADER CONTROLLER
 // ===============================================================
 const logger = require("../../../api/logger");
-const { user, MOU, JobBatch,Agency, arReceiveHeaderV2, arInvoiceLine, arReceiveLine, sequelize, arInvoiceHeader,currency } = require('../../../models');
+const { user, MOU, JobBatch, Agency, arReceiveHeaderV2, arInvoiceLine, arReceiveLine, sequelize, arInvoiceHeader, currency,Transaction } = require('../../../models');
 const ReceiveHeader = require('../../../models').arReceiveHeaderV2;
 const { Op } = require('sequelize');
 
@@ -167,6 +167,137 @@ class ReceiveHeaderController {
       });
     }
   }
+  static async findAllForPL(req, res) {
+  try {
+    const {
+      search = '',
+      paymentId = '',
+      invoiceHeaderId = '',
+      bookingDateFrom = '',
+      bookingDateTo = '',
+      receivedDateFrom = '',
+      receivedDateTo = '',
+      minAmount = '',
+      maxAmount = '',
+      sortBy = 'bookingDate',
+      sortOrder = 'DESC'
+    } = req.query;
+
+    const whereClause = {};
+
+    // Search filter
+    if (search) {
+      whereClause[Op.or] = [
+        { receiptNumber: { [Op.iLike]: `%${search}%` } },
+        { referenceNumber: { [Op.iLike]: `%${search}%` } },
+        { notes: { [Op.iLike]: `%${search}%` } }
+      ];
+    }
+
+    // Payment method filter
+    if (paymentId) {
+      whereClause.paymentId = paymentId;
+    }
+
+    // Invoice header filter
+    if (invoiceHeaderId) {
+      whereClause.invoiceHeaderId = invoiceHeaderId;
+    }
+
+    // Booking date range filter
+    if (bookingDateFrom || bookingDateTo) {
+      whereClause.bookingDate = {};
+      if (bookingDateFrom) whereClause.bookingDate[Op.gte] = bookingDateFrom;
+      if (bookingDateTo) whereClause.bookingDate[Op.lte] = bookingDateTo;
+    }
+
+    // Received date range filter
+    if (receivedDateFrom || receivedDateTo) {
+      whereClause.receivedDate = {};
+      if (receivedDateFrom) whereClause.receivedDate[Op.gte] = receivedDateFrom;
+      if (receivedDateTo) whereClause.receivedDate[Op.lte] = receivedDateTo;
+    }
+
+    // Amount range filter
+    if (minAmount || maxAmount) {
+      whereClause.totalReceivedAmount = {};
+      if (minAmount) whereClause.totalReceivedAmount[Op.gte] = minAmount;
+      if (maxAmount) whereClause.totalReceivedAmount[Op.lte] = maxAmount;
+    }
+
+    const { count, rows } = await ReceiveHeader.findAndCountAll({
+      where: whereClause,
+      include: [
+        {
+          model: arInvoiceHeader,
+          as: 'invoiceHeader',
+          attributes: ['id', 'invoiceNumber', 'invoiceDate', 'status'],
+          include: [
+            {
+              model: JobBatch,
+              as: 'jobbatch',
+              include: [
+                {
+                  model: MOU,
+                  as: 'mou',
+                  include: [
+                    {
+                      model: Agency,
+                      as: 'agency',
+                    }
+                  ],
+                }
+              ],
+            }
+          ],
+        },
+        {
+          model: user,
+          as: 'inputter'
+        },
+        {
+          model: user,
+          as: 'maker'
+        },
+        {
+          model: currency,
+          as: 'currency'
+        },
+        {
+          model: user,
+          as: 'updateUser'
+        },
+        {
+          model: arReceiveLine,
+          as: 'receiveLines',
+          include: [
+            {
+              model: Transaction,
+              as: 'transaction'
+            }
+          ]
+        }
+      ],
+      order: [[sortBy, sortOrder.toUpperCase()]],
+      distinct: true
+    });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        receiveHeaders: rows,
+        totalItems: count
+      }
+    });
+  } catch (error) {
+    logger.error('Error fetching receive headers:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching receive headers',
+      error: error.message
+    });
+  }
+}
   // GET RECEIVE HEADER BY ID (Updated to include receive lines)
   static async findById(req, res) {
     try {

@@ -3,7 +3,7 @@
 // File: /AP/settlement/controller.js
 // ===============================================================
 const logger = require("../../api/logger");
-const { apInvoiceSettlement, currency, apSettlementAudit, apInvoiceSettlementLine, apInvoice, user, vendor, sequelize, Applicant, Agency } = require("../../models");
+const { apInvoiceSettlement, Transaction, currency, apSettlementAudit, apInvoiceSettlementLine, apInvoice, user, vendor, sequelize, Applicant, Agency } = require("../../models");
 const InvoiceLineItem = require("../../models").invoiceLineItem;
 
 class APSettlementController {
@@ -99,6 +99,94 @@ class APSettlementController {
                 }
             });
 
+        } catch (error) {
+            logger.error('Error fetching settlements:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Internal server error',
+                error: error.message
+            });
+        }
+    }
+    static async getAllSettlementsForPL(req, res) {
+        try {
+            const {
+                status,
+                startDate,
+                endDate,
+                search
+            } = req.query;
+
+            const whereClause = {};
+
+            // Filter by status
+            if (status) {
+                whereClause.status = status;
+            }
+
+            // Filter by date range
+            if (startDate && endDate) {
+                whereClause.settlementDate = {
+                    [sequelize.Sequelize.Op.between]: [startDate, endDate]
+                };
+            }
+
+            // Search by reference only (since settlementNumber doesn't exist in your model)
+            if (search) {
+                whereClause[sequelize.Sequelize.Op.or] = [
+                    { reference: { [sequelize.Sequelize.Op.like]: `%${search}%` } }
+                ];
+            }
+
+            const { count, rows } = await apInvoiceSettlement.findAndCountAll({
+                where: whereClause,
+                include: [
+                    { model: user, as: 'maker', required: false },
+                    { model: currency, as: 'currency', required: false },
+                    { model: user, as: 'checker', required: false },
+                    {
+                        model: apInvoiceSettlementLine,
+                        as: 'invoiceSettlements',
+                        include: [
+                            {
+                                model: InvoiceLineItem,
+                                as: 'invoiceLineItem',
+                                include: [
+                                    {
+                                        model: apInvoice,
+                                        as: 'invoice',
+                                        include: [
+                                            { model: vendor, as: 'vendor' }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                model: Agency,
+                                as: 'agency',
+                            },
+                            {
+                                model: Transaction,
+                                as: 'transaction',
+                            },
+                            {
+                                model: Applicant,
+                                as: 'applicant',
+                            }
+                        ]
+                    }
+                ],
+                order: [['settlementDate', 'DESC'], ['id', 'DESC']]
+            });
+
+            res.status(200).json({
+                success: true,
+                message: 'Settlements fetched successfully',
+                data: {
+                    settlements: rows,
+                    totalItems: count
+                }
+            });
         } catch (error) {
             logger.error('Error fetching settlements:', error);
             res.status(500).json({
@@ -976,7 +1064,7 @@ class APSettlementController {
                 where: whereClause,
                 attributes: [
                     'id', 'invoiceNumber', 'vendorInvoiceNumber', 'invoiceDate',
-                    'dueDate', 'totalAmount', 'paidAmount', 'status','currencyId','agencyId','vendorId',
+                    'dueDate', 'totalAmount', 'paidAmount', 'status', 'currencyId', 'agencyId', 'vendorId',
                     [sequelize.literal('totalAmount - paidAmount'), 'outstandingAmount']
                 ],
                 include: [

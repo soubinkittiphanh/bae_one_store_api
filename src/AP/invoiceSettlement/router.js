@@ -16,6 +16,7 @@ const APSettlementController = require('./controller'); // Adjust path as needed
 
 // GET /api/settlements - Get all settlements with pagination and filters
 router.get('/', APSettlementController.getAllSettlements);
+router.get('/pl', APSettlementController.getAllSettlementsForPL);
 
 // GET /api/settlements/:id - Get settlement by ID with full details
 router.get('/:id', APSettlementController.getSettlementById);
