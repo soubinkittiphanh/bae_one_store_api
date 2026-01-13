@@ -48,12 +48,29 @@ exports.getCompanyById = async (req, res) => {
 
 // Create a new company
 exports.createCompany = async (req, res) => {
+  const MAX_COMPANIES = 3;
   try {
+    // 1. Count existing companies
+    const companyCount = await Company.count();
+
+    // 2. Validate license limit
+    if (companyCount >= MAX_COMPANIES) {
+      return res.status(403).json({
+        message: 'License limit reached. Maximum 3 companies are allowed.',
+        code: 'LICENSE_LIMIT_REACHED',
+        limit: MAX_COMPANIES,
+        current: companyCount
+      });
+    }
+
+    // 3. Create company
     const company = await Company.create(req.body);
-    res.json(company);
+
+    res.status(201).json(company);
+
   } catch (err) {
-    logger.error(`cannot create record, error occured ${err}`);
-    res.status(500).json({ message: 'Server Error' + err });
+    logger.error(`cannot create record, error occurred ${err}`);
+    res.status(500).json({ message: 'Server Error', error: err.message });
   }
 };
 

@@ -14,5 +14,6 @@ router
 .delete("/find/:id", controller.deleteSaleLine)
 .get("/find", controller.getSaleLines)
 .get("/find/id", controller.getSaleLineById)
+
 // .post("/bulkCreate",service.createHulkStockCard)
 module.exports = router

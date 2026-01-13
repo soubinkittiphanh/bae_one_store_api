@@ -4,6 +4,7 @@ module.exports = (sequelize, DataTypes) => {
     // drop tablestock_transactions;
     // drop table recipe;
     // drop table member_offer;
+    // drop table payment_header;
     const Unit = sequelize.define('unitModel', {
         id: {
             type: DataTypes.INTEGER,

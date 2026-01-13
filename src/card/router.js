@@ -16,6 +16,7 @@ router.post("/create", controller.create)
     .get("/find/date", controller.getAllByDate)
     .get("/find/count/group_by_product", controller.getAllCountAndSumGroupByProduct)
     .get("/find/:id", controller.getById)
+    .get("/stock-movements", controller.stockmovements)
     .post("/bulkCreate",service.createHulkStockCard)
     .post("/rebuildStock",service.rebuildStockValue)
 module.exports = router
