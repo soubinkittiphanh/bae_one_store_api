@@ -29,4 +29,7 @@ router.delete('/:id', ProductTempController.deleteProductTemp);
 // Bulk operations for product templates
 router.post('/bulk', ProductTempController.bulkOperations);
 
+// *** NEW ROUTE *** - Bulk update prices
+router.patch('/bulk-update-prices', ProductTempController.bulkUpdatePrices);
+
 module.exports = router;

@@ -71,22 +71,18 @@ class ProductTempController {
     }
 
     /**
-     * Get all product templates with pagination and filtering
+     * Get all product templates with filtering (no pagination)
      * @param {Object} req - Express request object
      * @param {Object} res - Express response object
      */
     static async getAllProductTemps(req, res) {
         try {
             const {
-                page = 1,
-                limit = 10,
                 search,
-                isActive,
-                sortBy = 'createdAt',
-                sortOrder = 'DESC'
+                isActive = 'true',
+                sortBy = 'pro_name',
+                sortOrder = 'ASC'
             } = req.query;
-
-            const offset = (page - 1) * limit;
 
             // Build where clause for filtering
             const whereClause = {};
@@ -103,32 +99,27 @@ class ProductTempController {
                 whereClause.isActive = isActive === 'true';
             }
 
-            const { count, rows } = await ProductTemp.findAndCountAll({
+            const products = await ProductTemp.findAll({
                 where: whereClause,
-                limit: parseInt(limit),
-                offset: parseInt(offset),
                 order: [[sortBy, sortOrder.toUpperCase()]],
-                attributes: {
-                    exclude: [] // Include all fields, modify as needed
-                }
+                attributes: [
+                    'id', 
+                    'pro_name', 
+                    'pro_price', 
+                    'pro_desc', 
+                    'cost_price', 
+                    'barCode', 
+                    'isActive',
+                    'createdAt',
+                    'updateTimestamp'
+                ]
             });
-
-            const totalPages = Math.ceil(count / limit);
 
             return res.status(200).json({
                 success: true,
                 message: 'Product templates retrieved successfully',
-                data: {
-                    products: rows,
-                    pagination: {
-                        currentPage: parseInt(page),
-                        totalPages,
-                        totalItems: count,
-                        itemsPerPage: parseInt(limit),
-                        hasNextPage: page < totalPages,
-                        hasPreviousPage: page > 1
-                    }
-                }
+                data: products,
+                totalItems: products.length
             });
 
         } catch (error) {
@@ -136,6 +127,135 @@ class ProductTempController {
             return res.status(500).json({
                 success: false,
                 message: 'Internal server error',
+                error: process.env.NODE_ENV === 'development' ? error.message : undefined
+            });
+        }
+    }
+
+    /**
+     * Bulk update prices for products with changes (no selection required)
+     * @param {Object} req - Express request object
+     * @param {Object} res - Express response object
+     */
+    static async bulkUpdatePrices(req, res) {
+        const transaction = await ProductTemp.sequelize.transaction();
+        
+        try {
+            const { updates } = req.body;
+            
+            if (!Array.isArray(updates) || updates.length === 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Updates array is required and cannot be empty'
+                });
+            }
+
+            const results = [];
+
+            for (const update of updates) {
+                if (!update.id) {
+                    results.push({
+                        id: update.id,
+                        success: false,
+                        message: 'Product ID is required'
+                    });
+                    continue;
+                }
+
+                const updateData = {};
+                
+                // Validate and set cost_price
+                if (update.cost_price !== undefined && update.cost_price !== null && update.cost_price !== '') {
+                    const costPrice = parseFloat(update.cost_price);
+                    if (isNaN(costPrice) || costPrice < 0) {
+                        results.push({
+                            id: update.id,
+                            success: false,
+                            message: 'Invalid cost_price value'
+                        });
+                        continue;
+                    }
+                    updateData.cost_price = costPrice;
+                }
+                
+                // Validate and set sale_price (pro_price in your model)
+                if (update.sale_price !== undefined && update.sale_price !== null && update.sale_price !== '') {
+                    const salePrice = parseFloat(update.sale_price);
+                    if (isNaN(salePrice) || salePrice < 0) {
+                        results.push({
+                            id: update.id,
+                            success: false,
+                            message: 'Invalid sale_price value'
+                        });
+                        continue;
+                    }
+                    updateData.pro_price = salePrice;
+                }
+
+                // Only process if there are actual changes
+                if (Object.keys(updateData).length > 0) {
+                    try {
+                        const [updatedRows] = await ProductTemp.update(
+                            updateData,
+                            {
+                                where: { id: update.id, isActive: true },
+                                transaction
+                            }
+                        );
+
+                        if (updatedRows > 0) {
+                            const updatedProduct = await ProductTemp.findByPk(update.id, {
+                                transaction,
+                                attributes: ['id', 'pro_name', 'cost_price', 'pro_price', 'barCode']
+                            });
+
+                            results.push({
+                                id: update.id,
+                                success: true,
+                                product: updatedProduct
+                            });
+                        } else {
+                            results.push({
+                                id: update.id,
+                                success: false,
+                                message: 'Product not found or inactive'
+                            });
+                        }
+                    } catch (updateError) {
+                        results.push({
+                            id: update.id,
+                            success: false,
+                            message: updateError.message
+                        });
+                    }
+                }
+                // Skip products with no changes (no error, just ignore)
+            }
+
+            await transaction.commit();
+
+            const successful = results.filter(r => r.success).length;
+            const failed = results.filter(r => !r.success).length;
+
+            res.json({
+                success: true,
+                message: `Processed ${results.length} price updates`,
+                results,
+                summary: {
+                    total: updates.length,
+                    processed: results.length,
+                    successful,
+                    failed,
+                    skipped: updates.length - results.length
+                }
+            });
+
+        } catch (error) {
+            await transaction.rollback();
+            console.error('Bulk update prices error:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Server error during bulk price update',
                 error: process.env.NODE_ENV === 'development' ? error.message : undefined
             });
         }

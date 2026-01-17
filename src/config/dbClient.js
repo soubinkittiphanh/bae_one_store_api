@@ -30,11 +30,11 @@ const clientDB = {
         // "database": "dcommerce_pro_carcare_sokpaluang",
         "port": 3306,
     },
-    "demo": {
+    "dev_online": {
         "host": "150.95.31.23",
         "user": "root",
         "password": "sdat@3480",
-        "database": "dcommerce_demo",
+        "database": "dcommerce_dev",
         "port": 3306,
     },
     "ksouk": {
