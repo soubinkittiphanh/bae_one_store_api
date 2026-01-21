@@ -17,7 +17,8 @@ exports.createAccountStatement = async (req, res) => {
             endingBalance,
             referenceNo,
             transactionType,
-            status
+            status,
+            exchangeRate
         } = req.body;
 
         // Validation
@@ -48,6 +49,7 @@ exports.createAccountStatement = async (req, res) => {
             referenceNo,
             transactionType,
             status: status || 'cleared',
+            exchangeRate: exchangeRate || 1.00,
             makerId: req.user?.id // Assuming user is in request
         });
 
@@ -232,6 +234,11 @@ exports.updateAccountStatement = async (req, res) => {
         // Add update user info
         updateData.updateUserId = req.user?.id;
 
+        // Ensure exchangeRate has a default value if not provided
+        if (updateData.exchangeRate === undefined || updateData.exchangeRate === null) {
+            updateData.exchangeRate = 1.00;
+        }
+
         await statement.update(updateData);
 
         logger.info(`Account statement updated: ID ${id}`);
@@ -352,7 +359,7 @@ exports.getAccountBalanceSummary = async (req, res) => {
         const statements = await AccountStatement.findAll({
             where: whereClause,
             order: [['bookingDate', 'ASC']],
-            attributes: ['bookingDate', 'creditAmount', 'debitAmount', 'endingBalance']
+            attributes: ['bookingDate', 'creditAmount', 'debitAmount', 'endingBalance', 'exchangeRate']
         });
 
         // Calculate summary
@@ -361,8 +368,12 @@ exports.getAccountBalanceSummary = async (req, res) => {
             totalDebit: 0,
             openingBalance: 0,
             closingBalance: 0,
-            transactionCount: statements.length
+            transactionCount: statements.length,
+            averageExchangeRate: 0
         };
+
+        let totalExchangeRate = 0;
+        let exchangeRateCount = 0;
 
         statements.forEach((stmt, index) => {
             summary.totalCredit += parseFloat(stmt.creditAmount || 0);
@@ -377,7 +388,20 @@ exports.getAccountBalanceSummary = async (req, res) => {
             if (index === statements.length - 1) {
                 summary.closingBalance = parseFloat(stmt.endingBalance);
             }
+
+            // Calculate average exchange rate
+            if (stmt.exchangeRate) {
+                totalExchangeRate += parseFloat(stmt.exchangeRate);
+                exchangeRateCount++;
+            }
         });
+
+        // Calculate average exchange rate
+        if (exchangeRateCount > 0) {
+            summary.averageExchangeRate = totalExchangeRate / exchangeRateCount;
+        } else {
+            summary.averageExchangeRate = 1.00;
+        }
 
         res.status(200).json({
             success: true,
@@ -411,10 +435,11 @@ exports.bulkCreateAccountStatements = async (req, res) => {
             });
         }
 
-        // Add makerId to all statements
+        // Add makerId and ensure exchangeRate defaults to all statements
         const statementsWithMaker = statements.map(stmt => ({
             ...stmt,
-            makerId: req.user?.id
+            makerId: req.user?.id,
+            exchangeRate: stmt.exchangeRate || 1.00
         }));
 
         const createdStatements = await AccountStatement.bulkCreate(statementsWithMaker, {
@@ -434,6 +459,88 @@ exports.bulkCreateAccountStatements = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Failed to bulk create account statements',
+            error: error.message
+        });
+    }
+};
+
+// ===============================================================
+// GET EXCHANGE RATE ANALYSIS (new endpoint for exchange rate insights)
+// ===============================================================
+exports.getExchangeRateAnalysis = async (req, res) => {
+    try {
+        const { bankAccountId, startDate, endDate } = req.query;
+
+        if (!bankAccountId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Bank Account ID is required'
+            });
+        }
+
+        const whereClause = { 
+            bankAccountId,
+            exchangeRate: {
+                [Op.ne]: null
+            }
+        };
+
+        if (startDate && endDate) {
+            whereClause.bookingDate = {
+                [Op.between]: [startDate, endDate]
+            };
+        }
+
+        const statements = await AccountStatement.findAll({
+            where: whereClause,
+            order: [['bookingDate', 'ASC']],
+            attributes: ['bookingDate', 'exchangeRate', 'creditAmount', 'debitAmount']
+        });
+
+        if (statements.length === 0) {
+            return res.status(200).json({
+                success: true,
+                data: {
+                    analysis: {
+                        minExchangeRate: 1.00,
+                        maxExchangeRate: 1.00,
+                        averageExchangeRate: 1.00,
+                        totalTransactions: 0,
+                        rateVariation: 0
+                    },
+                    statements: []
+                }
+            });
+        }
+
+        // Calculate exchange rate analysis
+        const exchangeRates = statements.map(s => parseFloat(s.exchangeRate));
+        const minRate = Math.min(...exchangeRates);
+        const maxRate = Math.max(...exchangeRates);
+        const avgRate = exchangeRates.reduce((a, b) => a + b, 0) / exchangeRates.length;
+        const rateVariation = ((maxRate - minRate) / avgRate) * 100;
+
+        const analysis = {
+            minExchangeRate: minRate,
+            maxExchangeRate: maxRate,
+            averageExchangeRate: avgRate,
+            totalTransactions: statements.length,
+            rateVariation: rateVariation
+        };
+
+        res.status(200).json({
+            success: true,
+            data: {
+                analysis,
+                statements
+            }
+        });
+
+    } catch (error) {
+        logger.error('Error fetching exchange rate analysis:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch exchange rate analysis',
             error: error.message
         });
     }

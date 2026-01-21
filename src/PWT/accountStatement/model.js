@@ -17,6 +17,11 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: true,
             defaultValue: 0.00
         },
+        exchangeRate: {
+            type: DataTypes.DECIMAL(20, 2),
+            allowNull: true,
+            defaultValue: 1
+        },
         description: {
             type: DataTypes.TEXT,
             allowNull: true
