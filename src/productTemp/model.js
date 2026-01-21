@@ -20,6 +20,13 @@ module.exports = (sequelize, DataTypes) => {
             unique: true
             // allowNull: false,
         },
+        location: {
+            // type: DataTypes.STRING(40),
+            type: DataTypes.ENUM('shop', 'store'),
+            // unique: true,
+            defaultValue: 'shop',
+            allowNull: false,
+        },
         isActive: {
             type: DataTypes.BOOLEAN,
             allowNull: false,

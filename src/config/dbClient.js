@@ -51,6 +51,13 @@ const clientDB = {
         "database": "dcommerce_dem_1",
         "port": 3306,
     },
+    "demo": {
+        "host": "150.95.31.23",
+        "user": "root",
+        "password": "sdat@3480",
+        "database": "dcommerce_demo",
+        "port": 3306,
+    },
     "auto": {
         "host": "150.95.31.23",
         "user": "root",

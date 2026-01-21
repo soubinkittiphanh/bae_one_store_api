@@ -80,7 +80,8 @@ class ProductTempController {
             const {
                 search,
                 isActive = 'true',
-                sortBy = 'pro_name',
+                // sortBy = 'pro_name',
+                sortBy = 'createdAt',
                 sortOrder = 'ASC'
             } = req.query;
 
@@ -107,6 +108,7 @@ class ProductTempController {
                     'pro_name', 
                     'pro_price', 
                     'pro_desc', 
+                    'location', 
                     'cost_price', 
                     'barCode', 
                     'isActive',
