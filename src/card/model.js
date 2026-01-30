@@ -1,3 +1,5 @@
+const logger = require("../api/logger");
+
 module.exports = (sequelize, DataTypes) => {
     const Card = sequelize.define('card', {
         card_type_code: {
@@ -62,12 +64,18 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: false,
             defaultValue: true,
         },
-        
+
         // NEW FIELDS ADDED
         lotNumber: {
             type: DataTypes.STRING(50),
             allowNull: true,
             comment: 'Batch/Lot identification number'
+        },
+        // NEW FIELDS ADDED
+        serialNo: {
+            type: DataTypes.STRING(50),
+            allowNull: true,
+            comment: 'Serial identification number'
         },
         expiryDate: {
             type: DataTypes.DATEONLY,
@@ -118,7 +126,44 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: true,
             comment: 'Currency ID for cost calculation'
         },
-        
+
+        // FOREIGN KEY FIELDS FOR ASSOCIATIONS
+        colorId: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            comment: 'Reference to Color table'
+        },
+        sizeId: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            comment: 'Reference to Size table'
+        },
+        saleLineId: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            comment: 'Reference to SaleLine table'
+        },
+        transferLineId: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            comment: 'Reference to TransferLine table'
+        },
+        receivingLineId: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            comment: 'Reference to ReceivingLine table'
+        },
+        locationId: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            comment: 'Reference to Location table'
+        },
+        productId: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            comment: 'Reference to Product table (alternative to product_id)'
+        },
+
         // COMPUTED FIELDS (can be added as virtual or calculated)
         isExpired: {
             type: DataTypes.VIRTUAL,
@@ -143,7 +188,6 @@ module.exports = (sequelize, DataTypes) => {
         createdAt: true,
         updatedAt: 'updateTimestamp',
         freezeTableName: true,
-        
         // Add indexes for better performance
         indexes: [
             {
@@ -155,15 +199,35 @@ module.exports = (sequelize, DataTypes) => {
                 fields: ['lotNumber']
             },
             {
+                name: 'idx_card_serial_number',
+                fields: ['serialNo']
+            },
+            {
                 name: 'idx_card_product_lot',
                 fields: ['product_id', 'lotNumber']
             },
             {
+                name: 'idx_card_product_serial',
+                fields: ['product_id', 'serialNo']
+            },
+            {
                 name: 'idx_card_expired_items',
                 fields: ['expiryDate', 'isActive']
+            },
+            {
+                name: 'idx_card_color',
+                fields: ['colorId']
+            },
+            {
+                name: 'idx_card_size',
+                fields: ['sizeId']
+            },
+            {
+                name: 'idx_card_color_size',
+                fields: ['colorId', 'sizeId']
             }
         ],
-        
+
         // Add scopes for common queries
         scopes: {
             active: {
@@ -195,9 +259,86 @@ module.exports = (sequelize, DataTypes) => {
                     hasLot: true,
                     isActive: true
                 }
+            },
+            withColor: {
+                where: {
+                    colorId: {
+                        [sequelize.Sequelize.Op.ne]: null
+                    },
+                    isActive: true
+                }
+            },
+            withSize: {
+                where: {
+                    sizeId: {
+                        [sequelize.Sequelize.Op.ne]: null
+                    },
+                    isActive: true
+                }
             }
         }
     });
-    
+
+    Card.associate = models => {
+        logger.info('Associating table Card with models');
+
+        // Card associations
+        if (models.Color) {
+            Card.belongsTo(models.Color, {
+                foreignKey: 'colorId',
+                as: 'color'
+            });
+        }
+        
+        if (models.Size) {
+            Card.belongsTo(models.Size, {
+                foreignKey: 'sizeId',
+                as: 'size'
+            });
+        }
+        
+        if (models.saleLine) {
+            Card.belongsTo(models.saleLine, {
+                foreignKey: 'saleLineId',
+                as: 'saleLine'
+            });
+        }
+        
+        if (models.transferLine) {
+            Card.belongsTo(models.transferLine, {
+                foreignKey: 'transferLineId',
+                as: 'transferLine'
+            });
+        }
+        
+        if (models.receivingLine) {
+            Card.belongsTo(models.receivingLine, {
+                foreignKey: 'receivingLineId',
+                as: 'receivingLine'
+            });
+        }
+        
+        if (models.location) {
+            Card.belongsTo(models.location, {
+                foreignKey: 'locationId',
+                as: 'location'
+            });
+        }
+        
+        if (models.product) {
+            Card.belongsTo(models.product, {
+                foreignKey: 'productId',
+                as: 'product'
+            });
+        }
+        
+        if (models.currency) {
+            Card.belongsTo(models.currency, {
+                foreignKey: 'currencyId',
+                as: 'currency'
+            });
+        }
+    };
+
     return Card;
 };

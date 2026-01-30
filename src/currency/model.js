@@ -1,13 +1,13 @@
-
-
 module.exports = (sequelize, DataTypes) => {
     const Currency = sequelize.define('currency', {
         code: {
             type: DataTypes.STRING,
+            allowNull: false,
             // defaultValue: 1,
         },
         name: {
             type: DataTypes.STRING,
+            allowNull: false,
             // defaultValue: 1,
         },
         rate: {
@@ -25,6 +25,12 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: false,
             defaultValue: false,
         },
+        exchangeDirection: {
+            type: DataTypes.ENUM('local_to_foreign', 'foreign_to_local'),
+            allowNull: false,
+            defaultValue: 'local_to_foreign',
+            comment: 'Direction of exchange rate: local_to_foreign (LAK to Foreign) or foreign_to_local (Foreign to LAK)'
+        },
     }, {
         sequelize,
         // don't forget to enable timestamps!
@@ -38,7 +44,6 @@ module.exports = (sequelize, DataTypes) => {
         // if you don't want that, set the following
         freezeTableName: true,
     })
-
     return Currency;
 };
 

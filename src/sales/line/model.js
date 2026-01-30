@@ -1,3 +1,4 @@
+const logger = require("../../api/logger");
 
 
 module.exports = (sequelize, DataTypes) => {
@@ -8,6 +9,11 @@ module.exports = (sequelize, DataTypes) => {
             defaultValue: 1,
         },
         unitRate: {
+            type: DataTypes.DOUBLE,
+            allowNull: false,
+            defaultValue: 1,
+        },
+        exchangeRate: {
             type: DataTypes.DOUBLE,
             allowNull: false,
             defaultValue: 1,
@@ -49,6 +55,48 @@ module.exports = (sequelize, DataTypes) => {
         // if you don't want that, set the following
         freezeTableName: true,
     })
+    // Corrected SaleLine associations
+    SaleLine.associate = models => {
+        logger.info('Associating table SaleLine with models');
+
+        // SaleLine -> SaleHeader (Many-to-One)
+        SaleLine.belongsTo(models.saleHeader, {
+            foreignKey: 'headerId',
+            as: 'header',
+        });
+
+        // SaleLine -> Currency (Many-to-One)
+        SaleLine.belongsTo(models.currency, {
+            foreignKey: 'currencyId',
+            as: 'currency',
+        });
+
+        // SaleLine -> Product (Many-to-One)
+        SaleLine.belongsTo(models.product, {
+            foreignKey: 'productId',
+            as: 'product'
+        });
+
+        // SaleLine -> Unit (Many-to-One)
+        SaleLine.belongsTo(models.unit, {
+            foreignKey: 'unitId',
+            as: 'unit'
+        });
+
+        // SaleLine -> PriceList (Many-to-One)
+        SaleLine.belongsTo(models.priceList, {
+            foreignKey: 'priceListId',
+            as: 'priceList'
+        });
+
+        // SaleLine -> Card (One-to-Many)
+        // Note: This assumes SaleLine has multiple cards
+        // If it's Many-to-One, change to belongsTo
+        SaleLine.hasMany(models.card, {
+            foreignKey: 'saleLineId', // Add the foreign key that exists in card table
+            as: 'cards'
+        });
+    };
 
     return SaleLine;
 };

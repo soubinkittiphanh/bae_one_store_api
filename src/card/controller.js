@@ -3,11 +3,13 @@ const Product = require("../models").product; // Import the product model
 const Currency = require("../models").currency; // Import the currency model
 const Location = require("../models").location; // Import the location model (if exists)
 const SaleLine = require("../models").saleLine; // Import the location model (if exists)
+const Size = require("../models").Size; // Import the Size model
+const Color = require("../models").Color; // Import the Color model
 const { Op } = require("sequelize");
 const { sequelize } = require('../models');
 
 const cardController = {
-  // Create a new card with enhanced fields
+  // Create a new card with enhanced fields including Size and Color
   async create(req, res) {
     try {
       const newCard = await Card.create({
@@ -26,6 +28,7 @@ const cardController = {
 
         // New fields
         lotNumber: req.body.lotNumber || null,
+        serialNo: req.body.serialNo || null,
         expiryDate: req.body.expiryDate || null,
         hasExpiry: req.body.hasExpiry || false,
         hasLot: req.body.hasLot || false,
@@ -34,7 +37,11 @@ const cardController = {
         costType: req.body.costType || 'perUnit',
         stockCardQty: req.body.stockCardQty || 1,
         srcLocationId: req.body.srcLocationId || null,
-        currencyId: req.body.currencyId || null
+        currencyId: req.body.currencyId || null,
+        
+        // Size and Color fields
+        colorId: req.body.colorId || null,
+        sizeId: req.body.sizeId || null
       });
       return res.status(201).json(newCard);
     } catch (error) {
@@ -42,7 +49,7 @@ const cardController = {
     }
   },
 
-  // Bulk create cards for stock addition
+  // Bulk create cards for stock addition with Size and Color support
   async bulkCreate(req, res) {
     const transaction = await sequelize.transaction();
 
@@ -59,9 +66,12 @@ const cardController = {
         exchangeRate,
         costType,
         lotNumber,
+        serialNo,
         expiryDate,
         hasExpiry,
-        hasLot
+        hasLot,
+        colorId,
+        sizeId
       } = req.body;
 
       // Validate required fields
@@ -102,6 +112,7 @@ const cardController = {
 
           // New enhanced fields
           lotNumber: lotNumber || null,
+          serialNo: serialNo ? `${serialNo}_${i + 1}` : null, // Append sequence for unique serial numbers
           expiryDate: expiryDate || null,
           hasExpiry: hasExpiry || !!expiryDate,
           hasLot: hasLot || !!lotNumber,
@@ -110,7 +121,11 @@ const cardController = {
           costType: costType || 'perUnit',
           stockCardQty: 1, // Each card represents 1 unit
           srcLocationId: srcLocationId || null,
-          currencyId: currencyId || null
+          currencyId: currencyId || null,
+          
+          // Size and Color fields
+          colorId: colorId || null,
+          sizeId: sizeId || null
         };
 
         cards.push(cardData);
@@ -131,9 +146,12 @@ const cardController = {
           costPerUnit: calculatedCostPerUnit,
           totalCost: calculatedTotalCost,
           lotNumber: lotNumber,
+          serialNo: serialNo,
           expiryDate: expiryDate,
           currency: currencyId,
-          location: srcLocationId
+          location: srcLocationId,
+          color: colorId,
+          size: sizeId
         }
       });
 
@@ -144,15 +162,18 @@ const cardController = {
     }
   },
 
-  // Get all cards with enhanced filtering
+  // Get all cards with enhanced filtering including Size and Color
   async getAll(req, res) {
     try {
       const {
         includeExpired,
         lotNumber,
+        serialNo,
         expiryStatus,
         locationId,
-        currencyId
+        currencyId,
+        colorId,
+        sizeId
       } = req.query;
 
       let whereClause = {};
@@ -181,6 +202,11 @@ const cardController = {
         whereClause.lotNumber = { [Op.like]: `%${lotNumber}%` };
       }
 
+      // Filter by serial number
+      if (serialNo) {
+        whereClause.serialNo = { [Op.like]: `%${serialNo}%` };
+      }
+
       // Filter by location
       if (locationId) {
         whereClause.srcLocationId = locationId;
@@ -189,6 +215,16 @@ const cardController = {
       // Filter by currency
       if (currencyId) {
         whereClause.currencyId = currencyId;
+      }
+
+      // Filter by color
+      if (colorId) {
+        whereClause.colorId = colorId;
+      }
+
+      // Filter by size
+      if (sizeId) {
+        whereClause.sizeId = sizeId;
       }
 
       const cards = await Card.findAll({
@@ -203,6 +239,18 @@ const cardController = {
             model: Currency,
             as: 'currency',
             attributes: ['id', 'code', 'name']
+          },
+          {
+            model: Size,
+            as: 'size',
+            attributes: ['id', 'size_name', 'size_code', 'size_order'],
+            required: false
+          },
+          {
+            model: Color,
+            as: 'color',
+            attributes: ['id', 'color_name', 'color_code', 'hex_code', 'rgb_code'],
+            required: false
           }
         ],
         order: [['createdAt', 'DESC']]
@@ -214,7 +262,7 @@ const cardController = {
     }
   },
 
-  // Get cards by date range with enhanced grouping
+  // Get cards by date range with enhanced grouping including Size and Color
   async getAllByDate(req, res) {
     try {
       const { startDate, endDate, groupBy } = req.query;
@@ -243,6 +291,50 @@ const cardController = {
         selectFields.push('expiryDate');
       }
 
+      // Add grouping by color if requested
+      if (groupBy === 'color' || groupBy === 'colorSize') {
+        groupByFields.push('colorId');
+        selectFields.push('colorId');
+        selectFields.push([sequelize.col('color.color_name'), 'colorName']);
+      }
+
+      // Add grouping by size if requested
+      if (groupBy === 'size' || groupBy === 'colorSize') {
+        groupByFields.push('sizeId');
+        selectFields.push('sizeId');
+        selectFields.push([sequelize.col('size.size_name'), 'sizeName']);
+      }
+
+      const includeModels = [
+        {
+          model: Product,
+          as: 'product',
+          attributes: []
+        },
+        {
+          model: Currency,
+          as: 'currency',
+          attributes: ['code']
+        }
+      ];
+
+      // Add Size and Color includes if needed
+      if (groupBy === 'color' || groupBy === 'colorSize') {
+        includeModels.push({
+          model: Color,
+          as: 'color',
+          attributes: []
+        });
+      }
+
+      if (groupBy === 'size' || groupBy === 'colorSize') {
+        includeModels.push({
+          model: Size,
+          as: 'size',
+          attributes: []
+        });
+      }
+
       const cards = await Card.findAll({
         attributes: selectFields,
         where: {
@@ -250,18 +342,7 @@ const cardController = {
             [Op.between]: [new Date(startDate), new Date(endDate)]
           }
         },
-        include: [
-          {
-            model: Product,
-            as: 'product',
-            attributes: []
-          },
-          {
-            model: Currency,
-            as: 'currency',
-            attributes: ['code']
-          }
-        ],
+        include: includeModels,
         group: groupByFields,
         raw: true,
       });
@@ -272,106 +353,7 @@ const cardController = {
     }
   },
 
-  // Get expiring items
-  async getExpiringItems(req, res) {
-    try {
-      const { days = 30 } = req.query;
-      const futureDate = new Date();
-      futureDate.setDate(futureDate.getDate() + parseInt(days));
-
-      const expiringItems = await Card.findAll({
-        where: {
-          expiryDate: {
-            [Op.between]: [new Date(), futureDate]
-          },
-          isActive: true,
-          card_isused: 0
-        },
-        include: [
-          {
-            model: Product,
-            as: 'product',
-            attributes: ['id', 'pro_name', 'pro_id']
-          }
-        ],
-        order: [['expiryDate', 'ASC']]
-      });
-
-      return res.status(200).json({
-        message: `Items expiring within ${days} days`,
-        count: expiringItems.length,
-        items: expiringItems
-      });
-    } catch (error) {
-      return res.status(400).json({ message: error.message });
-    }
-  },
-
-  // Get items by lot number
-  async getByLotNumber(req, res) {
-    try {
-      const { lotNumber } = req.params;
-
-      const items = await Card.findAll({
-        where: {
-          lotNumber: lotNumber,
-          isActive: true
-        },
-        include: [
-          {
-            model: Product,
-            as: 'product',
-            attributes: ['id', 'pro_name', 'pro_id']
-          }
-        ]
-      });
-
-      return res.status(200).json({
-        lotNumber: lotNumber,
-        count: items.length,
-        items: items
-      });
-    } catch (error) {
-      return res.status(400).json({ message: error.message });
-    }
-  },
-
-  // Get stock summary with expiry analysis
-  async getStockSummary(req, res) {
-    try {
-      const summary = await Card.findAll({
-        attributes: [
-          'product_id',
-          [sequelize.fn('COUNT', sequelize.literal('DISTINCT card_number')), 'totalStock'],
-          [sequelize.fn('SUM', sequelize.col('cost')), 'totalValue'],
-          [sequelize.fn('COUNT',
-            sequelize.literal('CASE WHEN expiryDate < NOW() THEN 1 END')), 'expiredCount'],
-          [sequelize.fn('COUNT',
-            sequelize.literal('CASE WHEN expiryDate BETWEEN NOW() AND DATE_ADD(NOW(), INTERVAL 30 DAY) THEN 1 END')), 'expiringSoonCount'],
-          [sequelize.fn('COUNT',
-            sequelize.literal('CASE WHEN lotNumber IS NOT NULL THEN 1 END')), 'withLotCount']
-        ],
-        where: {
-          card_isused: 0,
-          isActive: true,
-        },
-        group: ['product_id'],
-        include: [
-          {
-            model: Product,
-            as: 'product',
-            attributes: ['id', 'pro_name', 'pro_id', 'pro_price']
-          }
-        ],
-      });
-
-      return res.status(200).json(summary);
-    } catch (error) {
-      return res.status(400).json({ message: error.message });
-    }
-  },
-
-  // Enhanced get by ID
+  // Enhanced get by ID with Size and Color
   async getById(req, res) {
     try {
       const cardId = req.params.id;
@@ -386,6 +368,18 @@ const cardController = {
             model: Currency,
             as: 'currency',
             attributes: ['id', 'code', 'name']
+          },
+          {
+            model: Size,
+            as: 'size',
+            attributes: ['id', 'size_name', 'size_code', 'size_order', 'description'],
+            required: false
+          },
+          {
+            model: Color,
+            as: 'color',
+            attributes: ['id', 'color_name', 'color_code', 'hex_code', 'rgb_code', 'description'],
+            required: false
           }
         ]
       });
@@ -399,7 +393,7 @@ const cardController = {
     }
   },
 
-  // Enhanced update with new fields
+  // Enhanced update with Size and Color fields
   async updateById(req, res) {
     try {
       const cardId = req.params.id;
@@ -425,6 +419,7 @@ const cardController = {
 
         // New fields
         lotNumber: req.body.lotNumber,
+        serialNo: req.body.serialNo,
         expiryDate: req.body.expiryDate,
         hasExpiry: req.body.hasExpiry,
         hasLot: req.body.hasLot,
@@ -433,7 +428,11 @@ const cardController = {
         costType: req.body.costType,
         stockCardQty: req.body.stockCardQty,
         srcLocationId: req.body.srcLocationId,
-        currencyId: req.body.currencyId
+        currencyId: req.body.currencyId,
+        
+        // Size and Color fields
+        colorId: req.body.colorId,
+        sizeId: req.body.sizeId
       }, {
         where: { id: cardId },
         returning: true
@@ -445,7 +444,277 @@ const cardController = {
     }
   },
 
-  // Delete with validation
+  // Enhanced get count and sum grouped by product with Size and Color stats
+  async getAllCountAndSumGroupByProduct(req, res) {
+    try {
+      const cardStats = await Card.findAll({
+        attributes: [
+          'product_id',
+          [sequelize.fn('COUNT', sequelize.literal('DISTINCT card_number')), 'cardCount'],
+          [sequelize.fn('SUM', sequelize.col('cost')), 'totalCardValue'],
+          [sequelize.fn('COUNT',
+            sequelize.literal('CASE WHEN expiryDate < NOW() THEN 1 END')), 'expiredCount'],
+          [sequelize.fn('COUNT',
+            sequelize.literal('CASE WHEN expiryDate BETWEEN NOW() AND DATE_ADD(NOW(), INTERVAL 30 DAY) THEN 1 END')), 'expiringSoonCount'],
+          [sequelize.fn('COUNT',
+            sequelize.literal('CASE WHEN colorId IS NOT NULL THEN 1 END')), 'withColorCount'],
+          [sequelize.fn('COUNT',
+            sequelize.literal('CASE WHEN sizeId IS NOT NULL THEN 1 END')), 'withSizeCount'],
+          [sequelize.fn('COUNT',
+            sequelize.literal('DISTINCT colorId')), 'uniqueColorsCount'],
+          [sequelize.fn('COUNT',
+            sequelize.literal('DISTINCT sizeId')), 'uniqueSizesCount']
+        ],
+        where: {
+          card_isused: 0,
+          isActive: true,
+        },
+        group: ['product_id'],
+        include: [
+          {
+            model: Product,
+            as: 'product',
+            attributes: ['id', 'pro_name', 'pro_id', 'pro_price']
+          }
+        ],
+      });
+      return res.status(200).json(cardStats);
+    } catch (error) {
+      return res.status(400).json({ message: error.message });
+    }
+  },
+
+  // New method: Get stock summary by Color and Size combinations
+  async getStockByColorSize(req, res) {
+    try {
+      const { productId } = req.query;
+
+      let whereClause = {
+        card_isused: 0,
+        isActive: true
+      };
+
+      if (productId) {
+        whereClause.product_id = productId;
+      }
+
+      const stockSummary = await Card.findAll({
+        attributes: [
+          'product_id',
+          'colorId',
+          'sizeId',
+          [sequelize.fn('COUNT', sequelize.col('card.id')), 'stockCount'],
+          [sequelize.fn('SUM', sequelize.col('card.cost')), 'totalValue'],
+          [sequelize.col('product.pro_name'), 'productName'],
+          [sequelize.col('color.color_name'), 'colorName'],
+          [sequelize.col('color.hex_code'), 'colorHex'],
+          [sequelize.col('size.size_name'), 'sizeName'],
+          [sequelize.col('size.size_code'), 'sizeCode']
+        ],
+        where: whereClause,
+        include: [
+          {
+            model: Product,
+            as: 'product',
+            attributes: []
+          },
+          {
+            model: Color,
+            as: 'color',
+            attributes: [],
+            required: false
+          },
+          {
+            model: Size,
+            as: 'size',
+            attributes: [],
+            required: false
+          }
+        ],
+        group: ['product_id', 'colorId', 'sizeId', 'product.pro_name', 'color.color_name', 'color.hex_code', 'size.size_name', 'size.size_code'],
+        order: [
+          ['product_id', 'ASC'],
+          [sequelize.col('color.color_name'), 'ASC'],
+          [sequelize.col('size.size_order'), 'ASC']
+        ],
+        raw: true
+      });
+
+      return res.status(200).json({
+        message: 'Stock summary by color and size',
+        data: stockSummary
+      });
+    } catch (error) {
+      return res.status(400).json({ message: error.message });
+    }
+  },
+
+  // Keep existing methods as they are
+  async getExpiringItems(req, res) {
+    try {
+      const { days = 30 } = req.query;
+      const futureDate = new Date();
+      futureDate.setDate(futureDate.getDate() + parseInt(days));
+
+      const expiringItems = await Card.findAll({
+        where: {
+          expiryDate: {
+            [Op.between]: [new Date(), futureDate]
+          },
+          isActive: true,
+          card_isused: 0
+        },
+        include: [
+          {
+            model: Product,
+            as: 'product',
+            attributes: ['id', 'pro_name', 'pro_id']
+          },
+          {
+            model: Size,
+            as: 'size',
+            attributes: ['id', 'size_name', 'size_code'],
+            required: false
+          },
+          {
+            model: Color,
+            as: 'color',
+            attributes: ['id', 'color_name', 'color_code', 'hex_code'],
+            required: false
+          }
+        ],
+        order: [['expiryDate', 'ASC']]
+      });
+
+      return res.status(200).json({
+        message: `Items expiring within ${days} days`,
+        count: expiringItems.length,
+        items: expiringItems
+      });
+    } catch (error) {
+      return res.status(400).json({ message: error.message });
+    }
+  },
+
+  async getByLotNumber(req, res) {
+    try {
+      const { lotNumber } = req.params;
+
+      const items = await Card.findAll({
+        where: {
+          lotNumber: lotNumber,
+          isActive: true
+        },
+        include: [
+          {
+            model: Product,
+            as: 'product',
+            attributes: ['id', 'pro_name', 'pro_id']
+          },
+          {
+            model: Size,
+            as: 'size',
+            attributes: ['id', 'size_name', 'size_code'],
+            required: false
+          },
+          {
+            model: Color,
+            as: 'color',
+            attributes: ['id', 'color_name', 'color_code', 'hex_code'],
+            required: false
+          }
+        ]
+      });
+
+      return res.status(200).json({
+        lotNumber: lotNumber,
+        count: items.length,
+        items: items
+      });
+    } catch (error) {
+      return res.status(400).json({ message: error.message });
+    }
+  },
+
+  // Get items by serial number
+  async getBySerialNumber(req, res) {
+    try {
+      const { serialNo } = req.params;
+
+      const items = await Card.findAll({
+        where: {
+          serialNo: serialNo,
+          isActive: true
+        },
+        include: [
+          {
+            model: Product,
+            as: 'product',
+            attributes: ['id', 'pro_name', 'pro_id']
+          },
+          {
+            model: Size,
+            as: 'size',
+            attributes: ['id', 'size_name', 'size_code'],
+            required: false
+          },
+          {
+            model: Color,
+            as: 'color',
+            attributes: ['id', 'color_name', 'color_code', 'hex_code'],
+            required: false
+          }
+        ]
+      });
+
+      return res.status(200).json({
+        serialNo: serialNo,
+        count: items.length,
+        items: items
+      });
+    } catch (error) {
+      return res.status(400).json({ message: error.message });
+    }
+  },
+
+  async getStockSummary(req, res) {
+    try {
+      const summary = await Card.findAll({
+        attributes: [
+          'product_id',
+          [sequelize.fn('COUNT', sequelize.literal('DISTINCT card_number')), 'totalStock'],
+          [sequelize.fn('SUM', sequelize.col('cost')), 'totalValue'],
+          [sequelize.fn('COUNT',
+            sequelize.literal('CASE WHEN expiryDate < NOW() THEN 1 END')), 'expiredCount'],
+          [sequelize.fn('COUNT',
+            sequelize.literal('CASE WHEN expiryDate BETWEEN NOW() AND DATE_ADD(NOW(), INTERVAL 30 DAY) THEN 1 END')), 'expiringSoonCount'],
+          [sequelize.fn('COUNT',
+            sequelize.literal('CASE WHEN lotNumber IS NOT NULL THEN 1 END')), 'withLotCount'],
+          [sequelize.fn('COUNT',
+            sequelize.literal('CASE WHEN colorId IS NOT NULL THEN 1 END')), 'withColorCount'],
+          [sequelize.fn('COUNT',
+            sequelize.literal('CASE WHEN sizeId IS NOT NULL THEN 1 END')), 'withSizeCount']
+        ],
+        where: {
+          card_isused: 0,
+          isActive: true,
+        },
+        group: ['product_id'],
+        include: [
+          {
+            model: Product,
+            as: 'product',
+            attributes: ['id', 'pro_name', 'pro_id', 'pro_price']
+          }
+        ],
+      });
+
+      return res.status(200).json(summary);
+    } catch (error) {
+      return res.status(400).json({ message: error.message });
+    }
+  },
+
   async deleteById(req, res) {
     try {
       const cardId = req.params.id;
@@ -469,37 +738,7 @@ const cardController = {
     }
   },
 
-  // Get count and sum grouped by product (enhanced)
-  async getAllCountAndSumGroupByProduct(req, res) {
-    try {
-      const cardStats = await Card.findAll({
-        attributes: [
-          'product_id',
-          [sequelize.fn('COUNT', sequelize.literal('DISTINCT card_number')), 'cardCount'],
-          [sequelize.fn('SUM', sequelize.col('cost')), 'totalCardValue'],
-          [sequelize.fn('COUNT',
-            sequelize.literal('CASE WHEN expiryDate < NOW() THEN 1 END')), 'expiredCount'],
-          [sequelize.fn('COUNT',
-            sequelize.literal('CASE WHEN expiryDate BETWEEN NOW() AND DATE_ADD(NOW(), INTERVAL 30 DAY) THEN 1 END')), 'expiringSoonCount']
-        ],
-        where: {
-          card_isused: 0,
-          isActive: true,
-        },
-        group: ['product_id'],
-        include: [
-          {
-            model: Product,
-            as: 'product',
-            attributes: ['id', 'pro_name', 'pro_id', 'pro_price']
-          }
-        ],
-      });
-      return res.status(200).json(cardStats);
-    } catch (error) {
-      return res.status(400).json({ message: error.message });
-    }
-  },
+  // Keep existing stockmovements method as is
   async stockmovements(req, res) {
     try {
       const { dateFrom, dateTo, categoryId, locationId } = req.query;

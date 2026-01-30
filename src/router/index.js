@@ -79,6 +79,9 @@ const recipe = require("../recipe/router")
 const promotions = require("../pos/promotion/router")
 const memberOffer = require("../member_offer/router")
 const stockTransaction = require("../stockTransaction/router")
+const qrRouter = require("../QRRequest/router")
+const size = require("../size/router")
+const color = require("../color/router")
 
 module.exports={
     orderRouter,
@@ -162,4 +165,7 @@ module.exports={
     salePayment,
     productTemp,
     accountStatement,
+    qrRouter,
+    size,
+    color,
 }

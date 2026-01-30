@@ -146,6 +146,11 @@ const initializeModels = () => {
 
 
     // Financial models
+    QRRequest: require("../QRRequest/model")(sequelize, DataTypes),
+    QRResponse: require("../QRResponse/model")(sequelize, DataTypes),
+    PaymentCallback: require("../PaymentCallback/model")(sequelize, DataTypes),
+    Color: require("../color/model")(sequelize, DataTypes),
+    Size: require("../size/model")(sequelize, DataTypes),
     card: require("../card/model")(sequelize, DataTypes),
     Transaction: require("../transaction/model")(sequelize, DataTypes),
     gl: require("../GL/model")(sequelize, DataTypes),
@@ -279,7 +284,7 @@ const defineProductAssociations = (db) => {
   db.productSize.belongsTo(db.product, { foreignKey: 'productId', as: 'product' });
   db.priceList.belongsTo(db.product, { foreignKey: 'productId', as: 'product' });
   db.priceList.belongsTo(db.currency, { foreignKey: 'currencyId', as: 'currency' });
-  db.card.belongsTo(db.product, { foreignKey: 'productId', as: 'product' });
+
 };
 
 // Order associations
@@ -326,15 +331,15 @@ const defineSalesAssociations = (db) => {
   
 
   // Sale line associations
-  db.saleLine.belongsTo(db.saleHeader, { foreignKey: 'headerId', as: 'header' });
-  db.saleLine.belongsTo(db.product, { foreignKey: 'productId', as: 'product' });
-  db.saleLine.belongsTo(db.unit, { foreignKey: 'unitId', as: 'unit' });
-  db.saleLine.belongsTo(db.priceList, { foreignKey: 'priceListId', as: 'priceList' });
-  db.saleLine.hasMany(db.card, { as: 'cards' });
+  // db.saleLine.belongsTo(db.saleHeader, { foreignKey: 'headerId', as: 'header' });
+  // db.saleLine.belongsTo(db.product, { foreignKey: 'productId', as: 'product' });
+  // db.saleLine.belongsTo(db.unit, { foreignKey: 'unitId', as: 'unit' });
+  // db.saleLine.belongsTo(db.priceList, { foreignKey: 'priceListId', as: 'priceList' });
+  // db.saleLine.hasMany(db.card, { as: 'cards' });
 
   // Related associations
   db.orderTable.hasMany(db.saleHeader, { as: 'saleHeader' });
-  db.card.belongsTo(db.saleLine, { foreignKey: 'saleLineId', as: 'saleLine' });
+  
 };
 
 // Purchase order associations
@@ -415,7 +420,6 @@ const defineTransferAssociations = (db) => {
   db.transferLine.belongsTo(db.unit, { foreignKey: 'unitId', as: 'unit' });
   db.transferLine.hasMany(db.card, { as: 'cards' });
 
-  db.card.belongsTo(db.transferLine, { foreignKey: 'transferLineId', as: 'transferLine' });
 };
 
 // Financial associations
@@ -439,10 +443,7 @@ const defineFinancialAssociations = (db) => {
   db.gl.belongsTo(db.chartAccount, { foreignKey: 'crAccountId', as: 'crAccount' });
   db.gl.belongsTo(db.currency, { foreignKey: 'currencyId', as: 'currency' });
 
-  // Card associations
-  db.card.belongsTo(db.currency, { foreignKey: 'currencyId', as: 'currency' });
-  db.card.belongsTo(db.receivingLine, { foreignKey: 'receivingLineId', as: 'receivingLine' });
-  db.card.belongsTo(db.location, { foreignKey: 'locationId', as: 'location' });
+
 };
 
 // Menu associations
