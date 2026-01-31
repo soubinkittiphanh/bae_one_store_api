@@ -1,3 +1,4 @@
+const logger = require("../../api/logger");
 
 
 module.exports = (sequelize, DataTypes) => {
@@ -8,6 +9,11 @@ module.exports = (sequelize, DataTypes) => {
             defaultValue: 1,
         },
         unitRate: {
+            type: DataTypes.DOUBLE,
+            allowNull: false,
+            defaultValue: 1,
+        },
+        exchangeRate: {
             type: DataTypes.DOUBLE,
             allowNull: false,
             defaultValue: 1,
@@ -44,6 +50,18 @@ module.exports = (sequelize, DataTypes) => {
         // if you don't want that, set the following
         freezeTableName: true,
     })
+    QuotationLine.associate = models => {
+        logger.info('Associating table QuotationLine with models');
+
+        // QuotationLine associations
+        
+        if (models.currency) {
+            QuotationLine.belongsTo(models.currency, {
+                foreignKey: 'itemCurrencyId',
+                as: 'itemCurrency'
+            });
+        }
+    };
 
     return QuotationLine;
 };

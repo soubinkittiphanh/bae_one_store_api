@@ -4,27 +4,48 @@ const Card = require('../models').card
 const common = require('../common');
 const { Op } = require('sequelize');
 const productService = require('./../product/service')
-const createHulkStockCard = async (req, res) => {
 
-    let { inputter, product_id, totalCost, stockCardQty, productId, srcLocationId, currencyId, exchangeRate, costLCY } = req.body;
+const createHulkStockCard = async (req, res) => {
+    let { 
+        inputter, 
+        product_id, 
+        totalCost, 
+        stockCardQty, 
+        productId, 
+        srcLocationId, 
+        currencyId, 
+        exchangeRate, 
+        costLCY,
+        // New fields
+        colorId,
+        sizeId,
+        serialNo,
+        lotNumber,
+        expiryDate,
+        hasExpiry,
+        hasLot
+    } = req.body;
+
     if (stockCardQty < 0) {
         const whereCondition = {
             productId,
             card_isused: 0,
         }
         await adjustStock(whereCondition, stockCardQty)
-        return res.status(200).send("Transction completed")
+        return res.status(200).send("Transaction completed")
     }
+    
     const costPerUnit = totalCost / stockCardQty;
     costLCY = costPerUnit * exchangeRate
     const lockingSessionId = Date.now();
     logger.info("Product ID ===> " + productId)
-    const rowsToInsert = [
-
-    ]
+    
+    const rowsToInsert = []
+    
     for (let index = 0; index < stockCardQty; index++) {
         const cardSequenceNumber = common.generateLockingSessionId(10)
         logger.warn(cardSequenceNumber)
+        
         rowsToInsert.push({
             //Card object
             card_type_code: 10010,// FIX Value and No meaning
@@ -45,19 +66,30 @@ const createHulkStockCard = async (req, res) => {
             exchangeRate: exchangeRate ?? 1,
             locationId: srcLocationId,
             costLCY: costLCY ?? 0,
+            
+            // New enhanced fields
+            colorId: colorId || null,
+            sizeId: sizeId || null,
+            serialNo: serialNo ? `${serialNo}_${index + 1}` : null, // Create unique serial numbers
+            lotNumber: lotNumber || null,
+            expiryDate: expiryDate || null,
+            hasExpiry: hasExpiry || !!expiryDate,
+            hasLot: hasLot || !!lotNumber,
         })
         logger.warn("Row insert productId ===> " + rowsToInsert[0]['productId'])
     }
+    
     Card.bulkCreate(rowsToInsert)
         .then(() => {
             logger.info('Rows inserted successfully')
-            return res.status(200).send("Transction completed")
+            return res.status(200).send("Transaction completed")
         })
         .catch((error) => {
             logger.error('Error inserting rows:', error)
             return res.status(403).send("Server error " + error)
         });
 }
+
 // TODO: Lets continues here for stock adjustment 
 const adjustStock = async (whereCondition, stockCardQty) => {
     try {
@@ -89,6 +121,7 @@ const adjustStock = async (whereCondition, stockCardQty) => {
         logger.error('Error deleting rows:', error);
     }
 }
+
 const rebuildStockValue = async (req, res) => {
     logger.warn("****** Rebuild stock is on going ******")
     logger.info(`************* updateProductStockCountDirect **************`);
@@ -117,14 +150,22 @@ const rebuildStockValue = async (req, res) => {
         logger.error(`Cannot get product sale count ${error}`);
         return res.status(401).send(error);
     }
-
 }
 
-
-const createCardFromReceiving = async (receivingLines, locationId, currencyId, t) => {
-
+const createCardFromReceiving = async (receivingLines, locationId, currencyId, t, additionalData = {}) => {
     // ----------- assign receivingLineId to card ------------
-    logger.info(`Receving line ${JSON.stringify(receivingLines)}`)
+    logger.info(`Receiving line ${JSON.stringify(receivingLines)}`)
+    
+    const {
+        colorId = null,
+        sizeId = null,
+        serialNo = null,
+        lotNumber = null,
+        expiryDate = null,
+        hasExpiry = false,
+        hasLot = false
+    } = additionalData;
+
     let cardTemplate = {
         //Card object
         card_type_code: 10010,// FIX Value and No meaning
@@ -141,13 +182,26 @@ const createCardFromReceiving = async (receivingLines, locationId, currencyId, t
         update_time_new: new Date(),
         isActive: true,
         locationId: locationId,
+        
+        // New enhanced fields
+        colorId: colorId,
+        sizeId: sizeId,
+        serialNo: null, // Will be assigned per card
+        lotNumber: lotNumber,
+        expiryDate: expiryDate,
+        hasExpiry: hasExpiry || !!expiryDate,
+        hasLot: hasLot || !!lotNumber,
     }
+    
     let cardWithReceivingLineId = []
+    let serialIndex = 0; // Counter for serial numbers
+    
     for (const iterator of receivingLines) {
         const cardToInsertCount = iterator['rate'] * iterator['qty']
         const cost = iterator['total'] / cardToInsertCount
         const productId = iterator['productId']
         const productCode = iterator['productCode']
+        
         for (let index = 0; index < cardToInsertCount; index++) {
             const lockingSessionId = Date.now();
             const cardSequenceNumber = common.generateLockingSessionId(10);
@@ -165,19 +219,26 @@ const createCardFromReceiving = async (receivingLines, locationId, currencyId, t
             newCardTemplate.update = new Date();
             newCardTemplate.update_time = new Date();
             newCardTemplate.receivingLineId = iterator['id'];
+            
+            // Assign unique serial number if provided
+            if (serialNo) {
+                newCardTemplate.serialNo = `${serialNo}_${serialIndex + 1}`;
+                serialIndex++;
+            }
 
             cardWithReceivingLineId.push(newCardTemplate);
         }
     }
-    logger.info(`Card to be created count ${cardWithReceivingLineId.length} ${JSON.stringify(cardWithReceivingLineId)}`)
+    
+    logger.info(`Card to be created count ${cardWithReceivingLineId.length}`)
     try {
         const cardCreated = await Card.bulkCreate(cardWithReceivingLineId, { transaction: t })
         logger.info(`Card created successfully ${cardCreated.length}`)
         return cardCreated;
     } catch (error) {
         logger.error(`Cannot create card from receiving with error ${error}`)
+        throw error;
     }
-
 }
 
 const findCardsByReceivingLineIdList = async (receivingLineIdList) => {
@@ -191,134 +252,166 @@ const findCardsByReceivingLineIdList = async (receivingLineIdList) => {
     return cards;
 }
 
-const updateCardByIdList = async (cost, locationId, currencyId, cards, t) => {
+const updateCardByIdList = async (cost, locationId, currencyId, cards, t, additionalFields = {}) => {
     try {
         const idList = cards.map(el => el['id'])
-        logger.warn(`Cards info BEFORE change ${JSON.stringify(cards)}`)
-        const updatedCard = await Card.update({ cost, locationId, currencyId }, { where: { 'id': { [Op.in]: idList } } }, { transaction: t })
+        logger.warn(`Cards info BEFORE change ${JSON.stringify(cards.slice(0, 2))}`) // Log only first 2 for brevity
+        
+        const updateData = { 
+            cost, 
+            locationId, 
+            currencyId,
+            ...additionalFields // Include any additional fields like colorId, sizeId, etc.
+        };
+        
+        const updatedCard = await Card.update(updateData, { 
+            where: { 'id': { [Op.in]: idList } },
+            transaction: t 
+        });
 
-        logger.info(`Cards info AFTER change ${JSON.stringify(updatedCard)}`)
+        logger.info(`Cards updated count: ${updatedCard[0]}`)
         return updatedCard;
     } catch (error) {
-        logger.error(`Cannot update card id ${cards.id} with error ${error}`)
-
+        logger.error(`Cannot update cards with error ${error}`)
+        throw error;
     }
 }
 
 const deleteNotUseByIdList = async (cards, t) => {
     try {
         const cardIdList = cards.map(el => el.id)
-        const result = await Card.destroy({ where: { id: { [Op.in]: cardIdList } } })
-        logger.info(`Cards has been deleted ${JSON.stringify(result)}`)
+        const result = await Card.destroy({ 
+            where: { id: { [Op.in]: cardIdList } },
+            transaction: t 
+        })
+        logger.info(`Cards deleted count: ${result}`)
+        return result;
     } catch (error) {
         logger.error(`Cannot delete card with error ${error}`)
+        throw error;
     }
 }
 
-const cardUtility = async (receiveLines, locationId, currencyId, t) => {
+const cardUtility = async (receiveLines, locationId, currencyId, t, additionalData = {}) => {
     const productIdList = receiveLines.map(el => el.productId);
     const productIdAndCodeList = await productService.findProductCodeFromProductId(productIdList);
+    
     // ----------- Assign productCode to receiving line -----------
     for (const iterator of receiveLines) {
         iterator['productCode'] = productIdAndCodeList.find(el => el.id == iterator['productId'])['pro_id']
     }
-    const cardCreated = await createCardFromReceiving(receiveLines, locationId, currencyId, t)
+    
+    const cardCreated = await createCardFromReceiving(receiveLines, locationId, currencyId, t, additionalData)
     if (!cardCreated) {
         throw new Error(`Cannot created cards`)
     }
     return cardCreated;
 }
 
-
-const cardUtilityReceivingLineChangesReflect = async (lines, locationId, currencyId, t) => {
+const cardUtilityReceivingLineChangesReflect = async (lines, locationId, currencyId, t, additionalData = {}) => {
     //TODO: The cost is not correct, after card updated, please check logic 
     const receivingIdList = lines.map(el => el['id'])
     const oldCardList = await findCardsByReceivingLineIdList(receivingIdList)
     const newRecevingLineList = []
+    
     for (const iterator of lines) {
-        // ---------- Need to compair if receivingLine qty has change or not, if change i will 
-        // ---------- impact card line, so we need to update card line qty base one receiving line
+        // ---------- Need to compare if receivingLine qty has change or not, if change it will 
+        // ---------- impact card line, so we need to update card line qty based on receiving line
         const newCardCount = iterator['rate'] * iterator['qty']
         const oldCardCountList = oldCardList.filter(el => el.receivingLineId == iterator['id'])
         const oldCardCount = oldCardCountList.length
         const costPerCard = iterator['total'] / (iterator['qty'] * iterator['rate'])
-        // const currencyId = iterator['currencyId']
+        
+        // Prepare additional fields for updates
+        const updateFields = {
+            ...additionalData,
+            update_time: new Date(),
+            update_time_new: new Date()
+        };
+        
         // --------- ReceivingLine qty increase case -----------
         if (newCardCount > oldCardCount) {
             // ------- check if the cost has change 
             // ------- check how many increase
             const additionalUpCount = newCardCount - oldCardCount
             // ------- Update old cards -------//
-            const updatedCards = await updateCardByIdList(costPerCard, locationId, currencyId, oldCardCountList, t)
+            const updatedCards = await updateCardByIdList(costPerCard, locationId, currencyId, oldCardCountList, t, updateFields)
             logger.info(`Update cards successfully ${JSON.stringify(updatedCards)}`)
+            
             // ------- Create additional cards -------//
-            let newRecevingLine = { ...iterator }
-            newRecevingLine.qty = additionalUpCount
-            // newRecevingLine.productCode = iterator[]
-            newRecevingLine.cost = 0 //costPerCard  * additionalUpCount
-            newRecevingLine.total = costPerCard * additionalUpCount
-            newRecevingLine.rate = 1 // to ensure that new line card has exact number of new card need
-            newRecevingLineList.push(newRecevingLine)
-
-
+            let newReceivingLine = { ...iterator }
+            newReceivingLine.qty = additionalUpCount
+            newReceivingLine.cost = 0 //costPerCard  * additionalUpCount
+            newReceivingLine.total = costPerCard * additionalUpCount
+            newReceivingLine.rate = 1 // to ensure that new line card has exact number of new card need
+            newRecevingLineList.push(newReceivingLine)
         }
         else if (newCardCount < oldCardCount) {
             // ------- check if the cost has change 
             // ------- check how many decrease
             const additionalDownCount = oldCardCount - newCardCount
-            // ------- the main senerio we have to know is, we cannot delete card already linke with saleLine
-            // const myList = []
-            // const aaList =  myList.slice(0,)
+            // ------- the main scenario we have to know is, we cannot delete card already linked with saleLine
             const cardTobeDelete = oldCardCountList.filter(el => el['card_isused'] == 0 && el['saleLineId'] == null).slice(0, additionalDownCount)
 
             if (cardTobeDelete.length >= additionalDownCount) {
                 // -------- only this case we expect since all card to be delete not yet linked to saleLine
                 await deleteNotUseByIdList(cardTobeDelete, t)
+                
                 // we also need to update cards, since the other field may changes like cost, location, currency
                 if (oldCardCount - newCardCount > 0) {
                     // -------- that's mean, still some old card available --------//
                     // ------- and we will update those cards any way weather any field has change or not
-                    // now no need to find card to be updated, since the rest of (those to be delete) is only there, we will update them all
                     const idsInCardTobeDelete = cardTobeDelete.map(item => item.id);
                     const updateCardList = oldCardCountList.filter(oldEl => !idsInCardTobeDelete.includes(oldEl['id']))
-                    const updatedCard = await updateCardByIdList(costPerCard, locationId, currencyId, updateCardList, t);
+                    const updatedCard = await updateCardByIdList(costPerCard, locationId, currencyId, updateCardList, t, updateFields);
                     logger.info(`Card decrease update successfully ${JSON.stringify(updatedCard)}`)
                 }
             } else {
                 // -------- We cannot delete card which is already sole out, since those will lead error with stock mismatch 
                 logger.error(`Cannot delete cards which is already sold out ${JSON.stringify(cardTobeDelete)}`)
                 throw new Error(`Unable to delete card which already sold out !!!`)
-
             }
-
         }
         else { // qty still same, need to check is also the cost has change ?
-            const updatedCardForce = await updateCardByIdList(costPerCard, locationId, currencyId, oldCardCountList, t);
+            const updatedCardForce = await updateCardByIdList(costPerCard, locationId, currencyId, oldCardCountList, t, updateFields);
             logger.info(`receiving same qty update ${JSON.stringify(updatedCardForce)}`)
         }
-        // --------- ReceivingLine qty decrease case -----------
-
     }
+    
     if (newRecevingLineList.length > 0) {
-        // const createdCards = await createCardFromReceiving(newRecevingLineList, locationId,currencyId, t)
-        const createdCards = await cardUtility(newRecevingLineList, locationId, currencyId, t)
-        logger.info(`Create cards successfully ${JSON.stringify(createdCards)}`)
+        const createdCards = await cardUtility(newRecevingLineList, locationId, currencyId, t, additionalData)
+        logger.info(`Create cards successfully count: ${createdCards.length}`)
     }
 }
 
-
 const createAutoHulkStockCard = async (line) => {
-
-    const { inputter, product_id, totalCost, stockCardQty, productId, srcLocationId } = line;
+    const { 
+        inputter, 
+        product_id, 
+        totalCost, 
+        stockCardQty, 
+        productId, 
+        srcLocationId,
+        // New fields
+        colorId,
+        sizeId,
+        serialNo,
+        lotNumber,
+        expiryDate,
+        hasExpiry,
+        hasLot
+    } = line;
+    
     const costPerUnit = totalCost;
     const lockingSessionId = Date.now();
     logger.info("Product ID ===> " + productId)
-    const rowsToInsert = [
-
-    ]
+    
+    const rowsToInsert = []
+    
     for (let index = 0; index < stockCardQty; index++) {
         const cardSequenceNumber = common.generateLockingSessionId(10)
         logger.warn(cardSequenceNumber)
+        
         rowsToInsert.push({
             //Card object
             card_type_code: 10010,// FIX Value and No meaning
@@ -335,20 +428,28 @@ const createAutoHulkStockCard = async (line) => {
             update_time_new: new Date(),
             isActive: true,
             locationId: srcLocationId,
+            
+            // New enhanced fields
+            colorId: colorId || null,
+            sizeId: sizeId || null,
+            serialNo: serialNo ? `${serialNo}_${index + 1}` : null,
+            lotNumber: lotNumber || null,
+            expiryDate: expiryDate || null,
+            hasExpiry: hasExpiry || !!expiryDate,
+            hasLot: hasLot || !!lotNumber,
         })
         logger.warn("Row insert productId ===> " + rowsToInsert[0]['productId'])
     }
 
     try {
         const dbCards = await Card.bulkCreate(rowsToInsert)
+        logger.info(`Auto bulk stock cards created successfully: ${dbCards.length}`)
         return dbCards
     } catch (error) {
         logger.error('Error inserting rows:', error)
-        return "Server error " + error
+        throw new Error("Server error " + error)
     }
-
 }
-
 
 const adjustStockCard = async (productId, stockCount, product_code) => {
     try {
@@ -367,15 +468,119 @@ const adjustStockCard = async (productId, stockCount, product_code) => {
                 limit: excess // Deleting only the excess amount
             });
 
-            console.log(`Deleted ${excess} excess stock entries for productId ${productId}`);
+            logger.info(`Deleted ${excess} excess stock entries for productId ${productId}`);
         } else {
-            console.log(`No adjustment needed for productId ${productId}`);
+            logger.info(`No adjustment needed for productId ${productId}`);
         }
     } catch (error) {
-        console.error('Error adjusting stock:', error);
+        logger.error('Error adjusting stock:', error);
+        throw error;
     }
 };
 
+// New utility functions for enhanced features
+
+const findCardsByColorAndSize = async (productId, colorId, sizeId) => {
+    try {
+        const whereCondition = {
+            productId: productId,
+            card_isused: 0,
+            isActive: true
+        };
+        
+        if (colorId) whereCondition.colorId = colorId;
+        if (sizeId) whereCondition.sizeId = sizeId;
+        
+        const cards = await Card.findAll({
+            where: whereCondition,
+            order: [['createdAt', 'ASC']]
+        });
+        
+        return cards;
+    } catch (error) {
+        logger.error('Error finding cards by color and size:', error);
+        throw error;
+    }
+};
+
+const findCardsByLotNumber = async (lotNumber) => {
+    try {
+        const cards = await Card.findAll({
+            where: {
+                lotNumber: lotNumber,
+                isActive: true
+            },
+            order: [['createdAt', 'ASC']]
+        });
+        
+        return cards;
+    } catch (error) {
+        logger.error('Error finding cards by lot number:', error);
+        throw error;
+    }
+};
+
+const findCardsBySerialNumber = async (serialNo) => {
+    try {
+        const cards = await Card.findAll({
+            where: {
+                serialNo: {
+                    [Op.like]: `%${serialNo}%`
+                },
+                isActive: true
+            },
+            order: [['createdAt', 'ASC']]
+        });
+        
+        return cards;
+    } catch (error) {
+        logger.error('Error finding cards by serial number:', error);
+        throw error;
+    }
+};
+
+const getExpiringCards = async (days = 30) => {
+    try {
+        const futureDate = new Date();
+        futureDate.setDate(futureDate.getDate() + days);
+        
+        const cards = await Card.findAll({
+            where: {
+                expiryDate: {
+                    [Op.between]: [new Date(), futureDate]
+                },
+                card_isused: 0,
+                isActive: true
+            },
+            order: [['expiryDate', 'ASC']]
+        });
+        
+        return cards;
+    } catch (error) {
+        logger.error('Error finding expiring cards:', error);
+        throw error;
+    }
+};
+
+const getExpiredCards = async () => {
+    try {
+        const cards = await Card.findAll({
+            where: {
+                expiryDate: {
+                    [Op.lt]: new Date()
+                },
+                card_isused: 0,
+                isActive: true
+            },
+            order: [['expiryDate', 'ASC']]
+        });
+        
+        return cards;
+    } catch (error) {
+        logger.error('Error finding expired cards:', error);
+        throw error;
+    }
+};
 
 module.exports = {
     createHulkStockCard,
@@ -388,4 +593,12 @@ module.exports = {
     cardUtilityReceivingLineChangesReflect,
     createAutoHulkStockCard,
     adjustStock,
+    adjustStockCard,
+    
+    // New enhanced functions
+    findCardsByColorAndSize,
+    findCardsByLotNumber,
+    findCardsBySerialNumber,
+    getExpiringCards,
+    getExpiredCards,
 }

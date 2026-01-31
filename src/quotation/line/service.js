@@ -5,9 +5,16 @@ const quotationHeaderService = require("../service")
 const createBulkQuotationLine = async (res, lines) => {
     logger.info("==> Creating Quotation line bulk ")
     try {
-        const linesCreated = await QuotationLine.bulkCreate(lines)
+        // assign itemCurrencyId
+        const mappedLines = lines.map(line => ({
+            ...line,
+            itemCurrencyId: line.currencyId,
+        }));
+
+        logger.warn(`Line DET ${JSON.stringify(mappedLines)}`)
+        const linesCreated = await QuotationLine.bulkCreate(mappedLines)
         logger.info("===> Line created len: " + linesCreated.length)
-        res.status(200).send("Transaction completed - " + lines[0].headerId)
+        res.status(200).send("Transaction completed - " + mappedLines[0].headerId)
     } catch (error) {
         // ********************************************
         //  Reverse SaleHeader just created before
@@ -32,7 +39,7 @@ const createBulkQuotationLineWithoutRes = async (lines) => {
 }
 const updateQuotationLine = async (line) => {
     try {
-        const { quantity, unitRate, price, discount, total, isActive,productId } = line;
+        const { quantity, unitRate, price, discount, total, isActive, productId } = line;
 
         const quotationLine = await QuotationLine.findByPk(line.id);
 
