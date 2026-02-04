@@ -44,7 +44,7 @@ class QRController {
             const memberDateTime = generateDateTime();
 
             // Auto-set callback URL from environment variable
-            const callbackUrl = process.env.CALLBACK_URL || `${process.env.APP_URL}/api/qr/callback`;
+            const callbackUrl = `http://150.95.31.23:8921/api/qr/callback`;
 
             logger.info(`Using callback URL: ${callbackUrl}`);
 
