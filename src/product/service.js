@@ -453,9 +453,9 @@ const updateProd = async (req, imagesObj) => {
     ];
 
     logger.info(`************* UPDATE PRODUCT ${sqlCom} *****************`);
-    logger.info("Values array:", values);
-    logger.info(`************* COMMAND ${sqlComImages} *****************`);
-    logger.info(`*************Payload: ${imagesObj} *****************`);
+    logger.info(`Values array: ${JSON.stringify(values)}` );
+    logger.info(`************* COMMAND ${JSON.stringify(sqlComImages)} *****************`);
+    logger.info(`*************Payload: ${JSON.stringify(imagesObj)} *****************`);
     logger.info("Final category:", category);
 
     Db.query(sqlCom, values, (er, re) => {
