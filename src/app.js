@@ -6,6 +6,7 @@ const Router = require('./router/router')
 const myRouter = require("./router")
 const controller = require("./web_product_group/controller")
 const companyController = require("./company/controller")
+const qrPayment = require("./QRRequest/controller.js")
 const buildApp = async () => {
     const app = express();
     app.use(cors());
@@ -16,6 +17,7 @@ const buildApp = async () => {
         res.send("Succeed server is ready")
     })
     app.get("/api/public/company/findAll",companyController.getAllActiveCompanies)
+    app.get("/api/v1/direct/callback",qrPayment.handleCallback)
     app.use("/api/product-temps", myRouter.productTemp)
     app.use("/webproductgroup/find",controller.findActive)
     app.use("/api",myRouter.dymCustomerRouter)
