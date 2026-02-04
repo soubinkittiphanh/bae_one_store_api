@@ -79,6 +79,11 @@ module.exports = (sequelize, DataTypes) => {
             foreignKey: 'qrRequestId',
             as: 'response',
         });
+        QRRequest.hasMany(models.PaymentCallback, {
+            foreignKey: 'billNumber',
+            sourceKey: 'billNumber',
+            as: 'callbacks',
+        });
     };
 
     return QRRequest;
