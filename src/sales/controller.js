@@ -623,33 +623,36 @@ exports.updateSaleHeaderV2 = async (req, res) => {
 exports.updateSaleHeader = async (req, res) => {
   try {
     const { id } = req.params;
-    const { bookingDate, remark, discount, total, exchangeRate, isActive, lines, clientId, paymentId, currencyId, userId, locationId } = req.body;
+    const { lines, locationId, ...headerData } = req.body;
     const saleHeader = await SaleHeader.findByPk(id);
 
-    if (!saleHeader) {
-      logger.error("Order Id " + id + ' is not found')
-      return res.status(404).json({ success: false, message: 'Sale header not found' });
+    if (!saleHeader) return res.status(404).json({ success: false, message: 'Sale header not found' });
+
+    const lockingSessionId = common.generateLockingSessionId();
+
+    // STEP 1: Assign header info and tag cards (Existing Logic)
+    await assignHeaderId(lines, id, lockingSessionId, true, locationId);
+
+    // STEP 2: Handle NEW lines (Existing Logic)
+    const saleLineForCreate = lines.filter(el => el.id == null);
+    if (saleLineForCreate.length > 0) {
+      await lineService.createBulkSaleLineWithoutRes(saleLineForCreate, lockingSessionId);
     }
-    logger.info("Updating header")
-    const lockingSessionId = common.generateLockingSessionId()
-    await assignHeaderId(lines, id, lockingSessionId, true, locationId)
-    // ********** Clasify new or old saleLine ********** //
-    const saleLineForCreate = lines.filter(el => el['id'] == null)
-    logger.warn(`SaleLine for create count is ${saleLineForCreate.length}`)
 
-    if (saleLineForCreate.length > 0) await lineService.createBulkSaleLineWithoutRes(saleLineForCreate, lockingSessionId)
+    // STEP 3: Handle EXISTING lines (The Missing Logic!)
+    const saleLineForUpdate = lines.filter(el => el.id != null);
+    if (saleLineForUpdate.length > 0) {
+      await lineService.updateBulkSaleLine(saleLineForUpdate, lockingSessionId, locationId);
+    }
 
-    await saleHeader.update({ bookingDate, remark, discount, total, exchangeRate, isActive, lines, clientId, paymentId, currencyId, userId });
-    logger.info(`Update transaction completed ${saleHeader}`)
-
-    // ************* TAKE THE PRODUC ID FOR UPDATE STOCK COUNT IN PRODUCT TABLE *************//
-    updateProductStockCount(lines)
-    // ************* TAKE THE PRODUC ID FOR UPDATE STOCK COUNT IN PRODUCT TABLE *************//
+    // STEP 4: Update Header (Existing Logic)
+    await saleHeader.update(headerData);
+    updateProductStockCount(lines);
 
     res.status(200).json(saleHeader);
   } catch (error) {
-    logger.error("Cannot update data " + error)
-    res.status(500).send(`Cannot update data with ${error}`);
+    logger.error("Update failed: " + error);
+    res.status(500).send(`Update error: ${error.message}`);
   }
 };
 exports.settlement = async (req, res) => {
@@ -757,115 +760,67 @@ exports.reverseSaleHeader = async (req, res) => {
     res.status(500).send(`Cannot reverse data with ${error}`);
   }
 };
-const assignHeaderId = async (line, id, lockingSessionId, isUpdate, locationId) => {
-  for (const iterator of line) {
-    logger.warn(`Check if lineId is null or undefined ${iterator.id}`);
+const assignHeaderId = async (lines, id, lockingSessionId, isUpdate, locationId) => {
+  for (const iterator of lines) {
     iterator.headerId = id;
     iterator.saleHeaderId = id;
-    logger.warn("header id ===> " + iterator.headerId);
-    
-    try {
-      // ********** If it header is fresh record then we directly reserve new card ************ //
-      // ********** If not we will have condition ************ //
-      if (!isUpdate || !iterator.id) {
-        // ********** Sale Create Handler ************ //
-        const qty = iterator.unitRate * iterator.quantity;
+
+    // Use iterator.product.validateStockOnSale if it's nested, or directly
+    const shouldValidate = iterator.validateStockOnSale === 1 || 
+                           (iterator.product && iterator.product.validateStockOnSale);
+
+    if (shouldValidate) {
+      try {
+        // CASE 1: NEW LINE (Create mode or adding a new line during an update)
+        if (!iterator.id) {
+          const qtyToLock = (iterator.unitRate || 1) * iterator.quantity;
+          await reserveCard(iterator, lockingSessionId, qtyToLock, locationId);
+        } 
         
-        // Only reserve cards for lines that require stock validation
-        if (iterator.validateStockOnSale === 1) {
-          await reserveCard(iterator, lockingSessionId, qty, locationId);
-        }
-      } else {
-        // ********** Sale Update Handler ************ //
-        // ********** The logic part of update existing card ************ //
-        if (iterator.validateStockOnSale === 1) {
-          const previousCards = await Card.findAll({
-            order: [['createdAt', 'DESC']],
-            where: {
-              saleLineId: iterator.id
-            }
-          });
-          
-          const currentRequiredQty = iterator.unitRate * iterator.quantity;
-          const qty = currentRequiredQty - previousCards.length;
-          
-          // ********** Check if product has changed ********** //
-          if (previousCards[0]['productId'] == iterator['productId']) {
-            // ********** Same product handler ************ //
-            logger.info(`*************Previous card productId is the same with current ProductId************`);
-            if (currentRequiredQty > previousCards.length) {
-              //************ More product card qty need handler *************/
-              await reserveCard(iterator, lockingSessionId, qty, locationId);
-              logger.info(`********* Immediately update saleLine after reserved cards *********`);
-            } else if (currentRequiredQty == previousCards.length) {
-              //************ No need to do anything *************/
-            } else {
-              //************ Product card reduce handler *************/
-              //************ and we have to remove some previous card *************/
-              try {
-                const preCardCount = previousCards.length;
-                const numberOfLastCardForPuttingBackToInventory = currentRequiredQty - preCardCount;
-                const cardsForReversBack = previousCards.slice(numberOfLastCardForPuttingBackToInventory);
-                logger.warn(`Card previous count #${preCardCount} and card now count #${currentRequiredQty}`);
-                logger.warn(`cardsForReversBack count #${cardsForReversBack.length}`);
+        // CASE 2: EXISTING LINE (Update mode)
+        else {
+          // Find how many cards are ALREADY linked to this saleLine
+          const previousCards = await Card.findAll({ where: { saleLineId: iterator.id } });
+          const currentRequiredQty = (iterator.unitRate || 1) * iterator.quantity;
+          const actualLinkedCount = previousCards.length;
 
-                // ********** reduce previous cards ***********// 
-                const updatedCard = await Card.update({
-                  card_isused: 0,
-                  saleLineId: null,
-                  isActive: true
-                }, {
-                  where: {
-                    id: {
-                      [Op.in]: cardsForReversBack.map(el => el.id)
-                    }
-                  }
-                });
-              } catch (error) {
-                logger.error(`Reverse over cards fail ${error}`);
-                throw new Error(`Reverse over cards fail ${error}`);
-              }
+          // A. Same Product: Adjust quantity
+          if (actualLinkedCount > 0 && previousCards[0].productId == iterator.productId) {
+            if (currentRequiredQty > actualLinkedCount) {
+              const diff = currentRequiredQty - actualLinkedCount;
+              await reserveCard(iterator, lockingSessionId, diff, locationId);
+            } else if (currentRequiredQty < actualLinkedCount) {
+              const releaseCount = actualLinkedCount - currentRequiredQty;
+              const cardsToRelease = previousCards.slice(0, releaseCount);
+              
+              await Card.update({ 
+                card_isused: 0, 
+                saleLineId: null, 
+                locking_session_id: '' // Satisfy NOT NULL constraint
+              }, {
+                where: { id: { [Op.in]: cardsToRelease.map(el => el.id) } }
+              });
             }
-          } else {
-            // ********** Different product handler ***********// 
-            logger.warn(`*************Previous card productId is not the same with current ProductId************`);
+          } 
+          // B. Product Swap: Release all old cards, lock all new cards
+          else {
+            if (actualLinkedCount > 0) {
+              await Card.update({ card_isused: 0, saleLineId: null, locking_session_id: '' }, {
+                where: { id: { [Op.in]: previousCards.map(el => el.id) } }
+              });
+              await productService.updateProductCountById(previousCards[0].productId);
+            }
             await reserveCard(iterator, lockingSessionId, currentRequiredQty, locationId);
-
-            // ********** Reverse all previous cards from this sale line ***********// 
-            logger.info(`************* Send previous use cards back to inventory *************`);
-            const updatedCard = await Card.update({
-              card_isused: 0,
-              saleLineId: null,
-              isActive: true
-            }, {
-              where: {
-                id: {
-                  [Op.in]: previousCards.map(el => el.id)
-                }
-              }
-            });
-
-            //**************** Update previous card make it back available in inventory ****************/
-            logger.info(`//**************** Update previous card make it back available in inventory ****************/`);
-            productService.updateProductCountById(previousCards[0]['productId']);
           }
-          
-          logger.warn(`This saleLineId ${iterator.id} has previous card count ${previousCards.length}`);
-
-          // ************** Update saleLine entry ************** //
-          logger.info(`// ************** Update saleLine entry ************** //`);
-          await lineService.updateSaleLine(iterator);
         }
+      } catch (err) {
+        logger.error(`Stock assignment failed for productId ${iterator.productId}: ${err.message}`);
+        throw err;
       }
-    } catch (error) {
-      logger.error(`Stock is not enough for productId ${iterator.productId}`);
-      if (!isUpdate) await headerService.cardReversalByLockingSessionId(lockingSessionId);
-      throw new Error(error);
     }
   }
-  return line;
+  return lines;
 };
-
 
 const updateProductStockCount = async (lines) => {
   // ************* TAKE THE PRODUCT ID FOR UPDATE STOCK COUNT IN PRODUCT TABLE *************//
@@ -877,46 +832,28 @@ const updateProductStockCount = async (lines) => {
 };
 
 const reserveCard = async (line, lockingSessionId, qty, locationId) => {
-  //  *********************************
-  //  Assign Card for cost calculation
-  //  *********************************
+  logger.info(`[RESERVE] Product: ${line.productId}, Qty: ${qty}`);
+
   const cards = await Card.findAll({
-    limit: qty, // limit to n records
-    order: [['createdAt', 'DESC']], // order by createdAt column in descending order
+    limit: qty,
+    order: [['createdAt', 'DESC']],
     where: {
-      productId: line.productId,
+      [Op.or]: [{ productId: line.productId }, { product_id: line.productId }],
       saleLineId: null,
       card_isused: 0,
       locationId
     }
   });
-  
-  logger.info("Product Id ===>: " + line.productId + " location id: " + locationId);
-  logger.info("Cards available len ===>: " + cards.length + " sale qty needed " + qty);
-  
+
   if (!cards || cards.length < qty) {
-    throw new Error(`Stock not enough #${line.productId}`);
-  }
-  
-  let entryOption = {
-    locking_session_id: lockingSessionId,
-    card_isused: true,
-  };
-
-  if (line.id) {
-    // ************ Line already has id (Old line) ************
-    entryOption.saleLineId = line.id;
+    throw new Error(`Insufficient stock for Product ${line.productId}`);
   }
 
-  const cardreserved = await Card.update(entryOption, {
-    where: {
-      id: {
-        [Op.in]: cards.map(el => el.id)
-      }
-    }
+  await Card.update({ 
+    locking_session_id: lockingSessionId 
+  }, {
+    where: { id: { [Op.in]: cards.map(el => el.id) } }
   });
-  
-  logger.info(`$$$$$$ Reserve cards completed ${cardreserved} records $$$$$`);
 };
 
 
@@ -1371,7 +1308,7 @@ exports.sumSaleCurrentYear = async (req, res) => {
         'payments',
         linesInclude
       ],
-      attributes: ['id', 'discount', 'total', 'bookingDate'],
+      attributes: ['id', 'discount', 'total', 'bookingDate','currencyId'],
       where: {
         bookingDate: {
           [Op.between]: [startDate, endDate],
