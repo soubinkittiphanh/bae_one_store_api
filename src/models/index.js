@@ -79,7 +79,7 @@ const initializeModels = () => {
     location: require("../location/model")(sequelize, DataTypes),
     currency: require("../currency/model")(sequelize, DataTypes),
     unit: require("../unit/model")(sequelize, DataTypes),
-    printer: require("../printer/model")(sequelize, DataTypes),
+    printerModel: require("../printer/model")(sequelize, DataTypes),
     stockTransactionModel: require("../stockTransaction/model")(sequelize, DataTypes),
     // unit: require("../unit/model")(sequelize, DataTypes),
     category: require("../category/model")(sequelize, DataTypes),
