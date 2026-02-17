@@ -79,6 +79,7 @@ const initializeModels = () => {
     location: require("../location/model")(sequelize, DataTypes),
     currency: require("../currency/model")(sequelize, DataTypes),
     unit: require("../unit/model")(sequelize, DataTypes),
+    printer: require("../printer/model")(sequelize, DataTypes),
     stockTransactionModel: require("../stockTransaction/model")(sequelize, DataTypes),
     // unit: require("../unit/model")(sequelize, DataTypes),
     category: require("../category/model")(sequelize, DataTypes),
@@ -158,6 +159,7 @@ const initializeModels = () => {
     apPaymentHeader: require("../AP/payment/header/model")(sequelize, DataTypes), //TODO:
     arReceiveHeader: require("../AR/receive/header/model")(sequelize, DataTypes), //TODO:
     payment: require("../paymentMethod/model")(sequelize, DataTypes),
+    bank: require("../bank/model")(sequelize, DataTypes),
     bankAccount: require("../bankAccount/model")(sequelize, DataTypes),
     ministry: require("../ministry/model")(sequelize, DataTypes),
     moneySettlement: require("../PWT/moneySettlement/model")(sequelize, DataTypes),

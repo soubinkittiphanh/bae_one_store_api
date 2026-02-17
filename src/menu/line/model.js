@@ -18,6 +18,10 @@ module.exports = (sequelize, DataTypes) => {
         remark: {
             type: DataTypes.STRING,
         },
+        target_systems: {
+            type: DataTypes.STRING,
+            defaultValue: 'ALL',
+        },
         isActive: {
             type: DataTypes.BOOLEAN,
             allowNull: false,

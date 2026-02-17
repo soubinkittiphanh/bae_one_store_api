@@ -11,6 +11,7 @@ module.exports = {
                 bankBranch,
                 accountType,
                 currency,
+                bankId,
                 isActive
             } = req.body;
 
@@ -21,6 +22,7 @@ module.exports = {
                 bankBranch,
                 accountType,
                 currency,
+                bankId,
                 isActive
             });
 
@@ -85,6 +87,7 @@ module.exports = {
                 bankBranch,
                 accountType,
                 currency,
+                bankId,
                 isActive
             } = req.body;
 
@@ -99,6 +102,7 @@ module.exports = {
             bankAccount.bankBranch = bankBranch;
             bankAccount.accountType = accountType;
             bankAccount.currency = currency;
+            bankAccount.bankId = bankId;
             bankAccount.isActive = isActive;
 
             await bankAccount.save();

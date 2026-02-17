@@ -1,3 +1,5 @@
+const logger = require("../api/logger");
+
 module.exports = (sequelize, DataTypes) => {
     const BankAccount = sequelize.define('bankAccount', {
         accountNumber: {
@@ -15,7 +17,7 @@ module.exports = (sequelize, DataTypes) => {
         },
         bankName: {
             type: DataTypes.STRING,
-            allowNull: false
+            // allowNull: false
         },
         bankBranch: {
             type: DataTypes.STRING,
@@ -42,6 +44,16 @@ module.exports = (sequelize, DataTypes) => {
         updatedAt: 'updateTimestamp',
         freezeTableName: true,
     });
+    BankAccount.associate = models => {
+        logger.info('Associating table Bank with models');
+        // Card associations
+        if (models.bank) {
+            BankAccount.belongsTo(models.bank, {
+                foreignKey: 'bankId',
+                as: 'bank'
+            });
+        }
+    };
 
     return BankAccount;
 };
