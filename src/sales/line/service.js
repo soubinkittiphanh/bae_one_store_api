@@ -23,7 +23,7 @@ const createBulkSaleLine = async (res, lines, lockingSessionId) => {
     const productIdList = linesCreated.map(item => item.productId);
     await productService.updateProductCountGroup(productIdList);
 
-    if (res && !res.headersSent) res.status(200).send("Transaction completed");
+    if (res && !res.headersSent) res.status(200).send(`Transaction completed-${lines[0].headerId}`);
     return linesCreated;
   } catch (error) {
     logger.error('Error in createBulkSaleLine: ' + error);
