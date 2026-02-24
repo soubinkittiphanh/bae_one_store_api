@@ -7,7 +7,7 @@ module.exports = (sequelize, DataTypes) => {
         },
         // The type helps your code decide WHICH printer to use (Counter vs Kitchen)
         type: {
-            type: DataTypes.ENUM('ticket', 'kitchen'),
+            type: DataTypes.ENUM('ticket', 'kitchen','barcode'),
             allowNull: false,
             defaultValue: 'ticket'
         },
