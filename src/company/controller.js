@@ -336,23 +336,21 @@ exports.deleteCompanyById = async (req, res) => {
   try {
     const company = await Company.findByPk(req.params.id);
     if (company) {
-      // Delete associated images before deleting company
-      if (company.profile_image_path) {
-        const profileImagePath = path.join(__dirname, '..', company.profile_image_path);
-        if (fs.existsSync(profileImagePath)) {
-          fs.unlinkSync(profileImagePath);
+      const pathsToDelete = [
+        company.profile_image_path,
+        company.bank_qr_image_path,
+        company.bank_qr_image_path_2
+      ];
+
+      pathsToDelete.forEach(img => {
+        if (img) {
+          const fullPath = path.join(__dirname, '..', img);
+          if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath);
         }
-      }
-      
-      if (company.bank_qr_image_path) {
-        const qrImagePath = path.join(__dirname, '..', company.bank_qr_image_path);
-        if (fs.existsSync(qrImagePath)) {
-          fs.unlinkSync(qrImagePath);
-        }
-      }
+      });
       
       await company.destroy();
-      res.json({ message: 'Company deleted' });
+      res.json({ message: 'Company and all associated images deleted' });
     } else {
       res.status(404).json({ message: 'Company not found' });
     }
@@ -447,5 +445,80 @@ exports.updateCompanyTheme = async (req, res) => {
   } catch (err) {
     logger.error('Error updating company theme:', err);
     res.status(500).json({ message: 'Server Error: ' + err.message });
+  }
+};
+
+exports.uploadBankQRImage2 = async (req, res) => {
+  try {
+    const companyId = req.params.id;
+
+    if (!req.file) {
+      return res.status(400).json({ message: 'No second QR image file provided' });
+    }
+
+    const company = await Company.findByPk(companyId);
+    if (!company) {
+      if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+      return res.status(404).json({ message: 'Company not found' });
+    }
+
+    // Delete old second QR image if exists
+    if (company.bank_qr_image_path_2) {
+      const oldImagePath = path.join(__dirname, '..', company.bank_qr_image_path_2);
+      if (fs.existsSync(oldImagePath)) {
+        fs.unlinkSync(oldImagePath);
+      }
+    }
+
+    const imagePath = `uploads/company-qr/${req.file.filename}`;
+    await company.update({ bank_qr_image_path_2: imagePath });
+
+    res.json({
+      message: 'Second Bank QR image uploaded successfully',
+      bank_qr_image_path_2: imagePath,
+      company: company
+    });
+  } catch (err) {
+    if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+    logger.error('Error uploading bank QR image 2:', err);
+    res.status(500).json({ message: 'Server Error: ' + err.message });
+  }
+};
+
+// NEW: Update company bank QR image 2 path only
+exports.updateCompanyBankQRImage2 = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { bank_qr_image_path_2 } = req.body;
+    const company = await Company.findByPk(id);
+    if (company) {
+      await company.update({ bank_qr_image_path_2 });
+      res.json({ message: 'Second Bank QR image updated successfully', company });
+    } else {
+      res.status(404).json({ message: 'Company not found' });
+    }
+  } catch (err) {
+    logger.error(err);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+// NEW: Delete company bank QR image 2
+exports.deleteBankQRImage2 = async (req, res) => {
+  try {
+    const companyId = req.params.id;
+    const company = await Company.findByPk(companyId);
+    if (!company) return res.status(404).json({ message: 'Company not found' });
+
+    if (company.bank_qr_image_path_2) {
+      const imagePath = path.join(__dirname, '..', company.bank_qr_image_path_2);
+      if (fs.existsSync(imagePath)) fs.unlinkSync(imagePath);
+    }
+
+    await company.update({ bank_qr_image_path_2: null });
+    res.json({ message: 'Second Bank QR image deleted successfully', company });
+  } catch (err) {
+    logger.error('Error deleting bank QR image 2:', err);
+    res.status(500).json({ message: 'Server Error' });
   }
 };

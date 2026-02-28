@@ -113,6 +113,11 @@ router.post("/upload-bank-qr-image/:id", uploadQR.single('bank_qr_image'), contr
   .put("/update-bank-qr-image/:id", controller.updateCompanyBankQRImage)
   .delete("/delete-bank-qr-image/:id", controller.deleteBankQRImage)
 
+// NEW: Bank QR image 2 upload routes
+router.post("/upload-bank-qr-image-2/:id", uploadQR.single('bank_qr_image_2'), controller.uploadBankQRImage2)
+  .put("/update-bank-qr-image-2/:id", controller.updateCompanyBankQRImage2)
+  .delete("/delete-bank-qr-image-2/:id", controller.deleteBankQRImage2)
+
 // Error handling middleware for multer
 router.use((error, req, res, next) => {
   if (error instanceof multer.MulterError) {

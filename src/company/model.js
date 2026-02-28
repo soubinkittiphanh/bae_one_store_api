@@ -44,6 +44,10 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING,
             allowNull: true,
         },
+        bank_qr_image_path_2: {
+            type: DataTypes.STRING,
+            allowNull: true,
+        },
         remark: {
             type: DataTypes.STRING,
             defaultValue: 0
