@@ -1,2 +1,4 @@
 update product set saleCurrencyId=1, costCurrencyId=1;
 update card set currencyId=1;
+
+scp -r root@150.95.31.23:/root/dcommerce_pro_happybun.sql .

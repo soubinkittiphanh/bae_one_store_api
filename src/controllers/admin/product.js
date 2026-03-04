@@ -594,7 +594,7 @@ const fetchProductFromLocationV1 = async (req, res) => {
   const { locationId } = req.params;
   const { companyId, include, grade } = req.query;
 
-  // Main product query - keeping it lean
+  // Main product query - Updated to include tax fields
   const sqlCom = `
     SELECT DISTINCT
       p.id,
@@ -607,11 +607,17 @@ const fetchProductFromLocationV1 = async (req, res) => {
       p.saleCurrencyId,
       p.isActive,
       p.pro_category,
+      p.taxId,
+      t.name AS tax_name,
+      t.rate AS tax_rate,
+      t.code AS tax_code,
+      t.taxType AS tax_type,
       co.id as companyId,
       IFNULL(i.img_name, 'No image') AS img_name,
       i.img_path,
       IFNULL(c.stock, 0) AS card_count
     FROM product p
+    LEFT JOIN tax t ON p.taxId = t.id
     LEFT JOIN company co ON co.id = p.companyId
     LEFT JOIN (
       SELECT 
@@ -628,7 +634,7 @@ const fetchProductFromLocationV1 = async (req, res) => {
     ORDER BY p.id
   `;
 
-  // Separate price list query (only if requested)
+  // Separate price list query (remains unchanged)
   let priceListSql = '';
   if (include && include.includes('priceList')) {
     priceListSql = `
@@ -654,13 +660,9 @@ const fetchProductFromLocationV1 = async (req, res) => {
   }
 
   try {
-    // Use parameterized queries to prevent SQL injection
     const params = [locationId];
-    if (companyId) {
-      params.push(parseInt(companyId));
-    }
+    if (companyId) params.push(parseInt(companyId));
 
-    // Execute main product query
     const productResults = await new Promise((resolve, reject) => {
       Db.query(sqlCom, params, (er, results) => {
         if (er) reject(er);
@@ -670,17 +672,11 @@ const fetchProductFromLocationV1 = async (req, res) => {
 
     let priceListData = {};
 
-    // Execute price list query if needed
     if (include && include.includes('priceList') && priceListSql) {
       try {
-        // Build params for price list query
         const priceListParams = [];
-        if (companyId) {
-          priceListParams.push(parseInt(companyId));
-        }
-        if (grade) {
-          priceListParams.push(grade);
-        }
+        if (companyId) priceListParams.push(parseInt(companyId));
+        if (grade) priceListParams.push(grade);
 
         const priceListResults = await new Promise((resolve, reject) => {
           Db.query(priceListSql, priceListParams, (err, results) => {
@@ -689,13 +685,9 @@ const fetchProductFromLocationV1 = async (req, res) => {
           });
         });
 
-        // Group price lists by productId
         priceListData = priceListResults.reduce((acc, priceList) => {
           const productId = priceList.productId;
-          if (!acc[productId]) {
-            acc[productId] = [];
-          }
-
+          if (!acc[productId]) acc[productId] = [];
           acc[productId].push({
             id: priceList.priceList_id,
             name: priceList.priceList_name,
@@ -707,29 +699,40 @@ const fetchProductFromLocationV1 = async (req, res) => {
             createdAt: priceList.priceList_createdAt,
             updateTimestamp: priceList.priceList_updateTimestamp
           });
-
           return acc;
         }, {});
-
       } catch (priceListError) {
         console.error('Price List Query Error:', priceListError);
-        // Continue without price lists if there's an error
       }
     }
 
-    // Transform results to include priceLists if requested
-    let finalResults = productResults;
-
-    if (include && include.includes('priceList')) {
-      finalResults = productResults.map(product => ({
+    // Transform results to include nested tax object and priceLists
+    const finalResults = productResults.map(product => {
+      const p = {
         ...product,
-        priceLists: priceListData[product.id] || [],
-        // For backward compatibility, include the first priceList as single object
-        priceList: priceListData[product.id] && priceListData[product.id].length > 0 
-          ? priceListData[product.id][0] 
-          : null
-      }));
-    }
+        // Create nested tax object
+        tax: product.taxId ? {
+          id: product.taxId,
+          name: product.tax_name,
+          rate: product.tax_rate,
+          code: product.tax_code,
+          taxType: product.tax_type
+        } : null,
+        // Add price lists if requested
+        priceLists: (include && include.includes('priceList')) ? (priceListData[product.id] || []) : undefined,
+        priceList: (include && include.includes('priceList')) 
+          ? (priceListData[product.id] && priceListData[product.id].length > 0 ? priceListData[product.id][0] : null) 
+          : undefined
+      };
+
+      // Remove flat tax fields from the root to keep it clean
+      delete p.tax_name;
+      delete p.tax_rate;
+      delete p.tax_code;
+      delete p.tax_type;
+
+      return p;
+    });
 
     res.status(200).json({
       success: true,
@@ -745,13 +748,172 @@ const fetchProductFromLocationV1 = async (req, res) => {
 
   } catch (error) {
     console.error('Error in fetchProductFromLocationV1:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Database error',
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: 'Database error', error: error.message });
   }
 };
+
+// const fetchProductFromLocationV1 = async (req, res) => {
+//   const { locationId } = req.params;
+//   const { companyId, include, grade } = req.query;
+
+//   // Main product query - keeping it lean
+//   const sqlCom = `
+//     SELECT DISTINCT
+//       p.id,
+//       p.pro_id,
+//       p.barCode,
+//       p.pro_name,
+//       p.pro_price,
+//       p.pro_status,
+//       p.validateStockOnSale,
+//       p.saleCurrencyId,
+//       p.isActive,
+//       p.pro_category,
+//       co.id as companyId,
+//       IFNULL(i.img_name, 'No image') AS img_name,
+//       i.img_path,
+//       IFNULL(c.stock, 0) AS card_count
+//     FROM product p
+//     LEFT JOIN company co ON co.id = p.companyId
+//     LEFT JOIN (
+//       SELECT 
+//         COUNT(c.card_number) AS stock,
+//         c.productId
+//       FROM card c
+//       WHERE c.card_isused = 0 AND c.locationId = ?
+//       GROUP BY c.productId
+//     ) c ON c.productId = p.id
+//     LEFT JOIN image_path i ON i.pro_id = p.pro_id
+//     WHERE p.isActive = true
+//     ${companyId ? 'AND p.companyId = ?' : ''}
+//     GROUP BY p.pro_id
+//     ORDER BY p.id
+//   `;
+
+//   // Separate price list query (only if requested)
+//   let priceListSql = '';
+//   if (include && include.includes('priceList')) {
+//     priceListSql = `
+//       SELECT 
+//         pl.productId,
+//         pl.id as priceList_id,
+//         pl.name as priceList_name,
+//         pl.grade as priceList_grade,
+//         pl.amount as priceList_amount,
+//         pl.type as priceList_type,
+//         pl.isActive as priceList_isActive,
+//         pl.currencyId as priceList_currencyId,
+//         pl.createdAt as priceList_createdAt,
+//         pl.updateTimestamp as priceList_updateTimestamp
+//       FROM priceList pl
+//       INNER JOIN product p ON p.id = pl.productId
+//       WHERE pl.isActive = true 
+//         AND p.isActive = true
+//         ${companyId ? 'AND p.companyId = ?' : ''}
+//         ${grade ? 'AND pl.grade = ?' : ''}
+//       ORDER BY pl.productId, pl.grade, pl.createdAt DESC
+//     `;
+//   }
+
+//   try {
+//     // Use parameterized queries to prevent SQL injection
+//     const params = [locationId];
+//     if (companyId) {
+//       params.push(parseInt(companyId));
+//     }
+
+//     // Execute main product query
+//     const productResults = await new Promise((resolve, reject) => {
+//       Db.query(sqlCom, params, (er, results) => {
+//         if (er) reject(er);
+//         else resolve(results);
+//       });
+//     });
+
+//     let priceListData = {};
+
+//     // Execute price list query if needed
+//     if (include && include.includes('priceList') && priceListSql) {
+//       try {
+//         // Build params for price list query
+//         const priceListParams = [];
+//         if (companyId) {
+//           priceListParams.push(parseInt(companyId));
+//         }
+//         if (grade) {
+//           priceListParams.push(grade);
+//         }
+
+//         const priceListResults = await new Promise((resolve, reject) => {
+//           Db.query(priceListSql, priceListParams, (err, results) => {
+//             if (err) reject(err);
+//             else resolve(results);
+//           });
+//         });
+
+//         // Group price lists by productId
+//         priceListData = priceListResults.reduce((acc, priceList) => {
+//           const productId = priceList.productId;
+//           if (!acc[productId]) {
+//             acc[productId] = [];
+//           }
+
+//           acc[productId].push({
+//             id: priceList.priceList_id,
+//             name: priceList.priceList_name,
+//             grade: priceList.priceList_grade,
+//             amount: priceList.priceList_amount,
+//             type: priceList.priceList_type,
+//             isActive: priceList.priceList_isActive,
+//             currencyId: priceList.priceList_currencyId,
+//             createdAt: priceList.priceList_createdAt,
+//             updateTimestamp: priceList.priceList_updateTimestamp
+//           });
+
+//           return acc;
+//         }, {});
+
+//       } catch (priceListError) {
+//         console.error('Price List Query Error:', priceListError);
+//         // Continue without price lists if there's an error
+//       }
+//     }
+
+//     // Transform results to include priceLists if requested
+//     let finalResults = productResults;
+
+//     if (include && include.includes('priceList')) {
+//       finalResults = productResults.map(product => ({
+//         ...product,
+//         priceLists: priceListData[product.id] || [],
+//         // For backward compatibility, include the first priceList as single object
+//         priceList: priceListData[product.id] && priceListData[product.id].length > 0 
+//           ? priceListData[product.id][0] 
+//           : null
+//       }));
+//     }
+
+//     res.status(200).json({
+//       success: true,
+//       data: finalResults,
+//       count: finalResults.length,
+//       filters: {
+//         locationId: parseInt(locationId),
+//         companyId: companyId ? parseInt(companyId) : null,
+//         grade: grade || null,
+//         include: include ? include.split(',') : []
+//       }
+//     });
+
+//   } catch (error) {
+//     console.error('Error in fetchProductFromLocationV1:', error);
+//     res.status(500).json({
+//       success: false,
+//       message: 'Database error',
+//       error: error.message
+//     });
+//   }
+// };
 
 
 // Helper function to calculate effective price based on price lists
