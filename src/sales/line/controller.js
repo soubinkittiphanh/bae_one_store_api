@@ -7,19 +7,21 @@ const logger = require('../../api/logger');
 
 exports.createSaleLine = async (req, res) => {
   try {
-    const { quantity,isGift, unitRate, price, discount, total, isActive, unitId, productId } = req.body;
+    const { quantity, isGift, unitRate, taxRate, taxAmount, taxType, price, discount, total, isActive, unitId, productId } = req.body;
 
     const newSaleLine = await SaleLine.create({
       quantity,
       isGift,
       unitRate,
+      taxRate,
+      taxAmount,
+      taxType,
       price,
       discount,
       total,
       isActive,
       unitId,
-      productId,
-      isGift
+      productId
     });
 
     res.status(200).json(newSaleLine);
@@ -60,7 +62,7 @@ exports.getSaleLineById = async (req, res) => {
 exports.updateSaleLine = async (req, res) => {
   try {
     const { id } = req.params;
-    const { quantity,isGift, unitRate, price, discount, total, isActive } = req.body;
+    const { quantity, isGift, unitRate, taxRate, taxAmount, taxType, price, discount, total, isActive } = req.body;
 
     const saleLine = await SaleLine.findByPk(id);
 
@@ -71,11 +73,14 @@ exports.updateSaleLine = async (req, res) => {
     await saleLine.update({
       quantity: quantity || saleLine.quantity,
       unitRate: unitRate || saleLine.unitRate,
+      taxRate: taxRate !== undefined ? taxRate : saleLine.taxRate,
+      taxAmount: taxAmount !== undefined ? taxAmount : saleLine.taxAmount,
+      taxType: taxType || saleLine.taxType,
       price: price || saleLine.price,
       discount: discount || saleLine.discount,
       total: total || saleLine.total,
-      isActive: isActive || saleLine.isActive,
-      isGift: isGift || saleLine.isGift,
+      isActive: isActive !== undefined ? isActive : saleLine.isActive,
+      isGift: isGift !== undefined ? isGift : saleLine.isGift,
     });
 
     res.status(200).json(saleLine);
@@ -89,20 +94,20 @@ exports.deleteSaleLine = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const saleLine = await SaleLine.findByPk(id,{include: ['product'],});
+    const saleLine = await SaleLine.findByPk(id, { include: ['product'], });
 
     if (!saleLine) {
       return res.status(404).json({ message: 'Sale line not found' });
     }
-    logger.info("Sale line detail "+saleLine)
+    logger.info("Sale line detail " + saleLine)
     // ************* Reverse card ************* //
-    await headerService.cardReversal(saleLine.productId,id)
+    await headerService.cardReversal(saleLine.productId, id)
     // ************* Delete saleLine ************* //
     await saleLine.destroy();
 
     res.status(200).json();
   } catch (error) {
-    console.error("Error delete line "+error);
+    console.error("Error delete line " + error);
     res.status(500).json({ message: 'Server Error' });
   }
 };

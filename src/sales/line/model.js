@@ -13,6 +13,21 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: false,
             defaultValue: 1,
         },
+        taxRate: {
+            type: DataTypes.DOUBLE,
+            allowNull: false,
+            defaultValue: 0,
+        },
+        taxAmount: {
+            type: DataTypes.DOUBLE,
+            allowNull: false,
+            defaultValue: 0,
+        },
+        taxType: {
+            type: DataTypes.ENUM('INC', 'EXC'),
+            allowNull: false,
+            defaultValue: 'INC'
+        },
         exchangeRate: {
             type: DataTypes.DOUBLE,
             allowNull: false,

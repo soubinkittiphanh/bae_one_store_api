@@ -52,6 +52,11 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING,
             defaultValue: 0
         },
+        ticketQRcode: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false,
+        },
         isActive: {
             type: DataTypes.BOOLEAN,
             allowNull: false,

@@ -8,7 +8,7 @@ const axios = require('axios');
  * Handles QR code generation requests and responses
  */
 class QRController {
-    
+
     /**
      * Create QR Request and Generate QR Code from Bank
      * POST /api/qr/generate
@@ -21,15 +21,20 @@ class QRController {
                 purposeOfTxn,
                 billNumber,
                 merchantId,
+                password,
                 storeLabel,
-                terminalLabel
+                terminalLabel,
+                callbackUrl: requestedCallbackUrl
             } = req.body;
 
             // Validate required fields
-            if (!memberId || !txnAmount || !billNumber || !merchantId || !storeLabel || !terminalLabel) {
+            const requiredFields = ['txnAmount', 'billNumber', 'merchantId', 'storeLabel', 'terminalLabel'];
+            const missingFields = requiredFields.filter(field => !req.body[field]);
+
+            if (missingFields.length > 0) {
                 return res.status(400).json({
                     success: false,
-                    message: 'Missing required fields: memberId, txnAmount, billNumber, merchantId, storeLabel, terminalLabel'
+                    message: `Missing required fields: ${missingFields.join(', ')}`
                 });
             }
 
@@ -43,8 +48,8 @@ class QRController {
             // Generate memberDateTime (YYYYMMDDHHmmss)
             const memberDateTime = generateDateTime();
 
-            // Auto-set callback URL from environment variable
-            const callbackUrl = `http://150.95.31.23:8921/api/v1/direct/callback`;
+            // Auto-set callback URL from body or default fallback
+            const callbackUrl = requestedCallbackUrl || `http://150.95.31.23:8921/api/v1/direct/callback`;
 
             logger.info(`Using callback URL: ${callbackUrl}`);
 
@@ -72,6 +77,7 @@ class QRController {
                     purposeOfTxn: purposeOfTxn || '',
                     billNumber,
                     merchantId,
+                    password,
                     storeLabel,
                     terminalLabel,
                     memberDateTime,
@@ -147,7 +153,7 @@ class QRController {
     async handleCallback(req, res) {
         try {
             const callbackData = req.body;
-            
+
             logger.info('Received payment callback:', JSON.stringify(callbackData));
 
             const {
@@ -256,8 +262,8 @@ class QRController {
             }
 
             // Check if payment has been made
-            const latestCallback = qrRequest.callbacks && qrRequest.callbacks.length > 0 
-                ? qrRequest.callbacks[0] 
+            const latestCallback = qrRequest.callbacks && qrRequest.callbacks.length > 0
+                ? qrRequest.callbacks[0]
                 : null;
 
             const paymentStatus = {
@@ -469,12 +475,12 @@ class QRController {
  */
 async function callBankAPI(requestData) {
     try {
-        // Bank API credentials (hardcoded for testing)
         const bankApiUrl = 'https://ibapigwuat.iblaos.com/IBInterBankServices';
-        const bankMemberId = 'KOKKOKMOV';
-        const bankPassword = '2RBKKUO6PHZ3XYOUSIGFH5W8Y5T71X362EWJ0DFYBYKNANABW4';
+        // Use provided credentials or fallback to hardcoded defaults
+        const bankMemberId = requestData.memberId || 'KOKKOKMOV';
+        const bankPassword = requestData.password || '2RBKKUO6PHZ3XYOUSIGFH5W8Y5T71X362EWJ0DFYBYKNANABW4';
 
-        logger.info('Attempting to login to bank API...');
+        logger.info(`Attempting to login to bank API as ${bankMemberId}...`);
 
         // Step 1: Login to get token
         const loginResponse = await axios.post(`${bankApiUrl}/member/login`, {
@@ -524,7 +530,7 @@ function generateDateTime() {
     const hours = String(now.getHours()).padStart(2, '0');
     const minutes = String(now.getMinutes()).padStart(2, '0');
     const seconds = String(now.getSeconds()).padStart(2, '0');
-    
+
     return `${year}${month}${day}${hours}${minutes}${seconds}`;
 }
 

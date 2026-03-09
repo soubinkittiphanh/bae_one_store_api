@@ -64,6 +64,7 @@ module.exports = (sequelize, DataTypes) => {
         SaleHeader.belongsTo(models.orderTable, { foreignKey: 'orderTableId', as: 'orderTable' });
         SaleHeader.belongsTo(models.washjob, { foreignKey: 'washJobId', as: 'washJob' });
         SaleHeader.belongsTo(models.customer, { foreignKey: 'customerId', as: 'customer' });
+        SaleHeader.belongsTo(models.QRRequest, { foreignKey: 'qrRequestId', as: 'qrRequest' });
         SaleHeader.hasMany(models.saleLine, { as: 'lines' });
         SaleHeader.belongsTo(models.ticket, {
             foreignKey: 'ticketId',

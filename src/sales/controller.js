@@ -40,16 +40,16 @@ const WashJob = require('../models').washjob;
 
 const validateStockForLines = async (lines, locationId) => {
   logger.info(`Starting stock validation for ${lines.length} lines`);
-  
+
   const stockValidationErrors = [];
-  
+
   for (const line of lines) {
     // Check if this line requires stock validation
     if (line.validateStockOnSale === 1) {
       logger.info(`Validating stock for line with productId: ${line.productId}`);
-      
+
       const requiredQty = line.unitRate * line.quantity;
-      
+
       // Check available cards/stock for this product at this location
       const availableCards = await Card.findAll({
         where: {
@@ -61,9 +61,9 @@ const validateStockForLines = async (lines, locationId) => {
         },
         order: [['createdAt', 'DESC']]
       });
-      
+
       logger.info(`Product ${line.productId} requires ${requiredQty} units, available: ${availableCards.length}`);
-      
+
       if (availableCards.length < requiredQty) {
         stockValidationErrors.push({
           productId: line.productId,
@@ -76,7 +76,7 @@ const validateStockForLines = async (lines, locationId) => {
       logger.info(`Skipping stock validation for line with productId: ${line.productId} (validateStockOnSale: ${line.validateStockOnSale})`);
     }
   }
-  
+
   return stockValidationErrors;
 };
 
@@ -114,18 +114,19 @@ const autoCreateStock = async (lines, locationId) => {
 
 exports.createSaleHeaderOnly = async (req, res) => {
   try {
-    let { 
-      bookingDate, 
-      remark, 
-      discount, 
-      total, 
-      exchangeRate, 
-      isActive, 
-      clientId, 
-      paymentId, 
-      currencyId, 
-      userId, 
-      referenceNo, 
+    let {
+      bookingDate,
+      qrRequestId,
+      remark,
+      discount,
+      total,
+      exchangeRate,
+      isActive,
+      clientId,
+      paymentId,
+      currencyId,
+      userId,
+      referenceNo,
       locationId,
       lines // Added lines parameter for stock validation
     } = req.body;
@@ -135,25 +136,25 @@ exports.createSaleHeaderOnly = async (req, res) => {
     // Validate stock for lines if lines are provided
     if (lines && lines.length > 0) {
       logger.info("Validating stock for provided lines before creating sale header");
-      
+
       // Check if auto stock creation is needed
       // await autoCreateStock(lines, locationId);
-      
+
       // Validate stock for lines that require validation
       const stockValidationErrors = await validateStockForLines(lines, locationId);
-      
+
       if (stockValidationErrors.length > 0) {
         logger.error(`Stock validation failed: ${JSON.stringify(stockValidationErrors)}`);
         return res.status(400).json({
           success: false,
           message: 'Insufficient stock for some items',
           stockErrors: stockValidationErrors,
-          details: stockValidationErrors.map(err => 
+          details: stockValidationErrors.map(err =>
             `Product ${err.productId}: Need ${err.required}, Available ${err.available}, Short ${err.shortage}`
           )
         });
       }
-      
+
       logger.info("Stock validation passed for all lines requiring validation");
     }
 
@@ -165,7 +166,7 @@ exports.createSaleHeaderOnly = async (req, res) => {
     // For multi-payment, we need to either:
     // 1. Use a valid default payment ID, or 
     // 2. Set paymentId to null (if your DB allows it)
-    
+
     // Option 1: Find the first available payment method as temporary
     let tempPaymentId = paymentId;
     if (!tempPaymentId) {
@@ -173,7 +174,7 @@ exports.createSaleHeaderOnly = async (req, res) => {
         where: { isActive: true },
         order: [['id', 'ASC']]
       });
-      
+
       if (firstPayment) {
         tempPaymentId = firstPayment.id;
         logger.info(`Using temporary payment ID: ${tempPaymentId}`);
@@ -197,19 +198,20 @@ exports.createSaleHeaderOnly = async (req, res) => {
     }
 
     // Create sale header with valid payment ID
-    const saleHeader = await SaleHeader.create({ 
-      bookingDate, 
-      remark, 
-      discount, 
-      total, 
-      exchangeRate, 
-      isActive, 
-      clientId, 
+    const saleHeader = await SaleHeader.create({
+      bookingDate,
+      qrRequestId,
+      remark,
+      discount,
+      total,
+      exchangeRate,
+      isActive,
+      clientId,
       paymentId: null, // Set to null as discussed
-      currencyId, 
-      userId, 
-      referenceNo, 
-      locationId 
+      currencyId,
+      userId,
+      referenceNo,
+      locationId
     });
 
     logger.info(`Sale header created successfully with ID: ${saleHeader.id}`);
@@ -234,7 +236,7 @@ exports.createSaleHeaderOnly = async (req, res) => {
 };
 exports.createSaleLineOnly = async (req, res) => {
   try {
-    let { 
+    let {
       id,
       lines,
       locationId,
@@ -289,7 +291,7 @@ exports.createSaleLineOnly = async (req, res) => {
           success: false,
           message: 'Insufficient stock for some items',
           stockErrors: stockValidationErrors,
-          details: stockValidationErrors.map(err => 
+          details: stockValidationErrors.map(err =>
             `Product ${err.productId}: Need ${err.required}, Available ${err.available}, Short ${err.shortage}`
           )
         });
@@ -309,24 +311,24 @@ exports.createSaleLineOnly = async (req, res) => {
       try {
         // Assign header ID to lines
         const linesWithHeaderId = await assignHeaderId(lines, id, lockingSessionId, false, locationId);
-        
+
         // Create bulk sale lines - DON'T pass res to avoid double response
         await lineService.createBulkSaleLine(res, linesWithHeaderId, lockingSessionId);
         linesCreated = true;
-        
+
         logger.info(`Sale lines created successfully for header ID: ${id}`);
-        
+
       } catch (error) {
         logger.error("Error creating sale lines: " + error);
         errorList.push(error);
         throw error; // Re-throw to trigger transaction rollback
       }
 
-      return { 
-        id, 
-        linesCreated, 
+      return {
+        id,
+        linesCreated,
         linesCount: lines.length,
-        lockingSessionId 
+        lockingSessionId
       };
     });
 
@@ -347,7 +349,7 @@ exports.createSaleLineOnly = async (req, res) => {
 
   } catch (error) {
     logger.error(`Error creating sale lines only: ${error}`);
-    
+
     // Check if response was already sent
     if (!res.headersSent) {
       res.status(500).json({
@@ -368,24 +370,24 @@ exports.completeSaleWithLines = async (req, res) => {
 
     // Find the existing sale header
     const saleHeader = await SaleHeader.findByPk(saleHeaderId);
-    
+
     if (!saleHeader) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Sale header not found' 
+      return res.status(404).json({
+        success: false,
+        message: 'Sale header not found'
       });
     }
 
     // Validate stock for lines that require validation
     const stockValidationErrors = await validateStockForLines(lines, locationId);
-    
+
     if (stockValidationErrors.length > 0) {
       logger.error(`Stock validation failed during sale completion: ${JSON.stringify(stockValidationErrors)}`);
       return res.status(400).json({
         success: false,
         message: 'Insufficient stock for some items during completion',
         stockErrors: stockValidationErrors,
-        details: stockValidationErrors.map(err => 
+        details: stockValidationErrors.map(err =>
           `Product ${err.productId}: Need ${err.required}, Available ${err.available}, Short ${err.shortage}`
         )
       });
@@ -402,11 +404,11 @@ exports.completeSaleWithLines = async (req, res) => {
       try {
         const linesWithHeaderId = await assignHeaderId(lines, saleHeaderId, lockingSessionId, false, locationId);
         await lineService.createBulkSaleLineWithoutRes(linesWithHeaderId, lockingSessionId);
-        
+
         // Update sale header to mark as completed
-        await saleHeader.update({ 
+        await saleHeader.update({
           remark: 'Multi-payment transaction completed',
-          isActive: true 
+          isActive: true
         }, { transaction: t });
 
       } catch (error) {
@@ -422,7 +424,7 @@ exports.completeSaleWithLines = async (req, res) => {
     await updateProductStockCount(lines);
 
     logger.info(`Sale completion transaction successful for ${saleHeaderId}`);
-    
+
     res.status(200).json({
       success: true,
       message: 'Sale completed successfully with payment processing',
@@ -432,7 +434,7 @@ exports.completeSaleWithLines = async (req, res) => {
 
   } catch (error) {
     logger.error(`Error completing sale: ${error}`);
-    
+
     // If there was an error, mark the sale header for review
     try {
       await SaleHeader.update(
@@ -454,32 +456,32 @@ exports.completeSaleWithLines = async (req, res) => {
 
 exports.createSaleHeader = async (req, res) => {
   try {
-    let { bookingDate, remark, discount, total, exchangeRate, isActive, lines, clientId, paymentId, currencyId, userId, referenceNo, locationId, customerForm } = req.body;
+    let { bookingDate, qrRequestId, remark, discount, total, exchangeRate, isActive, lines, clientId, paymentId, currencyId, userId, referenceNo, locationId, customerForm } = req.body;
     logger.info("===== Create Sale Header =====" + req.body);
-    
+
     //------------ Check if stock check is require before sale process
     logger.warn(`====>  lines     ${JSON.stringify(lines)}`);
-    
+
     // Validate stock using the new approach
     const stockValidationErrors = await validateStockForLines(lines, locationId);
-    
+
     if (stockValidationErrors.length > 0) {
       logger.error(`Stock validation failed: ${JSON.stringify(stockValidationErrors)}`);
       return res.status(400).json({
         success: false,
         message: 'Insufficient stock for some items',
         stockErrors: stockValidationErrors,
-        details: stockValidationErrors.map(err => 
+        details: stockValidationErrors.map(err =>
           `Product ${err.productId}: Need ${err.required}, Available ${err.available}, Short ${err.shortage}`
         )
       });
     }
-    
+
     const checking = await autoCreateStock(lines, locationId);
-    
+
     const result = await sequelize.transaction(async (t) => {
       logger.warn(`SALE HEADER: ${JSON.stringify(req.body)}`);
-      const saleHeader = await SaleHeader.create({ bookingDate, remark, discount, total, exchangeRate, isActive, clientId, paymentId, currencyId, userId, referenceNo, locationId }, { transaction: t });
+      const saleHeader = await SaleHeader.create({ bookingDate, qrRequestId, remark, discount, total, exchangeRate, isActive, clientId, paymentId, currencyId, userId, referenceNo, locationId }, { transaction: t });
       let customer = null;
 
       if (customerForm) {
@@ -489,14 +491,14 @@ exports.createSaleHeader = async (req, res) => {
         customerForm.saleHeaderId = saleHeader.id;
         customer = await Customer.create(customerForm, { transaction: t });
       }
-      
+
       logger.info(`*************Sale header ${saleHeader.id} *************`);
       // **********************
       //  Line with headerId
       // **********************
       const lockingSessionId = common.generateLockingSessionId();
       const errorList = [];
-      
+
       try {
         const linesWithHeaderId = await assignHeaderId(lines, saleHeader.id, lockingSessionId, false, locationId);
         lineService.createBulkSaleLine(res, linesWithHeaderId, lockingSessionId);
@@ -508,16 +510,16 @@ exports.createSaleHeader = async (req, res) => {
         res.status(500).send("Unfortunately " + error);
         errorList.push(error);
       }
-      
+
       const reversalRequire = errorList.length > 0 ? true : false;
       return { customer, saleHeader, reversalRequire };
     });
-    
+
     if (result.reversalRequire) {
       await headerService.saleHeaderReversal(result.saleHeader.id);
       return logger.warn(`Transaction reversed`);
     }
-    
+
     logger.info(`Transaction complete ${result}`);
   } catch (error) {
     logger.error(`Error occurs ${error}`);
@@ -529,13 +531,13 @@ exports.updateSaleHeaderV2 = async (req, res) => {
   try {
     const { id } = req.params;
     const { bookingDate, remark, discount, total, exchangeRate, isActive, lines, clientId, paymentId, currencyId, userId, locationId } = req.body;
-    
+
     const saleHeader = await SaleHeader.findByPk(id);
     if (!saleHeader) {
       logger.error("Order Id " + id + ' is not found');
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Sale header not found' 
+      return res.status(404).json({
+        success: false,
+        message: 'Sale header not found'
       });
     }
 
@@ -550,59 +552,59 @@ exports.updateSaleHeaderV2 = async (req, res) => {
         success: false,
         message: 'Insufficient stock for some items',
         stockErrors: stockValidationErrors,
-        details: stockValidationErrors.map(err => 
+        details: stockValidationErrors.map(err =>
           `Product ${err.productId}: Need ${err.required}, Available ${err.available}, Short ${err.shortage}`
         )
       });
     }
 
     const checking = await autoCreateStock(lines, locationId);
-    
+
     const result = await sequelize.transaction(async (t) => {
       logger.info("Updating header");
       const lockingSessionId = common.generateLockingSessionId();
       await assignHeaderId(lines, id, lockingSessionId, true, locationId);
-      
+
       // ********** Classify new or old saleLine ********** //
       const saleLineForCreate = lines.filter(el => el['id'] == null);
       logger.warn(`SaleLine for create count is ${saleLineForCreate.length}`);
-      
+
       if (saleLineForCreate.length > 0) {
         await lineService.createBulkSaleLineWithoutRes(saleLineForCreate, lockingSessionId);
       }
-      
-      const updatedSaleHeader = await saleHeader.update({ 
-        bookingDate, 
-        remark, 
-        discount, 
-        total, 
-        exchangeRate, 
-        isActive, 
-        lines, 
-        clientId, 
-        paymentId, 
-        currencyId, 
-        userId 
+
+      const updatedSaleHeader = await saleHeader.update({
+        bookingDate,
+        remark,
+        discount,
+        total,
+        exchangeRate,
+        isActive,
+        lines,
+        clientId,
+        paymentId,
+        currencyId,
+        userId
       }, { transaction: t });
-      
+
       logger.info(`Update transaction completed ${updatedSaleHeader}`);
-      
+
       // ************* UPDATE PRODUCT STOCK COUNT *************//
       updateProductStockCount(lines);
-      
+
       return { saleHeader: updatedSaleHeader };
     });
 
     // Send success response in the same format as create function
     logger.info(`Transaction complete ${result}`);
-    
+
     // Format response similar to create function success message
     const successMessage = `Successfully updated sale header - ${result.saleHeader.id}`;
     res.status(200).send(`${successMessage} - ${result.saleHeader.id}`);
-    
+
   } catch (error) {
     logger.error("Cannot update data " + error);
-    
+
     // Handle different error types similar to create function
     if (error.name === 'SequelizeValidationError') {
       return res.status(400).json({
@@ -611,7 +613,7 @@ exports.updateSaleHeaderV2 = async (req, res) => {
         details: error.errors.map(err => err.message)
       });
     }
-    
+
     // Send error response in consistent format
     res.status(500).json({
       success: false,
@@ -766,8 +768,8 @@ const assignHeaderId = async (lines, id, lockingSessionId, isUpdate, locationId)
     iterator.saleHeaderId = id;
 
     // Use iterator.product.validateStockOnSale if it's nested, or directly
-    const shouldValidate = iterator.validateStockOnSale === 1 || 
-                           (iterator.product && iterator.product.validateStockOnSale);
+    const shouldValidate = iterator.validateStockOnSale === 1 ||
+      (iterator.product && iterator.product.validateStockOnSale);
 
     if (shouldValidate) {
       try {
@@ -775,8 +777,8 @@ const assignHeaderId = async (lines, id, lockingSessionId, isUpdate, locationId)
         if (!iterator.id) {
           const qtyToLock = (iterator.unitRate || 1) * iterator.quantity;
           await reserveCard(iterator, lockingSessionId, qtyToLock, locationId);
-        } 
-        
+        }
+
         // CASE 2: EXISTING LINE (Update mode)
         else {
           // Find how many cards are ALREADY linked to this saleLine
@@ -792,16 +794,16 @@ const assignHeaderId = async (lines, id, lockingSessionId, isUpdate, locationId)
             } else if (currentRequiredQty < actualLinkedCount) {
               const releaseCount = actualLinkedCount - currentRequiredQty;
               const cardsToRelease = previousCards.slice(0, releaseCount);
-              
-              await Card.update({ 
-                card_isused: 0, 
-                saleLineId: null, 
+
+              await Card.update({
+                card_isused: 0,
+                saleLineId: null,
                 locking_session_id: '' // Satisfy NOT NULL constraint
               }, {
                 where: { id: { [Op.in]: cardsToRelease.map(el => el.id) } }
               });
             }
-          } 
+          }
           // B. Product Swap: Release all old cards, lock all new cards
           else {
             if (actualLinkedCount > 0) {
@@ -849,8 +851,8 @@ const reserveCard = async (line, lockingSessionId, qty, locationId) => {
     throw new Error(`Insufficient stock for Product ${line.productId}`);
   }
 
-  await Card.update({ 
-    locking_session_id: lockingSessionId 
+  await Card.update({
+    locking_session_id: lockingSessionId
   }, {
     where: { id: { [Op.in]: cards.map(el => el.id) } }
   });
@@ -892,10 +894,10 @@ exports.getSaleHeadersByDate = async (req, res) => {
         {
           model: SalePayment,
           as: 'payments',
-          include:[
+          include: [
             {
               model: Payment,
-              as:'paymentMethod'
+              as: 'paymentMethod'
             }
           ]
         }
@@ -1067,6 +1069,7 @@ exports.getSaleHeadersByDateAndProduct = async (req, res) => {
         [sequelize.fn('SUM', sequelize.col('price')), 'totalPrice'],
         [sequelize.fn('SUM', sequelize.col('saleLine.total')), 'totalAmount'],
         [sequelize.fn('SUM', sequelize.col('quantity')), 'totalQTY'],
+        [sequelize.fn('SUM', sequelize.col('taxAmount')), 'totalTaxAmount'],
         [sequelize.fn('SUM', sequelize.col('header.discount')), 'totalDiscount'],
       ],
       group: ['productId'],
@@ -1282,38 +1285,39 @@ exports.sumSaleCurrentMonth = async (req, res) => {
 };
 exports.sumSaleCurrentYear = async (req, res) => {
   const date = JSON.parse(req.query.date);
-    const locationId = req.query.locationId;  // Get locationId directly
+  const locationId = req.query.locationId;  // Get locationId directly
   const includeCards = req.query.includeCards === 'true'; // Optional parameter
-  
+
   logger.warn("Date " + date.startDate + " " + date.endDate)
   const { startDate, endDate } = date
 
-  
+
   try {
     // Build the lines include dynamically
     const linesInclude = {
       model: SaleLine,
       as: "lines"
     };
-    
+
     // Only add cards if specifically requested
     if (includeCards) {
       linesInclude.include = ['cards'];
     }
-    
+
     const saleHeader = await SaleHeader.findAll({
       include: [
-        Customer, 
-        'payment', 
+        Customer,
+        'payment',
         'payments',
+        'qrRequest',
         linesInclude
       ],
-      attributes: ['id', 'discount', 'total', 'bookingDate','currencyId'],
+      attributes: ['id', 'discount', 'total', 'bookingDate', 'currencyId'],
       where: {
         bookingDate: {
           [Op.between]: [startDate, endDate],
         },
-        locationId:locationId,
+        locationId: locationId,
         isActive: true,
       }
     })
@@ -1328,14 +1332,14 @@ exports.getSaleHeadersByDateWithGifts = async (req, res) => {
   const date = JSON.parse(req.query.date);
   logger.warn("Gift Report - Date " + date.startDate + " " + date.endDate);
   logger.warn(`Gift Report - Request date ${date.startDate} userId ${req.user.id}`);
-  
+
   try {
     const saleHeaders = await SaleHeader.findAll({
       include: [
-        'user', 
-        'client', 
-        'payment', 
-        'currency', 
+        'user',
+        'client',
+        'payment',
+        'currency',
         'location',
         {
           model: Line,
@@ -1382,11 +1386,11 @@ exports.getSaleHeadersByDateWithGifts = async (req, res) => {
     const giftSaleHeaders = saleHeaders.map(header => {
       // Filter only gift lines
       const giftLines = header.lines.filter(line => line.isGift === 1);
-      
+
       // Calculate gift statistics
       const giftItemsCount = giftLines.length;
       const giftValue = giftLines.reduce((sum, line) => sum + line.total, 0);
-      
+
       return {
         ...header.toJSON(),
         giftItemsCount,
@@ -1397,7 +1401,7 @@ exports.getSaleHeadersByDateWithGifts = async (req, res) => {
 
     logger.info(`Found ${giftSaleHeaders.length} sale headers with gift items`);
     res.status(200).send(giftSaleHeaders);
-    
+
   } catch (error) {
     logger.error("===> Gift report filter by date error: " + error);
     res.status(500).send(error);
@@ -1412,14 +1416,14 @@ exports.getSaleHeadersByDateAndUserWithGifts = async (req, res) => {
   logger.warn("=============Loading gift saleHeader data=============");
   const date = JSON.parse(req.query.date);
   logger.warn(`Gift Report - Request date ${date.startDate} userId ${date.userId}`);
-  
+
   try {
     const saleHeaders = await SaleHeader.findAll({
       include: [
-        'user', 
-        'client', 
-        'payment', 
-        'currency', 
+        'user',
+        'client',
+        'payment',
+        'currency',
         Customer,
         {
           model: Line,
@@ -1487,11 +1491,11 @@ exports.getSaleHeadersByDateAndUserWithGifts = async (req, res) => {
     const giftSaleHeaders = saleHeaders.map(header => {
       // Filter only gift lines
       const giftLines = header.lines.filter(line => line.isGift === 1);
-      
+
       // Calculate gift statistics
       const giftItemsCount = giftLines.length;
       const giftValue = giftLines.reduce((sum, line) => sum + line.total, 0);
-      
+
       return {
         ...header.toJSON(),
         giftItemsCount,
@@ -1502,7 +1506,7 @@ exports.getSaleHeadersByDateAndUserWithGifts = async (req, res) => {
 
     logger.info(`Found ${giftSaleHeaders.length} sale headers with gift items for user ${date.userId}`);
     res.status(200).send(giftSaleHeaders);
-    
+
   } catch (error) {
     logger.error("===> Gift report filter by date and user error: " + error);
     res.status(500).send(error);
@@ -1516,7 +1520,7 @@ exports.getSaleHeadersByDateAndUserWithGifts = async (req, res) => {
 exports.getGiftStatsByDate = async (req, res) => {
   const date = JSON.parse(req.query.date);
   logger.warn("Gift Stats - Date " + date.startDate + " " + date.endDate);
-  
+
   try {
     // Get gift lines with their headers for the date range
     const giftLines = await SaleLine.findAll({
@@ -1593,7 +1597,7 @@ exports.getGiftStatsByDate = async (req, res) => {
 
     logger.info(`Gift stats calculated: ${stats.summary.totalGiftItems} items, ${stats.summary.totalGiftValue} value`);
     res.status(200).json(stats);
-    
+
   } catch (error) {
     logger.error("===> Gift stats error: " + error);
     res.status(500).send(error);
@@ -1607,7 +1611,7 @@ exports.getGiftStatsByDate = async (req, res) => {
 exports.getGiftsByCustomer = async (req, res) => {
   const date = JSON.parse(req.query.date);
   logger.warn("Gift by Customer - Date " + date.startDate + " " + date.endDate);
-  
+
   try {
     const giftsByCustomer = await SaleHeader.findAll({
       attributes: [
@@ -1645,7 +1649,7 @@ exports.getGiftsByCustomer = async (req, res) => {
 
     logger.info(`Found gift data for ${giftsByCustomer.length} customers`);
     res.status(200).json(giftsByCustomer);
-    
+
   } catch (error) {
     logger.error("===> Gift by customer error: " + error);
     res.status(500).send(error);
@@ -1659,7 +1663,7 @@ exports.getGiftsByCustomer = async (req, res) => {
 exports.getGiftTrends = async (req, res) => {
   const date = JSON.parse(req.query.date);
   logger.warn("Gift Trends - Date " + date.startDate + " " + date.endDate);
-  
+
   try {
     const giftTrends = await SaleLine.findAll({
       attributes: [
@@ -1691,7 +1695,7 @@ exports.getGiftTrends = async (req, res) => {
 
     logger.info(`Gift trends calculated for ${giftTrends.length} months`);
     res.status(200).json(giftTrends);
-    
+
   } catch (error) {
     logger.error("===> Gift trends error: " + error);
     res.status(500).send(error);
@@ -1705,9 +1709,9 @@ exports.getGiftTrends = async (req, res) => {
 exports.addGiftToSale = async (req, res) => {
   try {
     const { saleHeaderId, productId, quantity, unitRate, remark } = req.body;
-    
+
     logger.info(`Adding gift to sale ${saleHeaderId}: Product ${productId}, Qty ${quantity}`);
-    
+
     // Validate sale header exists
     const saleHeader = await SaleHeader.findByPk(saleHeaderId);
     if (!saleHeader) {
@@ -1716,7 +1720,7 @@ exports.addGiftToSale = async (req, res) => {
         message: 'Sale header not found'
       });
     }
-    
+
     // Validate product exists
     const product = await Product.findByPk(productId);
     if (!product) {
@@ -1725,7 +1729,7 @@ exports.addGiftToSale = async (req, res) => {
         message: 'Product not found'
       });
     }
-    
+
     const result = await sequelize.transaction(async (t) => {
       // Create gift sale line
       const giftLine = await SaleLine.create({
@@ -1740,22 +1744,22 @@ exports.addGiftToSale = async (req, res) => {
         isGift: 1, // Mark as gift
         isActive: true
       }, { transaction: t });
-      
+
       // Update sale header remark to indicate gift was added
       const currentRemark = saleHeader.remark || '';
-      const newRemark = currentRemark + (currentRemark ? '; ' : '') + 
-        `Gift added: ${product.name} (${quantity})` + 
+      const newRemark = currentRemark + (currentRemark ? '; ' : '') +
+        `Gift added: ${product.name} (${quantity})` +
         (remark ? ` - ${remark}` : '');
-      
+
       await saleHeader.update({
         remark: newRemark
       }, { transaction: t });
-      
+
       return { giftLine, saleHeader };
     });
-    
+
     logger.info(`Gift line created successfully: ${result.giftLine.id}`);
-    
+
     res.status(201).json({
       success: true,
       message: 'Gift added to sale successfully',
@@ -1764,7 +1768,7 @@ exports.addGiftToSale = async (req, res) => {
         saleHeader: result.saleHeader
       }
     });
-    
+
   } catch (error) {
     logger.error(`Error adding gift to sale: ${error}`);
     res.status(500).json({
@@ -1783,9 +1787,9 @@ exports.removeGiftFromSale = async (req, res) => {
   try {
     const { saleLineId } = req.params;
     const { remark } = req.body;
-    
+
     logger.info(`Removing gift sale line: ${saleLineId}`);
-    
+
     // Find the gift line
     const giftLine = await SaleLine.findOne({
       where: {
@@ -1804,43 +1808,43 @@ exports.removeGiftFromSale = async (req, res) => {
         }
       ]
     });
-    
+
     if (!giftLine) {
       return res.status(404).json({
         success: false,
         message: 'Gift line not found'
       });
     }
-    
+
     const result = await sequelize.transaction(async (t) => {
       // Mark gift line as inactive
       await giftLine.update({
         isActive: false,
         remark: `Removed: ${remark || 'Gift removed by staff'}`
       }, { transaction: t });
-      
+
       // Update sale header remark
       const saleHeader = giftLine.header;
       const currentRemark = saleHeader.remark || '';
-      const newRemark = currentRemark + (currentRemark ? '; ' : '') + 
+      const newRemark = currentRemark + (currentRemark ? '; ' : '') +
         `Gift removed: ${giftLine.product.name}` +
         (remark ? ` - ${remark}` : '');
-      
+
       await saleHeader.update({
         remark: newRemark
       }, { transaction: t });
-      
+
       return { giftLine, saleHeader };
     });
-    
+
     logger.info(`Gift line removed successfully: ${saleLineId}`);
-    
+
     res.status(200).json({
       success: true,
       message: 'Gift removed from sale successfully',
       data: result
     });
-    
+
   } catch (error) {
     logger.error(`Error removing gift from sale: ${error}`);
     res.status(500).json({

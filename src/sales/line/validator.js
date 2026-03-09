@@ -4,6 +4,9 @@ const { body, validationResult } = require('express-validator');
 exports.createSaleLine = [
   body('quantity').isNumeric().withMessage('Quantity must be a number'),
   body('unitRate').isNumeric().withMessage('Unit rate must be a number'),
+  body('taxRate').isNumeric().withMessage('Tax rate must be a number'),
+  body('taxAmount').isNumeric().withMessage('Tax amount must be a number'),
+  body('taxType').isIn(['INC', 'EXC']).withMessage('Tax type must be INC or EXC'),
   body('price').isNumeric().withMessage('Price must be a number'),
   body('discount').isNumeric().withMessage('Discount must be a number'),
   body('total').isNumeric().withMessage('Total must be a number'),
