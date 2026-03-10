@@ -105,6 +105,7 @@ const createProd = async (req, imagesObj) => {
     const barCode = body.barCode;
     const receiveUnitId = body.receiveUnitId;
     const stockUnitId = body.stockUnitId;
+    const baseUnitId = body.baseUnitId;
     const minStock = body.minStock;
     const costCurrencyId = body.costCurrencyId;
     const saleCurrencyId = body.saleCurrencyId;
@@ -133,10 +134,10 @@ const createProd = async (req, imagesObj) => {
   INSERT INTO product (
     pro_category, pro_id, pro_name, pro_price, pro_desc, pro_status, 
     retail_cost_percent, cost_price, locking_session_id, createdAt, 
-    updateTimestamp, minStock, barCode, receiveUnitId, stockUnitId, 
+    updateTimestamp, minStock, barCode, receiveUnitId, stockUnitId, baseUnitId,
     costCurrencyId, saleCurrencyId, isActive, companyId
   )
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 `;
 
             // Values array to pass into the query
@@ -156,6 +157,7 @@ const createProd = async (req, imagesObj) => {
                 barCode,
                 receiveUnitId,
                 stockUnitId,
+                baseUnitId,
                 costCurrencyId,
                 saleCurrencyId,
                 isActive,
@@ -212,7 +214,7 @@ const createProdV1 = async (req, imagesObj) => {
         logger.info(`*************** CREATE PRODUCT SERVICE 2 ${JSON.stringify(req.body)} ***************`);
         logger.info(`*************Payload: ${req.body.FORM}*****************`);
         logger.info(req.body.FORM);
-        
+
         const body = JSON.parse(req.body.FORM);
         const pro_cat = body.pro_category;
         let pro_id = body.pro_id;
@@ -239,7 +241,7 @@ const createProdV1 = async (req, imagesObj) => {
         const vendorName = body.vendorName;
         const category = body._category; // 'product' or 'service'
         const durationMinutes = body.duration_minutes || 0;
-        
+
         // ✅ ADD: Extract tax information
         const taxId = body.taxId || null; // Tax ID from frontend
         const calculatedTaxAmount = body.calculatedTaxAmount || 0;
@@ -358,6 +360,7 @@ const updateProd = async (req, imagesObj) => {
     const barCode = body.barCode;
     const receiveUnitId = body.receiveUnitId;
     const stockUnitId = body.stockUnitId;
+    const baseUnitId = body.baseUnitId;
     const costCurrencyId = body.costCurrencyId;
     const saleCurrencyId = body.saleCurrencyId;
     const isActive = body.isActive;
@@ -416,6 +419,7 @@ const updateProd = async (req, imagesObj) => {
       barCode = ?, 
       receiveUnitId = ?, 
       stockUnitId = ?, 
+      baseUnitId = ?,
       saleCurrencyId = ?, 
       costCurrencyId = ?, 
       companyId = ?,
@@ -442,6 +446,7 @@ const updateProd = async (req, imagesObj) => {
         barCode,
         receiveUnitId,
         stockUnitId,
+        baseUnitId,
         saleCurrencyId,
         costCurrencyId,
         companyId,
@@ -453,7 +458,7 @@ const updateProd = async (req, imagesObj) => {
     ];
 
     logger.info(`************* UPDATE PRODUCT ${sqlCom} *****************`);
-    logger.info(`Values array: ${JSON.stringify(values)}` );
+    logger.info(`Values array: ${JSON.stringify(values)}`);
     logger.info(`************* COMMAND ${JSON.stringify(sqlComImages)} *****************`);
     logger.info(`*************Payload: ${JSON.stringify(imagesObj)} *****************`);
     logger.info("Final category:", category);

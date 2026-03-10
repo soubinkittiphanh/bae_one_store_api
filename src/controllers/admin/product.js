@@ -2,146 +2,148 @@ const logger = require('../../api/logger');
 const Db = require('../../config/dbcon');
 
 const createProd = async (req, res) => {
-    // Get the current date and time
-    let date = new Date();
-    // Convert the date and time to format
-    let mysqlDateTime = date.getFullYear() + '-' +
-        ('00' + (date.getMonth() + 1)).slice(-2) + '-' +
-        ('00' + date.getDate()).slice(-2) + ' ' +
-        ('00' + date.getHours()).slice(-2) + ':' +
-        ('00' + date.getMinutes()).slice(-2) + ':' +
-        ('00' + date.getSeconds()).slice(-2);
-    logger.info("===> sql time " + mysqlDateTime); // Outputs: YYYY-MM-DD HH:MM:SS
-    logger.info("*************** CREATE PRODUCT  ***************");
-    logger.info(`*************Payload: *****************`);
-    logger.info(req.body.FORM);
-    const body = JSON.parse(req.body.FORM);
-    const pro_cat = body.pro_category;
-    let pro_id = body.pro_id;
-    const pro_name = body.pro_name;
-    const pro_price = body.pro_price;
-    const pro_desc = body.pro_desc;
-    const pro_status = +body.pro_status;
-    const image_path = req.body.imagesObj;
-    const costPrice = body.pro_cost_price;
-    const timestamps = new Date();
-    const mysqlDatetime = timestamps.toISOString().slice(0, 19).replace('T', ' ');
-    const barCode = body.barCode;
-    const receiveUnitId = body.receiveUnitId;
-    const stockUnitId = body.stockUnitId;
-    const minStock = body.minStock;
-    const costCurrencyId = body.costCurrencyId;
-    const saleCurrencyId = body.saleCurrencyId;
-    const retail_percent = body.pro_retail_price || 0.0;
-    const locking_session_id = Date.now()
-    const isActive = body.isActive;
-    const companyId = body.companyId;
-    // return res.send("Okay")
-    // const timestamps = new Date();
-    let sqlComImages = 'INSERT INTO image_path(pro_id, img_name, img_path,createdAt,updateTimestamp,productId )VALUES';
-    logger.info("************* CREATE PRODUCT *****************");
-    logger.info(`*************Payload: ${image_path} *****************`);/// test upload
-    //*****************  QUERY LAST PRODUCT ID SQL  *****************//
-    Db.query('SELECT MAX(pro_id) AS ID FROM product HAVING MAX(pro_id) IS NOT NULL', (er, re) => {
-        logger.info("=====> Processing product db");
-        if (er) return res.send("Error: " + er)
-        if (re.length < 1) pro_id = 1000;
-        else pro_id = parseInt(re[0]['ID']) + 1
-        const sqlCom = `INSERT INTO product(pro_category, pro_id, pro_name, pro_price, pro_desc, pro_status,retail_cost_percent,cost_price,
-            locking_session_id,createdAt,updateTimestamp,minStock,barCode,receiveUnitId,stockUnitId,costCurrencyId,saleCurrencyId,isActive,companyId)
-        VALUES('${pro_cat}','${pro_id}','${pro_name}','${pro_price}','${pro_desc}','${pro_status}','${retail_percent}','${costPrice}',${locking_session_id},'${mysqlDateTime}','${mysqlDateTime}',${minStock},'${barCode}',${receiveUnitId},${stockUnitId},${costCurrencyId},${saleCurrencyId},${isActive},${companyId});`
-        //*****************  INSERT PRODUCT SQL  *****************//
-        logger.info("SQL CREATE PRODUCT CONTROLLER: " + sqlCom);
-        Db.query(sqlCom, (er, re) => {
-            logger.info("Execute:=>");
-            if (er) {
-                // res.status(503).({"Error":er});
-                res.status(201).send('Error ' + er);
-            } else if (re) {
-                const productId = re.insertId;
-                image_path.forEach((i, idx, element) => {
-                    if (idx === element.length - 1) sqlComImages += `(${pro_id},'${i.name}','${i.path}','${mysqlDatetime}','${mysqlDatetime}','${productId}');`;
-                    else sqlComImages += `(${pro_id},'${i.name}','${i.path}','${mysqlDatetime}','${mysqlDatetime}','${productId}'),`;
-                });
-                //*****************  INSERT IMAGES SQL  *****************//
-                Db.query(sqlComImages, (er, re) => {
-                    if (er) return res.status(201).send("Error: " + er);
-                    res.status(200).send("Transaction completed");
-                    //-------- update image producId ----
-                    updateImageProductId()
-                });
-            }
-        })
+  // Get the current date and time
+  let date = new Date();
+  // Convert the date and time to format
+  let mysqlDateTime = date.getFullYear() + '-' +
+    ('00' + (date.getMonth() + 1)).slice(-2) + '-' +
+    ('00' + date.getDate()).slice(-2) + ' ' +
+    ('00' + date.getHours()).slice(-2) + ':' +
+    ('00' + date.getMinutes()).slice(-2) + ':' +
+    ('00' + date.getSeconds()).slice(-2);
+  logger.info("===> sql time " + mysqlDateTime); // Outputs: YYYY-MM-DD HH:MM:SS
+  logger.info("*************** CREATE PRODUCT  ***************");
+  logger.info(`*************Payload: *****************`);
+  logger.info(req.body.FORM);
+  const body = JSON.parse(req.body.FORM);
+  const pro_cat = body.pro_category;
+  let pro_id = body.pro_id;
+  const pro_name = body.pro_name;
+  const pro_price = body.pro_price;
+  const pro_desc = body.pro_desc;
+  const pro_status = +body.pro_status;
+  const image_path = req.body.imagesObj;
+  const costPrice = body.pro_cost_price;
+  const timestamps = new Date();
+  const mysqlDatetime = timestamps.toISOString().slice(0, 19).replace('T', ' ');
+  const barCode = body.barCode;
+  const receiveUnitId = body.receiveUnitId;
+  const stockUnitId = body.stockUnitId;
+  const minStock = body.minStock;
+  const costCurrencyId = body.costCurrencyId;
+  const saleCurrencyId = body.saleCurrencyId;
+  const retail_percent = body.pro_retail_price || 0.0;
+  const locking_session_id = Date.now()
+  const isActive = body.isActive;
+  const companyId = body.companyId;
+  const baseUnitId = body.baseUnitId;
+  // return res.send("Okay")
+  // const timestamps = new Date();
+  let sqlComImages = 'INSERT INTO image_path(pro_id, img_name, img_path,createdAt,updateTimestamp,productId )VALUES';
+  logger.info("************* CREATE PRODUCT *****************");
+  logger.info(`*************Payload: ${image_path} *****************`);/// test upload
+  //*****************  QUERY LAST PRODUCT ID SQL  *****************//
+  Db.query('SELECT MAX(pro_id) AS ID FROM product HAVING MAX(pro_id) IS NOT NULL', (er, re) => {
+    logger.info("=====> Processing product db");
+    if (er) return res.send("Error: " + er)
+    if (re.length < 1) pro_id = 1000;
+    else pro_id = parseInt(re[0]['ID']) + 1
+    const sqlCom = `INSERT INTO product(pro_category, pro_id, pro_name, pro_price, pro_desc, pro_status,retail_cost_percent,cost_price,
+            locking_session_id,createdAt,updateTimestamp,minStock,barCode,receiveUnitId,stockUnitId,baseUnitId,costCurrencyId,saleCurrencyId,isActive,companyId)
+        VALUES('${pro_cat}','${pro_id}','${pro_name}','${pro_price}','${pro_desc}','${pro_status}','${retail_percent}','${costPrice}',${locking_session_id},'${mysqlDateTime}','${mysqlDateTime}',${minStock},'${barCode}',${receiveUnitId},${stockUnitId},${baseUnitId},${costCurrencyId},${saleCurrencyId},${isActive},${companyId});`
+    //*****************  INSERT PRODUCT SQL  *****************//
+    logger.info("SQL CREATE PRODUCT CONTROLLER: " + sqlCom);
+    Db.query(sqlCom, (er, re) => {
+      logger.info("Execute:=>");
+      if (er) {
+        // res.status(503).({"Error":er});
+        res.status(201).send('Error ' + er);
+      } else if (re) {
+        const productId = re.insertId;
+        image_path.forEach((i, idx, element) => {
+          if (idx === element.length - 1) sqlComImages += `(${pro_id},'${i.name}','${i.path}','${mysqlDatetime}','${mysqlDatetime}','${productId}');`;
+          else sqlComImages += `(${pro_id},'${i.name}','${i.path}','${mysqlDatetime}','${mysqlDatetime}','${productId}'),`;
+        });
+        //*****************  INSERT IMAGES SQL  *****************//
+        Db.query(sqlComImages, (er, re) => {
+          if (er) return res.status(201).send("Error: " + er);
+          res.status(200).send("Transaction completed");
+          //-------- update image producId ----
+          updateImageProductId()
+        });
+      }
     })
+  })
 
 }
 
 const updateProd = async (req, res) => {
-    logger.info("*************** UPDATE PRODUCT  ***************");
-    logger.info(`*************Payload: *****************`);
-    logger.info(req.body.FORM);
-    const body = JSON.parse(req.body.FORM);
-    const pro_cat = body.pro_category;
-    let pro_id = body.pro_id;
-    const productId = body.productId;
-    const pro_name = body.pro_name;
-    const pro_price = body.pro_price;
-    const pro_desc = body.pro_desc;
-    const pro_status = +body.pro_status;
-    const image_path = req.body.imagesObj;
-    const cost_price = body.pro_cost_price;
-    const minStock = body.minStock;
-    const barCode = body.barCode;
-    const receiveUnitId = body.receiveUnitId;
-    const stockUnitId = body.stockUnitId;
-    const costCurrencyId = body.costCurrencyId;
-    const saleCurrencyId = body.saleCurrencyId;
-    const isActive = body.isActive;
-    const companyId = body.companyId;
-    logger.info('cost ' + cost_price);
-    const timestamps = new Date();
-    const mysqlDatetime = timestamps.toISOString().slice(0, 19).replace('T', ' ');
-    console.log(mysqlDatetime);
+  logger.info("*************** UPDATE PRODUCT  ***************");
+  logger.info(`*************Payload: *****************`);
+  logger.info(req.body.FORM);
+  const body = JSON.parse(req.body.FORM);
+  const pro_cat = body.pro_category;
+  let pro_id = body.pro_id;
+  const productId = body.productId;
+  const pro_name = body.pro_name;
+  const pro_price = body.pro_price;
+  const pro_desc = body.pro_desc;
+  const pro_status = +body.pro_status;
+  const image_path = req.body.imagesObj;
+  const cost_price = body.pro_cost_price;
+  const minStock = body.minStock;
+  const barCode = body.barCode;
+  const receiveUnitId = body.receiveUnitId;
+  const stockUnitId = body.stockUnitId;
+  const costCurrencyId = body.costCurrencyId;
+  const saleCurrencyId = body.saleCurrencyId;
+  const isActive = body.isActive;
+  const companyId = body.companyId;
+  const baseUnitId = body.baseUnitId;
+  logger.info('cost ' + cost_price);
+  const timestamps = new Date();
+  const mysqlDatetime = timestamps.toISOString().slice(0, 19).replace('T', ' ');
+  console.log(mysqlDatetime);
 
-    const retail_percent = body.pro_retail_price || 0.0;
-    let sqlComImages = 'INSERT INTO image_path(pro_id, img_name, img_path,createdAt,updateTimestamp,productId)VALUES';
-    const sqlCom = `UPDATE product SET pro_category='${pro_cat}', pro_name='${pro_name}', pro_price='${pro_price}', 
+  const retail_percent = body.pro_retail_price || 0.0;
+  let sqlComImages = 'INSERT INTO image_path(pro_id, img_name, img_path,createdAt,updateTimestamp,productId)VALUES';
+  const sqlCom = `UPDATE product SET pro_category='${pro_cat}', pro_name='${pro_name}', pro_price='${pro_price}', 
     pro_desc='${pro_desc}', pro_status='${pro_status}',retail_cost_percent='${retail_percent}',isActive=${isActive},
     cost_price='${cost_price}',minStock=${minStock},barCode='${barCode}',
-    receiveUnitId=${receiveUnitId},stockUnitId=${stockUnitId},saleCurrencyId=${saleCurrencyId},costCurrencyId=${costCurrencyId},companyId=${companyId}
+    receiveUnitId=${receiveUnitId},stockUnitId=${stockUnitId},baseUnitId=${baseUnitId},saleCurrencyId=${saleCurrencyId},costCurrencyId=${costCurrencyId},companyId=${companyId}
      WHERE pro_id='${pro_id}'`
-    logger.info("************* UPDATE PRODUCT *****************");
-    logger.info(`*************Payload: ${req.body.imagesObj} *****************`);
-    Db.query(sqlCom, (er, re) => {
-        if (er) return res.send('Error: ' + er)
+  logger.info("************* UPDATE PRODUCT *****************");
+  logger.info(`*************Payload: ${req.body.imagesObj} *****************`);
+  Db.query(sqlCom, (er, re) => {
+    if (er) return res.send('Error: ' + er)
 
-        if (image_path.length < 1) return res.send('Transaction completed');
-        image_path.forEach((i, idx, element) => {
-            logger.info("Element len: " + element.length);
-            logger.info("Element name: " + i.name);
-            logger.info("Element i: " + i);
-            logger.info("Element idx: " + idx);
-            if (idx === element.length - 1) sqlComImages += `(${pro_id},'${i.name}','${i.path}','${mysqlDatetime}','${mysqlDatetime}','${productId}');`;
-            else sqlComImages += `(${pro_id},'${i.name}','${i.path}','${mysqlDatetime}','${mysqlDatetime}','${productId}'),`;
+    if (image_path.length < 1) return res.send('Transaction completed');
+    image_path.forEach((i, idx, element) => {
+      logger.info("Element len: " + element.length);
+      logger.info("Element name: " + i.name);
+      logger.info("Element i: " + i);
+      logger.info("Element idx: " + idx);
+      if (idx === element.length - 1) sqlComImages += `(${pro_id},'${i.name}','${i.path}','${mysqlDatetime}','${mysqlDatetime}','${productId}');`;
+      else sqlComImages += `(${pro_id},'${i.name}','${i.path}','${mysqlDatetime}','${mysqlDatetime}','${productId}'),`;
 
-        });
-        logger.warn(`IMAGE SQL: ${sqlComImages}`)
-        //*****************  INSERT IMAGES SQL  *****************//
-        Db.query(sqlComImages, (er, re) => {
-            if (er) return res.send("Error: naja :-) ໂປແກມເມີ ກາກ.... " + er);
-            res.send("Transaction completed");
-            //-------- update image producId ----
-            updateImageProductId()
-        });
+    });
+    logger.warn(`IMAGE SQL: ${sqlComImages}`)
+    //*****************  INSERT IMAGES SQL  *****************//
+    Db.query(sqlComImages, (er, re) => {
+      if (er) return res.send("Error: naja :-) ໂປແກມເມີ ກາກ.... " + er);
+      res.send("Transaction completed");
+      //-------- update image producId ----
+      updateImageProductId()
+    });
 
-    })
+  })
 }
 
 const fetchProd = async (req, res) => {
-    logger.info("*************** FETCH PRODUCT ***************");
-    logger.info(`*************Payload: *****************ss`);
+  logger.info("*************** FETCH PRODUCT ***************");
+  logger.info(`*************Payload: *****************ss`);
 
-    const sqlCom = `
+  const sqlCom = `
     SELECT DISTINCT p.id,p.pro_id,p.minStock,p.barCode,p.receiveUnitId,p.stockUnitId,p.pro_name,p.pro_category,
     p.pro_price,p.pro_status,p.cost_price,c.categ_name,IFNULL(i.img_name,'No image') AS img_name,i.img_path,
     p.stock_count AS card_count ,IFNULL(s.cnt,0) AS sale_count
@@ -151,22 +153,22 @@ const fetchProd = async (req, res) => {
     LEFT JOIN  (SELECT IFNULL(COUNT(pro_id),0) AS cnt,pro_id FROM card_sale GROUP BY pro_id ) s ON s.pro_id=p.pro_id 
     GROUP BY p.pro_id
     ORDER BY p.pro_price;`
-    // const sqlCom = `SELECT DISTINCT p.*,c.categ_name,IFNULL(i.img_name,'No image') AS img_name,i.img_path,
-    // p.stock_count AS card_count ,IFNULL(s.cnt,0) AS sale_count
-    // FROM product p 
-    // LEFT JOIN category c ON c.categ_id=p.pro_category
+  // const sqlCom = `SELECT DISTINCT p.*,c.categ_name,IFNULL(i.img_name,'No image') AS img_name,i.img_path,
+  // p.stock_count AS card_count ,IFNULL(s.cnt,0) AS sale_count
+  // FROM product p 
+  // LEFT JOIN category c ON c.categ_id=p.pro_category
 
-    // LEFT JOIN image_path i ON i.pro_id=p.pro_id
-    // LEFT JOIN  (SELECT IFNULL(COUNT(pro_id),0) AS cnt,pro_id FROM card_sale GROUP BY pro_id ) s ON s.pro_id=p.pro_id ORDER BY p.pro_price;`
-    Db.query(sqlCom, (er, re) => {
-        if (er) return res.send('SQL ' + er)
-        res.send(re)
-    })
+  // LEFT JOIN image_path i ON i.pro_id=p.pro_id
+  // LEFT JOIN  (SELECT IFNULL(COUNT(pro_id),0) AS cnt,pro_id FROM card_sale GROUP BY pro_id ) s ON s.pro_id=p.pro_id ORDER BY p.pro_price;`
+  Db.query(sqlCom, (er, re) => {
+    if (er) return res.send('SQL ' + er)
+    res.send(re)
+  })
 }
 // const fetchProductFromLocation = async (req, res) => {
 //   const { locationId } = req.params;
 //   const { include } = req.query; // Get include parameter from query string
-  
+
 //   // Base SQL for products - removed createdAt and updatedAt since they don't exist
 //   let sqlCom = `SELECT DISTINCT
 //     p.id,
@@ -326,7 +328,7 @@ const fetchProd = async (req, res) => {
 const fetchProductFromLocation = async (req, res) => {
   const { locationId } = req.params;
   const { include, companyId, grade } = req.query;
-  
+
   // Base SQL for products (without priceList join to avoid duplication)
   let sqlCom = `SELECT DISTINCT
     p.id,
@@ -357,7 +359,7 @@ const fetchProductFromLocation = async (req, res) => {
     IFNULL(i.img_name, 'No image') AS img_name,
     i.img_path,
     IFNULL(c.stock, 0) AS card_count`;
-  
+
   // Add tax fields if tax is included
   if (include && include.includes('tax')) {
     sqlCom += `,
@@ -370,7 +372,7 @@ const fetchProductFromLocation = async (req, res) => {
     tax.isActive as tax_isActive,
     tax.isDefault as tax_isDefault`;
   }
-  
+
   sqlCom += `
   FROM
     product p
@@ -388,7 +390,7 @@ const fetchProductFromLocation = async (req, res) => {
   ) c ON c.productId = p.id
   LEFT JOIN category t ON t.categ_id = p.pro_category
   LEFT JOIN image_path i ON i.pro_id = p.pro_id`;
-  
+
   // Add tax join if tax is included
   if (include && include.includes('tax')) {
     sqlCom += `
@@ -397,15 +399,15 @@ const fetchProductFromLocation = async (req, res) => {
     AND tax.effectiveFrom <= CURDATE()
     AND (tax.effectiveTo IS NULL OR tax.effectiveTo >= CURDATE())`;
   }
-  
+
   sqlCom += `
   WHERE p.isActive = true`;
-  
+
   // Add companyId filter if provided
   if (companyId) {
     sqlCom += ` AND p.companyId = ${parseInt(companyId)}`;
   }
-  
+
   sqlCom += `
   GROUP BY p.pro_id
   ORDER BY p.id`;
@@ -428,20 +430,20 @@ const fetchProductFromLocation = async (req, res) => {
     INNER JOIN product p ON p.id = pl.productId
     WHERE pl.isActive = true 
       AND p.isActive = true`;
-    
+
     // Add companyId filter for price lists
     if (companyId) {
       priceListSql += ` AND p.companyId = ${parseInt(companyId)}`;
     }
-    
+
     // Add grade filter if specified
     if (grade) {
       priceListSql += ` AND pl.grade = '${grade}'`;
     }
-    
+
     priceListSql += ` ORDER BY pl.productId, pl.grade, pl.createdAt DESC`;
   }
-  
+
   try {
     // Execute main product query
     Db.query(sqlCom, async (er, productResults) => {
@@ -453,9 +455,9 @@ const fetchProductFromLocation = async (req, res) => {
           error: er.message
         });
       }
-      
+
       let priceListData = {};
-      
+
       // Execute price list query if needed
       if (include && include.includes('priceList') && priceListSql) {
         try {
@@ -465,14 +467,14 @@ const fetchProductFromLocation = async (req, res) => {
               else resolve(results);
             });
           });
-          
+
           // Group price lists by productId
           priceListData = priceListResults.reduce((acc, priceList) => {
             const productId = priceList.productId;
             if (!acc[productId]) {
               acc[productId] = [];
             }
-            
+
             acc[productId].push({
               id: priceList.priceList_id,
               name: priceList.priceList_name,
@@ -484,16 +486,16 @@ const fetchProductFromLocation = async (req, res) => {
               createdAt: priceList.priceList_createdAt,
               updateTimestamp: priceList.priceList_updateTimestamp
             });
-            
+
             return acc;
           }, {});
-          
+
         } catch (priceListError) {
           console.error('Price List Query Error:', priceListError);
           // Continue without price lists if there's an error
         }
       }
-      
+
       // Transform results to include tax and priceList arrays
       const transformedResults = productResults.map(product => {
         const transformedProduct = {
@@ -527,7 +529,7 @@ const fetchProductFromLocation = async (req, res) => {
           createdAt: null,
           updatedAt: null
         };
-        
+
         // Add tax object if tax data is present
         if (include && include.includes('tax') && product.tax_id) {
           transformedProduct.tax = {
@@ -543,31 +545,31 @@ const fetchProductFromLocation = async (req, res) => {
         } else {
           transformedProduct.tax = null;
         }
-        
+
         // Add priceList array if priceList data is requested
         if (include && include.includes('priceList')) {
           transformedProduct.priceLists = priceListData[product.id] || [];
-          
+
           // Calculate effective price based on the best applicable price list
           transformedProduct.effectivePrice = calculateEffectivePrice(
-            product.pro_price, 
+            product.pro_price,
             transformedProduct.priceLists,
             grade
           );
-          
+
           // For backward compatibility, also include the first/best priceList as single object
-          transformedProduct.priceList = transformedProduct.priceLists.length > 0 
-            ? transformedProduct.priceLists[0] 
+          transformedProduct.priceList = transformedProduct.priceLists.length > 0
+            ? transformedProduct.priceLists[0]
             : null;
         } else {
           transformedProduct.priceLists = [];
           transformedProduct.priceList = null;
           transformedProduct.effectivePrice = product.pro_price;
         }
-        
+
         return transformedProduct;
       });
-      
+
       res.status(200).json({
         success: true,
         data: transformedResults,
@@ -720,8 +722,8 @@ const fetchProductFromLocationV1 = async (req, res) => {
         } : null,
         // Add price lists if requested
         priceLists: (include && include.includes('priceList')) ? (priceListData[product.id] || []) : undefined,
-        priceList: (include && include.includes('priceList')) 
-          ? (priceListData[product.id] && priceListData[product.id].length > 0 ? priceListData[product.id][0] : null) 
+        priceList: (include && include.includes('priceList'))
+          ? (priceListData[product.id] && priceListData[product.id].length > 0 ? priceListData[product.id][0] : null)
           : undefined
       };
 
@@ -921,32 +923,32 @@ function calculateEffectivePrice(basePrice, priceLists, requestedGrade = null) {
   if (!priceLists || priceLists.length === 0) {
     return basePrice;
   }
-  
+
   // Filter price lists by requested grade if specified
   let applicablePriceLists = priceLists;
   if (requestedGrade) {
     applicablePriceLists = priceLists.filter(pl => pl.grade === requestedGrade);
   }
-  
+
   // If no price lists match the requested grade, fall back to all price lists
   if (applicablePriceLists.length === 0) {
     applicablePriceLists = priceLists;
   }
-  
+
   // Sort by priority: Direct price overrides first, then percentage adjustments
   // Also prioritize by creation date (newer first)
   applicablePriceLists.sort((a, b) => {
     // Priority order: Price type first, then Percent type
     if (a.type === 'Price' && b.type !== 'Price') return -1;
     if (a.type !== 'Price' && b.type === 'Price') return 1;
-    
+
     // If same type, sort by creation date (newer first)
     return new Date(b.createdAt) - new Date(a.createdAt);
   });
-  
+
   // Use the first (highest priority) price list
   const bestPriceList = applicablePriceLists[0];
-  
+
   if (bestPriceList.type === 'Price') {
     // Direct price override
     return bestPriceList.amount;
@@ -954,7 +956,7 @@ function calculateEffectivePrice(basePrice, priceLists, requestedGrade = null) {
     // Percentage adjustment
     return basePrice * (1 + bestPriceList.amount / 100);
   }
-  
+
   return basePrice;
 }
 
@@ -1008,9 +1010,9 @@ const fetchTaxes = async (req, res) => {
 };
 
 const fetchProdMobileV0 = async (req, res) => {
-    logger.info("*************** FETCH PRODUCT ***************");
-    logger.info(`*************Payload: *****************ss`);
-    const sqlCom = `SELECT p.*,c.categ_name,IFNULL(i.img_name,'No image') AS img_name,i.img_path,
+  logger.info("*************** FETCH PRODUCT ***************");
+  logger.info(`*************Payload: *****************ss`);
+  const sqlCom = `SELECT p.*,c.categ_name,IFNULL(i.img_name,'No image') AS img_name,i.img_path,
     p.stock_count AS card_count ,IFNULL(s.cnt,0) AS sale_count,
     p.cost_price,
     p._category,
@@ -1022,15 +1024,15 @@ const fetchProdMobileV0 = async (req, res) => {
     where p.isActive=true
     GROUP BY p.pro_id
     ORDER BY p.pro_price;`;
-    Db.query(sqlCom, (er, re) => {
-        if (er) return res.send('SQL ' + er)
-        res.send(re)
-    })
+  Db.query(sqlCom, (er, re) => {
+    if (er) return res.send('SQL ' + er)
+    res.send(re)
+  })
 }
 const fetchProdMobile = async (req, res) => {
-    logger.info("*************** FETCH PRODUCT ***************");
-    logger.info(`*************Payload: *****************ss`);
-    const sqlCom = `
+  logger.info("*************** FETCH PRODUCT ***************");
+  logger.info(`*************Payload: *****************ss`);
+  const sqlCom = `
    SELECT 
   p.*,
   c.categ_name,
@@ -1082,44 +1084,44 @@ ORDER BY p.pro_price;
 
 
 `;
-    Db.query(sqlCom, (er, re) => {
-        if (er) return res.send('SQL ' + er)
-        res.send(re)
-    })
+  Db.query(sqlCom, (er, re) => {
+    if (er) return res.send('SQL ' + er)
+    res.send(re)
+  })
 }
 const fetchProdId = async (req, res) => {
-    logger.info("*************** FETCH PRODUCT BY ID  ***************");
-    logger.info(`*************Payload: *****************`);
-    const pro_id = req.body.proid;
-    Db.query(`SELECT p.*,i.img_name,i.img_path FROM product p 
+  logger.info("*************** FETCH PRODUCT BY ID  ***************");
+  logger.info(`*************Payload: *****************`);
+  const pro_id = req.body.proid;
+  Db.query(`SELECT p.*,i.img_name,i.img_path FROM product p 
     LEFT JOIN image_path i ON i.productId=p.id 
     WHERE p.pro_id=${pro_id}`, (er, re) => {
-        if (er) return res.send('SQL ' + er)
-        res.send(re)
-    })
-    //1635062891981300
+    if (er) return res.send('SQL ' + er)
+    res.send(re)
+  })
+  //1635062891981300
 }
 
 const updateImageProductId = () => {
-    Db.query(`
+  Db.query(`
     UPDATE image_path
     INNER JOIN product ON image_path.pro_id = product.pro_id
     SET image_path.productId = product.id`, (er, re) => {
-        if (er) {
-            logger.error(`Cannot update image productId field with error ${er}`)
-        } else {
-            logger.info(`UPDATE image productId completed`)
-        }
-    })
+    if (er) {
+      logger.error(`Cannot update image productId field with error ${er}`)
+    } else {
+      logger.info(`UPDATE image productId completed`)
+    }
+  })
 }
 
 module.exports = {
-    createProd,
-    updateProd,
-    fetchProd,
-    fetchProdId,
-    fetchProdMobile,
-    fetchProductFromLocation,
-    fetchTaxes,
-    fetchProductFromLocationV1
+  createProd,
+  updateProd,
+  fetchProd,
+  fetchProdId,
+  fetchProdMobile,
+  fetchProductFromLocation,
+  fetchTaxes,
+  fetchProductFromLocationV1
 }

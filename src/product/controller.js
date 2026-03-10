@@ -92,7 +92,7 @@ const getAllProducts = async (req, res) => {
 
     // Pagination
     const offset = (parseInt(page) - 1) * parseInt(limit);
-    
+
     // Sorting
     const validSortFields = ['pro_name', 'pro_price', 'stock_count', 'createdAt', 'updateTimestamp'];
     const orderField = validSortFields.includes(sortBy) ? sortBy : 'createdAt';
@@ -119,12 +119,12 @@ const getAllProducts = async (req, res) => {
         {
           model: Unit,
           as: 'baseUnit',
-          attributes: ['id', 'name', 'symbol'], 
+          attributes: ['id', 'name', 'symbol'],
           required: false
         },
         // Your existing includes - keep them simple to avoid conflicts
         'priceLists',
-        'costCurrency', 
+        'costCurrency',
         'saleCurrency',
         'images',
         'company'
@@ -145,13 +145,13 @@ const getAllProducts = async (req, res) => {
       pro_desc: product.pro_desc,
       pro_price: product.pro_price,
       cost_price: product.cost_price,
-      
+
       // Frontend compatibility mappings
       pro_card_count: product.stock_count,
       stock_count: product.stock_count,
       pro_min_stock: product.minStock,
       minStock: product.minStock,
-      
+
       pro_status: product.pro_status,
       pro_image_path: product.pro_image_path,
       barCode: product.barCode,
@@ -160,7 +160,10 @@ const getAllProducts = async (req, res) => {
       createdAt: product.createdAt,
       updatedAt: product.updateTimestamp,
       updateTimestamp: product.updateTimestamp,
-      
+      stockUnitId: product.stockUnitId,
+      receiveUnitId: product.receiveUnitId,
+      baseUnitId: product.baseUnitId,
+
       // Associations - handle safely
       category: product.category,
       unit: product.stockUnit || product.baseUnit,
@@ -190,7 +193,7 @@ const getAllProducts = async (req, res) => {
 
   } catch (error) {
     console.error('Error fetching products:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
       message: 'Internal server error',
       error: error.message
@@ -263,8 +266,12 @@ const getAllActiveProducts = async (req, res) => {
       minStock: product.minStock,
       barCode: product.barCode,
       isActive: product.isActive,
+      stockUnitId: product.stockUnitId,
+      receiveUnitId: product.receiveUnitId,
+      baseUnitId: product.baseUnitId,
 
       category: product.category,
+      _category: product._category,
       unit: product.stockUnit,
       priceLists: product.priceLists || [],
       images: product.images || []
@@ -345,9 +352,10 @@ const createProduct = async (req, res) => {
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
   }
-  let { pro_id, pro_name, pro_price, pro_desc, pro_status,validateStockOnSale,
+  let { pro_id, pro_name, pro_price, pro_desc, pro_status, validateStockOnSale,
     pro_image_path, retail_cost_percent, cost_price,
-    stock_count, locking_session_id, isActive, minStock, barCode, saleCurrencyId, costCurrencyId, companyId,vendorName } = req.body;
+    stock_count, locking_session_id, isActive, minStock, barCode, saleCurrencyId, costCurrencyId, companyId, vendorName, _category,
+    receiveUnitId, stockUnitId, baseUnitId } = req.body;
   locking_session_id = Date.now()
   try {
     const newProduct = await Product.create({
@@ -364,11 +372,15 @@ const createProduct = async (req, res) => {
       locking_session_id,
       minStock,
       isActive,
-      barCode, 
-      saleCurrencyId, 
-      costCurrencyId, 
+      barCode,
+      saleCurrencyId,
+      costCurrencyId,
       companyId,
       vendorName,
+      _category,
+      receiveUnitId,
+      stockUnitId,
+      baseUnitId,
     });
     res.status(200).json(newProduct);
   } catch (error) {
@@ -384,9 +396,10 @@ const updateProductById = async (req, res) => {
     return res.status(400).json({ errors: errors.array() });
   }
   const { id } = req.params;
-  const { pro_id, pro_name, pro_price, pro_desc, pro_status,validateStockOnSale,
+  const { pro_id, pro_name, pro_price, pro_desc, pro_status, validateStockOnSale,
     pro_image_path, retail_cost_percent, cost_price, stock_count,
-    isActive, minStock, barCode, saleCurrencyId, costCurrencyId, companyId,vendorName } = req.body;
+    isActive, minStock, barCode, saleCurrencyId, costCurrencyId, companyId, vendorName, _category,
+    receiveUnitId, stockUnitId, baseUnitId } = req.body;
   try {
     const product = await Product.findOne({ where: { id } });
     if (!product) {
@@ -407,7 +420,8 @@ const updateProductById = async (req, res) => {
         locking_session_id,
         minStock,
         isActive,
-        barCode, saleCurrencyId, costCurrencyId, companyId,vendorName
+        barCode, saleCurrencyId, costCurrencyId, companyId, vendorName, _category,
+        receiveUnitId, stockUnitId, baseUnitId
       },
       { where: { id } }
     );

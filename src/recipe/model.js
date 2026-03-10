@@ -9,7 +9,7 @@ module.exports = (sequelize, DataTypes) => {
         productId: {
             type: DataTypes.INTEGER,
             allowNull: false,
-            unique: true, // IMPORTANT: One recipe per product
+            // REMOVED unique: true to allow multiple ingredients per product
             references: {
                 model: 'product',
                 key: 'id',
@@ -36,6 +36,14 @@ module.exports = (sequelize, DataTypes) => {
         },
 
         // Optional: unit of measure (gram, ml, piece, etc.)
+        unitId: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            references: {
+                model: 'unit',
+                key: 'id',
+            },
+        },
 
 
     }, {

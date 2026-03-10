@@ -1,7 +1,7 @@
 // Fixed Unit Model - /src/unit/model.js
 module.exports = (sequelize, DataTypes) => {
     // alter table unitModel drop column unitRate;
-    // drop tablestock_transactions;
+    // drop table stock_transactions;
     // drop table recipe;
     // drop table member_offer;
     // drop table payment_header;
@@ -89,7 +89,7 @@ module.exports = (sequelize, DataTypes) => {
     });
 
     // Define associations - FIXED VERSION
-    Unit.associate = function(models) {
+    Unit.associate = function (models) {
         // Self-referencing association for base unit
         // Use string reference instead of direct model reference
         Unit.belongsTo(models.unit, {
@@ -97,7 +97,7 @@ module.exports = (sequelize, DataTypes) => {
             foreignKey: 'baseUnitId',
             targetKey: 'id'
         });
-        
+
         Unit.hasMany(models.unit, {
             as: 'derivedUnits',
             foreignKey: 'baseUnitId',

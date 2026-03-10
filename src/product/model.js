@@ -66,9 +66,41 @@ module.exports = (sequelize, DataTypes) => {
             defaultValue: true,
         },
         _category: {
-            type: DataTypes.ENUM('product', 'service','stock'),
+            type: DataTypes.ENUM('product', 'service', 'stock'),
             allowNull: false,
             defaultValue: 'product',
+        },
+        receiveUnitId: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+        },
+        stockUnitId: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+        },
+        baseUnitId: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+        },
+        taxId: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+        },
+        saleCurrencyId: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+        },
+        costCurrencyId: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+        },
+        companyId: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+        },
+        pro_category: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
         },
     }, {
         sequelize,
@@ -85,7 +117,7 @@ module.exports = (sequelize, DataTypes) => {
     });
 
     // Product Associations - Using Proper Sequelize Pattern
-    Product.associate = function(models) {
+    Product.associate = function (models) {
         // Category associations - handle both possible foreign keys
         Product.belongsTo(models.category, {
             as: 'category',
@@ -94,7 +126,7 @@ module.exports = (sequelize, DataTypes) => {
         });
 
         Product.belongsTo(models.category, {
-            as: 'productCategory', 
+            as: 'productCategory',
             foreignKey: 'pro_category',
             targetKey: 'categ_id'
         });
@@ -114,14 +146,14 @@ module.exports = (sequelize, DataTypes) => {
         });
 
         Product.belongsTo(models.unit, {
-            as: 'receiveUnit', 
+            as: 'receiveUnit',
             foreignKey: 'receiveUnitId',
             targetKey: 'id'
         });
 
         Product.belongsTo(models.unit, {
             as: 'baseUnit',
-            foreignKey: 'baseUnitId', 
+            foreignKey: 'baseUnitId',
             targetKey: 'id'
         });
 
@@ -133,7 +165,7 @@ module.exports = (sequelize, DataTypes) => {
         });
 
         Product.belongsTo(models.currency, {
-            as: 'saleCurrency', 
+            as: 'saleCurrency',
             foreignKey: 'saleCurrencyId',
             targetKey: 'id'
         });
@@ -148,7 +180,7 @@ module.exports = (sequelize, DataTypes) => {
         // Web Group association
         Product.belongsTo(models.webProductGroup, {
             as: 'webProductGroup',
-            foreignKey: 'webProductGroupId', 
+            foreignKey: 'webProductGroupId',
             targetKey: 'id'
         });
 
@@ -167,7 +199,7 @@ module.exports = (sequelize, DataTypes) => {
 
         Product.hasMany(models.productSize, {
             as: 'sizeLists',
-            foreignKey: 'productId', 
+            foreignKey: 'productId',
             sourceKey: 'id'
         });
 

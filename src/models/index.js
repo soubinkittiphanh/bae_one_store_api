@@ -196,7 +196,7 @@ const initializeModels = () => {
     country: require("../country/model")(sequelize, DataTypes),
     village: require("../district/model")(sequelize, DataTypes),
     district: require("../district-village/model")(sequelize, DataTypes),
-   
+
 
 
     // Tutorial model (uses different DB)
@@ -330,7 +330,7 @@ const defineOrderAssociations = (db) => {
 
 // Sales associations
 const defineSalesAssociations = (db) => {
-  
+
 
   // Sale line associations
   // db.saleLine.belongsTo(db.saleHeader, { foreignKey: 'headerId', as: 'header' });
@@ -341,7 +341,7 @@ const defineSalesAssociations = (db) => {
 
   // Related associations
   db.orderTable.hasMany(db.saleHeader, { as: 'saleHeader' });
-  
+
 };
 
 // Purchase order associations

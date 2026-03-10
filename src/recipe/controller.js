@@ -40,12 +40,12 @@ class RecipeController {
         {
           model: Product,
           as: 'ingredient',
-          attributes: ['id', 'pro_name', 'pro_desc', 'pro_price']
+          attributes: ['id', 'pro_name', 'pro_desc', 'pro_price', 'stockUnitId']
         },
         {
           model: Unit,
           as: 'unit',
-          attributes: ['id', 'name']
+          attributes: ['id', 'name', 'symbol']
         }
       ];
 
@@ -103,12 +103,12 @@ class RecipeController {
           {
             model: Product,
             as: 'ingredient',
-            attributes: ['id', 'pro_name', 'pro_desc', 'pro_price']
+            attributes: ['id', 'pro_name', 'pro_desc', 'pro_price', 'stockUnitId']
           },
           {
             model: Unit,
             as: 'unit',
-            attributes: ['id', 'name',]
+            attributes: ['id', 'name', 'symbol']
           }
         ]
       });
@@ -158,12 +158,12 @@ class RecipeController {
           {
             model: Product,
             as: 'ingredient',
-            attributes: ['id', 'pro_name', 'pro_desc', 'pro_price']
+            attributes: ['id', 'pro_name', 'pro_desc', 'pro_price', 'stockUnitId']
           },
           {
             model: Unit,
             as: 'unit',
-            attributes: ['id', 'name']
+            attributes: ['id', 'name', 'symbol']
           }
         ],
         order: [['createdAt', 'DESC']]
@@ -484,12 +484,12 @@ class RecipeController {
           {
             model: Product,
             as: 'ingredient',
-            attributes: ['id', 'pro_name', 'pro_desc', 'pro_price']
+            attributes: ['id', 'pro_name', 'pro_desc', 'pro_price', 'stockUnitId']
           },
           {
             model: Unit,
             as: 'unit',
-            attributes: ['id', 'name']
+            attributes: ['id', 'name', 'symbol']
           }
         ]
       });
@@ -577,37 +577,10 @@ class RecipeController {
         });
       }
 
-      // Check if any recipes already exist for this product
-      const existingRecipes = await Recipe.findAll({
-        where: { productId },
-        include: [
-          {
-            model: Product,
-            as: 'ingredient',
-            attributes: ['id', 'pro_name']
-          }
-        ]
+      // Delete existing recipes for this product to perform a clean sync/maintain
+      await Recipe.destroy({
+        where: { productId }
       });
-
-      if (existingRecipes.length > 0) {
-        const existingIngredients = existingRecipes.map(recipe =>
-          `${recipe.ingredient.pro_name} (ID: ${recipe.ingredient.id})`
-        ).join(', ');
-
-        return res.status(409).json({
-          success: false,
-          message: `Recipes already exist for this product. Existing ingredients: ${existingIngredients}`,
-          data: {
-            existingRecipesCount: existingRecipes.length,
-            existingRecipes: existingRecipes.map(recipe => ({
-              id: recipe.id,
-              name: recipe.name,
-              ingredientName: recipe.ingredient.pro_name,
-              quantity: recipe.quantity
-            }))
-          }
-        });
-      }
 
       // Validate and prepare recipes
       const recipesToCreate = [];
@@ -697,12 +670,12 @@ class RecipeController {
           {
             model: Product,
             as: 'ingredient',
-            attributes: ['id', 'pro_name', 'pro_desc', 'pro_price']
+            attributes: ['id', 'pro_name', 'pro_desc', 'pro_price', 'stockUnitId']
           },
           {
             model: Unit,
             as: 'unit',
-            attributes: ['id', 'name'],
+            attributes: ['id', 'name', 'symbol'],
             required: false
           }
         ]
@@ -763,12 +736,12 @@ class RecipeController {
           {
             model: Product,
             as: 'ingredient',
-            attributes: ['id', 'pro_name', 'pro_desc', 'pro_price']
+            attributes: ['id', 'pro_name', 'pro_desc', 'pro_price', 'stockUnitId']
           },
           {
             model: Unit,
             as: 'unit',
-            attributes: ['id', 'name',]
+            attributes: ['id', 'name', 'symbol']
           }
         ]
       });
