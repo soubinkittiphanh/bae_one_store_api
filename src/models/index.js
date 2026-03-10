@@ -110,6 +110,7 @@ const initializeModels = () => {
     washjobHis: require("../carcare/washJob-history/model")(sequelize, DataTypes),
     washjobline: require("../carcare/washJobLine/model")(sequelize, DataTypes),
     // Sales models
+    QRRequest: require("../QRRequest/model")(sequelize, DataTypes),
     saleHeader: require("../sales/model")(sequelize, DataTypes),
     salePayment: require("../salePayment/model")(sequelize, DataTypes),
     saleLine: require("../sales/line/model")(sequelize, DataTypes),
@@ -147,7 +148,7 @@ const initializeModels = () => {
 
 
     // Financial models
-    QRRequest: require("../QRRequest/model")(sequelize, DataTypes),
+
     QRResponse: require("../QRResponse/model")(sequelize, DataTypes),
     PaymentCallback: require("../PaymentCallback/model")(sequelize, DataTypes),
     Color: require("../color/model")(sequelize, DataTypes),

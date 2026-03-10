@@ -8,9 +8,9 @@ const router = express.Router();
 const ApplicantController = require('./controller'); // FIX: Correct path
 const logger = require("../../api/logger");
 const multer = require('multer'); // FIX: Add multer import
-const { 
-  uploadApplicantPhotos, 
-  handleUploadErrors 
+const {
+  uploadApplicantPhotos,
+  handleUploadErrors
 } = require('../../middleware/multerConfigApplicant'); // FIX: Use correct middleware
 
 // Middleware for authentication (uncomment and customize as needed)
@@ -107,8 +107,8 @@ router.get('/:id', ApplicantController.getById);
  * @body firstName, lastName, gender, age, maritalStatus, phone, address, etc.
  * @files passportPhoto, applicantPhoto (multipart/form-data)
  */
-router.post('/', 
-  uploadApplicantPhotos, 
+router.post('/',
+  uploadApplicantPhotos,
   handleUploadErrors,
   ApplicantController.create
 );
@@ -119,7 +119,7 @@ router.post('/',
  * @access Private
  * @body applicants (array of applicant data)
  */
-// router.post('/bulk', ApplicantController.bulkCreate);
+router.post('/bulk', ApplicantController.bulkCreate);
 
 /**
  * @route PUT /api/applicant/:id
@@ -128,7 +128,7 @@ router.post('/',
  * @body firstName, lastName, gender, age, maritalStatus, phone, address, etc.
  * @files passportPhoto, applicantPhoto (multipart/form-data)
  */
-router.put('/:id', 
+router.put('/:id',
   uploadApplicantPhotos,
   handleUploadErrors,
   ApplicantController.update
@@ -148,7 +148,7 @@ router.patch('/:id/refund', ApplicantController.toggleRefund);
  * @access Private
  * @files passportPhoto, applicantPhoto (multipart/form-data)
  */
-router.patch('/:id/photos', 
+router.patch('/:id/photos',
   uploadApplicantPhotos,
   handleUploadErrors,
   ApplicantController.updatePhotos
@@ -176,7 +176,7 @@ router.delete('/:id', ApplicantController.delete);
 // Error handling middleware for this router
 router.use((error, req, res, next) => {
   logger.error('Applicant Router Error:', error);
-  
+
   // Handle multer errors
   if (error instanceof multer.MulterError) {
     if (error.code === 'LIMIT_FILE_SIZE') {
@@ -202,24 +202,24 @@ router.use((error, req, res, next) => {
       message: error.message
     });
   }
-  
+
   // Handle custom file filter errors
-  if (error.message.includes('Invalid field name') || 
-      error.message.includes('Only image files are allowed') ||
-      error.message.includes('Only JPEG, PNG, GIF, and WebP images are allowed')) {
+  if (error.message.includes('Invalid field name') ||
+    error.message.includes('Only image files are allowed') ||
+    error.message.includes('Only JPEG, PNG, GIF, and WebP images are allowed')) {
     return res.status(400).json({
       success: false,
       message: error.message
     });
   }
-  
+
   if (error.name === 'CastError') {
     return res.status(400).json({
       success: false,
       message: 'Invalid ID format'
     });
   }
-  
+
   if (error.name === 'ValidationError') {
     return res.status(400).json({
       success: false,
@@ -227,18 +227,18 @@ router.use((error, req, res, next) => {
       errors: Object.values(error.errors).map(e => e.message)
     });
   }
-  
+
   // Log unexpected errors in development
   if (process.env.NODE_ENV === 'development') {
     console.error('Unexpected error:', error);
   }
-  
+
   return res.status(500).json({
     success: false,
     message: 'Internal server error',
-    ...(process.env.NODE_ENV === 'development' && { 
+    ...(process.env.NODE_ENV === 'development' && {
       error: error.message,
-      stack: error.stack 
+      stack: error.stack
     })
   });
 });

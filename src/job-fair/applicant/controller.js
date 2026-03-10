@@ -60,81 +60,81 @@ class ApplicantController {
 
 
 
-static async toggleRefund(req, res) {
-  try {
-    const { id } = req.params;
-    const { isRefund } = req.body;
-    const updateUserId = req.user?.id || req.userId;
+  static async toggleRefund(req, res) {
+    try {
+      const { id } = req.params;
+      const { isRefund } = req.body;
+      const updateUserId = req.user?.id || req.userId;
 
-    // Validate isRefund parameter
-    if (typeof isRefund !== 'boolean') {
-      return res.status(400).json({
+      // Validate isRefund parameter
+      if (typeof isRefund !== 'boolean') {
+        return res.status(400).json({
+          success: false,
+          message: "isRefund must be a boolean value"
+        });
+      }
+
+      const applicant = await Applicant.findOne({
+        where: { id, isActive: true }
+      });
+
+      if (!applicant) {
+        return res.status(404).json({
+          success: false,
+          message: "Applicant not found"
+        });
+      }
+
+      // Check if deposit amount exists
+      if (!applicant.depositAmount || applicant.depositAmount <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: "No deposit amount found for this applicant"
+        });
+      }
+
+      // Update refund status
+      await applicant.update({
+        isRefund,
+        updateUserId
+      });
+
+      logger.info(
+        `Applicant refund status updated to ${isRefund} for ID: ${id} by user: ${updateUserId}`
+      );
+
+      // Fetch updated applicant with associations
+      const updatedApplicant = await Applicant.findByPk(id, {
+        include: [
+          {
+            model: JobBatch,
+            as: 'jobBatch',
+            attributes: ['id', 'batchName', 'jobDescription', 'status', 'batchStartDate', 'batchEndDate']
+          },
+          {
+            model: Agency,
+            as: 'agency',
+            required: false
+          }
+        ]
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: isRefund
+          ? "Deposit refunded successfully"
+          : "Refund status reverted successfully",
+        data: updatedApplicant
+      });
+
+    } catch (error) {
+      logger.error("Error toggling refund status:", error);
+      return res.status(500).json({
         success: false,
-        message: "isRefund must be a boolean value"
+        message: "Internal server error"
       });
     }
-
-    const applicant = await Applicant.findOne({
-      where: { id, isActive: true }
-    });
-
-    if (!applicant) {
-      return res.status(404).json({
-        success: false,
-        message: "Applicant not found"
-      });
-    }
-
-    // Check if deposit amount exists
-    if (!applicant.depositAmount || applicant.depositAmount <= 0) {
-      return res.status(400).json({
-        success: false,
-        message: "No deposit amount found for this applicant"
-      });
-    }
-
-    // Update refund status
-    await applicant.update({ 
-      isRefund,
-      updateUserId 
-    });
-
-    logger.info(
-      `Applicant refund status updated to ${isRefund} for ID: ${id} by user: ${updateUserId}`
-    );
-
-    // Fetch updated applicant with associations
-    const updatedApplicant = await Applicant.findByPk(id, {
-      include: [
-        {
-          model: JobBatch,
-          as: 'jobBatch',
-          attributes: ['id', 'batchName', 'jobDescription', 'status', 'batchStartDate', 'batchEndDate']
-        },
-        {
-          model: Agency,
-          as: 'agency',
-          required: false
-        }
-      ]
-    });
-
-    return res.status(200).json({
-      success: true,
-      message: isRefund 
-        ? "Deposit refunded successfully" 
-        : "Refund status reverted successfully",
-      data: updatedApplicant
-    });
-
-  } catch (error) {
-    logger.error("Error toggling refund status:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error"
-    });
   }
-}
 
   /**
    * Clean up uploaded files on error
@@ -1339,6 +1339,90 @@ static async toggleRefund(req, res) {
       return res.status(500).json({
         success: false,
         message: "Internal server error"
+      });
+    }
+  }
+
+  /**
+   * Bulk create applicants from Excel/JSON data
+   * @route POST /api/applicant/bulk
+   */
+  static async bulkCreate(req, res) {
+    try {
+      const { applicants } = req.body;
+      const makerId = req.user?.id || req.userId;
+
+      if (!applicants || !Array.isArray(applicants)) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid data format. 'applicants' must be an array."
+        });
+      }
+
+      if (applicants.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "No applicants provided for import."
+        });
+      }
+
+      // Preparation: add system fields and ensure defaults
+      const preparedApplicants = applicants.map(app => ({
+        ...app,
+        makerId,
+        updateUserId: makerId,
+        isActive: true,
+        // Ensure status is valid or default
+        status: app.status || 'INTERVIEW',
+        // Boolean fields conversion if they come as strings
+        passportAvailability: app.passportAvailability === true || app.passportAvailability === 'true',
+        passportRecieve: app.passportRecieve === true || app.passportRecieve === 'true',
+        depositByCensusBook: app.depositByCensusBook === true || app.depositByCensusBook === 'true',
+        isRefund: app.isRefund === true || app.isRefund === 'true'
+      }));
+
+      // Use bulkCreate with validation
+      const results = await Applicant.bulkCreate(preparedApplicants, {
+        validate: true
+      });
+
+      logger.info(`Bulk created ${results.length} applicants by user: ${makerId}`);
+
+      return res.status(201).json({
+        success: true,
+        message: `Successfully imported ${results.length} applicants.`,
+        count: results.length
+      });
+
+    } catch (error) {
+      logger.error("Error in applicants bulk import:", error);
+
+      if (error.name === 'SequelizeUniqueConstraintError') {
+        return res.status(409).json({
+          success: false,
+          message: "Import failed: Some phone numbers or unique fields already exist.",
+          errors: error.errors.map(e => ({
+            value: e.value,
+            message: e.message
+          }))
+        });
+      }
+
+      if (error.name === 'SequelizeValidationError') {
+        return res.status(400).json({
+          success: false,
+          message: "Validation failed for some records.",
+          errors: error.errors.map(e => ({
+            field: e.path,
+            message: e.message
+          }))
+        });
+      }
+
+      return res.status(500).json({
+        success: false,
+        message: "Internal server error during bulk import.",
+        error: error.message
       });
     }
   }
