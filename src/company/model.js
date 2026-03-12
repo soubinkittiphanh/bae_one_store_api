@@ -115,6 +115,12 @@ module.exports = (sequelize, DataTypes) => {
             defaultValue: true,
             comment: 'Enable custom theme colors for this company'
         },
+        ticketLayout: {
+            type: DataTypes.ENUM('classic', 'modern'),
+            allowNull: false,
+            defaultValue: 'classic',
+            comment: 'Choose the layout style for the printed ticket'
+        },
     }, {
         sequelize,
         timestamps: true,
