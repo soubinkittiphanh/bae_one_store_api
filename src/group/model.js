@@ -12,6 +12,10 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: false,
             unique: true
         },
+        homePage: {
+            type: DataTypes.STRING,
+            allowNull: false,
+        },
         ticketCancel: {
             type: DataTypes.BOOLEAN,
             allowNull: false,
