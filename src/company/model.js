@@ -121,6 +121,11 @@ module.exports = (sequelize, DataTypes) => {
             defaultValue: 'classic',
             comment: 'Choose the layout style for the printed ticket'
         },
+        showLogoOnTicket: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false,
+        },
     }, {
         sequelize,
         timestamps: true,
