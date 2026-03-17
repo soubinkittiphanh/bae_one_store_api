@@ -33,7 +33,7 @@ const updateCate = async (req, res) => {
 const fetchCate = async (req, res) => {
     console.log("*************** FETCH CATEG ***************");
     console.log(`*************Payload:*****************`);
-    Db.query("SELECT categ_id, categ_name,categ_desc FROM category", (er, re) => {
+    Db.query("SELECT categ_id, categ_name,categ_desc,isActive FROM category", (er, re) => {
         if (er) return res.send("Error: " + er)
         res.send(re);
     })
