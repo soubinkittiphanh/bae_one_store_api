@@ -15,6 +15,11 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING,
             allowNull: false
         },
+        balance: {
+            type: DataTypes.DOUBLE,
+            allowNull: false,
+            defaultValue: 0
+        },
         bankName: {
             type: DataTypes.STRING,
             // allowNull: false
@@ -28,7 +33,7 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: false
         },
         currency: {
-            type: DataTypes.ENUM('LAK', 'USD', 'THB', 'CNY','EUR'),
+            type: DataTypes.ENUM('LAK', 'USD', 'THB', 'CNY', 'EUR'),
             allowNull: false,
             defaultValue: 'LAK'
         },

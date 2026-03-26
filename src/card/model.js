@@ -338,6 +338,13 @@ module.exports = (sequelize, DataTypes) => {
                 as: 'currency'
             });
         }
+        
+        if (models.user) {
+            Card.belongsTo(models.user, {
+                foreignKey: 'inputter',
+                as: 'creator'
+            });
+        }
     };
 
     return Card;

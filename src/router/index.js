@@ -1,6 +1,6 @@
 const orderRouter = require("./orderRouter")
-const dymCustomerRouter =require("./dymCustomerRouter")
-const reportRouter =  require("./reportRouter")
+const dymCustomerRouter = require("./dymCustomerRouter")
+const reportRouter = require("./reportRouter")
 const generalLedger = require("../GL").router
 const chartAccount = require("../account").router
 const upgrade = require("./upgrade")
@@ -84,8 +84,11 @@ const qrRouter = require("../QRRequest/router")
 const size = require("../size/router")
 const color = require("../color/router")
 const printer = require("../printer/router")
+const student = require("../student/router")
+const nfcCard = require("../nfcCard/router")
+const transactionEntry = require("../transactionEntry/router")
 
-module.exports={
+module.exports = {
     orderRouter,
     dymCustomerRouter,
     reportRouter,
@@ -172,4 +175,7 @@ module.exports={
     color,
     bank,
     printer,
+    student,
+    nfcCard,
+    transactionEntry,
 }

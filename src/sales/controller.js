@@ -840,7 +840,7 @@ const reserveCard = async (line, lockingSessionId, qty, locationId) => {
     limit: qty,
     order: [['createdAt', 'DESC']],
     where: {
-      [Op.or]: [{ productId: line.productId }, { product_id: line.productId }],
+      productId: line.productId,
       saleLineId: null,
       card_isused: 0,
       locationId

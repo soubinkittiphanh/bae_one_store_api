@@ -5,6 +5,7 @@ const Location = require("../models").location; // Import the location model (if
 const SaleLine = require("../models").saleLine; // Import the location model (if exists)
 const Size = require("../models").Size; // Import the Size model
 const Color = require("../models").Color; // Import the Color model
+const User = require("../models").user; // Import the User model
 const { Op } = require("sequelize");
 const { sequelize } = require('../models');
 
@@ -173,7 +174,11 @@ const cardController = {
         locationId,
         currencyId,
         colorId,
-        sizeId
+        sizeId,
+        dateFrom,
+        dateTo,
+        productId,
+        inputter
       } = req.query;
 
       let whereClause = {};
@@ -205,6 +210,24 @@ const cardController = {
       // Filter by serial number
       if (serialNo) {
         whereClause.serialNo = { [Op.like]: `%${serialNo}%` };
+      }
+
+      if (productId) {
+        whereClause.product_id = productId;
+      }
+
+      if (inputter) {
+        whereClause.inputter = inputter;
+      }
+
+      if (dateFrom && dateTo) {
+        whereClause.createdAt = {
+          [Op.between]: [new Date(dateFrom), new Date(dateTo + 'T23:59:59.999Z')]
+        };
+      } else if (dateFrom) {
+        whereClause.createdAt = { [Op.gte]: new Date(dateFrom) };
+      } else if (dateTo) {
+        whereClause.createdAt = { [Op.lte]: new Date(dateTo + 'T23:59:59.999Z') };
       }
 
       // Filter by location
@@ -250,6 +273,12 @@ const cardController = {
             model: Color,
             as: 'color',
             attributes: ['id', 'color_name', 'color_code', 'hex_code', 'rgb_code'],
+            required: false
+          },
+          {
+            model: User,
+            as: 'creator',
+            attributes: ['id', 'cus_name', 'cus_id'],
             required: false
           }
         ],

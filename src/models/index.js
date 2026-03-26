@@ -83,7 +83,9 @@ const initializeModels = () => {
     stockTransactionModel: require("../stockTransaction/model")(sequelize, DataTypes),
     // unit: require("../unit/model")(sequelize, DataTypes),
     category: require("../category/model")(sequelize, DataTypes),
-
+    student: require("../student/model")(sequelize, DataTypes),
+    nfcCard: require("../nfcCard/model")(sequelize, DataTypes),
+    transactionEntry: require("../transactionEntry/model")(sequelize, DataTypes),
     // Product related models
     tax: require("../tax/model")(sequelize, DataTypes),
     product: require("../product/model")(sequelize, DataTypes),
