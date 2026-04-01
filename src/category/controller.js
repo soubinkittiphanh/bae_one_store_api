@@ -1,5 +1,7 @@
 
-const Category = require('../models').category;
+const db = require('../models');
+const Category = db.category;
+const MainCategory = db.mainCategory;
 const { body, validationResult } = require('express-validator');
 const logger = require('../api/logger');
 
@@ -7,7 +9,9 @@ const logger = require('../api/logger');
 // Get all categories
 const getAllCategories = async (req, res) => {
   try {
-    const categories = await Category.findAll();
+    const categories = await Category.findAll({
+      include: [{ model: MainCategory, as: 'mainCategory' }]
+    });
     res.status(200).json(categories);
   } catch (error) {
     console.error(error);
@@ -17,7 +21,10 @@ const getAllCategories = async (req, res) => {
 // Get all categories
 const getAllActiveCategories = async (req, res) => {
   try {
-    const categories = await Category.findAll({where: {isActive:true}});
+    const categories = await Category.findAll({
+      where: { isActive: true },
+      include: [{ model: MainCategory, as: 'mainCategory' }]
+    });
     res.status(200).json(categories);
   } catch (error) {
     console.error(error);
@@ -29,7 +36,10 @@ const getAllActiveCategories = async (req, res) => {
 const getCategoryById = async (req, res) => {
   const { categ_id } = req.params;
   try {
-    const category = await Category.findOne({ where: { categ_id } });
+    const category = await Category.findOne({
+      where: { categ_id },
+      include: [{ model: MainCategory, as: 'mainCategory' }]
+    });
     if (!category) {
       return res.status(404).json({ message: 'Category not found' });
     }
@@ -43,13 +53,19 @@ const getCategoryById = async (req, res) => {
 // Create a new category
 const createCategory = async (req, res) => {
 
-  const { categ_id, categ_name, categ_desc, isActive } = req.body;
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  const { categ_name, categ_desc, isActive, mainCategoryId } = req.body;
   try {
     const newCategory = await Category.create({
       // categ_id,
       categ_name,
       categ_desc,
       isActive,
+      mainCategoryId,
     });
     res.status(200).json(newCategory);
   } catch (error) {
@@ -105,8 +121,13 @@ const generate = async (req, res) => {
 // Update an existing category by ID
 const updateCategoryById = async (req, res) => {
 
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
   const { categ_id } = req.params;
-  const { categ_name, categ_desc, isActive } = req.body;
+  const { categ_name, categ_desc, isActive, mainCategoryId } = req.body;
   try {
     const category = await Category.findOne({ where: { categ_id } });
     if (!category) {
@@ -117,6 +138,7 @@ const updateCategoryById = async (req, res) => {
         categ_name,
         categ_desc,
         isActive,
+        mainCategoryId,
       },
       { where: { categ_id } }
     );

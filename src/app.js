@@ -38,6 +38,7 @@ const buildApp = async () => {
     app.use("/api/currency", myRouter.currency)
     app.use("/api/purchasing", myRouter.poheader)
     app.use("/api/purchasing/line", myRouter.poLine)
+    app.use("/api/mainCategory", myRouter.mainCategory)
     app.use("/api/category", myRouter.category)
     app.use("/api/customer", myRouter.dymCustomerRouter)
     app.use("/api/geography", myRouter.geography)

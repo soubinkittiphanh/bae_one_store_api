@@ -138,8 +138,8 @@ const rebuildStockValue = async (req, res) => {
     const sqlCom = `UPDATE product pro 
     INNER JOIN (SELECT d.productId AS card_pro_id,COUNT(d.card_number) AS card_count 
     FROM card d 
-    WHERE d.card_isused=0 OR d.saleLineId is null
-    GROUP BY d.product_id) proc ON proc.card_pro_id=pro.id 
+    WHERE d.card_isused=0 AND d.saleLineId is null
+    GROUP BY d.productId) proc ON proc.card_pro_id=pro.id 
     SET pro.stock_count=proc.card_count;`
     //**************** Script card version without cardsale table logic *****************/
     try {
@@ -453,9 +453,8 @@ const createAutoHulkStockCard = async (line) => {
 
 const adjustStockCard = async (productId, stockCount, product_code) => {
     try {
-        // Count current stock where card_isused = 0
         const currentStock = await Card.count({
-            where: { productId, card_isused: 0 }
+            where: { productId, card_isused: 0, saleLineId: null }
         });
 
         // If the current stock is greater than the desired stock count, delete excess entries

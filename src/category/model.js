@@ -1,5 +1,7 @@
 
 
+
+const logger = require('../api/logger');
 module.exports = (sequelize, DataTypes) => {
     const Category = sequelize.define('category', {
         categ_id: {
@@ -34,6 +36,17 @@ module.exports = (sequelize, DataTypes) => {
         // if you don't want that, set the following
         freezeTableName: true,
     })
+    Category.associate = models => {
+        logger.info('Associating table Color with models');
+
+        // Color has many Cards
+        if (models.mainCategory) {
+            Category.belongsTo(models.mainCategory, {
+                foreignKey: 'mainCategoryId',
+                as: 'mainCategory'
+            });
+        }
+    };
 
     return Category;
 };

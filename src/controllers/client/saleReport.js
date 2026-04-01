@@ -118,9 +118,38 @@ const dailySaleStatistic = async (req, res) => {
         return res.status(201).send('Server error ' + error)
     }
 }
+const saleByMainCategory = async (req, res) => {
+    let { fromDate, toDate } = req.query
+    if (!fromDate || !toDate) {
+        const { beginningOfMonthString, lastDayOfMonthString } = common.getBetweenDateInCurrentMonth()
+        fromDate = beginningOfMonthString
+        toDate = lastDayOfMonthString
+    }
+    const sql = `SELECT 
+        mc.id AS mainCategoryId,
+        mc.categoryName AS mainCategoryName,
+        SUM(sl.quantity * sl.unitRate) AS total_qty,
+        SUM(sl.total - sl.discount) AS total_sale
+    FROM saleLine sl
+    LEFT JOIN product p ON p.id = sl.productId
+    LEFT JOIN category c ON c.categ_id = p.pro_category
+    LEFT JOIN mainCategory mc ON mc.id = c.mainCategoryId
+    WHERE sl.isActive = 1 
+    AND sl.createdAt BETWEEN '${fromDate} 00:00:00' AND '${toDate} 23:59:59'
+    GROUP BY mc.id`
+    logger.info(sql)
+    try {
+        const [rows, fields] = await dbAsync.query(sql)
+        return res.status(200).send(rows)
+    } catch (error) {
+        logger.error('Server error ' + error)
+        return res.status(201).send('Server error ' + error)
+    }
+}
 module.exports = {
     topSaleByMonth,
     dailySaleStatistic,
     codAndCash,
-    topSaleMinimartByMonth
+    topSaleMinimartByMonth,
+    saleByMainCategory
 }

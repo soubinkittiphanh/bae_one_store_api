@@ -42,14 +42,16 @@ const createBulkSaleLineWithoutRes = async (lines, lockingSessionId) => {
             logger.info("===> Updating card saleLineId in card model")
             try {
                 const cardUpdated = await Card.update({
-                    saleLineId: iterator.id
+                    saleLineId: iterator.id,
+                    card_isused: 1,
+                    locking_session_id: '' 
                 }, {
                     where: {
                         locking_session_id: lockingSessionId,
                         productId: iterator.productId
                     }
                 })
-                logger.info("Update card saleLineId successfully " + cardUpdated.id)
+                logger.info("Update card saleLineId successfully " + cardUpdated.length)
             } catch (error) {
                 logger.error("Update card saleLineId fail " + error)
                 await fullReversal(linesCreated[0]['id'])

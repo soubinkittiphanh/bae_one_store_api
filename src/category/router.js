@@ -9,9 +9,9 @@ const validator = require("./validator")
 router.use(validateToken)
 
 router
-.post("/create", controller.createCategory)
+.post("/create", validator.createCategoryValidation, controller.createCategory)
 .post("/generate", controller.generate)
-.put("/update/:categ_id", controller.updateCategoryById)
+.put("/update/:categ_id", validator.updateCategoryValidation, controller.updateCategoryById)
 .delete("/find/:categ_id", controller.deleteCategoryById)
 .get("/find", controller.getAllActiveCategories)
 .get("/findAll", controller.getAllCategories)
