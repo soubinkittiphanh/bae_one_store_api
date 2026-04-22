@@ -1,5 +1,5 @@
 -- Correction for card stock not correct --
-UPDATE card SET card_isused=0 WHERE saleLineId IS NULL ;
+UPDATE card SET card_isused=1 WHERE saleLineId IS not NULL and  card_isused=0;
 
 -- sale cost validation 
 

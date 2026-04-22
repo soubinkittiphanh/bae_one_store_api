@@ -1016,11 +1016,32 @@ exports.getSaleHeadersByDateAndUser = async (req, res) => {
   }
 };
 exports.getSaleHeadersByDateAndCustomer = async (req, res) => {
-  const date = JSON.parse(req.query.date);
-  logger.warn(`Request date ${date.startDate} customerId ${date.clientId}`)
   try {
+    const date = JSON.parse(req.query.date);
+    logger.warn(`Filter By Customer: Request date ${date.startDate} to ${date.endDate} customerId ${date.clientId}`)
+
+    const whereClause = {
+      bookingDate: {
+        [Op.between]: [date.startDate, date.endDate]
+      }
+    };
+
+    // Improved logic: skip filter if clientId is negative or 0 (All)
+    if (date.clientId && parseInt(date.clientId) > 0) {
+      whereClause.clientId = date.clientId;
+    }
+
     const saleHeaders = await SaleHeader.findAll({
-      include: ['user', 'client', 'payment', 'currency', 'location', Customer,
+      include: [
+        'user',
+        'client',
+        'payment',
+        'currency',
+        'location',
+        {
+          model: Customer,
+          include: ['geography', 'shipping']
+        },
         {
           model: Line,
           as: "lines",
@@ -1032,28 +1053,16 @@ exports.getSaleHeadersByDateAndCustomer = async (req, res) => {
             {
               model: Card,
               as: "cards"
-            },
-            {
-              model: SaleHeader,
-              as: "header"
             }
           ]
         }
-
       ],
-      where: {
-        bookingDate: {
-          [Op.between]: [date.startDate, date.endDate]
-        },
-        clientId: {
-          [date.clientId < 1 ? Op.ne : Op.eq]: date.clientId,
-        }
-      }
+      where: whereClause
     });
 
     res.status(200).send(saleHeaders);
   } catch (error) {
-    logger.error("===> Filter by date error: " + error)
+    logger.error("===> getSaleHeadersByDateAndCustomer error: " + error)
     res.status(500).send(error);
   }
 };

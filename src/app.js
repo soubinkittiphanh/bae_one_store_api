@@ -110,6 +110,9 @@ const buildApp = async () => {
     app.use('/api/student', myRouter.student);
     app.use('/api/nfc-cards', myRouter.nfcCard);
     app.use('/api/transactions', myRouter.transactionEntry);
+    app.use('/api/accountDailyBalance', myRouter.accountDailyBalance);
+    app.use('/api/businessDate', myRouter.businessDate);
+    app.use('/api/database', myRouter.databaseBackup);
 
     Router.category(app);
     Router.product(app);

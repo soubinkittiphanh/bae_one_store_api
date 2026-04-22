@@ -16,13 +16,17 @@ module.exports = (sequelize, DataTypes) => {
         },
         saleRate: {
             type: DataTypes.DOUBLE,
-            default:0
-            
+            default: 0
+
         },
         isActive: {
             type: DataTypes.BOOLEAN,
             allowNull: false,
             defaultValue: true,
+        },
+        bankAccountId: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
         },
     }, {
         sequelize,
@@ -36,7 +40,86 @@ module.exports = (sequelize, DataTypes) => {
         // transform all passed model names (first parameter of define) into plural.
         // if you don't want that, set the following
         freezeTableName: true,
+        hooks: {
+            // After create, save the new record to audit table
+            afterCreate: async (terminal, options) => {
+                try {
+                    const AuditModel = sequelize.models.TerminalAudit;
+                    if (!AuditModel || typeof AuditModel.createAuditRecord !== 'function') return;
+
+                    const userId = terminal.makerId || options.context?.userId || 1;
+                    const reason = options.context?.reason || 'Terminal created';
+
+                    await AuditModel.createAuditRecord(
+                        terminal.toJSON(),
+                        userId,
+                        'CREATE',
+                        reason,
+                        options.transaction
+                    );
+                } catch (error) {
+                    console.error('Failed to create audit record after terminal create:', error);
+                }
+            },
+
+            // Before update, save current state to audit table
+            beforeUpdate: async (terminal, options) => {
+                try {
+                    const AuditModel = sequelize.models.TerminalAudit;
+                    if (!AuditModel || typeof AuditModel.createAuditRecord !== 'function') return;
+
+                    // Fetch current state before update
+                    const currentRecord = await sequelize.models.terminal.findByPk(terminal.id, {
+                        transaction: options.transaction
+                    });
+
+                    if (currentRecord) {
+                        const userId = options.context?.userId || 1;
+                        const reason = options.context?.reason || 'Terminal updated';
+
+                        await AuditModel.createAuditRecord(
+                            currentRecord.toJSON(),
+                            userId,
+                            'UPDATE',
+                            reason,
+                            options.transaction
+                        );
+                    }
+                } catch (error) {
+                    console.error('Failed to create audit record before terminal update:', error);
+                }
+            },
+
+            // Before delete, save the record being deleted
+            beforeDestroy: async (terminal, options) => {
+                try {
+                    const AuditModel = sequelize.models.TerminalAudit;
+                    if (!AuditModel || typeof AuditModel.createAuditRecord !== 'function') return;
+
+                    const userId = options.context?.userId || 1;
+                    const reason = options.context?.reason || 'Terminal deleted';
+
+                    await AuditModel.createAuditRecord(
+                        terminal.toJSON(),
+                        userId,
+                        'DELETE',
+                        reason,
+                        options.transaction
+                    );
+                } catch (error) {
+                    console.error('Failed to create audit record before terminal delete:', error);
+                }
+            }
+        }
     })
+
+    Terminal.associate = models => {
+        // Audit Trail association
+        Terminal.hasMany(models.terminalAudit, {
+            foreignKey: 'terminalId',
+            as: 'auditTrail',
+        });
+    };
 
     return Terminal;
 };

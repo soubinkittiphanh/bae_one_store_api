@@ -50,8 +50,8 @@ const upload = async (app) => {
     app.post('/uploadsingle', uploadModule.single('file'), Upload.single)
     app.post('/uploadsingle_master', uploadModule.single('file'), Upload.singleMaster)
     app.post('/uploadsingle_master_update', uploadModule.single('file'), Upload.singleMasterUpdate)
-    app.post('/uploadmulti', uploadModule.array('files'), Upload.multi)
-    app.post('/uploadmulti_update', uploadModule.array('files'), Upload.multiUpdate)
+    app.post('/uploadmulti', tokenHook, uploadModule.array('files'), Upload.multi)
+    app.post('/uploadmulti_update', tokenHook, uploadModule.array('files'), Upload.multiUpdate)
     app.post('/unlink_file', Upload.remove_file)
 }
 const category = async (app) => {

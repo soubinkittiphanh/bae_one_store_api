@@ -43,7 +43,87 @@ module.exports = (sequelize, DataTypes) => {
         // transform all passed model names (first parameter of define) into plural.
         // if you don't want that, set the following
         freezeTableName: true,
+        hooks: {
+            // After create, save the new record to audit table
+            afterCreate: async (currency, options) => {
+                try {
+                    const AuditModel = sequelize.models.CurrencyAudit;
+                    if (!AuditModel || typeof AuditModel.createAuditRecord !== 'function') return;
+
+                    const userId = options.context?.userId || 1;
+                    const reason = options.context?.reason || 'Currency created';
+
+                    await AuditModel.createAuditRecord(
+                        currency.toJSON(),
+                        userId,
+                        'CREATE',
+                        reason,
+                        options.transaction
+                    );
+                } catch (error) {
+                    console.error('Failed to create audit record after currency create:', error);
+                }
+            },
+
+            // Before update, save current state to audit table
+            beforeUpdate: async (currency, options) => {
+                try {
+                    const AuditModel = sequelize.models.CurrencyAudit;
+                    if (!AuditModel || typeof AuditModel.createAuditRecord !== 'function') return;
+
+                    // Fetch current state before update
+                    const currentRecord = await sequelize.models.currency.findByPk(currency.id, {
+                        transaction: options.transaction
+                    });
+
+                    if (currentRecord) {
+                        const userId = options.context?.userId || 1;
+                        const reason = options.context?.reason || 'Currency updated';
+
+                        await AuditModel.createAuditRecord(
+                            currentRecord.toJSON(),
+                            userId,
+                            'UPDATE',
+                            reason,
+                            options.transaction
+                        );
+                    }
+                } catch (error) {
+                    console.error('Failed to create audit record before currency update:', error);
+                }
+            },
+
+            // Before delete, save the record being deleted
+            beforeDestroy: async (currency, options) => {
+                try {
+                    const AuditModel = sequelize.models.CurrencyAudit;
+                    if (!AuditModel || typeof AuditModel.createAuditRecord !== 'function') return;
+
+                    const userId = options.context?.userId || 1;
+                    const reason = options.context?.reason || 'Currency deleted';
+
+                    await AuditModel.createAuditRecord(
+                        currency.toJSON(),
+                        userId,
+                        'DELETE',
+                        reason,
+                        options.transaction
+                    );
+                } catch (error) {
+                    console.error('Failed to create audit record before currency delete:', error);
+                }
+            }
+        }
     })
+
+    Currency.associate = models => {
+        // Audit Trail association
+        Currency.hasMany(models.currencyAudit, {
+            foreignKey: 'currencyId',
+            as: 'auditTrail',
+        });
+    };
+
     return Currency;
 };
 

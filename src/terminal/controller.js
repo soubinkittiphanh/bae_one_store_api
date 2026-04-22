@@ -1,7 +1,5 @@
-
-const Terminal = require('../models').terminal;
-const Location = require('../models').location;
-const Company = require('../models').company;
+const { terminal: Terminal, location: Location, company: Company, bankAccount: BankAccount, terminalAudit, user: User } = require('../models');
+const logger = require('../api/logger');
 
 async function getAllTerminals(req, res) {
   try {
@@ -15,6 +13,9 @@ async function getAllTerminals(req, res) {
             as: "company"
           },
         ]
+      }, {
+        model: BankAccount,
+        as: "bankAccount"
       }]
     });
     res.status(200).json(terminals);
@@ -36,6 +37,9 @@ async function getTerminalById(req, res) {
             as: "company"
           },
         ]
+      }, {
+        model: BankAccount,
+        as: "bankAccount"
       }]
     });
     if (!terminal) {
@@ -51,7 +55,7 @@ async function getTerminalById(req, res) {
 
 async function createTerminal(req, res) {
   try {
-    const { code, name, description, saleRate, isActive, locationId } = req.body;
+    const { code, name, description, saleRate, isActive, locationId, bankAccountId } = req.body;
 
     // Create the terminal
     const terminal = await Terminal.create({
@@ -60,7 +64,10 @@ async function createTerminal(req, res) {
       description,
       saleRate,
       isActive,
-      locationId
+      locationId,
+      bankAccountId
+    }, {
+      context: { userId: req.user?.id || 1, reason: 'Terminal created via API' }
     });
 
     // Refetch with associations
@@ -100,8 +107,10 @@ async function updateTerminal(req, res) {
     if (!terminal) {
       res.status(404).json({ message: 'Terminal not found' });
     } else {
-      const { code, name, description, saleRate, isActive, locationId } = req.body;
-      await terminal.update({ code, name, description, saleRate, isActive, locationId });
+      const { code, name, description, saleRate, isActive, locationId, bankAccountId, reason } = req.body;
+      await terminal.update({ code, name, description, saleRate, isActive, locationId, bankAccountId }, {
+        context: { userId: req.user?.id || 1, reason: reason || 'Terminal updated via API' }
+      });
       res.status(200).json(terminal);
     }
   } catch (error) {
@@ -117,12 +126,45 @@ async function deleteTerminal(req, res) {
     if (!terminal) {
       res.status(404).json({ message: 'Terminal not found' });
     } else {
-      await terminal.destroy();
+      await terminal.destroy({
+        context: { userId: req.user?.id || 1, reason: req.body?.reason || 'Terminal deleted via API' }
+      });
       res.status(204).json();
     }
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Internal server error' });
+  }
+}
+
+async function getTerminalAudit(req, res) {
+  try {
+    const { id } = req.params;
+    logger.info(`Fetching audit records for terminal ID: ${id}`);
+
+    const auditRecords = await terminalAudit.findAll({
+      where: { terminalId: id },
+      include: [
+        {
+          model: User,
+          as: 'user',
+          attributes: ['id', 'cus_name', 'cus_email']
+        }
+      ],
+      order: [['auditDate', 'DESC']]
+    });
+
+    res.status(200).json({
+      success: true,
+      data: auditRecords
+    });
+  } catch (error) {
+    logger.error('Error fetching terminal audit:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Internal server error',
+      error: error.message 
+    });
   }
 }
 
@@ -132,4 +174,5 @@ module.exports = {
   createTerminal,
   updateTerminal,
   deleteTerminal,
+  getTerminalAudit,
 };

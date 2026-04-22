@@ -14,6 +14,7 @@ const Category = require('../../models').category;
 const Product = require('../../models').product;
 const Location = require('../../models').location;
 const Promotion = require('../../models').promotion; // Added promotion model
+const Currency = require('../../models').currency;
 
 // Sale integration models
 const SaleHeader = require('../../models').saleHeader;
@@ -68,6 +69,13 @@ const postTicketToSale = async (ticketId, transaction) => {
         // Generate locking session for card reservation
         const lockingSessionId = common.generateLockingSessionId();
         const locationId = ticket.locationId; // Get from ticket.table.locationId or config
+
+        // Fetch active currencies for card creation
+        const currencies = await Currency.findAll({
+            where: { isActive: true },
+            transaction
+        });
+        const currencyMap = new Map(currencies.map(c => [c.id, c]));
 
         // Prepare lines for processing
         const lines = ticket.ticketLines.map(ticketLine => ({
@@ -223,11 +231,52 @@ const postTicketToSale = async (ticketId, transaction) => {
 
             createdSaleLines.push(saleLine);
             logger.info(`✓ Sale line created for product ${line.productId}`);
+
+            // NEW: If stock validation is NOT required, create "fresh" cards and mark as used mapping with this saleLine
+            if (!line.product.validateStockOnSale) {
+                const qty = line.unitRate * line.quantity;
+                logger.info(`Creating ${qty} fresh cards for non-stock product ${line.productId} (${line.product.name})`);
+                
+                const currencyId = line.product.saleCurrencyId || 1;
+                const currency = currencyMap.get(currencyId);
+                const exchangeRate = currency ? currency.rate : 1;
+                const cost = line.product.cost_price || 0;
+                const costLCY = cost * exchangeRate;
+                
+                const cardRows = [];
+                for (let i = 0; i < qty; i++) {
+                    const cardSequenceNumber = common.generateLockingSessionId(10);
+                    cardRows.push({
+                        card_type_code: 10010, // Stock type code
+                        product_id: line.product.pro_id, // Legacy product code
+                        productId: line.productId, // Primary key
+                        cost: cost,
+                        costLCY: costLCY,
+                        exchangeRate: exchangeRate,
+                        card_number: cardSequenceNumber,
+                        card_isused: 1, // Mark as used immediately
+                        locking_session_id: lockingSessionId,
+                        card_input_date: new Date(),
+                        inputter: ticket.createUserId || 1,
+                        update_user: ticket.createUserId || 1,
+                        update_time: new Date(),
+                        update_time_new: new Date(),
+                        isActive: true,
+                        currencyId: currencyId,
+                        locationId: locationId,
+                        saleLineId: saleLine.id
+                    });
+                }
+                
+                if (cardRows.length > 0) {
+                    await Card.bulkCreate(cardRows, { transaction });
+                    logger.info(`✓ Created and linked ${cardRows.length} fresh cards for product ${line.productId}`);
+                }
+            }
         }
 
-        // Update product stock counts
+        // Update product stock counts (Include products that had fresh cards created too)
         const productIdsForStockUpdate = lines
-            .filter(line => line.product.validateStockOnSale)
             .map(line => line.productId);
 
         if (productIdsForStockUpdate.length > 0) {

@@ -11,4 +11,10 @@ router.post('/topup', transactionController.processTopup);
 // Route for Withdrawals (Taking money out)
 router.post('/withdraw', transactionController.processWithdrawal);
 
+// Route for Account Statement
+router.get('/statement/:accountId', transactionController.getAccountStatement);
+
+// Route for User activity (Staff Report)
+router.get('/user-activity/:userId', transactionController.getUserActivity);
+
 module.exports = router;

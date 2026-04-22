@@ -114,10 +114,87 @@ module.exports = (sequelize, DataTypes) => {
         // transform all passed model names (first parameter of define) into plural.
         // if you don't want that, set the following
         freezeTableName: true,
+        hooks: {
+            // After create, save the new record to audit table
+            afterCreate: async (product, options) => {
+                try {
+                    const AuditModel = sequelize.models.ProductAudit;
+                    if (!AuditModel || typeof AuditModel.createAuditRecord !== 'function') return;
+
+                    const userId = options.context?.userId || 1;
+                    const reason = options.context?.reason || 'Product created';
+
+                    await AuditModel.createAuditRecord(
+                        product.toJSON(),
+                        userId,
+                        'CREATE',
+                        reason,
+                        options.transaction
+                    );
+                } catch (error) {
+                    console.error('Failed to create audit record after product create:', error);
+                }
+            },
+
+            // Before update, save current state to audit table
+            beforeUpdate: async (product, options) => {
+                try {
+                    const AuditModel = sequelize.models.ProductAudit;
+                    if (!AuditModel || typeof AuditModel.createAuditRecord !== 'function') return;
+
+                    // Fetch current state before update
+                    const currentRecord = await sequelize.models.product.findByPk(product.id, {
+                        transaction: options.transaction
+                    });
+
+                    if (currentRecord) {
+                        const userId = options.context?.userId || 1;
+                        const reason = options.context?.reason || 'Product updated';
+
+                        await AuditModel.createAuditRecord(
+                            currentRecord.toJSON(),
+                            userId,
+                            'UPDATE',
+                            reason,
+                            options.transaction
+                        );
+                    }
+                } catch (error) {
+                    console.error('Failed to create audit record before product update:', error);
+                }
+            },
+
+            // Before delete, save the record being deleted
+            beforeDestroy: async (product, options) => {
+                try {
+                    const AuditModel = sequelize.models.ProductAudit;
+                    if (!AuditModel || typeof AuditModel.createAuditRecord !== 'function') return;
+
+                    const userId = options.context?.userId || 1;
+                    const reason = options.context?.reason || 'Product deleted';
+
+                    await AuditModel.createAuditRecord(
+                        product.toJSON(),
+                        userId,
+                        'DELETE',
+                        reason,
+                        options.transaction
+                    );
+                } catch (error) {
+                    console.error('Failed to create audit record before product delete:', error);
+                }
+            }
+        }
     });
 
     // Product Associations - Using Proper Sequelize Pattern
     Product.associate = function (models) {
+        // Audit Trail association
+        Product.hasMany(models.productAudit, {
+            foreignKey: 'productId',
+            as: 'auditTrail',
+        });
+
         // Category associations - handle both possible foreign keys
         Product.belongsTo(models.category, {
             as: 'category',

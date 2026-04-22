@@ -1,7 +1,8 @@
-const Currency = require('../models').currency;
+const { currency: Currency, currencyAudit, user: User } = require('../models');
 const { body, validationResult } = require('express-validator');
 const logger = require('../api/logger');
 const service = require('./service');
+const { Op } = require('sequelize');
 
 module.exports = {
     async findCurrencies(req, res) {
@@ -112,6 +113,8 @@ module.exports = {
                 isActive: isActive !== undefined ? isActive : true,
                 isLocalCCY: isLocalCCY !== undefined ? isLocalCCY : false,
                 exchangeDirection: direction
+            }, {
+                context: { userId: req.user?.id || 1, reason: 'Currency created via API' }
             });
 
             res.status(201).json(currency);
@@ -193,7 +196,9 @@ module.exports = {
             if (isLocalCCY !== undefined) updateData.isLocalCCY = isLocalCCY;
             if (exchangeDirection !== undefined) updateData.exchangeDirection = exchangeDirection;
 
-            await currency.update(updateData);
+            await currency.update(updateData, {
+                context: { userId: req.user?.id || 1, reason: req.body.reason || 'Currency updated via API' }
+            });
             
             // Return updated currency
             const updatedCurrency = await Currency.findByPk(id);
@@ -235,7 +240,9 @@ module.exports = {
                 });
             }
 
-            await currency.destroy();
+            await currency.destroy({
+                context: { userId: req.user?.id || 1, reason: req.body.reason || 'Currency deleted via API' }
+            });
             res.status(204).json({});
         } catch (error) {
             console.error('Delete currency error:', error);
@@ -270,14 +277,18 @@ module.exports = {
                     { isLocalCCY: false }, 
                     { 
                         where: { isLocalCCY: true },
-                        transaction 
+                        transaction,
+                        context: { userId: req.user?.id || 1, reason: 'Switching local currency' }
                     }
                 );
 
                 // Set new local currency
                 await newLocalCurrency.update(
                     { isLocalCCY: true }, 
-                    { transaction }
+                    { 
+                        transaction,
+                        context: { userId: req.user?.id || 1, reason: 'Switching local currency' }
+                    }
                 );
 
                 await transaction.commit();
@@ -360,6 +371,37 @@ module.exports = {
         } catch (error) {
             console.error('Convert rate error:', error);
             res.status(500).json({ error: 'Internal server error' });
+        }
+    },
+
+    async getCurrencyAudit(req, res) {
+        try {
+            const { id } = req.params;
+            logger.info(`Fetching audit records for currency ID: ${id}`);
+
+            const auditRecords = await currencyAudit.findAll({
+                where: { currencyId: id },
+                include: [
+                    {
+                        model: User,
+                        as: 'user',
+                        attributes: ['id', 'cus_name', 'cus_email']
+                    }
+                ],
+                order: [['auditDate', 'DESC']]
+            });
+
+            res.status(200).json({
+                success: true,
+                data: auditRecords
+            });
+        } catch (error) {
+            logger.error('Error fetching currency audit:', error);
+            res.status(500).json({ 
+                success: false, 
+                message: 'Internal server error',
+                error: error.message 
+            });
         }
     }
 };

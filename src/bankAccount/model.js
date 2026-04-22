@@ -29,7 +29,7 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: true
         },
         accountType: {
-            type: DataTypes.ENUM('Saving', 'Current', 'Fixed Deposit'),
+            type: DataTypes.ENUM('Saving', 'Current', 'Fixed Deposit', 'Wallet', 'Merchant'),
             allowNull: false
         },
         currency: {

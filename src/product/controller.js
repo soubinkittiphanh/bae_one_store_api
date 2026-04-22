@@ -1,8 +1,5 @@
 
-const Product = require('../models').product;
-const WebGroup = require('../models').webProductGroup;
-const Category = require('../models').category;
-const Unit = require('../models').unit;
+const { product: Product, webProductGroup: WebGroup, category: Category, unit: Unit, productAudit, user: User } = require('../models');
 const { body, validationResult } = require('express-validator');
 const logger = require('../api/logger');
 const { literal, Op } = require('sequelize');
@@ -381,6 +378,8 @@ const createProduct = async (req, res) => {
       receiveUnitId,
       stockUnitId,
       baseUnitId,
+    }, {
+      context: { userId: req.user?.id || 1, reason: 'Product created via API' }
     });
     res.status(200).json(newProduct);
   } catch (error) {
@@ -405,7 +404,7 @@ const updateProductById = async (req, res) => {
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
     }
-    await Product.update(
+    await product.update(
       {
         pro_id,
         pro_name,
@@ -417,13 +416,15 @@ const updateProductById = async (req, res) => {
         retail_cost_percent,
         cost_price,
         stock_count,
-        locking_session_id,
+        locking_session_id: Date.now(),
         minStock,
         isActive,
         barCode, saleCurrencyId, costCurrencyId, companyId, vendorName, _category,
         receiveUnitId, stockUnitId, baseUnitId
       },
-      { where: { id } }
+      { 
+        context: { userId: req.user?.id || 1, reason: req.body.reason || 'Product updated via API' }
+      }
     );
     res.status(200).json({ message: 'Product updated successfully' });
   } catch (error) {
@@ -440,7 +441,10 @@ const deleteProductById = async (req, res) => {
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
     }
-    await Product.destroy({ where: { id } });
+    await Product.destroy({ 
+      where: { id },
+      context: { userId: req.user?.id || 1, reason: req.body.reason || 'Product deleted via API' }
+    });
     res.status(200).json({ message: 'Product deleted successfully' });
   } catch (error) {
     console.error(error);
@@ -452,12 +456,14 @@ const disableProductById = async (req, res) => {
   const { id } = req.params;
   try {
     const product = await Product.findOne({ where: { id } });
-    product.isActive = false;
-    await product.save()
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
     }
-    res.status(200).json({ message: 'Product deleted successfully' });
+    product.isActive = false;
+    await product.save({
+      context: { userId: req.user?.id || 1, reason: req.body.reason || 'Product disabled via API' }
+    })
+    res.status(200).json({ message: 'Product disabled successfully' });
   } catch (error) {
     console.error(`cannot disable product with error ${error}`);
     res.status(500).json({ message: 'Internal server error' });
@@ -473,7 +479,37 @@ module.exports = {
   updateProductCountById,
   updateProductCountAll,
   disableProductById,
-  getAllActiveProducts
+  getAllActiveProducts,
+  getProductAudit: async (req, res) => {
+    try {
+      const { id } = req.params;
+      logger.info(`Fetching audit records for product ID: ${id}`);
+
+      const auditRecords = await productAudit.findAll({
+        where: { productId: id },
+        include: [
+          {
+            model: User,
+            as: 'user',
+            attributes: ['id', 'cus_name', 'cus_email']
+          }
+        ],
+        order: [['auditDate', 'DESC']]
+      });
+
+      res.status(200).json({
+        success: true,
+        data: auditRecords
+      });
+    } catch (error) {
+      logger.error('Error fetching product audit:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Internal server error',
+        error: error.message 
+      });
+    }
+  }
 };
 
 

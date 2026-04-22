@@ -198,287 +198,137 @@ const createProd = async (req, imagesObj) => {
 
 // ======================= for image upload operation ================
 const createProdV1 = async (req, imagesObj) => {
-    return new Promise((resolve, reject) => {
-        // Get the current date and time
-        let date = new Date();
-        // Convert the date and time to format
-        let mysqlDateTime = date.getFullYear() + '-' +
-            ('00' + (date.getMonth() + 1)).slice(-2) + '-' +
-            ('00' + date.getDate()).slice(-2) + ' ' +
-            ('00' + date.getHours()).slice(-2) + ':' +
-            ('00' + date.getMinutes()).slice(-2) + ':' +
-            ('00' + date.getSeconds()).slice(-2);
-        logger.info("===> sql time " + mysqlDateTime);
-        logger.info("*************** CREATE PRODUCT  ***************");
-        logger.info(`*************** CREATE PRODUCT SERVICE 1 ${req} ***************`);
-        logger.info(`*************** CREATE PRODUCT SERVICE 2 ${JSON.stringify(req.body)} ***************`);
-        logger.info(`*************Payload: ${req.body.FORM}*****************`);
-        logger.info(req.body.FORM);
-
+    try {
+        logger.info("*************** CREATE PRODUCT (Sequelize) ***************");
         const body = JSON.parse(req.body.FORM);
-        const pro_cat = body.pro_category;
-        let pro_id = body.pro_id;
-        const pro_name = body.pro_name;
-        const pro_price = body.pro_price;
-        const pro_desc = body.pro_desc;
-        const pro_status = +body.pro_status;
-        const image_path = imagesObj;
-        const costPrice = body.pro_cost_price;
-        const timestamps = new Date();
-        const mysqlDatetime = timestamps.toISOString().slice(0, 19).replace('T', ' ');
-        const barCode = body.barCode;
-        const receiveUnitId = body.receiveUnitId;
-        const stockUnitId = body.stockUnitId;
-        const baseUnitId = body.baseUnitId;
-        const minStock = body.minStock;
-        const costCurrencyId = body.costCurrencyId;
-        const saleCurrencyId = body.saleCurrencyId;
-        const retail_percent = body.pro_retail_price || 0.0;
-        const locking_session_id = Date.now();
-        const isActive = body.isActive;
-        const validateStockOnSale = body.validateStockOnSale;
-        const companyId = body.companyId;
-        const vendorName = body.vendorName;
-        const category = body._category; // 'product' or 'service'
-        const durationMinutes = body.duration_minutes || 0;
+        const userId = req.user ? req.user.id : 1;
 
-        // ✅ ADD: Extract tax information
-        const taxId = body.taxId || null; // Tax ID from frontend
-        const calculatedTaxAmount = body.calculatedTaxAmount || 0;
-        const totalWithTax = body.totalWithTax || body.pro_price;
+        // Query last product pro_id
+        let lastId = await Product.max('pro_id');
+        let pro_id = lastId ? parseInt(lastId) + 1 : 1000;
 
-        let sqlComImages = 'INSERT INTO image_path(pro_id, img_name, img_path, createdAt, updateTimestamp, productId) VALUES';
+        const productData = {
+            pro_category: body.pro_category,
+            pro_id: pro_id,
+            pro_name: body.pro_name || '',
+            pro_price: parseFloat(body.pro_price) || 0,
+            pro_desc: body.pro_desc || '',
+            pro_status: body.pro_status == 1,
+            retail_cost_percent: parseFloat(body.pro_retail_price) || 0,
+            cost_price: parseFloat(body.pro_cost_price) || 0,
+            locking_session_id: String(Date.now()),
+            minStock: parseInt(body.minStock) || 0,
+            barCode: body.barCode || '',
+            receiveUnitId: parseInt(body.receiveUnitId) || null,
+            stockUnitId: parseInt(body.stockUnitId) || null,
+            baseUnitId: parseInt(body.baseUnitId) || null,
+            costCurrencyId: parseInt(body.costCurrencyId) || null,
+            saleCurrencyId: parseInt(body.saleCurrencyId) || null,
+            isActive: body.isActive == 1,
+            validateStockOnSale: body.validateStockOnSale == 1,
+            companyId: parseInt(body.companyId) || null,
+            vendorName: body.vendorName || '',
+            _category: body._category || 'product',
+            duration_minutes: parseInt(body.duration_minutes) || 0,
+            taxId: parseInt(body.taxId) || null
+        };
 
-        //*****************  QUERY LAST PRODUCT ID SQL  *****************//
-        try {
-            Db.query('SELECT MAX(pro_id) AS ID FROM product HAVING MAX(pro_id) IS NOT NULL', (er, re) => {
-                logger.info("=====> Processing product db");
-                if (er) {
-                    reject(`productservice create product fail #####0001 ${er}`);
-                }
+        const newProduct = await Product.create(productData, {
+            context: { userId, reason: 'Product created via Dashboard' }
+        });
 
-                if (re.length < 1) pro_id = 1000;
-                else pro_id = parseInt(re[0]['ID']) + 1;
-
-                // ✅ FIXED: Added taxId field to the INSERT statement
-                const sqlCom = `
-                    INSERT INTO product (
-                        pro_category, pro_id, pro_name, pro_price, pro_desc, pro_status, 
-                        retail_cost_percent, cost_price, locking_session_id, createdAt, 
-                        updateTimestamp, minStock, barCode, receiveUnitId, stockUnitId,baseUnitId, 
-                        costCurrencyId, saleCurrencyId, isActive, validateStockOnSale, 
-                        companyId, vendorName, _category, duration_minutes, taxId
-                    )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-                `;
-
-                // ✅ FIXED: Values array with proper null/undefined handling and added taxId
-                const values = [
-                    pro_cat || null,
-                    pro_id || null,
-                    pro_name || '',
-                    parseFloat(pro_price) || 0,
-                    pro_desc || '',
-                    isNaN(pro_status) ? 1 : pro_status,
-                    parseFloat(retail_percent) || 0,
-                    parseFloat(costPrice) || 0,
-                    locking_session_id,
-                    mysqlDateTime,
-                    mysqlDateTime,
-                    parseInt(minStock) || 0,
-                    barCode || '',
-                    parseInt(receiveUnitId) || null,
-                    parseInt(stockUnitId) || null,
-                    parseInt(baseUnitId) || null,
-                    parseInt(costCurrencyId) || null,
-                    parseInt(saleCurrencyId) || null,
-                    isActive ? 1 : 0,
-                    validateStockOnSale ? 1 : 0,
-                    parseInt(companyId) || null,
-                    vendorName || '',
-                    category || 'product',
-                    parseInt(durationMinutes) || 0,
-                    parseInt(taxId) || null  // ✅ ADD: Tax ID
-                ];
-
-                // ✅ ADD: Log the values for debugging
-                logger.info("Values being inserted:", JSON.stringify(values));
-
-                //*****************  INSERT PRODUCT SQL  *****************//
-                logger.info("SQL CREATE PRODUCT SERVICE: " + sqlCom);
-                Db.query(sqlCom, values, (er, re) => {
-                    if (er) {
-                        logger.error("Database insertion error:", er);
-                        reject(`productservice create product fail #####0002 ${er}`);
-                    } else if (re) {
-                        const productId = re.insertId;
-                        logger.warn(`${productId} create product response ${JSON.stringify(re)}`);
-                        logger.warn(`Image len ${image_path.length}`);
-
-                        if (image_path.length > 0) {
-                            image_path.forEach((i, idx, element) => {
-                                if (idx === element.length - 1)
-                                    sqlComImages += `(${pro_id},'${i.name}','${i.path}','${mysqlDatetime}','${mysqlDatetime}','${productId}');`;
-                                else
-                                    sqlComImages += `(${pro_id},'${i.name}','${i.path}','${mysqlDatetime}','${mysqlDatetime}','${productId}'),`;
-                            });
-                            //*****************  INSERT IMAGES SQL  *****************//
-                            Db.query(sqlComImages, (er, re) => {
-                                if (er) reject(`productservice create product fail #####0003 ${er}`);
-                                else updateImageProductId();
-                            });
-                        }
-
-                        // Resolve with the productId
-                        resolve(productId);
-                    }
-                });
-            });
-        } catch (error) {
-            logger.error(`Create product service error ${error}`);
-            reject(`productservice create product fail 0001 ${error}`);
+        if (imagesObj.length > 0) {
+            const ImageModel = require('../models').image;
+            const images = imagesObj.map(img => ({
+                pro_id: pro_id,
+                img_name: img.name,
+                img_path: img.path,
+                productId: newProduct.id
+            }));
+            await ImageModel.bulkCreate(images);
         }
-    });
+
+        return newProduct.id;
+    } catch (error) {
+        logger.error(`Create product service error ${error}`);
+        throw error;
+    }
 }
 
 
 const updateProd = async (req, imagesObj) => {
-    logger.info("*************** UPDATE PRODUCT  ***************");
-    logger.info(`*************Payload: *****************`);
-    logger.info(req.body.FORM);
-    const body = JSON.parse(req.body.FORM);
-    const pro_cat = body.pro_category;
-    let pro_id = body.pro_id;
-    const productId = body.productId;
-    const pro_name = body.pro_name;
-    const pro_price = body.pro_price;
-    const pro_desc = body.pro_desc;
-    const pro_status = +body.pro_status;
-    const image_path = imagesObj;
-    const cost_price = body.pro_cost_price;
-    const minStock = body.minStock;
-    const barCode = body.barCode;
-    const receiveUnitId = body.receiveUnitId;
-    const stockUnitId = body.stockUnitId;
-    const baseUnitId = body.baseUnitId;
-    const costCurrencyId = body.costCurrencyId;
-    const saleCurrencyId = body.saleCurrencyId;
-    const isActive = body.isActive;
-    const validateStockOnSale = body.validateStockOnSale;
-    const companyId = body.companyId;
-    const vendorName = body.vendorName;
-    const taxId = body.taxId;
-    const timestamps = new Date();
-    const mysqlDatetime = timestamps.toISOString().slice(0, 19).replace('T', ' ');
-    const retail_percent = body.pro_retail_price || 0.0;
-    const category = body._category || 'product'; // 'product' or 'service'
-    const durationMinutes = body.duration_minutes || 0; // default to 0 if not provided
-    logger.warn(`PRODUCT ${JSON.stringify(body)}`);
-    let serverImageIds = []
-    if (body.server_images) {
-        serverImageIds = body.server_images.map(el => el.id);
-    }
+    try {
+        logger.info("*************** UPDATE PRODUCT (Sequelize) ***************");
+        const body = JSON.parse(req.body.FORM);
+        const userId = req.user ? req.user.id : 1;
+        const pro_id = body.pro_id;
 
+        // Step 1: Manage Images
+        let serverImageIds = [];
+        if (body.server_images) {
+            serverImageIds = body.server_images.map(el => el.id);
+        }
 
-    // If there are no images on the server, you can avoid using NOT IN altogether
-    let sqlRemoveImages;
-    if (serverImageIds.length > 0) {
-        logger.warn(`ID IMAGE TO BE DELETED ${serverImageIds} PRODUT ID: ${pro_id}`)
-        sqlRemoveImages = `DELETE FROM image_path WHERE pro_id = ? AND id NOT IN (${serverImageIds.map(() => '?').join(', ')})`;
+        const ImageModel = require('../models').image;
+        if (serverImageIds.length > 0) {
+            await ImageModel.destroy({
+                where: {
+                    pro_id: pro_id,
+                    id: { [Op.notIn]: serverImageIds }
+                }
+            });
+        } else {
+            await ImageModel.destroy({ where: { pro_id: pro_id } });
+        }
 
-    } else {
-        sqlRemoveImages = `DELETE FROM image_path WHERE pro_id = ?`;  // If no images, just remove based on pro_id
-    }
-    logger.info(`remove image sql statement ${sqlRemoveImages}`);
-    // Use parameterized queries for safer handling
-    let params = [pro_id, ...serverImageIds];
+        // Step 2: Update Product via Sequelize to trigger hooks
+        const product = await Product.findOne({ where: { pro_id: pro_id } });
+        if (!product) throw new Error(`Product with pro_id ${pro_id} not found`);
 
-    // Execute the query using a safe method (e.g., MySQL's connection.query)
-    await clearProductImage(sqlRemoveImages, params)
+        const updateData = {
+            pro_category: body.pro_category,
+            pro_name: body.pro_name,
+            pro_price: parseFloat(body.pro_price),
+            pro_desc: body.pro_desc,
+            pro_status: body.pro_status == 1,
+            retail_cost_percent: parseFloat(body.pro_retail_price) || 0,
+            isActive: body.isActive == 1,
+            validateStockOnSale: body.validateStockOnSale == 1,
+            cost_price: parseFloat(body.pro_cost_price) || 0,
+            minStock: parseInt(body.minStock) || 0,
+            barCode: body.barCode,
+            receiveUnitId: parseInt(body.receiveUnitId) || null,
+            stockUnitId: parseInt(body.stockUnitId) || null,
+            baseUnitId: parseInt(body.baseUnitId) || null,
+            saleCurrencyId: parseInt(body.saleCurrencyId) || null,
+            costCurrencyId: parseInt(body.costCurrencyId) || null,
+            companyId: parseInt(body.companyId) || null,
+            vendorName: body.vendorName,
+            _category: body._category || 'product',
+            duration_minutes: parseInt(body.duration_minutes) || 0,
+            taxId: parseInt(body.taxId) || null
+        };
 
-
-    let sqlComImages = 'INSERT INTO image_path(pro_id, img_name, img_path,createdAt,updateTimestamp,productId)VALUES';
-    // const sqlCom = `UPDATE product SET pro_category='${pro_cat}', pro_name="${pro_name}", pro_price='${pro_price}', 
-    // pro_desc="${pro_desc}", pro_status='${pro_status}',retail_cost_percent='${retail_percent}',isActive=${isActive},
-    // cost_price='${cost_price}',minStock=${minStock},barCode='${barCode}',
-    // receiveUnitId=${receiveUnitId},stockUnitId=${stockUnitId},saleCurrencyId=${saleCurrencyId},costCurrencyId=${costCurrencyId},companyId=${companyId}
-    //  WHERE pro_id='${pro_id}'`
-    const sqlCom = `
-    UPDATE product 
-    SET 
-      pro_category = ?, 
-      pro_name = ?, 
-      pro_price = ?, 
-      pro_desc = ?, 
-      pro_status = ?, 
-      retail_cost_percent = ?, 
-      isActive = ?, 
-      validateStockOnSale = ?, 
-      cost_price = ?, 
-      minStock = ?, 
-      barCode = ?, 
-      receiveUnitId = ?, 
-      stockUnitId = ?, 
-      baseUnitId = ?,
-      saleCurrencyId = ?, 
-      costCurrencyId = ?, 
-      companyId = ?,
-      vendorName = ?,
-      _category = ?,
-      duration_minutes = ?,
-      taxId = ?
-    WHERE pro_id = ?;
-  `;
-
-
-    // Values array for parameterized query
-    const values = [
-        pro_cat,
-        pro_name,
-        pro_price,
-        pro_desc,
-        pro_status,
-        retail_percent,
-        isActive,
-        validateStockOnSale,
-        cost_price,
-        minStock,
-        barCode,
-        receiveUnitId,
-        stockUnitId,
-        baseUnitId,
-        saleCurrencyId,
-        costCurrencyId,
-        companyId,
-        vendorName,
-        category,
-        durationMinutes,
-        taxId,
-        pro_id
-    ];
-
-    logger.info(`************* UPDATE PRODUCT ${sqlCom} *****************`);
-    logger.info(`Values array: ${JSON.stringify(values)}`);
-    logger.info(`************* COMMAND ${JSON.stringify(sqlComImages)} *****************`);
-    logger.info(`*************Payload: ${JSON.stringify(imagesObj)} *****************`);
-    logger.info("Final category:", category);
-
-    Db.query(sqlCom, values, (er, re) => {
-        if (er) throw new Error(`Cannot update product code ####0001 ${er} `);
-        if (image_path.length < 1) return // Nothing to do
-        image_path.forEach((i, idx, element) => {
-            if (idx === element.length - 1) sqlComImages += `(${pro_id},'${i.name}','${i.path}','${mysqlDatetime}','${mysqlDatetime}','${productId}');`;
-            else sqlComImages += `(${pro_id},'${i.name}','${i.path}','${mysqlDatetime}','${mysqlDatetime}','${productId}'),`;
-
-        });
-        logger.warn(`IMAGE SQL: ${sqlComImages}`)
-        //*****************  INSERT IMAGES SQL  *****************//
-        Db.query(sqlComImages, (er, re) => {
-            if (er) throw new Error("Cannot update product code ####0002 ");
-            updateImageProductId()
+        await product.update(updateData, {
+            context: { userId, reason: 'Product updated via Dashboard' }
         });
 
-    })
+        // Step 3: Insert new images
+        if (imagesObj.length > 0) {
+            const newImages = imagesObj.map(img => ({
+                pro_id: pro_id,
+                img_name: img.name,
+                img_path: img.path,
+                productId: product.id
+            }));
+            await ImageModel.bulkCreate(newImages);
+        }
+
+        updateImageProductId();
+    } catch (error) {
+        logger.error(`Update product service error ${error}`);
+        throw error;
+    }
 }
 
 const updateImageProductId = () => {

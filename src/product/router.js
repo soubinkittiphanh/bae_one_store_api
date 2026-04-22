@@ -19,6 +19,7 @@ router.post("/create",validator.createReceiveHeaderValidation, controller.create
     .get("/find", controller.getAllProducts)
     .get("/find/active", controller.getAllActiveProducts)
     .get("/find/:id", controller.getProductById)
+    .get("/audit/:id", controller.getProductAudit)
     .put("/stockcount/:id", controller.updateProductCountById)
     .put("/stockcount", controller.updateProductCountAll)
     // .post("/bulkCreate",service.createHulkStockCard)

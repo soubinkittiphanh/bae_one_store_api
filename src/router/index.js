@@ -88,6 +88,9 @@ const printer = require("../printer/router")
 const student = require("../student/router")
 const nfcCard = require("../nfcCard/router")
 const transactionEntry = require("../transactionEntry/router")
+const accountDailyBalance = require("../accountDailyBalance/router")
+const businessDate = require("../businessDate/router")
+const databaseBackup = require("../databaseBackup/router")
 
 module.exports = {
     orderRouter,
@@ -180,4 +183,7 @@ module.exports = {
     nfcCard,
     transactionEntry,
     mainCategory,
+    accountDailyBalance,
+    businessDate,
+    databaseBackup,
 }

@@ -24,6 +24,11 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.TEXT,
             allowNull: true
         },
+        externalRefno: {
+            type: DataTypes.TEXT,
+            allowNull: true,
+            comment: 'External reference number, e.g., NFC card UID or external payment ref'
+        },
         isActive: {
             type: DataTypes.BOOLEAN,
             defaultValue: true
@@ -32,6 +37,11 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.INTEGER,
             allowNull: true,
             comment: 'The administrator or cashier who processed this transaction'
+        },
+        businessDate: {
+            type: DataTypes.DATEONLY,
+            allowNull: true,
+            comment: 'The official business date this transaction belongs to'
         }
     }, {
         sequelize,

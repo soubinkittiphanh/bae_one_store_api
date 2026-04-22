@@ -78,6 +78,7 @@ const initializeModels = () => {
     company: require("../company/model")(sequelize, DataTypes),
     location: require("../location/model")(sequelize, DataTypes),
     currency: require("../currency/model")(sequelize, DataTypes),
+    currencyAudit: require("../currency/auditModel")(sequelize, DataTypes),
     unit: require("../unit/model")(sequelize, DataTypes),
     printerModel: require("../printer/model")(sequelize, DataTypes),
     stockTransactionModel: require("../stockTransaction/model")(sequelize, DataTypes),
@@ -90,6 +91,7 @@ const initializeModels = () => {
     // Product related models
     tax: require("../tax/model")(sequelize, DataTypes),
     product: require("../product/model")(sequelize, DataTypes),
+    productAudit: require("../product/auditModel")(sequelize, DataTypes),
     productTemp: require("../productTemp/model")(sequelize, DataTypes),
     productSize: require("../product_size/model")(sequelize, DataTypes),
     image: require("../image/model")(sequelize, DataTypes),
@@ -191,6 +193,7 @@ const initializeModels = () => {
     service: require("../service/model")(sequelize, DataTypes),
     authority: require("../authority/model")(sequelize, DataTypes),
     terminal: require("../terminal/model")(sequelize, DataTypes),
+    terminalAudit: require("../terminal/auditModel")(sequelize, DataTypes),
     // card: require("../card/model")(sequelize, DataTypes),
     campaign: require("../controllers/admin/campaign/model")(sequelize, DataTypes),
     campaignEntry: require("../controllers/admin/campaign/entry/model")(sequelize, DataTypes),
@@ -200,6 +203,8 @@ const initializeModels = () => {
     country: require("../country/model")(sequelize, DataTypes),
     village: require("../district/model")(sequelize, DataTypes),
     district: require("../district-village/model")(sequelize, DataTypes),
+    accountDailyBalance: require("../accountDailyBalance/model")(sequelize, DataTypes),
+    businessDate: require("../businessDate/model")(sequelize, DataTypes),
 
 
 
@@ -467,6 +472,7 @@ const defineCampaignAssociations = (db) => {
 const defineLocationAssociations = (db) => {
   db.location.belongsTo(db.company, { foreignKey: 'companyId', as: 'company' });
   db.terminal.belongsTo(db.location, { foreignKey: 'locationId', as: 'location' });
+  db.terminal.belongsTo(db.bankAccount, { foreignKey: 'bankAccountId', as: 'bankAccount' });
 };
 
 // Many-to-many associations

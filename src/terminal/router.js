@@ -14,4 +14,5 @@ router.post("/create", controller.createTerminal)
     .delete("/find/:id", controller.deleteTerminal)
     .get("/find", controller.getAllTerminals)
     .get("/find/:id", controller.getTerminalById)
+    .get("/audit/:id", controller.getTerminalAudit)
 module.exports = router

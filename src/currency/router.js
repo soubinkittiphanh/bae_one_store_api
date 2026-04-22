@@ -22,6 +22,7 @@ router.delete("/delete/:id", controller.destroyCurrency)
 router.get("/findAll", controller.findCurrencies)
 router.get("/findActive", controller.findActiveCurrencies)
 router.get("/find/:id", controller.findCurrency)
+router.get("/audit/:id", controller.getCurrencyAudit)
 
 // Local currency management
 router.get("/findLocalCurrency", controller.findLocalCurrency)
