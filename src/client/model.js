@@ -61,6 +61,12 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: false,
             defaultValue: true,
         },
+        loyaltyPoints: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            defaultValue: 0,
+            comment: 'Accumulated loyalty points'
+        },
     }, {
         sequelize,
         // don't forget to enable timestamps!

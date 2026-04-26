@@ -23,6 +23,16 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.DOUBLE,
             defaultValue: 0,
         },
+        loyaltyDiscount: {
+            type: DataTypes.DOUBLE,
+            defaultValue: 0,
+            comment: 'Discount amount from loyalty points'
+        },
+        redeemedPoints: {
+            type: DataTypes.INTEGER,
+            defaultValue: 0,
+            comment: 'Number of loyalty points redeemed'
+        },
         exchangeRate: {
             type: DataTypes.DOUBLE,
             defaultValue: 1,

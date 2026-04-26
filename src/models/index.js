@@ -110,6 +110,7 @@ const initializeModels = () => {
     promotion: require("../pos/promotion/model")(sequelize, DataTypes),
     ticketLine: require("../pos/ticketLine/model")(sequelize, DataTypes),
     MemberOffer: require("../member_offer/model")(sequelize, DataTypes),
+    loyaltyTransaction: require("../loyalty/model")(sequelize, DataTypes),
     // Wash job models
     washjob: require("../carcare/washJob/model")(sequelize, DataTypes),
     washjobHis: require("../carcare/washJob-history/model")(sequelize, DataTypes),

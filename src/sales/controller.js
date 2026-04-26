@@ -19,6 +19,7 @@ const productService = require('../product/service');
 const { sequelize, location, company } = require('../models');
 const spfService = require('../spf/service')
 const cardService = require('../card/service')
+const loyaltyService = require('../loyalty/service');
 const WashJob = require('../models').washjob;
 // 1. 200 OK - The request has succeeded and the server has returned the requested data.
 
@@ -128,7 +129,8 @@ exports.createSaleHeaderOnly = async (req, res) => {
       userId,
       referenceNo,
       locationId,
-      lines // Added lines parameter for stock validation
+      lines, // Added lines parameter for stock validation
+      redeemedPoints = 0
     } = req.body;
 
     logger.info("===== Create Sale Header Only (Multi-Payment) =====" + JSON.stringify(req.body));
@@ -197,6 +199,17 @@ exports.createSaleHeaderOnly = async (req, res) => {
       });
     }
 
+    let loyaltyDiscount = 0;
+    if (clientId && redeemedPoints > 0) {
+      // For multi-payment, we handle redemption now
+      const resultRedeem = await sequelize.transaction(async (t) => {
+        const discount = await loyaltyService.redeemPoints(clientId, null, redeemedPoints, t);
+        return discount;
+      });
+      loyaltyDiscount = resultRedeem;
+      remark = `${remark || ''} (Redeemed ${redeemedPoints} points)`.trim();
+    }
+
     // Create sale header with valid payment ID
     const saleHeader = await SaleHeader.create({
       bookingDate,
@@ -211,8 +224,19 @@ exports.createSaleHeaderOnly = async (req, res) => {
       currencyId,
       userId,
       referenceNo,
-      locationId
+      locationId,
+      redeemedPoints,
+      loyaltyDiscount
     });
+
+    // Update loyalty transaction with header ID
+    if (clientId && redeemedPoints > 0) {
+      const { loyaltyTransaction } = require('../models');
+      await loyaltyTransaction.update(
+        { saleHeaderId: saleHeader.id },
+        { where: { saleHeaderId: null, clientId, type: 'REDEEMED' } }
+      );
+    }
 
     logger.info(`Sale header created successfully with ID: ${saleHeader.id}`);
 
@@ -432,6 +456,11 @@ exports.completeSaleWithLines = async (req, res) => {
       data: result.saleHeader
     });
 
+    // AWARD LOYALTY POINTS
+    if (saleHeader.clientId) {
+      await loyaltyService.awardPoints(saleHeader.clientId, saleHeaderId, saleHeader.total, null);
+    }
+
   } catch (error) {
     logger.error(`Error completing sale: ${error}`);
 
@@ -456,8 +485,8 @@ exports.completeSaleWithLines = async (req, res) => {
 
 exports.createSaleHeader = async (req, res) => {
   try {
-    let { bookingDate, qrRequestId, remark, discount, total, exchangeRate, isActive, lines, clientId, paymentId, currencyId, userId, referenceNo, locationId, customerForm } = req.body;
-    logger.info("===== Create Sale Header =====" + req.body);
+    let { bookingDate, qrRequestId, remark, discount, total, exchangeRate, isActive, lines, clientId, paymentId, currencyId, userId, referenceNo, locationId, customerForm, redeemedPoints = 0 } = req.body;
+    logger.info("===== Create Sale Header =====" + JSON.stringify(req.body));
 
     //------------ Check if stock check is require before sale process
     logger.warn(`====>  lines     ${JSON.stringify(lines)}`);
@@ -481,7 +510,28 @@ exports.createSaleHeader = async (req, res) => {
 
     const result = await sequelize.transaction(async (t) => {
       logger.warn(`SALE HEADER: ${JSON.stringify(req.body)}`);
-      const saleHeader = await SaleHeader.create({ bookingDate, qrRequestId, remark, discount, total, exchangeRate, isActive, clientId, paymentId, currencyId, userId, referenceNo, locationId }, { transaction: t });
+
+      let loyaltyDiscount = 0;
+      if (clientId && redeemedPoints > 0) {
+        loyaltyDiscount = await loyaltyService.redeemPoints(clientId, null, redeemedPoints, t);
+        remark = `${remark || ''} (Redeemed ${redeemedPoints} points)`.trim();
+      }
+
+      const saleHeader = await SaleHeader.create({
+        bookingDate, qrRequestId, remark, discount, total, exchangeRate, isActive,
+        clientId, paymentId, currencyId, userId, referenceNo, locationId,
+        redeemedPoints, loyaltyDiscount
+      }, { transaction: t });
+
+      // Update the loyalty transaction with the real saleHeaderId
+      if (clientId && redeemedPoints > 0) {
+        const { loyaltyTransaction } = require('../models');
+        await loyaltyTransaction.update(
+          { saleHeaderId: saleHeader.id },
+          { where: { saleHeaderId: null, clientId, type: 'REDEEMED' }, transaction: t }
+        );
+      }
+
       let customer = null;
 
       if (customerForm) {
@@ -521,6 +571,12 @@ exports.createSaleHeader = async (req, res) => {
     }
 
     logger.info(`Transaction complete ${result}`);
+
+    if (clientId && result.saleHeader) {
+      // Award points on the net total (total - discount - loyaltyDiscount)
+      // Actually 'total' from POS is usually the final amount to pay.
+      await loyaltyService.awardPoints(clientId, result.saleHeader.id, total, null);
+    }
   } catch (error) {
     logger.error(`Error occurs ${error}`);
     res.status(500).send(error);
@@ -737,6 +793,10 @@ exports.reverseSaleHeader = async (req, res) => {
           },
         }, { transaction: t }
       );
+
+      // REVERSE LOYALTY POINTS
+      await loyaltyService.reversePointsForSale(id, t);
+
       return { updatedRecord, numUpdated };
     })
 
