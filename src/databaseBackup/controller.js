@@ -12,9 +12,17 @@ const controller = {
         try {
             const dbConfig = env.db;
             
-            // Sanitize database name (handle potential quotes from environment variables)
             const dbName = dbConfig.database.toString().replace(/['"]+/g, '');
-            const filename = `backup_${dbName}_${new Date().toISOString().replace(/[:.]/g, '-')}.sql`;
+            
+            const now = new Date();
+            const dateStr = now.getFullYear() +
+                String(now.getMonth() + 1).padStart(2, '0') +
+                String(now.getDate()).padStart(2, '0') + '_' +
+                String(now.getHours()).padStart(2, '0') +
+                String(now.getMinutes()).padStart(2, '0') +
+                String(now.getSeconds()).padStart(2, '0');
+                
+            const filename = `backup_${dbName}_${dateStr}.sql`;
 
             logger.info(`Starting database export for ${dbName} (Host: ${dbConfig.host})`);
 
