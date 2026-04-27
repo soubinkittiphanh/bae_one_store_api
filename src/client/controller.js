@@ -1,11 +1,12 @@
 
 const Client = require('../models').client;
+const loyaltyService = require('../loyalty/service');
 const { body, validationResult } = require('express-validator');
 const logger = require('../api/logger');
 const { Op } = require('sequelize');
 
 // Create and Save a new Client
-exports.create = (req, res) => {
+exports.create = async (req, res) => {
   // Validate request
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -14,7 +15,7 @@ exports.create = (req, res) => {
 
 
   // Create a Client
-  const client = {
+  const clientData = {
     name: req.body.name,
     company: req.body.company,
     address: req.body.address,
@@ -25,20 +26,24 @@ exports.create = (req, res) => {
     class: req.body.class,
     DOB: req.body.DOB,
     email: req.body.email,
-    isActive: req.body.isActive ? req.body.isActive : true
+    isActive: req.body.isActive !== undefined ? req.body.isActive : true
   };
 
-  // Save Client in the database
-  Client.create(client)
-    .then(data => {
-      res.status(201).send(data);
-    })
-    .catch(err => {
-      res.status(500).send({
-        message:
-          err.message || "Some error occurred while creating the Client."
-      });
+  try {
+    // Save Client in the database
+    const data = await Client.create(clientData, {
+      context: { 
+        userId: req.user?.id || 1, 
+        reason: req.body.reason || 'Client created via API' 
+      }
     });
+    res.status(201).send(data);
+  } catch (err) {
+    logger.error(`Error creating client: ${err}`);
+    res.status(500).send({
+      message: err.message || "Some error occurred while creating the Client."
+    });
+  }
 };
 
 // Retrieve all Clients from the database.
@@ -71,53 +76,63 @@ exports.findOne = (req, res) => {
 };
 
 // Update a Client by the id in the request
-exports.update = (req, res) => {
+exports.update = async (req, res) => {
   const id = req.params.id;
 
-  Client.update(req.body, {
-    where: { id: id }
-  })
-    .then(num => {
-      if (num == 1) {
-        res.send({
-          message: "Client was updated successfully."
-        });
-      } else {
-        res.status(201).send({
-          message: `Cannot update Client with id=${id}. Maybe Client was not found or req.body is empty!`
-        });
-      }
-    })
-    .catch(err => {
-      res.status(500).send({
-        message: "Error updating Client with id=" + id
+  try {
+    const client = await Client.findByPk(id);
+    if (!client) {
+      return res.status(404).send({
+        message: `Cannot update Client with id=${id}. Client not found!`
       });
+    }
+
+    await client.update(req.body, {
+      context: { 
+        userId: req.user?.id || 1, 
+        reason: req.body.reason || 'Client updated via API' 
+      }
     });
+
+    res.send({
+      message: "Client was updated successfully."
+    });
+  } catch (err) {
+    logger.error(`Error updating client: ${err}`);
+    res.status(500).send({
+      message: "Error updating Client with id=" + id
+    });
+  }
 };
 
 // Delete a Client with the specified id in the request
-exports.delete = (req, res) => {
+exports.delete = async (req, res) => {
   const id = req.params.id;
 
-  Client.destroy({
-    where: { id: id }
-  })
-    .then(num => {
-      if (num == 1) {
-        res.send({
-          message: "Client was deleted successfully!"
-        });
-      } else {
-        res.send({
-          message: `Cannot delete Client with id=${id}. Maybe Client was not found!`
-        });
-      }
-    })
-    .catch(err => {
-      res.status(500).send({
-        message: "Could not delete Client with id=" + id
+  try {
+    const client = await Client.findByPk(id);
+    if (!client) {
+      return res.status(404).send({
+        message: `Cannot delete Client with id=${id}. Client not found!`
       });
+    }
+
+    await client.destroy({
+      context: { 
+        userId: req.user?.id || 1, 
+        reason: req.body.reason || 'Client deleted via API' 
+      }
     });
+
+    res.send({
+      message: "Client was deleted successfully!"
+    });
+  } catch (err) {
+    logger.error(`Error deleting client: ${err}`);
+    res.status(500).send({
+      message: "Could not delete Client with id=" + id
+    });
+  }
 };
 // Find all active Clients
 exports.findAllActive = async (req, res) => {
@@ -140,5 +155,44 @@ exports.findAllWithCreditPayment = async (req, res) => {
   // { include: ['lines', 'user'], }
   const clients = await Client.findAll({ include: ['header'] })
   return res.send(clients)
-
 }
+
+exports.findAudit = async (req, res) => {
+  const clientId = req.params.id;
+  try {
+    const AuditModel = require('../models').clientAudit;
+    const User = require('../models').user;
+
+    const auditTrail = await AuditModel.findAll({
+      where: { clientId: clientId },
+      include: [
+        {
+          model: User,
+          as: 'user',
+          attributes: ['id', ['cus_name', 'name']]
+        }
+      ],
+      order: [['auditDate', 'DESC']]
+    });
+
+    res.send(auditTrail);
+  } catch (error) {
+    logger.error(`Error retrieving client audit trail: ${error}`);
+    res.status(500).send({
+      message: "Error retrieving client audit trail for id=" + clientId
+    });
+  }
+};
+
+exports.findLoyaltyTransactions = async (req, res) => {
+  const clientId = req.params.id;
+  try {
+    const transactions = await loyaltyService.getTransactionsByClient(clientId);
+    res.send(transactions);
+  } catch (error) {
+    logger.error(`Error retrieving loyalty transactions: ${error}`);
+    res.status(500).send({
+      message: "Error retrieving loyalty transactions for client id=" + clientId
+    });
+  }
+};

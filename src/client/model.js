@@ -79,7 +79,86 @@ module.exports = (sequelize, DataTypes) => {
         // transform all passed model names (first parameter of define) into plural.
         // if you don't want that, set the following
         freezeTableName: true,
+        hooks: {
+            // After create, save the new record to audit table
+            afterCreate: async (client, options) => {
+                try {
+                    const AuditModel = sequelize.models.ClientAudit;
+                    if (!AuditModel || typeof AuditModel.createAuditRecord !== 'function') return;
+
+                    const userId = options.context?.userId || 1;
+                    const reason = options.context?.reason || 'Client created';
+
+                    await AuditModel.createAuditRecord(
+                        client.toJSON(),
+                        userId,
+                        'CREATE',
+                        reason,
+                        options.transaction
+                    );
+                } catch (error) {
+                    console.error('Failed to create audit record after client create:', error);
+                }
+            },
+
+            // Before update, save current state to audit table
+            beforeUpdate: async (client, options) => {
+                try {
+                    const AuditModel = sequelize.models.ClientAudit;
+                    if (!AuditModel || typeof AuditModel.createAuditRecord !== 'function') return;
+
+                    // Fetch current state before update
+                    const currentRecord = await sequelize.models.client.findByPk(client.id, {
+                        transaction: options.transaction
+                    });
+
+                    if (currentRecord) {
+                        const userId = options.context?.userId || 1;
+                        const reason = options.context?.reason || 'Client updated';
+
+                        await AuditModel.createAuditRecord(
+                            currentRecord.toJSON(),
+                            userId,
+                            'UPDATE',
+                            reason,
+                            options.transaction
+                        );
+                    }
+                } catch (error) {
+                    console.error('Failed to create audit record before client update:', error);
+                }
+            },
+
+            // Before delete, save the record being deleted
+            beforeDestroy: async (client, options) => {
+                try {
+                    const AuditModel = sequelize.models.ClientAudit;
+                    if (!AuditModel || typeof AuditModel.createAuditRecord !== 'function') return;
+
+                    const userId = options.context?.userId || 1;
+                    const reason = options.context?.reason || 'Client deleted';
+
+                    await AuditModel.createAuditRecord(
+                        client.toJSON(),
+                        userId,
+                        'DELETE',
+                        reason,
+                        options.transaction
+                    );
+                } catch (error) {
+                    console.error('Failed to create audit record before client delete:', error);
+                }
+            }
+        }
     })
+
+    Client.associate = models => {
+        // Audit Trail association
+        Client.hasMany(models.clientAudit, {
+            foreignKey: 'clientId',
+            as: 'auditTrail',
+        });
+    };
 
     return Client;
 };

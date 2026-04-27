@@ -1,11 +1,11 @@
-const { loyaltyTransaction, client, SPF, sequelize } = require('../models');
+const { loyaltyTransaction, client, spf, sequelize } = require('../models');
 const logger = require('../api/logger');
 
 /**
  * Get loyalty configuration from SPF
  */
 const getConfig = async () => {
-    const params = await SPF.findAll({
+    const params = await spf.findAll({
         where: {
             code: ['LOYALTY_ENABLED', 'LOYALTY_EARN_RATE', 'LOYALTY_REDEEM_RATE']
         }
@@ -76,7 +76,7 @@ exports.redeemPoints = async (clientId, saleHeaderId, points, transaction) => {
             saleHeaderId,
             points: -points,
             type: 'REDEEMED',
-            remark: `Points redeemed for discount in sale #${saleHeaderId}`
+            remark: `Points redeemed for discount${saleHeaderId ? ` in sale #${saleHeaderId}` : ''}`
         }, { transaction });
 
         // 2. Update client balance
@@ -125,6 +125,72 @@ exports.reversePointsForSale = async (saleHeaderId, transaction) => {
         }
     } catch (error) {
         logger.error(`Error reversing points: ${error.message}`);
+        throw error;
+    }
+};
+
+/**
+ * Get all loyalty transactions for a specific client
+ */
+exports.getTransactionsByClient = async (clientId) => {
+    try {
+        return await loyaltyTransaction.findAll({
+            where: { clientId },
+            order: [['createdAt', 'DESC']]
+        });
+    } catch (error) {
+        logger.error(`Error fetching loyalty transactions for client ${clientId}: ${error.message}`);
+        throw error;
+    }
+};
+
+/**
+ * Get summary of loyalty transactions by date range
+ */
+exports.getSummaryReport = async (fromDate, toDate) => {
+    try {
+        const { Op } = require('sequelize');
+        
+        const where = {
+            isActive: true,
+            createdAt: {
+                [Op.between]: [fromDate + ' 00:00:00', toDate + ' 23:59:59']
+            }
+        };
+
+        const txns = await loyaltyTransaction.findAll({
+            where,
+            include: [
+                { 
+                    model: client, 
+                    as: 'client', 
+                    attributes: ['name', 'telephone', 'company'] 
+                }
+            ],
+            order: [['createdAt', 'DESC']]
+        });
+
+        const summary = {
+            totalAwarded: 0,
+            totalRedeemed: 0,
+            totalCancelled: 0,
+            transactions: txns
+        };
+
+        txns.forEach(t => {
+            if (t.type === 'AWARDED') summary.totalAwarded += t.points;
+            else if (t.type === 'REDEEMED') summary.totalRedeemed += Math.abs(t.points);
+            else if (t.type === 'CANCELLED') summary.totalCancelled += Math.abs(t.points);
+        });
+
+        const config = await getConfig();
+
+        return {
+            ...summary,
+            config
+        };
+    } catch (error) {
+        logger.error(`Error generating loyalty summary report: ${error.message}`);
         throw error;
     }
 };

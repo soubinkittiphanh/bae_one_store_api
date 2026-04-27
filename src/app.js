@@ -113,6 +113,7 @@ const buildApp = async () => {
     app.use('/api/accountDailyBalance', myRouter.accountDailyBalance);
     app.use('/api/businessDate', myRouter.businessDate);
     app.use('/api/database', myRouter.databaseBackup);
+    app.use('/api/loyalty', myRouter.loyalty);
 
     Router.category(app);
     Router.product(app);

@@ -233,7 +233,10 @@ exports.createSaleHeaderOnly = async (req, res) => {
     if (clientId && redeemedPoints > 0) {
       const { loyaltyTransaction } = require('../models');
       await loyaltyTransaction.update(
-        { saleHeaderId: saleHeader.id },
+        { 
+          saleHeaderId: saleHeader.id,
+          remark: `Points redeemed for discount in sale #${saleHeader.id}`
+        },
         { where: { saleHeaderId: null, clientId, type: 'REDEEMED' } }
       );
     }
@@ -527,7 +530,10 @@ exports.createSaleHeader = async (req, res) => {
       if (clientId && redeemedPoints > 0) {
         const { loyaltyTransaction } = require('../models');
         await loyaltyTransaction.update(
-          { saleHeaderId: saleHeader.id },
+          { 
+            saleHeaderId: saleHeader.id,
+            remark: `Points redeemed for discount in sale #${saleHeader.id}`
+          },
           { where: { saleHeaderId: null, clientId, type: 'REDEEMED' }, transaction: t }
         );
       }

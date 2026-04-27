@@ -91,6 +91,7 @@ const transactionEntry = require("../transactionEntry/router")
 const accountDailyBalance = require("../accountDailyBalance/router")
 const businessDate = require("../businessDate/router")
 const databaseBackup = require("../databaseBackup/router")
+const loyalty = require("../loyalty/router")
 
 module.exports = {
     orderRouter,
@@ -186,4 +187,5 @@ module.exports = {
     accountDailyBalance,
     businessDate,
     databaseBackup,
+    loyalty,
 }

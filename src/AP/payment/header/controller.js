@@ -97,7 +97,7 @@ exports.getAllPaymentHeadersByDate = async (req, res) => {
           [Op.between]: [date.startDate, date.endDate]
         },
       },
-      include: ['payment', 'currency']
+      include: ['payment', 'currency', 'drAccount', 'crAccount']
     });
     res.status(200).json(paymentHeaders);
   } catch (error) {

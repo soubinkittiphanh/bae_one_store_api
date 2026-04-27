@@ -65,6 +65,7 @@ const initializeModels = () => {
     // Core models
     spf: require("../spf/model")(sequelize, DataTypes),
     client: require("../client/model")(sequelize, DataTypes),
+    clientAudit: require("../client/auditModel")(sequelize, DataTypes),
     group: require("../group/model")(sequelize, DataTypes),
     GroupMenuHeader: require("../groupMenuHeaders/model")(sequelize, DataTypes),
     role: require("../userRole/model")(sequelize, DataTypes),

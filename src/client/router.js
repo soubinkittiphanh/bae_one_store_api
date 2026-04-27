@@ -16,6 +16,8 @@ router
 .get("/findWithCredit", controller.findAllWithCreditPayment)
 .get("/find/active", controller.findAllActive)  // Move this BEFORE :id route
 .get("/find/:id", controller.findOne)          // Put this AFTER specific routes
+.get("/audit/:id", controller.findAudit)
+.get("/loyalty-transactions/:id", controller.findLoyaltyTransactions)
 .post("/generate", service.createBulkClient)
 // .post("/bulkCreate",service.createHulkStockCard)
 module.exports = router
