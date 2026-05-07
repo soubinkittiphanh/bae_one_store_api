@@ -2,12 +2,11 @@ const logger = require('../api/logger');
 const User = require('../models/index.js').user;
 const Terminal = require('../models/index.js').terminal;
 const Group = require('../models/index.js').group;
-const Authority = require('../models/index.js').menuHeader;
+const MenuHeader = require('../models/index.js').menuHeader;
 const MenuLine = require('../models/index.js').menuLine;
 const env = require("../config");
 const db = require('../models/index.js')
 const getUserById = async (cus_id, cus_pass) => {
-
     try {
         const user = await User.findOne({
             where: {
@@ -21,25 +20,104 @@ const getUserById = async (cus_id, cus_pass) => {
                     model: Group,
                     as: 'userGroup',
                     attributes: ['code', 'name', 'id', 'ticketCancel', 'homePage'],
-                    // include: [
-                    //     {
-                    //         model: Authority,
-                    //         attributes: ['name', 'llname', 'icon', 'expand'],
-                    //         include: [
-                    //             {
-                    //                 model: MenuLine,
-                    //                 attributes: ['name', 'llname', 'icon', 'path'],
-                    //             }
-                    //         ]
-                    //     }
-                    // ]
+                    include: [
+                        {
+                            model: MenuHeader,
+                            as: 'menuHeaders',
+                            attributes: ['id', 'name', 'llname', 'icon', 'expand', 'isActive'],
+                            include: [
+                                {
+                                    model: MenuLine,
+                                    as: 'menuLines',
+                                    attributes: ['id', 'name', 'llname', 'icon', 'path', 'isActive'],
+                                }
+                            ]
+                        }
+                    ]
                 }
             ]
         })
-        logger.info(`**********${user}**********`)
+
+
+        // Sort menuHeaders and menuLines by order if they exist
+        if (user && user.userGroup && user.userGroup.menuHeaders) {
+            user.userGroup.menuHeaders.sort((a, b) => {
+                const orderA = a.GroupMenuHeader?.order || 0;
+                const orderB = b.GroupMenuHeader?.order || 0;
+                return orderA - orderB;
+            });
+
+            user.userGroup.menuHeaders.forEach(header => {
+                if (header.menuLines && header.menuLines.length > 0) {
+                    header.menuLines.sort((a, b) => {
+                        const orderA = a.MenuHeaderLines?.order || 0;
+                        const orderB = b.MenuHeaderLines?.order || 0;
+                        return orderA - orderB;
+                    });
+                }
+            });
+        }
         return user;
     } catch (error) {
         logger.error(`Cannot get user with error ${error}`)
+        return null
+    }
+};
+
+const getUserOnlyById = async (id) => {
+    try {
+        const user = await User.findOne({
+            where: {
+                id
+            }, include: [
+                {
+                    model: Terminal,
+                    through: { attributes: [] }
+                },
+                {
+                    model: Group,
+                    as: 'userGroup',
+                    attributes: ['code', 'name', 'id', 'ticketCancel', 'homePage'],
+                    include: [
+                        {
+                            model: MenuHeader,
+                            as: 'menuHeaders',
+                            attributes: ['id', 'name', 'llname', 'icon', 'expand', 'isActive'],
+                            include: [
+                                {
+                                    model: MenuLine,
+                                    as: 'menuLines',
+                                    attributes: ['id', 'name', 'llname', 'icon', 'path', 'isActive'],
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        })
+
+        // Sort menuHeaders and menuLines by order if they exist
+        if (user && user.userGroup && user.userGroup.menuHeaders) {
+            user.userGroup.menuHeaders.sort((a, b) => {
+                const orderA = a.GroupMenuHeader?.order || 0;
+                const orderB = b.GroupMenuHeader?.order || 0;
+                return orderA - orderB;
+            });
+
+            user.userGroup.menuHeaders.forEach(header => {
+                if (header.menuLines && header.menuLines.length > 0) {
+                    header.menuLines.sort((a, b) => {
+                        const orderA = a.MenuHeaderLines?.order || 0;
+                        const orderB = b.MenuHeaderLines?.order || 0;
+                        return orderA - orderB;
+                    });
+                }
+            });
+        }
+
+        return user;
+    } catch (error) {
+        logger.error(`Cannot get user by id with error ${error}`)
         return null
     }
 };
@@ -193,5 +271,6 @@ FROM dcommerce_pro_init.currency;
 
 module.exports = {
     getUserById,
+    getUserOnlyById,
     ensureDefaultUserExists,
 }

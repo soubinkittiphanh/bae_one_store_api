@@ -52,11 +52,11 @@ module.exports = {
                     isActive: true
                 }
             });
-            
+
             if (!localCurrency) {
                 return res.status(404).json({ error: 'No local currency found' });
             }
-            
+
             res.status(200).json(localCurrency);
         } catch (error) {
             console.error(error);
@@ -66,22 +66,22 @@ module.exports = {
 
     async createCurrency(req, res) {
         const { code, name, rate, isActive, isLocalCCY, exchangeDirection } = req.body;
-        
+
         try {
             // Validate exchangeDirection
             const validDirections = ['local_to_foreign', 'foreign_to_local'];
             const direction = exchangeDirection || 'local_to_foreign';
-            
+
             if (!validDirections.includes(direction)) {
-                return res.status(400).json({ 
-                    error: 'Invalid exchange direction. Must be either "local_to_foreign" or "foreign_to_local"' 
+                return res.status(400).json({
+                    error: 'Invalid exchange direction. Must be either "local_to_foreign" or "foreign_to_local"'
                 });
             }
 
             // Validate rate
             if (!rate || isNaN(rate) || parseFloat(rate) <= 0) {
-                return res.status(400).json({ 
-                    error: 'Rate must be a positive number' 
+                return res.status(400).json({
+                    error: 'Rate must be a positive number'
                 });
             }
 
@@ -95,7 +95,7 @@ module.exports = {
                 });
 
                 if (existingLocalCurrency) {
-                    return res.status(400).json({ 
+                    return res.status(400).json({
                         error: `A local currency already exists: ${existingLocalCurrency.name} (${existingLocalCurrency.code}). Only one currency can be set as local currency.`,
                         existingLocalCurrency: {
                             id: existingLocalCurrency.id,
@@ -106,10 +106,10 @@ module.exports = {
                 }
             }
 
-            const currency = await Currency.create({ 
-                code, 
-                name, 
-                rate: parseFloat(rate), 
+            const currency = await Currency.create({
+                code,
+                name,
+                rate: parseFloat(rate),
                 isActive: isActive !== undefined ? isActive : true,
                 isLocalCCY: isLocalCCY !== undefined ? isLocalCCY : false,
                 exchangeDirection: direction
@@ -120,19 +120,19 @@ module.exports = {
             res.status(201).json(currency);
         } catch (error) {
             console.error('Create currency error:', error);
-            
+
             // Handle Sequelize validation errors
             if (error.name === 'SequelizeValidationError') {
-                return res.status(400).json({ 
-                    error: 'Validation error', 
-                    details: error.errors.map(e => e.message) 
+                return res.status(400).json({
+                    error: 'Validation error',
+                    details: error.errors.map(e => e.message)
                 });
             }
-            
+
             // Handle unique constraint errors
             if (error.name === 'SequelizeUniqueConstraintError') {
-                return res.status(400).json({ 
-                    error: 'Currency code already exists' 
+                return res.status(400).json({
+                    error: 'Currency code already exists'
                 });
             }
 
@@ -143,7 +143,7 @@ module.exports = {
     async updateCurrency(req, res) {
         const { id } = req.params;
         const { code, name, rate, isActive, isLocalCCY, exchangeDirection } = req.body;
-        
+
         try {
             const currency = await Currency.findByPk(id);
             if (!currency) {
@@ -153,15 +153,15 @@ module.exports = {
             // Validate exchangeDirection if provided
             const validDirections = ['local_to_foreign', 'foreign_to_local'];
             if (exchangeDirection && !validDirections.includes(exchangeDirection)) {
-                return res.status(400).json({ 
-                    error: 'Invalid exchange direction. Must be either "local_to_foreign" or "foreign_to_local"' 
+                return res.status(400).json({
+                    error: 'Invalid exchange direction. Must be either "local_to_foreign" or "foreign_to_local"'
                 });
             }
 
             // Validate rate if provided
             if (rate !== undefined && (isNaN(rate) || parseFloat(rate) <= 0)) {
-                return res.status(400).json({ 
-                    error: 'Rate must be a positive number' 
+                return res.status(400).json({
+                    error: 'Rate must be a positive number'
                 });
             }
 
@@ -176,7 +176,7 @@ module.exports = {
                 });
 
                 if (existingLocalCurrency) {
-                    return res.status(400).json({ 
+                    return res.status(400).json({
                         error: `A local currency already exists: ${existingLocalCurrency.name} (${existingLocalCurrency.code}). Only one currency can be set as local currency.`,
                         existingLocalCurrency: {
                             id: existingLocalCurrency.id,
@@ -199,25 +199,25 @@ module.exports = {
             await currency.update(updateData, {
                 context: { userId: req.user?.id || 1, reason: req.body.reason || 'Currency updated via API' }
             });
-            
+
             // Return updated currency
             const updatedCurrency = await Currency.findByPk(id);
             res.status(200).json(updatedCurrency);
         } catch (error) {
             console.error('Update currency error:', error);
-            
+
             // Handle Sequelize validation errors
             if (error.name === 'SequelizeValidationError') {
-                return res.status(400).json({ 
-                    error: 'Validation error', 
-                    details: error.errors.map(e => e.message) 
+                return res.status(400).json({
+                    error: 'Validation error',
+                    details: error.errors.map(e => e.message)
                 });
             }
-            
+
             // Handle unique constraint errors
             if (error.name === 'SequelizeUniqueConstraintError') {
-                return res.status(400).json({ 
-                    error: 'Currency code already exists' 
+                return res.status(400).json({
+                    error: 'Currency code already exists'
                 });
             }
 
@@ -235,8 +235,8 @@ module.exports = {
 
             // Prevent deletion of local currency
             if (currency.isLocalCCY) {
-                return res.status(400).json({ 
-                    error: 'Cannot delete the local currency. Please set another currency as local first.' 
+                return res.status(400).json({
+                    error: 'Cannot delete the local currency. Please set another currency as local first.'
                 });
             }
 
@@ -257,7 +257,7 @@ module.exports = {
     // Method to switch local currency
     async switchLocalCurrency(req, res) {
         const { newLocalCurrencyId } = req.body;
-        
+
         try {
             if (!newLocalCurrencyId) {
                 return res.status(400).json({ error: 'New local currency ID is required' });
@@ -274,8 +274,8 @@ module.exports = {
             try {
                 // Remove local status from current local currency
                 await Currency.update(
-                    { isLocalCCY: false }, 
-                    { 
+                    { isLocalCCY: false },
+                    {
                         where: { isLocalCCY: true },
                         transaction,
                         context: { userId: req.user?.id || 1, reason: 'Switching local currency' }
@@ -284,8 +284,8 @@ module.exports = {
 
                 // Set new local currency
                 await newLocalCurrency.update(
-                    { isLocalCCY: true }, 
-                    { 
+                    { isLocalCCY: true },
+                    {
                         transaction,
                         context: { userId: req.user?.id || 1, reason: 'Switching local currency' }
                     }
@@ -313,12 +313,12 @@ module.exports = {
     // New method to get currencies by direction
     async findCurrenciesByDirection(req, res) {
         const { direction } = req.params;
-        
+
         try {
             const validDirections = ['local_to_foreign', 'foreign_to_local'];
             if (!validDirections.includes(direction)) {
-                return res.status(400).json({ 
-                    error: 'Invalid direction. Must be either "local_to_foreign" or "foreign_to_local"' 
+                return res.status(400).json({
+                    error: 'Invalid direction. Must be either "local_to_foreign" or "foreign_to_local"'
                 });
             }
 
@@ -339,24 +339,24 @@ module.exports = {
     // Helper method to convert rates between directions
     async convertRate(req, res) {
         const { fromDirection, toDirection, rate } = req.body;
-        
+
         try {
             const validDirections = ['local_to_foreign', 'foreign_to_local'];
-            
+
             if (!validDirections.includes(fromDirection) || !validDirections.includes(toDirection)) {
-                return res.status(400).json({ 
-                    error: 'Invalid direction parameters' 
+                return res.status(400).json({
+                    error: 'Invalid direction parameters'
                 });
             }
 
             if (!rate || isNaN(rate) || parseFloat(rate) <= 0) {
-                return res.status(400).json({ 
-                    error: 'Rate must be a positive number' 
+                return res.status(400).json({
+                    error: 'Rate must be a positive number'
                 });
             }
 
             let convertedRate = parseFloat(rate);
-            
+
             // If converting from one direction to another, invert the rate
             if (fromDirection !== toDirection) {
                 convertedRate = 1 / convertedRate;
@@ -397,10 +397,10 @@ module.exports = {
             });
         } catch (error) {
             logger.error('Error fetching currency audit:', error);
-            res.status(500).json({ 
-                success: false, 
+            res.status(500).json({
+                success: false,
                 message: 'Internal server error',
-                error: error.message 
+                error: error.message
             });
         }
     }

@@ -146,10 +146,49 @@ const saleByMainCategory = async (req, res) => {
         return res.status(201).send('Server error ' + error)
     }
 }
+
+const dailySaleSummary = async (req, res) => {
+    let { fromDate, toDate } = req.query;
+    if (!fromDate || !toDate) {
+        const { beginningOfMonthString, lastDayOfMonthString } = common.getBetweenDateInCurrentMonth()
+        fromDate = beginningOfMonthString
+        toDate = lastDayOfMonthString
+    }
+
+    const sql = `
+        SELECT 
+            sh.bookingDate, 
+            c.code AS currencyCode, 
+            c.symbol AS currencySymbol,
+            pm.payment_name AS paymentType,
+            pm.payment_code AS paymentCode,
+            SUM(COALESCE(sp.amount, sh.total)) AS totalAmount,
+            COUNT(DISTINCT sh.id) AS transactionCount
+        FROM saleHeader sh
+        LEFT JOIN salePayment sp ON sh.id = sp.saleHeaderId AND sp.isActive = 1
+        LEFT JOIN payment pm ON COALESCE(sp.paymentId, sh.paymentId) = pm.id
+        LEFT JOIN currency c ON sh.currencyId = c.id
+        WHERE sh.isActive = 1 
+        AND sh.bookingDate BETWEEN '${fromDate}' AND '${toDate}'
+        GROUP BY sh.bookingDate, sh.currencyId, COALESCE(sp.paymentId, sh.paymentId)
+        ORDER BY sh.bookingDate DESC, c.code ASC, pm.payment_name ASC
+    `;
+    
+    logger.info(sql)
+    try {
+        const [rows, fields] = await dbAsync.query(sql);
+        res.status(200).send(rows)
+    } catch (error) {
+        logger.error('Server error with mysql, ' + error)
+        res.status(500).send('Server error: ' + error)
+    }
+}
+
 module.exports = {
     topSaleByMonth,
     dailySaleStatistic,
     codAndCash,
     topSaleMinimartByMonth,
-    saleByMainCategory
+    saleByMainCategory,
+    dailySaleSummary
 }

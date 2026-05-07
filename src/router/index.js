@@ -92,6 +92,9 @@ const accountDailyBalance = require("../accountDailyBalance/router")
 const businessDate = require("../businessDate/router")
 const databaseBackup = require("../databaseBackup/router")
 const loyalty = require("../loyalty/router")
+const cleaningEvent = require("../cleaningGroup/event").router
+const cleaningAttendance = require("../cleaningGroup/attendance").router
+const cleaningAnalytics = require("../cleaningGroup/analytics/router")
 
 module.exports = {
     orderRouter,
@@ -188,4 +191,7 @@ module.exports = {
     businessDate,
     databaseBackup,
     loyalty,
+    cleaningEvent,
+    cleaningAttendance,
+    cleaningAnalytics,
 }

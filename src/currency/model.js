@@ -31,6 +31,11 @@ module.exports = (sequelize, DataTypes) => {
             defaultValue: 'local_to_foreign',
             comment: 'Direction of exchange rate: local_to_foreign (LAK to Foreign) or foreign_to_local (Foreign to LAK)'
         },
+        symbol: {
+            type: DataTypes.STRING(10),
+            allowNull: true,
+            comment: 'Currency symbol (e.g., $, £, ₭)'
+        },
     }, {
         sequelize,
         // don't forget to enable timestamps!

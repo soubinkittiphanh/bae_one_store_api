@@ -1,6 +1,6 @@
 
 
-const {validateToken} = require("../../api/jwtApi")
+const { validateToken } = require("../../api/jwtApi")
 const ticketController = require("./controller")
 const service = require("./service")
 const express = require("express")
@@ -21,6 +21,10 @@ router.get('/table/:tableId/pending', ticketController.getTicketsByTableAndStatu
 router.get('/table/:tableId/current', ticketController.getCurrentTicketByTable);
 router.get('/filter/pending', ticketController.getPendingTickets);
 router.get('/reports/sales', ticketController.getSalesReport);
+router.get('/reports/top-products', ticketController.getTopProductsReport);
+router.get('/reports/payment-methods', ticketController.getPaymentMethodsReport);
+router.get('/reports/hourly-sales', ticketController.getHourlySalesReport);
+router.get('/reports/staff-performance', ticketController.getStaffPerformanceReport);
 
 // Status management routes (BEFORE /:id routes!)
 router.patch('/:id/status', ticketController.updateTicketStatus);

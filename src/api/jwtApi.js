@@ -5,7 +5,11 @@ const secretKey = require('../config').actksecret;
 function validateToken(req, res, next) {
     const authHeader = req.headers['authorization']
     const token = authHeader && authHeader.split(' ')[1]
-    if (!token) return res.status(401).send('Request without token is prohibited')
+    if (!token) {
+        console.log(`[DEBUG] Token missing for route: ${req.method} ${req.originalUrl}`);
+        logger.error(`[AUTH BLOCK] Missing token for ${req.method} ${req.originalUrl || req.url}`);
+        return res.status(401).send('Request without token is prohibited')
+    }
     jwt.verify(token, secretKey, (error, user) => {
         logger.warn(`Validating token...`)
         if (error) {
@@ -24,18 +28,31 @@ const generateToken = (user) => {
     logger.warn("Token ===> send to client " + accessToken)
     return { accessToken, user }
 }
+const userService = require('../user/service');
+
 const getUserFromToken = (req, res) => {
     const authHeader = req.headers['authorization']
     logger.info("Decrypted user request header: " + authHeader);
     const token = authHeader && authHeader.split(' ')[1]
-    if (token == null) return error.status(401).send('Invalid token')
-    jwt.verify(token, secretKey, (error, user) => {
+    if (token == null) return res.status(401).send('Invalid token')
+    
+    jwt.verify(token, secretKey, async (error, decoded) => {
         if (error) {
             logger.error(`Cannot decrypt user from token ${error}`)
-            return res.status(403).send('Token invalid or expired!')//res.sendStatus(403).send('invalid')
+            return res.status(403).send('Token invalid or expired!')
         }
-        logger.warn(`user decrypted ${user.cus_name}`);
-        res.status(200).send({ user })
+        
+        logger.warn(`user ID decrypted from token: ${decoded.id}`);
+        
+        // Fetch full user from DB using the ID in the token
+        const fullUser = await userService.getUserOnlyById(decoded.id);
+        if (!fullUser) {
+            logger.error(`User with ID ${decoded.id} not found in database`);
+            return res.status(404).send('User not found');
+        }
+        
+        const plainUser = fullUser.get({ plain: true });
+        res.status(200).send({ user: plainUser })
     })
 }
 

@@ -210,6 +210,11 @@ const initializeModels = () => {
 
 
 
+    // Cleaning Group models
+    CleaningEvent: require("../cleaningGroup/event/model")(sequelize, DataTypes),
+    CleaningEventPhoto: require("../cleaningGroup/event/photoModel")(sequelize, DataTypes),
+    Attendance: require("../cleaningGroup/attendance/model")(sequelize, DataTypes),
+
     // Tutorial model (uses different DB)
     tuturial: require("../tutorial/model")(tutorialDB, DataTypes),
   };
@@ -260,6 +265,9 @@ const defineAssociations = (db) => {
 
   // Location and company associations
   defineLocationAssociations(db);
+
+  // Cleaning Group associations
+  defineCleaningGroupAssociations(db);
 
   // Many-to-many associations
   defineManyToManyAssociations(db);
@@ -475,6 +483,20 @@ const defineLocationAssociations = (db) => {
   db.location.belongsTo(db.company, { foreignKey: 'companyId', as: 'company' });
   db.terminal.belongsTo(db.location, { foreignKey: 'locationId', as: 'location' });
   db.terminal.belongsTo(db.bankAccount, { foreignKey: 'bankAccountId', as: 'bankAccount' });
+};
+
+// Cleaning Group associations
+const defineCleaningGroupAssociations = (db) => {
+  db.user.belongsToMany(db.CleaningEvent, { through: db.Attendance, foreignKey: 'userId' });
+  db.CleaningEvent.belongsToMany(db.user, { through: db.Attendance, foreignKey: 'CleaningEventId' });
+  
+  db.CleaningEvent.hasMany(db.Attendance, { foreignKey: 'CleaningEventId' });
+  db.CleaningEvent.hasMany(db.CleaningEventPhoto, { foreignKey: 'CleaningEventId', as: 'photos' });
+  
+  db.Attendance.belongsTo(db.user, { foreignKey: 'userId' });
+  db.Attendance.belongsTo(db.CleaningEvent, { foreignKey: 'CleaningEventId' });
+  
+  db.CleaningEventPhoto.belongsTo(db.CleaningEvent, { foreignKey: 'CleaningEventId', as: 'event' });
 };
 
 // Many-to-many associations

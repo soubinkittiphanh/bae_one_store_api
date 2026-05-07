@@ -1,6 +1,6 @@
 const { body, validationResult } = require('express-validator');
 const logger = require('../../api/logger');
-const { Op } = require('sequelize');
+const { Op, fn, col, literal } = require('sequelize');
 
 // Model imports
 const User = require('../../models').user;
@@ -475,6 +475,12 @@ const ticketController = {
             if (tableId) whereCondition.tableId = tableId;
             if (clientId) whereCondition.clientId = clientId;
             if (locationId) whereCondition.locationId = locationId;
+            if (paymentId) whereCondition.paymentId = paymentId;
+            if (ticketNumber) {
+                whereCondition.ticketNumber = {
+                    [Op.like]: `%${ticketNumber}%`
+                };
+            }
             if (startDate || endDate) {
                 whereCondition.createdAt = {};
                 if (startDate) {
@@ -1573,14 +1579,24 @@ const ticketController = {
     // Get sales report
     getSalesReport: async (req, res) => {
         try {
-            const { startDate, endDate, groupBy = 'day' } = req.query;
+            const { startDate, endDate, locationId } = req.query;
 
             let dateCondition = {};
             if (startDate || endDate) {
                 dateCondition.createdAt = {};
-                if (startDate) dateCondition.createdAt[Op.gte] = new Date(startDate);
-                if (endDate) dateCondition.createdAt[Op.lte] = new Date(endDate);
+                if (startDate) {
+                    const start = new Date(startDate);
+                    start.setHours(0, 0, 0, 0);
+                    dateCondition.createdAt[Op.gte] = start;
+                }
+                if (endDate) {
+                    const end = new Date(endDate);
+                    end.setHours(23, 59, 59, 999);
+                    dateCondition.createdAt[Op.lte] = end;
+                }
             }
+
+            if (locationId) dateCondition.locationId = locationId;
 
             const tickets = await Ticket.findAll({
                 where: {
@@ -1588,17 +1604,14 @@ const ticketController = {
                     paymentStatus: 'paid'
                 },
                 attributes: [
-                    'id',
-                    'total',
-                    'subtotal',
-                    'tax',
-                    'createdAt'
+                    'id', 'total', 'subtotal', 'tax', 'promotionDiscount', 'createdAt'
                 ]
             });
 
-            const totalRevenue = tickets.reduce((sum, ticket) => sum + parseFloat(ticket.total), 0);
-            const totalTax = tickets.reduce((sum, ticket) => sum + parseFloat(ticket.tax), 0);
-            const totalSubtotal = tickets.reduce((sum, ticket) => sum + parseFloat(ticket.subtotal), 0);
+            const totalRevenue = tickets.reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
+            const totalTax = tickets.reduce((sum, t) => sum + parseFloat(t.tax || 0), 0);
+            const totalSubtotal = tickets.reduce((sum, t) => sum + parseFloat(t.subtotal || 0), 0);
+            const totalDiscount = tickets.reduce((sum, t) => sum + parseFloat(t.promotionDiscount || 0), 0);
 
             res.status(200).json({
                 success: true,
@@ -1607,14 +1620,238 @@ const ticketController = {
                     totalRevenue: totalRevenue.toFixed(2),
                     totalSubtotal: totalSubtotal.toFixed(2),
                     totalTax: totalTax.toFixed(2),
-                    averageTicketValue: tickets.length > 0 ? (totalRevenue / tickets.length).toFixed(2) : '0.00',
-                    tickets: tickets
+                    totalDiscount: totalDiscount.toFixed(2),
+                    averageTicketValue: tickets.length > 0 ? (totalRevenue / tickets.length).toFixed(2) : '0.00'
                 }
             });
         } catch (error) {
+            logger.error(`Error generating sales report: ${error.message}`);
             res.status(500).json({
                 success: false,
                 message: 'Error generating sales report',
+                error: error.message
+            });
+        }
+    },
+
+    // 2. Top Selling Products
+    getTopProductsReport: async (req, res) => {
+        try {
+            const { startDate, endDate, locationId, limit = 10 } = req.query;
+
+            let dateCondition = {};
+            if (startDate || endDate) {
+                dateCondition.createdAt = {};
+                if (startDate) {
+                    const start = new Date(startDate);
+                    start.setHours(0, 0, 0, 0);
+                    dateCondition.createdAt[Op.gte] = start;
+                }
+                if (endDate) {
+                    const end = new Date(endDate);
+                    end.setHours(23, 59, 59, 999);
+                    dateCondition.createdAt[Op.lte] = end;
+                }
+            }
+            if (locationId) dateCondition.locationId = locationId;
+
+            const topProducts = await TicketLine.findAll({
+                attributes: [
+                    'productId',
+                    [fn('SUM', col('quantity')), 'totalQuantity'],
+                    [fn('SUM', col('totalPrice')), 'totalRevenue']
+                ],
+                include: [
+                    {
+                        model: Product,
+                        as: 'product',
+                        attributes: ['id', 'pro_name', ['pro_id', 'pro_code']]
+                    },
+                    {
+                        model: Ticket,
+                        as: 'ticket',
+                        where: {
+                            ...dateCondition,
+                            paymentStatus: 'paid'
+                        },
+                        attributes: []
+                    }
+                ],
+                group: ['productId', 'product.id'],
+                order: [[literal('totalQuantity'), 'DESC']],
+                limit: parseInt(limit)
+            });
+
+            res.status(200).json({
+                success: true,
+                data: topProducts
+            });
+        } catch (error) {
+            logger.error(`Error generating top products report: ${error.message}`);
+            res.status(500).json({
+                success: false,
+                message: 'Error generating top products report',
+                error: error.message
+            });
+        }
+    },
+
+    // 3. Payment Methods Distribution
+    getPaymentMethodsReport: async (req, res) => {
+        try {
+            const { startDate, endDate, locationId } = req.query;
+
+            let dateCondition = {};
+            if (startDate || endDate) {
+                dateCondition.createdAt = {};
+                if (startDate) {
+                    const start = new Date(startDate);
+                    start.setHours(0, 0, 0, 0);
+                    dateCondition.createdAt[Op.gte] = start;
+                }
+                if (endDate) {
+                    const end = new Date(endDate);
+                    end.setHours(23, 59, 59, 999);
+                    dateCondition.createdAt[Op.lte] = end;
+                }
+            }
+            if (locationId) dateCondition.locationId = locationId;
+
+            const paymentSummary = await Ticket.findAll({
+                where: {
+                    ...dateCondition,
+                    paymentStatus: 'paid'
+                },
+                attributes: [
+                    'paymentId',
+                    [fn('COUNT', col('ticket.id')), 'ticketCount'],
+                    [fn('SUM', col('total')), 'totalAmount']
+                ],
+                include: [
+                    {
+                        model: Payment,
+                        as: 'payment',
+                        attributes: ['id', ['payment_name', 'name'], ['payment_code', 'code']]
+                    }
+                ],
+                group: ['paymentId', 'payment.id'],
+                order: [[literal('totalAmount'), 'DESC']]
+            });
+
+            res.status(200).json({
+                success: true,
+                data: paymentSummary
+            });
+        } catch (error) {
+            logger.error(`Error generating payment methods report: ${error.message}`);
+            res.status(500).json({
+                success: false,
+                message: 'Error generating payment methods report',
+                error: error.message
+            });
+        }
+    },
+
+    // 4. Hourly Sales Analysis
+    getHourlySalesReport: async (req, res) => {
+        try {
+            const { startDate, endDate, locationId } = req.query;
+
+            let dateCondition = {};
+            if (startDate || endDate) {
+                dateCondition.createdAt = {};
+                if (startDate) {
+                    const start = new Date(startDate);
+                    start.setHours(0, 0, 0, 0);
+                    dateCondition.createdAt[Op.gte] = start;
+                }
+                if (endDate) {
+                    const end = new Date(endDate);
+                    end.setHours(23, 59, 59, 999);
+                    dateCondition.createdAt[Op.lte] = end;
+                }
+            }
+            if (locationId) dateCondition.locationId = locationId;
+
+            const hourlySales = await Ticket.findAll({
+                where: {
+                    ...dateCondition,
+                    paymentStatus: 'paid'
+                },
+                attributes: [
+                    [fn('HOUR', col('createdAt')), 'hour'],
+                    [fn('COUNT', col('id')), 'ticketCount'],
+                    [fn('SUM', col('total')), 'totalAmount']
+                ],
+                group: [fn('HOUR', col('createdAt'))],
+                order: [[literal('hour'), 'ASC']]
+            });
+
+            res.status(200).json({
+                success: true,
+                data: hourlySales
+            });
+        } catch (error) {
+            logger.error(`Error generating hourly sales report: ${error.message}`);
+            res.status(500).json({
+                success: false,
+                message: 'Error generating hourly sales report',
+                error: error.message
+            });
+        }
+    },
+
+    // 5. Staff Performance Report
+    getStaffPerformanceReport: async (req, res) => {
+        try {
+            const { startDate, endDate, locationId } = req.query;
+
+            let dateCondition = {};
+            if (startDate || endDate) {
+                dateCondition.createdAt = {};
+                if (startDate) {
+                    const start = new Date(startDate);
+                    start.setHours(0, 0, 0, 0);
+                    dateCondition.createdAt[Op.gte] = start;
+                }
+                if (endDate) {
+                    const end = new Date(endDate);
+                    end.setHours(23, 59, 59, 999);
+                    dateCondition.createdAt[Op.lte] = end;
+                }
+            }
+            if (locationId) dateCondition.locationId = locationId;
+
+            const staffPerformance = await Ticket.findAll({
+                where: {
+                    ...dateCondition,
+                    paymentStatus: 'paid'
+                },
+                attributes: [
+                    'createUserId',
+                    [fn('COUNT', col('ticket.id')), 'ticketCount'],
+                    [fn('SUM', col('total')), 'totalAmount']
+                ],
+                include: [
+                    {
+                        model: User,
+                        as: 'createUser',
+                        attributes: ['id', ['cus_name', 'username']]
+                    }
+                ],
+                group: ['createUserId', 'createUser.id'],
+                order: [[literal('totalAmount'), 'DESC']]
+            });
+
+            res.status(200).json({
+                success: true,
+                data: staffPerformance
+            });
+        } catch (error) {
+            logger.error(`Error generating staff performance report: ${error.message}`);
+            res.status(500).json({
+                success: false,
+                message: 'Error generating staff performance report',
                 error: error.message
             });
         }

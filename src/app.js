@@ -12,12 +12,29 @@ const buildApp = async () => {
     app.use(cors());
     app.use(express.json());
     app.use('/uploads', express.static('uploads'));// Link uploads folder available via static route
+    app.use((req, res, next) => {
+        console.log(`[GLOBAL LOG] ${req.method} ${req.url}`);
+        next();
+    });
     console.log("DIRNAME " + __dirname);
     app.get("/hello", (req, res) => {
         res.send("Succeed server is ready")
     })
+
+    // DEBUG: Test if ANY public route works
+    app.get("/test-public", (req, res) => res.send("Public works!"));
+    app.get("/api/cleaning/test-public", (req, res) => res.send("Cleaning Public works!"));
+
+    console.log("[DEBUG] Mounting cleaning routes...");
+    // PUBLIC CLEANING ROUTES (Defined early to bypass /api middleware)
+    app.use('/api/cleaning/event', myRouter.cleaningEvent);
+    app.use('/api/cleaning/attendance', myRouter.cleaningAttendance);
+    app.use('/api/cleaning/analytics', myRouter.cleaningAnalytics);
+    console.log("[DEBUG] Cleaning routes mounted.");
+
     app.get("/api/public/company/findAll", companyController.getAllActiveCompanies)
     app.post("/api/v1/direct/callback", qrPayment.handleCallback)
+
     app.use("/api/product-temps", myRouter.productTemp)
     app.use("/webproductgroup/find", controller.findActive)
     app.use("/api", myRouter.dymCustomerRouter)

@@ -12,8 +12,8 @@ router.use(validateToken)
 // })
 
 // Create and Update routes
-router.post("/create", controller.createCurrency)
-router.put("/update/:id", controller.updateCurrency)
+router.post("/create", validator.currencyValidation, controller.createCurrency)
+router.put("/update/:id", validator.currencyValidation, controller.updateCurrency)
 
 // Delete route
 router.delete("/delete/:id", controller.destroyCurrency)

@@ -8,18 +8,19 @@ const authenticate = async (req, res) => {
     const { mem_id, mem_pwd } = body;
     const user = await userService.getUserById(mem_id,mem_pwd)
     if(!user) return  res.send({ "accessToken": "", "error": "ລະຫັດຜ່ານ ຫລື ໄອດີບໍ່ຖືກຕ້ອງ" })
-    logger.info(`**********${user.cus_name}**********`)
-    const plainPayload = { 
-        id:user.id,
-        cus_id:user.cus_id,
-        cus_name:user.cus_name,
-        cus_tel:user.cus_tel,
-        userGroup: user.userGroup,
-        terminal: user.terminals
+    const plainUser = user.get({ plain: true });
+    logger.info(`**********${plainUser.cus_name}**********`)
+    
+    const tokenPayload = { 
+        id: plainUser.id,
+        cus_id: plainUser.cus_id,
+        cus_name: plainUser.cus_name,
+        cus_tel: plainUser.cus_tel,
     };
-    const token = jwtApi.generateToken(plainPayload)
-    logger.info(`Token generated succeed ${token}`)
-    return res.send(token)
+    
+    const { accessToken } = jwtApi.generateToken(tokenPayload)
+    logger.info(`Token generated successfully`)
+    return res.send({ accessToken, user: plainUser })
 }
 const Authcustomer = async (req, res) => {
     console.log("*************** user AUTH  ***************");
