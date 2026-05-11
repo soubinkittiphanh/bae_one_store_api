@@ -984,10 +984,15 @@ exports.getSaleHeadersByDate = async (req, res) => {
   }
 };
 exports.getSaleHeadersDetailByDate = async (req, res) => {
-  const date = JSON.parse(req.query.date);
-  logger.warn("Date " + date.startDate + " " + date.endDate)
-  logger.warn(`Request date ${date.startDate} userId ${req.user.id}`)
   try {
+    if (!req.query.date || req.query.date === 'undefined') {
+      return res.status(400).json({ success: false, message: 'Invalid or missing date parameter' });
+    }
+    const date = JSON.parse(req.query.date);
+    logger.warn("Date " + date.startDate + " " + date.endDate)
+    if (req.user && req.user.id) {
+      logger.warn(`Request date ${date.startDate} userId ${req.user.id}`)
+    }
     const saleHeaders = await SaleHeader.findAll({
       include: ['user', 'client', 'payment', 'currency', 'location',
         {
