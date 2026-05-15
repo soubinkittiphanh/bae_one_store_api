@@ -1016,7 +1016,7 @@ exports.getSaleHeadersDetailByDate = async (req, res) => {
         bookingDate: {
           [Op.between]: [date.startDate, date.endDate]
         },
-        // isActive:true
+        ...(req.query.locationId && { locationId: req.query.locationId })
       }
     });
 

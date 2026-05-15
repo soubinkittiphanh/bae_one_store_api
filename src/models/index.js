@@ -489,13 +489,13 @@ const defineLocationAssociations = (db) => {
 const defineCleaningGroupAssociations = (db) => {
   db.user.belongsToMany(db.CleaningEvent, { through: db.Attendance, foreignKey: 'userId' });
   db.CleaningEvent.belongsToMany(db.user, { through: db.Attendance, foreignKey: 'CleaningEventId' });
-  
+
   db.CleaningEvent.hasMany(db.Attendance, { foreignKey: 'CleaningEventId' });
   db.CleaningEvent.hasMany(db.CleaningEventPhoto, { foreignKey: 'CleaningEventId', as: 'photos' });
-  
+
   db.Attendance.belongsTo(db.user, { foreignKey: 'userId' });
   db.Attendance.belongsTo(db.CleaningEvent, { foreignKey: 'CleaningEventId' });
-  
+
   db.CleaningEventPhoto.belongsTo(db.CleaningEvent, { foreignKey: 'CleaningEventId', as: 'event' });
 };
 
