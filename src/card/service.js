@@ -30,8 +30,12 @@ const createHulkStockCard = async (req, res) => {
         const whereCondition = {
             productId,
             card_isused: 0,
+            saleLineId: null, // Ensure card is not sold/linked to a sale line
         }
-        await adjustStock(whereCondition, stockCardQty)
+        if (srcLocationId) {
+            whereCondition.locationId = srcLocationId;
+        }
+        await adjustStock(whereCondition, stockCardQty, inputter)
         return res.status(200).send("Transaction completed")
     }
     
@@ -91,34 +95,39 @@ const createHulkStockCard = async (req, res) => {
 }
 
 // TODO: Lets continues here for stock adjustment 
-const adjustStock = async (whereCondition, stockCardQty) => {
+const adjustStock = async (whereCondition, stockCardQty, inputter = null) => {
     try {
-        // Step 1: Find the rows to delete
+        // Step 1: Find the rows to deactivate
         const limit = Math.abs(stockCardQty);
         const rowsToDelete = await Card.findAll({
             where: whereCondition,
-            order: [['createdAt', 'ASC']], // Adjust the column for sorting
+            order: [['createdAt', 'ASC']], // Adjust the column for sorting - deactivate oldest first
             limit: limit,
         });
 
-        // Step 2: Extract IDs of rows to delete
+        // Step 2: Extract IDs of rows to deactivate
         const idsToDelete = rowsToDelete.map(row => row.id); // Assuming 'id' is the primary key
 
         if (idsToDelete.length > 0) {
-            // Step 3: Perform the deletion
-            await Card.destroy({
+            // Step 3: Perform the update (soft deactivation: card_isused = 2, isActive = false)
+            await Card.update({
+                card_isused: 2,
+                isActive: false,
+                update_user: inputter,
+                update_time: new Date()
+            }, {
                 where: {
                     id: {
                         [Op.in]: idsToDelete,
                     },
                 },
             });
-            logger.info(`Deleted ${idsToDelete.length} rows.`);
+            logger.info(`Deactivated (marked inactive/used=2) ${idsToDelete.length} rows.`);
         } else {
-            logger.error('No rows found to delete.');
+            logger.error('No rows found to deactivate.');
         }
     } catch (error) {
-        logger.error('Error deleting rows:', error);
+        logger.error('Error deactivating rows:', error);
     }
 }
 

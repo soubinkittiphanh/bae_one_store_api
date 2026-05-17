@@ -14,25 +14,13 @@ const updateProductCountById = async (id) => {
                 stock_count: literal(`(
             SELECT COUNT(card.card_number)
             FROM card
-            WHERE card.productId =${id} AND card.saleLineId IS NULL
+            WHERE card.productId =${id} AND card.card_isused = 0 AND card.saleLineId IS NULL
           )`)
             })
         }
     } catch (error) {
         logger.error(`Error updating product count for productId: ${id} ` + error);
     }
-
-    // Product.update({
-    //     stock_count: literal(`(
-    //     SELECT COUNT(card.card_number)
-    //     FROM card
-    //     WHERE card.productId =${id} AND card.saleLineId IS NULL
-    //   )`)
-    // }).then(() => {
-    //     logger.info('Product count updated successfully');
-    // }).catch((error) => {
-    //     logger.error(`Error updating product count for productId: ${id} ` + error);
-    // });
 };
 
 const updateProductCountGroup = async (productIdList) => {
@@ -50,7 +38,7 @@ const updateProductCountGroup = async (productIdList) => {
                 stock_count: literal(`(
             SELECT COUNT(card.card_number)
             FROM card
-            WHERE card.productId =${iterator.id} AND card.saleLineId IS NULL
+            WHERE card.productId =${iterator.id} AND card.card_isused = 0 AND card.saleLineId IS NULL
           )`)
             })
         }

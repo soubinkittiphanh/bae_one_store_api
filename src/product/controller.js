@@ -312,7 +312,7 @@ const updateProductCountById = async (req, res) => {
     stock_count: literal(`(
       SELECT COUNT(card.card_number)
       FROM card
-      WHERE card.productId =${id} AND card.saleLineId IS NULL
+      WHERE card.productId =${id} AND card.card_isused = 0 AND card.saleLineId IS NULL
     )`)
   }).then(() => {
     logger.info('Product count updated successfully');
@@ -332,7 +332,7 @@ const updateProductCountAll = async (req, res) => {
         stock_count: literal(`(
           SELECT COUNT(card.card_number)
           FROM card
-          WHERE card.productId =${iterator.id} AND card.saleLineId IS NULL
+          WHERE card.productId =${iterator.id} AND card.card_isused = 0 AND card.saleLineId IS NULL
         )`)
       })
     }
