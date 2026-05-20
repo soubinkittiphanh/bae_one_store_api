@@ -23,14 +23,7 @@ const buildApp = async () => {
 
     // DEBUG: Test if ANY public route works
     app.get("/test-public", (req, res) => res.send("Public works!"));
-    app.get("/api/cleaning/test-public", (req, res) => res.send("Cleaning Public works!"));
 
-    console.log("[DEBUG] Mounting cleaning routes...");
-    // PUBLIC CLEANING ROUTES (Defined early to bypass /api middleware)
-    app.use('/api/cleaning/event', myRouter.cleaningEvent);
-    app.use('/api/cleaning/attendance', myRouter.cleaningAttendance);
-    app.use('/api/cleaning/analytics', myRouter.cleaningAnalytics);
-    console.log("[DEBUG] Cleaning routes mounted.");
 
     app.get("/api/public/company/findAll", companyController.getAllActiveCompanies)
     app.post("/api/v1/direct/callback", qrPayment.handleCallback)
