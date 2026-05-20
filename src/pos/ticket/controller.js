@@ -280,7 +280,7 @@ const postTicketToSale = async (ticketId, transaction) => {
             .map(line => line.productId);
 
         if (productIdsForStockUpdate.length > 0) {
-            await productService.updateProductCountGroup(productIdsForStockUpdate);
+            await productService.updateProductCountGroup(productIdsForStockUpdate, transaction);
             logger.info(`✓ Updated stock count for ${productIdsForStockUpdate.length} products`);
         }
 
@@ -428,7 +428,7 @@ const reverseSaleFromTicket = async (ticketId, cancelReason, transaction) => {
 
         if (productsWithStockValidation.length > 0) {
             const productIdsForStockUpdate = productsWithStockValidation.map(line => line.productId);
-            await productService.updateProductCountGroup(productIdsForStockUpdate);
+            await productService.updateProductCountGroup(productIdsForStockUpdate, transaction);
             logger.info(`✓ Updated stock count for ${productIdsForStockUpdate.length} products`);
         } else {
             logger.info(`○ No product stock counts to update`);
@@ -519,7 +519,7 @@ const releaseCardsForTicket = async (ticketId, transaction) => {
         // 3. Update product stock count groups
         const productIdsForStockUpdate = [...new Set(cards.map(c => c.productId))];
         if (productIdsForStockUpdate.length > 0) {
-            await productService.updateProductCountGroup(productIdsForStockUpdate);
+            await productService.updateProductCountGroup(productIdsForStockUpdate, transaction);
             logger.info(`✓ Updated stock count for ${productIdsForStockUpdate.length} products`);
         }
 
@@ -1130,7 +1130,7 @@ const ticketController = {
                 
                 // Update stock counts
                 if (productIds.length > 0) {
-                    await productService.updateProductCountGroup(productIds);
+                    await productService.updateProductCountGroup(productIds, transaction);
                     console.log(`✓ Updated stock count for ${productIds.length} products`);
                 }
             }
@@ -1452,7 +1452,7 @@ const ticketController = {
 
                 // Update stock counts
                 if (productIds.length > 0) {
-                    await productService.updateProductCountGroup(productIds);
+                    await productService.updateProductCountGroup(productIds, transaction);
                     console.log(`✓ Updated stock count for ${productIds.length} products`);
                 }
 
@@ -1494,6 +1494,31 @@ const ticketController = {
                         }, { transaction });
 
                         logger.info(`Assigned ticket ${id} to new table ${newTableId}`);
+                    }
+                }
+            }
+
+            // If status is updated to paid/served/cancel/void, ensure the active table status is updated
+            const finalStatus = updateData.status || (updateData.paymentStatus === 'paid' ? 'paid' : null);
+            if (finalStatus === 'paid' || finalStatus === 'served' || finalStatus === 'cancel' || finalStatus === 'void') {
+                const activeTableId = 'tableId' in updateData ? updateData.tableId : ticket.tableId;
+                if (activeTableId) {
+                    const table = await Table.findByPk(activeTableId, { transaction });
+                    if (table) {
+                        let tableStatus = 'occupied';
+                        if (finalStatus === 'paid' || finalStatus === 'served') {
+                            tableStatus = 'cleaning';
+                        } else if (finalStatus === 'cancel' || finalStatus === 'void') {
+                            tableStatus = 'available';
+                        }
+
+                        await table.update({
+                            status: tableStatus,
+                            currentOrderId: null,
+                            timeOccupied: null
+                        }, { transaction });
+
+                        logger.info(`✓ Table ${table.id} status updated to ${tableStatus} and order cleared via updateTicket (status: ${finalStatus})`);
                     }
                 }
             }
@@ -1708,6 +1733,19 @@ const ticketController = {
 
             if (paymentStatus === 'paid') {
                 updateData.status = 'paid';
+            }
+
+            // If paymentStatus is paid, ensure the table status is updated to cleaning and released
+            if (paymentStatus === 'paid' && ticket.tableId) {
+                const table = await Table.findByPk(ticket.tableId, { transaction: t });
+                if (table) {
+                    await table.update({
+                        status: 'cleaning',
+                        currentOrderId: null,
+                        timeOccupied: null
+                    }, { transaction: t });
+                    logger.info(`✓ Table ${table.id} status updated to cleaning due to updatePaymentStatus paid`);
+                }
             }
 
             await ticket.update(updateData, { transaction: t });

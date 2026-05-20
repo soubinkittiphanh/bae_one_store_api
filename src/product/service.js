@@ -3,44 +3,45 @@ const logger = require("../api/logger");
 const Product = require('../models').product;
 const Db = require('../config/dbcon');
 const dbAsync = require('../config/dbconAsync');
-const updateProductCountById = async (id) => {
+const updateProductCountById = async (id, transaction = null) => {
     try {
-        const product = await Product.findByPk(id)
+        const product = await Product.findByPk(id, { transaction })
         if (!product) {
             logger.error(`Product stock count update fail, the productId is ${id} is not found`)
         } else {
             logger.info(`product found for update stock count ${JSON.stringify(product)}`)
-            product.update({
+            await product.update({
                 stock_count: literal(`(
             SELECT COUNT(card.card_number)
             FROM card
-            WHERE card.productId =${id} AND card.card_isused = 0 AND card.saleLineId IS NULL
+            WHERE card.productId = ${id} AND card.card_isused = 0 AND card.saleLineId IS NULL AND card.ticketLineId IS NULL
           )`)
-            })
+            }, { transaction })
         }
     } catch (error) {
         logger.error(`Error updating product count for productId: ${id} ` + error);
     }
 };
 
-const updateProductCountGroup = async (productIdList) => {
+const updateProductCountGroup = async (productIdList, transaction = null) => {
     try {
         const products = await Product.findAll({
             where: {
                 id: {
                     [Op.in]: productIdList
                 }
-            }
+            },
+            transaction
         })
         logger.info(`All product count ${products.length} to be update stock count`)
         for (const iterator of products) {
-            iterator.update({
+            await iterator.update({
                 stock_count: literal(`(
             SELECT COUNT(card.card_number)
             FROM card
-            WHERE card.productId =${iterator.id} AND card.card_isused = 0 AND card.saleLineId IS NULL
+            WHERE card.productId = ${iterator.id} AND card.card_isused = 0 AND card.saleLineId IS NULL AND card.ticketLineId IS NULL
           )`)
-            })
+            }, { transaction })
         }
     } catch (error) {
         logger.error(`Cannot find all product with error ${error}`)
