@@ -143,6 +143,11 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: true,
             comment: 'Reference to SaleLine table'
         },
+        ticketLineId: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            comment: 'Reference to TicketLine table'
+        },
         transferLineId: {
             type: DataTypes.INTEGER,
             allowNull: true,
@@ -301,6 +306,13 @@ module.exports = (sequelize, DataTypes) => {
             Card.belongsTo(models.saleLine, {
                 foreignKey: 'saleLineId',
                 as: 'saleLine'
+            });
+        }
+        
+        if (models.ticketLine) {
+            Card.belongsTo(models.ticketLine, {
+                foreignKey: 'ticketLineId',
+                as: 'ticketLine'
             });
         }
         

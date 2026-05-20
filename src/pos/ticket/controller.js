@@ -450,6 +450,87 @@ const reverseSaleFromTicket = async (ticketId, cancelReason, transaction) => {
     }
 };
 
+// Helper function to release cards linked to a ticket
+const releaseCardsForTicket = async (ticketId, transaction) => {
+    try {
+        logger.info(`=== RELEASING CARDS FOR TICKET ${ticketId} ===`);
+        const ticketLines = await TicketLine.findAll({
+            where: { ticketId },
+            include: [{ model: Product, as: 'product' }],
+            transaction
+        });
+
+        const ticketLineIds = ticketLines.map(tl => tl.id);
+        if (ticketLineIds.length === 0) {
+            logger.info(`No ticket lines found for ticket ${ticketId}`);
+            return;
+        }
+
+        // Find all cards linked to these ticket lines
+        const cards = await Card.findAll({
+            where: { ticketLineId: { [Op.in]: ticketLineIds } },
+            transaction
+        });
+
+        if (cards.length === 0) {
+            logger.info(`No cards linked to ticket lines for ticket ${ticketId}`);
+            return;
+        }
+
+        const reservedCardIds = [];
+        const freshCardIds = [];
+
+        const productMap = new Map(ticketLines.map(tl => [tl.productId, tl.product]));
+
+        for (const card of cards) {
+            const product = productMap.get(card.productId);
+            if (product && product.validateStockOnSale) {
+                reservedCardIds.push(card.id);
+            } else {
+                freshCardIds.push(card.id);
+            }
+        }
+
+        // 1. Reserved stock cards: return to inventory
+        if (reservedCardIds.length > 0) {
+            const [numUpdated] = await Card.update(
+                {
+                    card_isused: 0,
+                    ticketLineId: null,
+                    locking_session_id: null
+                },
+                {
+                    where: { id: { [Op.in]: reservedCardIds } },
+                    transaction
+                }
+            );
+            logger.info(`✓ Returned ${numUpdated} reserved cards to inventory`);
+        }
+
+        // 2. Fresh cards: delete them to avoid polluting inventory
+        if (freshCardIds.length > 0) {
+            const numDeleted = await Card.destroy({
+                where: { id: { [Op.in]: freshCardIds } },
+                transaction
+            });
+            logger.info(`✓ Deleted ${numDeleted} fresh cards`);
+        }
+
+        // 3. Update product stock count groups
+        const productIdsForStockUpdate = [...new Set(cards.map(c => c.productId))];
+        if (productIdsForStockUpdate.length > 0) {
+            await productService.updateProductCountGroup(productIdsForStockUpdate);
+            logger.info(`✓ Updated stock count for ${productIdsForStockUpdate.length} products`);
+        }
+
+        logger.info(`=== CARDS RELEASE COMPLETED FOR TICKET ${ticketId} ===`);
+    } catch (error) {
+        logger.error(`=== ERROR RELEASING CARDS ===`);
+        logger.error(`Failed to release cards for ticket ${ticketId}: ${error.message}`);
+        throw error;
+    }
+};
+
 const ticketController = {
 
     // Get all tickets with promotion support
@@ -574,6 +655,11 @@ const ticketController = {
                             model: Promotion,
                             as: 'promotion',
                             required: false
+                        },
+                        {
+                            model: Card,
+                            as: 'cards',
+                            required: false
                         }
                     ],
                     required: false
@@ -662,7 +748,8 @@ const ticketController = {
                         as: 'ticketLines',
                         include: [
                             { model: Product, as: 'product', required: false },
-                            { model: Promotion, as: 'promotion', required: false }
+                            { model: Promotion, as: 'promotion', required: false },
+                            { model: Card, as: 'cards', required: false }
                         ]
                     }
                 ]
@@ -707,6 +794,11 @@ const ticketController = {
                             {
                                 model: Promotion,
                                 as: 'promotion',
+                                required: false
+                            },
+                            {
+                                model: Card,
+                                as: 'cards',
                                 required: false
                             }
                         ]
@@ -825,6 +917,79 @@ const ticketController = {
                 console.warn('No ticket lines provided');
             }
 
+            // Fetch products to check validateStockOnSale and get details
+            const productIds = ticketLines.map(line => line.productId);
+            const products = await Product.findAll({
+                where: { id: { [Op.in]: productIds } },
+                transaction
+            });
+            const productMap = new Map(products.map(p => [p.id, p]));
+
+            // Stock validation logic before ticket creation
+            const stockValidationErrors = [];
+            const lockingSessionId = common.generateLockingSessionId();
+            
+            console.log('=== STARTING STOCK VALIDATION FOR TICKET ===');
+            for (const line of ticketLines) {
+                const product = productMap.get(line.productId);
+                if (!product) {
+                    await transaction.rollback();
+                    return res.status(404).json({
+                        success: false,
+                        message: `Product with ID ${line.productId} not found`
+                    });
+                }
+                
+                if (product.validateStockOnSale) {
+                    const qty = parseInt(line.quantity || 1);
+                    console.log(`✓ Product ${line.productId} (${product.pro_name}) REQUIRES stock validation - checking inventory...`);
+                    
+                    const availableCards = await Card.findAll({
+                        limit: qty,
+                        order: [['createdAt', 'DESC']],
+                        where: {
+                            productId: line.productId,
+                            ticketLineId: null,
+                            card_isused: 0,
+                            locationId
+                        },
+                        transaction
+                    });
+                    
+                    const availableQty = availableCards ? availableCards.length : 0;
+                    if (availableQty < qty) {
+                        stockValidationErrors.push({
+                            productId: line.productId,
+                            productName: product.pro_name,
+                            required: qty,
+                            available: availableQty,
+                            shortage: qty - availableQty
+                        });
+                        console.error(`✗ INSUFFICIENT STOCK - Product ${line.productId} (${product.pro_name}): Required ${qty}, Available ${availableQty}, Short by ${qty - availableQty}`);
+                    } else {
+                        console.log(`✓ SUFFICIENT STOCK - Product ${line.productId} (${product.pro_name}): Required ${qty}, Available ${availableQty}`);
+                    }
+                } else {
+                    console.log(`○ Product ${line.productId} (${product.pro_name}) does NOT require stock validation - skipping check`);
+                }
+            }
+            
+            if (stockValidationErrors.length > 0) {
+                await transaction.rollback();
+                console.error(`=== STOCK VALIDATION FAILED ===`);
+                const errorDetails = stockValidationErrors.map(err =>
+                    `Product #${err.productId} (${err.productName}): Need ${err.required}, Available ${err.available}, Short ${err.shortage}`
+                ).join('; ');
+                
+                return res.status(400).json({
+                    success: false,
+                    message: `Cannot create ticket - Insufficient stock: ${errorDetails}`,
+                    errors: stockValidationErrors
+                });
+            }
+            
+            console.log('=== STOCK VALIDATION PASSED ===');
+
             console.log('Generating ticket number...');
             const ticketNumber = await Ticket.generateTicketNumber(locationId);
             console.log(`Generated ticket number: ${ticketNumber}`);
@@ -857,12 +1022,20 @@ const ticketController = {
 
             console.log(`✅ Ticket created successfully:`, newTicket.toJSON());
 
-            // Create ticket lines with promotion support
+            // Create ticket lines and reserve/create cards
             if (ticketLines.length > 0) {
-                console.log('Creating ticket lines...');
-
-                const ticketLinesData = ticketLines.map((line, index) => {
-                    const lineData = {
+                console.log('Creating ticket lines and allocating cards...');
+                
+                const currencies = await Currency.findAll({
+                    where: { isActive: true },
+                    transaction
+                });
+                const currencyMap = new Map(currencies.map(c => [c.id, c]));
+                
+                for (const line of ticketLines) {
+                    const product = productMap.get(line.productId);
+                    
+                    const ticketLine = await TicketLine.create({
                         ticketId: newTicket.id,
                         productId: line.productId,
                         quantity: line.quantity,
@@ -870,20 +1043,96 @@ const ticketController = {
                         totalPrice: (parseFloat(line.quantity) * parseFloat(line.unitPrice || 0)).toFixed(2),
                         specialInstructions: line.specialInstructions || null,
                         status: line.status || 'ordered',
-                        // Promotion fields - these should come from frontend if items have promotions applied
                         promotionId: line.promotionId || null,
                         is_promotion_item: line.is_promotion_item || false,
                         original_price: line.original_price || null,
                         discount_amount: line.discount_amount || 0,
                         promotion_note: line.promotion_note || null
-                    };
-
-                    console.log(`Line ${index + 1}:`, lineData);
-                    return lineData;
-                });
-
-                await TicketLine.bulkCreate(ticketLinesData, { transaction });
-                console.log(`✅ Created ${ticketLinesData.length} ticket lines`);
+                    }, { transaction });
+                    
+                    console.log(`✅ Ticket line created with ID ${ticketLine.id} for product ${line.productId}`);
+                    
+                    const qty = parseInt(line.quantity || 1);
+                    
+                    if (product.validateStockOnSale) {
+                        console.log(`Reserving ${qty} stock cards for product ${line.productId} (${product.pro_name})`);
+                        
+                        const availableCards = await Card.findAll({
+                            limit: qty,
+                            order: [['createdAt', 'DESC']],
+                            where: {
+                                productId: line.productId,
+                                ticketLineId: null,
+                                card_isused: 0,
+                                locationId
+                            },
+                            transaction
+                        });
+                        
+                        if (!availableCards || availableCards.length < qty) {
+                            throw new Error(`Stock not enough for product #${line.productId} - this should have been caught in validation`);
+                        }
+                        
+                        const [numUpdated] = await Card.update(
+                            {
+                                card_isused: 1,
+                                ticketLineId: ticketLine.id,
+                                locking_session_id: lockingSessionId
+                            },
+                            {
+                                where: {
+                                    id: { [Op.in]: availableCards.map(c => c.id) }
+                                },
+                                transaction
+                            }
+                        );
+                        console.log(`✓ Reserved and linked ${numUpdated} cards to ticket line ${ticketLine.id}`);
+                    } else {
+                        console.log(`Creating ${qty} fresh cards for non-stock product ${line.productId} (${product.pro_name})`);
+                        
+                        const currencyId = product.saleCurrencyId || 1;
+                        const currency = currencyMap.get(currencyId);
+                        const exchangeRate = currency ? currency.rate : 1;
+                        const cost = product.cost_price || 0;
+                        const costLCY = cost * exchangeRate;
+                        
+                        const cardRows = [];
+                        for (let i = 0; i < qty; i++) {
+                            const cardSequenceNumber = common.generateLockingSessionId(10);
+                            cardRows.push({
+                                card_type_code: 10010, // Stock type code
+                                product_id: product.pro_id, // Legacy product code
+                                productId: line.productId, // Primary key
+                                cost: cost,
+                                costLCY: costLCY,
+                                exchangeRate: exchangeRate,
+                                card_number: cardSequenceNumber,
+                                card_isused: 1, // Mark as used immediately
+                                locking_session_id: lockingSessionId,
+                                card_input_date: new Date(),
+                                inputter: createUserId || 1,
+                                update_user: createUserId || 1,
+                                update_time: new Date(),
+                                update_time_new: new Date(),
+                                isActive: true,
+                                currencyId: currencyId,
+                                locationId: locationId,
+                                ticketLineId: ticketLine.id
+                            });
+                        }
+                        
+                        if (cardRows.length > 0) {
+                            await Card.bulkCreate(cardRows, { transaction });
+                            console.log(`✓ Created and linked ${cardRows.length} fresh cards for product ${line.productId} to ticket line ${ticketLine.id}`);
+                        }
+                    }
+                }
+                
+                // Update stock counts
+                if (productIds.length > 0) {
+                    await productService.updateProductCountGroup(productIds);
+                    console.log(`✓ Updated stock count for ${productIds.length} products`);
+                }
             }
 
             // Update table status
@@ -911,7 +1160,8 @@ const ticketController = {
                     as: 'ticketLines',
                     include: [
                         { model: Product, as: 'product', required: false },
-                        { model: Promotion, as: 'promotion', required: false }
+                        { model: Promotion, as: 'promotion', required: false },
+                        { model: Card, as: 'cards', required: false }
                     ]
                 }
             ];
@@ -1015,48 +1265,198 @@ const ticketController = {
 
             // If updating ticket lines, recalculate totals with promotion support
             if (updateData.ticketLines) {
-                // let subtotal = 0;
-                // let totalDiscount = 0;
+                // First release cards associated with old ticket lines
+                await releaseCardsForTicket(id, transaction);
 
-                // updateData.ticketLines.forEach(line => {
-                //     const lineSubtotal = parseFloat(line.quantity) * parseFloat(line.unitPrice || 0);
-                //     subtotal += lineSubtotal;
-
-                //     if (line.discount_amount) {
-                //         totalDiscount += parseFloat(line.discount_amount);
-                //     }
-                // });
-
-                // const total = subtotal + updateData.tax;
-
-                // updateData.subtotal = subtotal.toFixed(2);
-                // updateData.total = total.toFixed(2);
-
-                // Delete existing ticket lines and create new ones
+                // Delete existing ticket lines
                 await TicketLine.destroy({
                     where: { ticketId: id },
                     transaction
                 });
 
-                const ticketLinesData = updateData.ticketLines.map(line => ({
-                    ticketId: id,
-                    productId: line.productId,
-                    quantity: line.quantity,
-                    unitPrice: line.unitPrice,
-                    totalPrice: (parseFloat(line.quantity) * parseFloat(line.unitPrice || 0)).toFixed(2),
-                    specialInstructions: line.specialInstructions || null,
-                    status: line.status || 'ordered',
-                    // Promotion fields
-                    promotionId: line.promotionId || null,
-                    is_promotion_item: line.is_promotion_item || false,
-                    original_price: line.original_price || null,
-                    discount_amount: line.discount_amount || 0,
-                    promotion_note: line.promotion_note || null
-                }));
+                const ticketLines = updateData.ticketLines;
+                const productIds = ticketLines.map(line => line.productId);
+                const products = await Product.findAll({
+                    where: { id: { [Op.in]: productIds } },
+                    transaction
+                });
+                const productMap = new Map(products.map(p => [p.id, p]));
 
-                await TicketLine.bulkCreate(ticketLinesData, { transaction });
+                // Stock validation for the new lines
+                const stockValidationErrors = [];
+                const lockingSessionId = common.generateLockingSessionId();
+                const locationId = ticket.locationId || updateData.locationId;
+
+                console.log('=== STARTING STOCK VALIDATION FOR TICKET UPDATE ===');
+                for (const line of ticketLines) {
+                    const product = productMap.get(line.productId);
+                    if (!product) {
+                        await transaction.rollback();
+                        return res.status(404).json({
+                            success: false,
+                            message: `Product with ID ${line.productId} not found`
+                        });
+                    }
+
+                    if (product.validateStockOnSale) {
+                        const qty = parseInt(line.quantity || 1);
+                        console.log(`✓ Product ${line.productId} (${product.pro_name}) REQUIRES stock validation - checking inventory...`);
+
+                        const availableCards = await Card.findAll({
+                            limit: qty,
+                            order: [['createdAt', 'DESC']],
+                            where: {
+                                productId: line.productId,
+                                ticketLineId: null,
+                                card_isused: 0,
+                                locationId
+                            },
+                            transaction
+                        });
+
+                        const availableQty = availableCards ? availableCards.length : 0;
+                        if (availableQty < qty) {
+                            stockValidationErrors.push({
+                                productId: line.productId,
+                                productName: product.pro_name,
+                                required: qty,
+                                available: availableQty,
+                                shortage: qty - availableQty
+                            });
+                            console.error(`✗ INSUFFICIENT STOCK - Product ${line.productId} (${product.pro_name}): Required ${qty}, Available ${availableQty}, Short by ${qty - availableQty}`);
+                        } else {
+                            console.log(`✓ SUFFICIENT STOCK - Product ${line.productId} (${product.pro_name}): Required ${qty}, Available ${availableQty}`);
+                        }
+                    } else {
+                        console.log(`○ Product ${line.productId} (${product.pro_name}) does NOT require stock validation - skipping check`);
+                    }
+                }
+
+                if (stockValidationErrors.length > 0) {
+                    await transaction.rollback();
+                    console.error(`=== STOCK VALIDATION FAILED ON UPDATE ===`);
+                    const errorDetails = stockValidationErrors.map(err =>
+                        `Product #${err.productId} (${err.productName}): Need ${err.required}, Available ${err.available}, Short ${err.shortage}`
+                    ).join('; ');
+
+                    return res.status(400).json({
+                        success: false,
+                        message: `Cannot update ticket - Insufficient stock: ${errorDetails}`,
+                        errors: stockValidationErrors
+                    });
+                }
+
+                console.log('=== STOCK VALIDATION PASSED ON UPDATE ===');
+
+                const currencies = await Currency.findAll({
+                    where: { isActive: true },
+                    transaction
+                });
+                const currencyMap = new Map(currencies.map(c => [c.id, c]));
+
+                for (const line of ticketLines) {
+                    const product = productMap.get(line.productId);
+
+                    const ticketLine = await TicketLine.create({
+                        ticketId: id,
+                        productId: line.productId,
+                        quantity: line.quantity,
+                        unitPrice: line.unitPrice,
+                        totalPrice: (parseFloat(line.quantity) * parseFloat(line.unitPrice || 0)).toFixed(2),
+                        specialInstructions: line.specialInstructions || null,
+                        status: line.status || 'ordered',
+                        promotionId: line.promotionId || null,
+                        is_promotion_item: line.is_promotion_item || false,
+                        original_price: line.original_price || null,
+                        discount_amount: line.discount_amount || 0,
+                        promotion_note: line.promotion_note || null
+                    }, { transaction });
+
+                    console.log(`✅ Ticket line created with ID ${ticketLine.id} for product ${line.productId}`);
+
+                    const qty = parseInt(line.quantity || 1);
+
+                    if (product.validateStockOnSale) {
+                        console.log(`Reserving ${qty} stock cards for product ${line.productId} (${product.pro_name})`);
+
+                        const availableCards = await Card.findAll({
+                            limit: qty,
+                            order: [['createdAt', 'DESC']],
+                            where: {
+                                productId: line.productId,
+                                ticketLineId: null,
+                                card_isused: 0,
+                                locationId
+                            },
+                            transaction
+                        });
+
+                        if (!availableCards || availableCards.length < qty) {
+                            throw new Error(`Stock not enough for product #${line.productId} - this should have been caught in validation`);
+                        }
+
+                        const [numUpdated] = await Card.update(
+                            {
+                                card_isused: 1,
+                                ticketLineId: ticketLine.id,
+                                locking_session_id: lockingSessionId
+                            },
+                            {
+                                where: {
+                                    id: { [Op.in]: availableCards.map(c => c.id) }
+                                },
+                                transaction
+                            }
+                        );
+                        console.log(`✓ Reserved and linked ${numUpdated} cards to ticket line ${ticketLine.id}`);
+                    } else {
+                        console.log(`Creating ${qty} fresh cards for non-stock product ${line.productId} (${product.pro_name})`);
+
+                        const currencyId = product.saleCurrencyId || 1;
+                        const currency = currencyMap.get(currencyId);
+                        const exchangeRate = currency ? currency.rate : 1;
+                        const cost = product.cost_price || 0;
+                        const costLCY = cost * exchangeRate;
+
+                        const cardRows = [];
+                        for (let i = 0; i < qty; i++) {
+                            const cardSequenceNumber = common.generateLockingSessionId(10);
+                            cardRows.push({
+                                card_type_code: 10010, // Stock type code
+                                product_id: product.pro_id, // Legacy product code
+                                productId: line.productId, // Primary key
+                                cost: cost,
+                                costLCY: costLCY,
+                                exchangeRate: exchangeRate,
+                                card_number: cardSequenceNumber,
+                                card_isused: 1, // Mark as used immediately
+                                locking_session_id: lockingSessionId,
+                                card_input_date: new Date(),
+                                inputter: ticket.createUserId || 1,
+                                update_user: ticket.createUserId || 1,
+                                update_time: new Date(),
+                                update_time_new: new Date(),
+                                isActive: true,
+                                currencyId: currencyId,
+                                locationId: locationId,
+                                ticketLineId: ticketLine.id
+                            });
+                        }
+
+                        if (cardRows.length > 0) {
+                            await Card.bulkCreate(cardRows, { transaction });
+                            console.log(`✓ Created and linked ${cardRows.length} fresh cards for product ${line.productId} to ticket line ${ticketLine.id}`);
+                        }
+                    }
+                }
+
+                // Update stock counts
+                if (productIds.length > 0) {
+                    await productService.updateProductCountGroup(productIds);
+                    console.log(`✓ Updated stock count for ${productIds.length} products`);
+                }
+
                 delete updateData.ticketLines;
-
                 logger.info(`Updated ticket lines for ticket ${id}`);
             }
 
@@ -1111,7 +1511,8 @@ const ticketController = {
                     as: 'ticketLines',
                     include: [
                         { model: Product, as: 'product', required: false },
-                        { model: Promotion, as: 'promotion', required: false }
+                        { model: Promotion, as: 'promotion', required: false },
+                        { model: Card, as: 'cards', required: false }
                     ]
                 }
             ];
@@ -1194,32 +1595,27 @@ const ticketController = {
 
             let reversalResult = null;
 
-            if (status === 'cancel') {
-                logger.info(`=== CANCELLING TICKET ${id} ===`);
+            if (status === 'cancel' || status === 'void') {
+                logger.info(`=== ${status.toUpperCase()}ING TICKET ${id} ===`);
 
                 await ticket.update({
                     status,
-                    paymentStatus: 'cancel',
-                    notes: cancelReason,
+                    paymentStatus: status,
+                    notes: cancelReason || `${status.charAt(0).toUpperCase() + status.slice(1)}ed`,
                     cancelUserId,
                 }, { transaction });
 
-                logger.info(`✓ Ticket ${id} status updated to cancelled`);
+                logger.info(`✓ Ticket ${id} status updated to ${status}`);
 
                 try {
-                    reversalResult = await reverseSaleFromTicket(id, cancelReason, transaction);
-
-                    if (reversalResult) {
-                        logger.info(`✓ Sale reversed successfully for ticket ${id}`);
-                    } else {
-                        logger.info(`○ No sale to reverse for ticket ${id}`);
-                    }
+                    await releaseCardsForTicket(id, transaction);
+                    logger.info(`✓ Cards released successfully for ticket ${id}`);
                 } catch (reversalError) {
-                    logger.error(`Error reversing sale: ${reversalError.message}`);
+                    logger.error(`Error releasing cards: ${reversalError.message}`);
                     await transaction.rollback();
                     return res.status(500).json({
                         success: false,
-                        message: 'Error reversing sale during cancellation',
+                        message: `Error releasing cards during ticket ${status}`,
                         error: reversalError.message
                     });
                 }
@@ -1249,8 +1645,8 @@ const ticketController = {
 
             await transaction.commit();
 
-            const responseMessage = status === 'cancel'
-                ? 'Ticket cancelled and sale reversed successfully'
+            const responseMessage = (status === 'cancel' || status === 'void')
+                ? `Ticket ${status}ed and cards released successfully`
                 : 'Ticket status updated successfully';
 
             res.status(200).json({
@@ -1258,7 +1654,7 @@ const ticketController = {
                 message: responseMessage,
                 data: {
                     ticket,
-                    reversal: reversalResult
+                    reversal: null
                 }
             });
         } catch (error) {
@@ -1316,37 +1712,14 @@ const ticketController = {
 
             await ticket.update(updateData, { transaction: t });
 
-            let saleData = null;
-
-            if (paymentStatus === 'paid') {
-                try {
-                    saleData = await postTicketToSale(id, t);
-                    console.log(`Ticket ${id} successfully posted to sales`);
-                } catch (saleError) {
-                    logger.error(`POST TO Sale incompleted. with error ${saleError}`)
-                    if (saleError.message.includes('already been posted')) {
-                        console.log(`Ticket ${id} has already been posted to sales`);
-                    } else {
-                        await t.rollback();
-                        return res.status(500).json({
-                            success: false,
-                            message: 'Error posting to sales',
-                            error: saleError.message
-                        });
-                    }
-                }
-            }
-
             await t.commit();
 
             res.status(200).json({
                 success: true,
-                message: paymentStatus === 'paid'
-                    ? 'Payment status updated and posted to sales successfully'
-                    : 'Payment status updated successfully',
+                message: 'Payment status updated successfully',
                 data: {
                     ticket,
-                    sale: saleData
+                    sale: null
                 }
             });
 
@@ -1469,6 +1842,8 @@ const ticketController = {
                     message: 'Cannot delete completed and paid ticket'
                 });
             }
+
+            await releaseCardsForTicket(id, transaction);
 
             await TicketLine.destroy({
                 where: { ticketId: id },
@@ -1871,7 +2246,9 @@ const ticketController = {
                         model: TicketLine,
                         as: 'ticketLines',
                         include: [
-                            { model: Promotion, as: 'promotion', required: false }
+                            { model: Product, as: 'product', required: false },
+                            { model: Promotion, as: 'promotion', required: false },
+                            { model: Card, as: 'cards', required: false }
                         ]
                     }
                 ]
@@ -1896,7 +2273,9 @@ const ticketController = {
                     model: TicketLine,
                     as: 'ticketLines',
                     include: [
-                        { model: Promotion, as: 'promotion', required: false }
+                        { model: Product, as: 'product', required: false },
+                        { model: Promotion, as: 'promotion', required: false },
+                        { model: Card, as: 'cards', required: false }
                     ]
                 }],
                 order: [['createdAt', 'DESC']]
