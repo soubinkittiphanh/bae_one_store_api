@@ -20,6 +20,7 @@ const Currency = require('../../models').currency;
 const SaleHeader = require('../../models').saleHeader;
 const SaleLine = require('../../models').saleLine;
 const Card = require('../../models').card;
+const SalePayment = require('../../models').salePayment;
 
 const common = require('../../common');
 const productService = require('../../product/service');
@@ -547,6 +548,8 @@ const ticketController = {
                 limit = 200,
                 include,
                 locationId,
+                paymentId,
+                ticketNumber,
                 sort = 'createdAt:desc'
             } = req.query;
 
@@ -633,6 +636,13 @@ const ticketController = {
                 model: Location,
                 as: 'location',
                 required: false
+            });
+
+            includeArray.push({
+                model: SalePayment,
+                as: 'salePayments',
+                required: false,
+                include: [{ model: Payment, as: 'paymentMethod', required: false }]
             });
 
             if (includeParams.includes('ticketLines')) {
@@ -744,6 +754,12 @@ const ticketController = {
                     { model: Table, as: 'table', required: false },
                     { model: Payment, as: 'payment', required: false },
                     {
+                        model: SalePayment,
+                        as: 'salePayments',
+                        required: false,
+                        include: [{ model: Payment, as: 'paymentMethod', required: false }]
+                    },
+                    {
                         model: TicketLine,
                         as: 'ticketLines',
                         include: [
@@ -772,7 +788,6 @@ const ticketController = {
         }
     },
 
-    // Get ticket by ID with full details including promotions
     getTicketById: async (req, res) => {
         try {
             const { id } = req.params;
@@ -782,6 +797,12 @@ const ticketController = {
                     { model: Table, as: 'table' },
                     { model: Client, as: 'client' },
                     { model: Payment, as: 'payment' },
+                    {
+                        model: SalePayment,
+                        as: 'salePayments',
+                        required: false,
+                        include: [{ model: Payment, as: 'paymentMethod', required: false }]
+                    },
                     {
                         model: TicketLine,
                         as: 'ticketLines',
@@ -1155,6 +1176,12 @@ const ticketController = {
             const includeOptions = [
                 { model: Client, as: 'client', required: false },
                 { model: Payment, as: 'payment', required: false },
+                {
+                    model: SalePayment,
+                    as: 'salePayments',
+                    required: false,
+                    include: [{ model: Payment, as: 'paymentMethod', required: false }]
+                },
                 {
                     model: TicketLine,
                     as: 'ticketLines',
@@ -1532,6 +1559,12 @@ const ticketController = {
                 { model: Client, as: 'client', required: false },
                 { model: Payment, as: 'payment', required: false },
                 {
+                    model: SalePayment,
+                    as: 'salePayments',
+                    required: false,
+                    include: [{ model: Payment, as: 'paymentMethod', required: false }]
+                },
+                {
                     model: TicketLine,
                     as: 'ticketLines',
                     include: [
@@ -1700,7 +1733,7 @@ const ticketController = {
 
         try {
             const { id } = req.params;
-            const { paymentStatus, paymentId } = req.body;
+            const { payments, paymentStatus, paymentId } = req.body;
 
             if (!paymentStatus) {
                 await t.rollback();
@@ -1729,10 +1762,48 @@ const ticketController = {
             }
 
             const updateData = { paymentStatus };
-            if (paymentId) updateData.paymentId = paymentId;
 
             if (paymentStatus === 'paid') {
                 updateData.status = 'paid';
+
+                // Clear any existing payments for this ticket first
+                await SalePayment.destroy({
+                    where: { ticketId: id },
+                    transaction: t
+                });
+
+                if (payments && Array.isArray(payments) && payments.length > 0) {
+                    // Create all multi-payment rows
+                    const paymentRows = payments.map(p => ({
+                        ticketId: id,
+                        paymentId: p.paymentId,
+                        amount: parseFloat(p.amount || 0),
+                        referenceNo: p.referenceNo || '',
+                        isActive: true
+                    }));
+                    await SalePayment.bulkCreate(paymentRows, { transaction: t });
+
+                    // Set first payment ID to the main ticket table for backward compatibility
+                    updateData.paymentId = payments[0].paymentId;
+                } else {
+                    // Legacy single payment method fallback
+                    const finalPaymentId = paymentId || ticket.paymentId || 1; // Default to Cash (1)
+                    await SalePayment.create({
+                        ticketId: id,
+                        paymentId: finalPaymentId,
+                        amount: parseFloat(ticket.total || 0),
+                        referenceNo: 'Legacy Single Payment',
+                        isActive: true
+                    }, { transaction: t });
+
+                    updateData.paymentId = finalPaymentId;
+                }
+            } else {
+                // If status is reverted from paid, clean up the payment transactions
+                await SalePayment.destroy({
+                    where: { ticketId: id },
+                    transaction: t
+                });
             }
 
             // If paymentStatus is paid, ensure the table status is updated to cleaning and released
@@ -1752,17 +1823,45 @@ const ticketController = {
 
             await t.commit();
 
+            // Fetch the updated ticket with the complete nested payments list
+            const updatedTicket = await Ticket.findByPk(id, {
+                include: [
+                    { model: Table, as: 'table', required: false },
+                    { model: Client, as: 'client', required: false },
+                    { model: Payment, as: 'payment', required: false },
+                    {
+                        model: SalePayment,
+                        as: 'salePayments',
+                        required: false,
+                        include: [{ model: Payment, as: 'paymentMethod', required: false }]
+                    },
+                    {
+                        model: TicketLine,
+                        as: 'ticketLines',
+                        include: [
+                            { model: Product, as: 'product', required: false },
+                            { model: Promotion, as: 'promotion', required: false },
+                            { model: Card, as: 'cards', required: false }
+                        ]
+                    }
+                ]
+            });
+
             res.status(200).json({
                 success: true,
                 message: 'Payment status updated successfully',
                 data: {
-                    ticket,
+                    ticket: updatedTicket,
                     sale: null
                 }
             });
 
         } catch (error) {
-            await t.rollback();
+            try {
+                await t.rollback();
+            } catch (rollbackError) {
+                // Ignore rollback error if already finished
+            }
             res.status(500).json({
                 success: false,
                 message: 'Error updating payment status',
@@ -2130,36 +2229,137 @@ const ticketController = {
             }
             if (locationId) dateCondition.locationId = locationId;
 
-            const paymentSummary = await Ticket.findAll({
-                where: {
-                    ...dateCondition,
-                    paymentStatus: 'paid'
-                },
-                attributes: [
-                    'paymentId',
-                    [fn('COUNT', col('ticket.id')), 'ticketCount'],
-                    [fn('SUM', col('total')), 'totalAmount']
-                ],
+            const paymentSummary = await SalePayment.findAll({
                 include: [
                     {
+                        model: Ticket,
+                        as: 'ticket',
+                        where: {
+                            ...dateCondition,
+                            paymentStatus: 'paid'
+                        },
+                        attributes: []
+                    },
+                    {
                         model: Payment,
-                        as: 'payment',
+                        as: 'paymentMethod',
                         attributes: ['id', ['payment_name', 'name'], ['payment_code', 'code']]
                     }
                 ],
-                group: ['paymentId', 'payment.id'],
+                attributes: [
+                    'paymentId',
+                    [fn('COUNT', col('salePayment.ticketId')), 'ticketCount'],
+                    [fn('SUM', col('amount')), 'totalAmount']
+                ],
+                group: ['paymentId', 'paymentMethod.id'],
                 order: [[literal('totalAmount'), 'DESC']]
+            });
+
+            // Map paymentMethod to payment for backward compatibility with frontend clients
+            const responseData = paymentSummary.map(item => {
+                const itemJson = item.toJSON();
+                if (itemJson.paymentMethod) {
+                    itemJson.payment = itemJson.paymentMethod;
+                } else {
+                    itemJson.payment = null;
+                }
+                return itemJson;
             });
 
             res.status(200).json({
                 success: true,
-                data: paymentSummary
+                data: responseData
             });
         } catch (error) {
             logger.error(`Error generating payment methods report: ${error.message}`);
             res.status(500).json({
                 success: false,
                 message: 'Error generating payment methods report',
+                error: error.message
+            });
+        }
+    },
+
+    // 3b. Daily Ticket Sale Summary
+    getDailySummaryReport: async (req, res) => {
+        try {
+            let { fromDate, toDate, locationId } = req.query;
+            if (!fromDate || !toDate) {
+                const { beginningOfMonthString, lastDayOfMonthString } = common.getBetweenDateInCurrentMonth();
+                fromDate = fromDate || beginningOfMonthString;
+                toDate = toDate || lastDayOfMonthString;
+            }
+
+            let dateCondition = {};
+            dateCondition.createdAt = {
+                [Op.gte]: new Date(fromDate + ' 00:00:00'),
+                [Op.lte]: new Date(toDate + ' 23:59:59')
+            };
+
+            if (locationId) {
+                dateCondition.locationId = locationId;
+            }
+
+            const summary = await SalePayment.findAll({
+                include: [
+                    {
+                        model: Ticket,
+                        as: 'ticket',
+                        where: {
+                            ...dateCondition,
+                            paymentStatus: 'paid'
+                        },
+                        attributes: []
+                    },
+                    {
+                        model: Payment,
+                        as: 'paymentMethod',
+                        attributes: ['id', ['payment_name', 'name'], ['payment_code', 'code']]
+                    }
+                ],
+                attributes: [
+                    [literal('DATE(`ticket`.`createdAt`)'), 'bookingDate'],
+                    'paymentId',
+                    [fn('SUM', col('amount')), 'totalAmount'],
+                    [fn('COUNT', col('salePayment.ticketId')), 'transactionCount']
+                ],
+                group: [literal('DATE(`ticket`.`createdAt`)'), 'paymentId', literal('`paymentMethod`.`id`')],
+                order: [[literal('bookingDate'), 'DESC'], ['paymentId', 'ASC']]
+            });
+
+            // Map standard format to match Minimart daily summary report exactly
+            const responseData = summary.map(item => {
+                const itemJson = item.toJSON();
+                const payment = itemJson.paymentMethod || {};
+                
+                let formattedDate = itemJson.bookingDate;
+                if (formattedDate) {
+                    if (formattedDate instanceof Date) {
+                        const offset = formattedDate.getTimezoneOffset();
+                        const localDate = new Date(formattedDate.getTime() - (offset * 60 * 1000));
+                        formattedDate = localDate.toISOString().split('T')[0];
+                    } else if (typeof formattedDate === 'string' && formattedDate.includes('T')) {
+                        formattedDate = formattedDate.split('T')[0];
+                    }
+                }
+
+                return {
+                    bookingDate: formattedDate,
+                    currencyCode: 'LAK',
+                    currencySymbol: '₭',
+                    paymentType: payment.name || 'Unknown',
+                    paymentCode: payment.code || 'UNKNOWN',
+                    totalAmount: parseFloat(itemJson.totalAmount || 0),
+                    transactionCount: parseInt(itemJson.transactionCount || 0)
+                };
+            });
+
+            res.status(200).json(responseData);
+        } catch (error) {
+            logger.error(`Error generating daily ticket summary report: ${error.message}`);
+            res.status(500).json({
+                success: false,
+                message: 'Error generating daily ticket summary report',
                 error: error.message
             });
         }
@@ -2281,6 +2481,12 @@ const ticketController = {
                 },
                 include: [
                     {
+                        model: SalePayment,
+                        as: 'salePayments',
+                        required: false,
+                        include: [{ model: Payment, as: 'paymentMethod', required: false }]
+                    },
+                    {
                         model: TicketLine,
                         as: 'ticketLines',
                         include: [
@@ -2307,15 +2513,23 @@ const ticketController = {
                     tableId: tableId,
                     paymentStatus: 'pending'
                 },
-                include: [{
-                    model: TicketLine,
-                    as: 'ticketLines',
-                    include: [
-                        { model: Product, as: 'product', required: false },
-                        { model: Promotion, as: 'promotion', required: false },
-                        { model: Card, as: 'cards', required: false }
-                    ]
-                }],
+                include: [
+                    {
+                        model: SalePayment,
+                        as: 'salePayments',
+                        required: false,
+                        include: [{ model: Payment, as: 'paymentMethod', required: false }]
+                    },
+                    {
+                        model: TicketLine,
+                        as: 'ticketLines',
+                        include: [
+                            { model: Product, as: 'product', required: false },
+                            { model: Promotion, as: 'promotion', required: false },
+                            { model: Card, as: 'cards', required: false }
+                        ]
+                    }
+                ],
                 order: [['createdAt', 'DESC']]
             });
 

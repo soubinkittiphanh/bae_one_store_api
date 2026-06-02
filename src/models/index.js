@@ -163,9 +163,13 @@ const initializeModels = () => {
     card: require("../card/model")(sequelize, DataTypes),
     Transaction: require("../transaction/model")(sequelize, DataTypes),
     gl: require("../GL/model")(sequelize, DataTypes),
+    glPostingBatch: require("../GL/postingBatchModel")(sequelize, DataTypes),
     chartAccount: require("../account/model")(sequelize, DataTypes),
-    apPaymentHeader: require("../AP/payment/header/model")(sequelize, DataTypes), //TODO:
-    arReceiveHeader: require("../AR/receive/header/model")(sequelize, DataTypes), //TODO:
+    fixedAssetProduct: require("../fixedAsset/productModel")(sequelize, DataTypes),
+    fixedAssetContract: require("../fixedAsset/contractModel")(sequelize, DataTypes),
+    fixedAssetDepreciation: require("../fixedAsset/depreciationModel")(sequelize, DataTypes),
+    apPaymentHeader: require("../payment/header/model")(sequelize, DataTypes), //TODO:
+    arReceiveHeader: require("../income/model")(sequelize, DataTypes), //TODO:
     payment: require("../paymentMethod/model")(sequelize, DataTypes),
     bank: require("../bank/model")(sequelize, DataTypes),
     bankAccount: require("../bankAccount/model")(sequelize, DataTypes),
@@ -181,12 +185,12 @@ const initializeModels = () => {
     apInvoiceSettlement: require("../AP/invoiceSettlement/model")(sequelize, DataTypes),
     apSettlementAudit: require("../AP/invoiceSettlementAudit/model")(sequelize, DataTypes),
     apInvoiceSettlementLine: require("../AP/invoiceSettlementLine/model")(sequelize, DataTypes),
-    arInvoiceHeader: require("../ARV2/invoice/header/model")(sequelize, DataTypes),
-    arInvoiceHeaderAudit: require("../ARV2/invoice/headerAudit/model")(sequelize, DataTypes),
-    arInvoiceLine: require("../ARV2/invoice/line/model")(sequelize, DataTypes),
-    arReceiveHeaderV2: require("../ARV2/receive/header/model")(sequelize, DataTypes), //TODO:
-    arReceiveHeaderAudit: require("../ARV2/receive/headerAudit/model")(sequelize, DataTypes), //TODO:
-    arReceiveLine: require("../ARV2/receive/line/model")(sequelize, DataTypes),
+    arInvoiceHeader: require("../AR/invoice/header/model")(sequelize, DataTypes),
+    arInvoiceHeaderAudit: require("../AR/invoice/headerAudit/model")(sequelize, DataTypes),
+    arInvoiceLine: require("../AR/invoice/line/model")(sequelize, DataTypes),
+    arReceiveHeaderV2: require("../AR/receive/header/model")(sequelize, DataTypes), //TODO:
+    arReceiveHeaderAudit: require("../AR/receive/headerAudit/model")(sequelize, DataTypes), //TODO:
+    arReceiveLine: require("../AR/receive/line/model")(sequelize, DataTypes),
 
 
     // Other models
@@ -450,10 +454,28 @@ const defineFinancialAssociations = (db) => {
   db.arReceiveHeader.belongsTo(db.chartAccount, { foreignKey: 'crAccountId', as: 'crAccount' });
 
   // GL associations
-  db.chartAccount.hasMany(db.gl, { as: 'gls' });
+  db.chartAccount.hasMany(db.gl, { as: 'gls', foreignKey: 'drAccountId' });
+  db.chartAccount.hasMany(db.gl, { as: 'glsCredit', foreignKey: 'crAccountId' });
   db.gl.belongsTo(db.chartAccount, { foreignKey: 'drAccountId', as: 'drAccount' });
   db.gl.belongsTo(db.chartAccount, { foreignKey: 'crAccountId', as: 'crAccount' });
   db.gl.belongsTo(db.currency, { foreignKey: 'currencyId', as: 'currency' });
+
+  // Batch associations
+  db.glPostingBatch.hasMany(db.gl, { foreignKey: 'glBatchId', sourceKey: 'batchNumber', as: 'glEntries' });
+  db.gl.belongsTo(db.glPostingBatch, { foreignKey: 'glBatchId', targetKey: 'batchNumber', as: 'postingBatch' });
+
+  // Fixed Asset associations
+  db.fixedAssetProduct.belongsTo(db.chartAccount, { foreignKey: 'assetCostAccountId', as: 'assetCostAccount' });
+  db.fixedAssetProduct.belongsTo(db.chartAccount, { foreignKey: 'accumulatedDepreciationAccountId', as: 'accumulatedDepreciationAccount' });
+  db.fixedAssetProduct.belongsTo(db.chartAccount, { foreignKey: 'depreciationExpenseAccountId', as: 'depreciationExpenseAccount' });
+
+  db.fixedAssetContract.belongsTo(db.fixedAssetProduct, { foreignKey: 'fixedAssetProductId', as: 'fixedAssetProduct' });
+  db.fixedAssetContract.belongsTo(db.location, { foreignKey: 'locationId', as: 'location' });
+  db.fixedAssetContract.belongsTo(db.vendor, { foreignKey: 'vendorId', as: 'vendor' });
+  db.fixedAssetContract.belongsTo(db.currency, { foreignKey: 'currencyId', as: 'currency' });
+
+  db.fixedAssetContract.hasMany(db.fixedAssetDepreciation, { foreignKey: 'fixedAssetContractId', as: 'depreciationSchedule' });
+  db.fixedAssetDepreciation.belongsTo(db.fixedAssetContract, { foreignKey: 'fixedAssetContractId', as: 'fixedAssetContract' });
 
 
 };
@@ -560,6 +582,9 @@ const synchronizeDatabase = async (db) => {
 // Initialize everything
 const db = initializeModels();
 setupAssociations(db);
-synchronizeDatabase(db);
+
+if (process.env.NO_SYNC !== 'true') {
+  synchronizeDatabase(db);
+}
 
 module.exports = db;

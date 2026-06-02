@@ -1,22 +1,52 @@
+// ===============================================================
+// AR RECEIVE HEADER ROUTES
+// ===============================================================
+const express = require('express');
+const router = express.Router();
+const ReceiveHeaderController = require('./controller');
 
+// ROUTES
+// GET /api/receive-headers - Get all receive headers with pagination and filtering
+router.get('/', ReceiveHeaderController.findAll);
+router.get('/pl', ReceiveHeaderController.findAllForPL);
 
-const {validateToken} = require("../../../api/jwtApi")
-const controller = require("./controller")
-const service = require("./service")
-const express = require("express")
-const router = express.Router()
+router.get('/sequence', ReceiveHeaderController.getNextReceiveNumber);
+// GET /api/receive-headers/search - Search receive headers
+router.get('/search', ReceiveHeaderController.search);
 
-const validator = require("./validator")
-router.use(validateToken)
-// No auth 
-// router.use((req,res,next)=>{
-//     next()
-// })
-router.post("/create",validator.createReceiveHeaderValidation, controller.createReceiveHeader)
-    .put("/update/:id",validator.updateReceiveHeaderValidation, controller.updateReceiveHeader)
-    .delete("/find/:id", controller.deleteReceiveHeader)
-    .get("/find", controller.getAllReceiveHeaders)
-    .get("/findByDate", controller.getAllReceiveHeadersByDate)
-    .get("/find/:id", controller.getReceiveHeaderById)
-    // .post("/bulkCreate",service.createHulkStockCard)
-module.exports = router
+// GET /api/receive-headers/statistics - Get receive header statistics
+router.get('/statistics', ReceiveHeaderController.getStatistics);
+
+// GET /api/receive-headers/by-invoice/:invoiceHeaderId - Get receipts by invoice header ID
+router.get('/by-invoice/:invoiceHeaderId', ReceiveHeaderController.findByInvoiceHeader);
+
+// GET /api/receive-headers/:id - Get single receive header by ID
+router.get('/:id', ReceiveHeaderController.findById);
+
+// POST /api/receive-headers - Create new receive header
+router.post('/', ReceiveHeaderController.create);
+
+// PUT /api/receive-headers/:id - Update receive header
+router.put('/:id', ReceiveHeaderController.update);
+
+// DELETE /api/receive-headers/:id - Delete receive header
+router.delete('/:id', ReceiveHeaderController.delete);
+
+// VOID RECEIPT
+router.post('/:id/void', ReceiveHeaderController.voidReceipt);
+
+// CANCEL RECEIPT
+router.post('/:id/cancel', ReceiveHeaderController.cancelReceipt);
+
+// REACTIVATE RECEIPT
+router.post('/:id/reactivate', ReceiveHeaderController.reactivateReceipt);
+
+module.exports = router;
+
+// Usage example in your main app file:
+/*
+const receiveHeaderRoutes = require('./routes/receiveHeaderRoutes');
+
+// Use the routes
+app.use('/api/receive-headers', receiveHeaderRoutes);
+*/

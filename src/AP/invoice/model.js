@@ -51,6 +51,19 @@ module.exports = (sequelize, DataTypes) => {
         },
         note: {
             type: DataTypes.TEXT
+        },
+        glPostingStatus: {
+            type: DataTypes.ENUM('unposted', 'posted'),
+            allowNull: false,
+            defaultValue: 'unposted'
+        },
+        glPostingDate: {
+            type: DataTypes.DATE,
+            allowNull: true
+        },
+        glBatchId: {
+            type: DataTypes.STRING(100),
+            allowNull: true
         }
     }, {
         sequelize,

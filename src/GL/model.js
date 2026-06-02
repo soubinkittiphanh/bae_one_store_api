@@ -5,7 +5,7 @@ module.exports = (sequelize, DataTypes) => {
     const GeneralLedger = sequelize.define('general_ledger', {
         // Model attributes are defined here
 
-        sequenceNumber:{
+        sequenceNumber: {
             type: DataTypes.STRING,
         },
         bookingDate: {
@@ -16,7 +16,12 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING,
             allowNull: false,
         },
-        amount: {
+        debit: {
+            type: DataTypes.DECIMAL(15, 2),
+            allowNull: false,
+            defaultValue: 0.00,
+        },
+        credit: {
             type: DataTypes.DECIMAL(15, 2),
             allowNull: false,
             defaultValue: 0.00,
@@ -25,19 +30,34 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING,
             allowNull: false,
         },
-        localAmount: {
-            type: DataTypes.DOUBLE, // use ISO 4217 currency codes (e.g. USD, EUR, GBP)
-            defaultValue: 0, // set a default currency if needed
-        }, 
-        rate: {
-            type: DataTypes.DECIMAL(15, 4),
+        localDebit: {
+            type: DataTypes.DECIMAL(15, 2),
             allowNull: false,
-            defaultValue: 1.0000, // set a default rate if needed
+            defaultValue: 0.00,
+        },
+        localCredit: {
+            type: DataTypes.DECIMAL(15, 2),
+            allowNull: false,
+            defaultValue: 0.00,
+        },
+        rate: {
+            type: DataTypes.DECIMAL(15, 6),
+            allowNull: false,
+            defaultValue: 1.000000,
         },
         source: {
-            type: DataTypes.ENUM('AR', 'AP', 'GL'), // use ENUM to limit the possible values
+            type: DataTypes.ENUM('AR', 'AP', 'GL', 'FA'),
             allowNull: false,
-            defaultValue: 'GL', // set a default value if needed
+            defaultValue: 'GL',
+        },
+        status: {
+            type: DataTypes.ENUM('DRAFT', 'POSTED', 'VOID'),
+            allowNull: false,
+            defaultValue: 'POSTED',
+        },
+        glBatchId: {
+            type: DataTypes.STRING(100),
+            allowNull: true,
         },
     }, {
         sequelize,

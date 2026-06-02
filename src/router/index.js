@@ -9,8 +9,8 @@ const location = require("../location").router
 const campaign = require("../controllers/admin/campaign").router
 const campaignEntry = require("../controllers/admin/campaign/entry").router
 const card = require("../card").router
-const paymentHeadAP = require("../AP/payment/header").router
-const receiveHeadAR = require("../AR/receive/header").router
+const paymentHeadAP = require("../payment/header").router
+const receiveHeadAR = require("../income").router
 const poheader = require("../purchasing").router
 const poLine = require("../purchasing/line").router
 const currency = require("../currency").router
@@ -71,10 +71,10 @@ const MOU = require("../job-fair/MOU/router")
 const agency = require("../job-fair/agency/router")
 const jobAdvertise = require("../job-fair/jobDescription/router")
 const benefit = require("../benefit/router")
-const arInvoiceHeader = require("../ARV2/invoice/header/router")
-const arInvoiceLine = require("../ARV2/invoice/line/router")
-const arReceiveHeader = require("../ARV2/receive/header/router")
-const arReceiveLine = require("../ARV2/receive/line/router")
+const arInvoiceHeader = require("../AR/invoice/header/router")
+const arInvoiceLine = require("../AR/invoice/line/router")
+const arReceiveHeader = require("../AR/receive/header/router")
+const arReceiveLine = require("../AR/receive/line/router")
 const batchJob = require("../job-fair/job-batch/router")
 const userRole = require("../userRole/router")
 const recipe = require("../recipe/router")
@@ -92,6 +92,7 @@ const accountDailyBalance = require("../accountDailyBalance/router")
 const businessDate = require("../businessDate/router")
 const databaseBackup = require("../databaseBackup/router")
 const loyalty = require("../loyalty/router")
+const fixedAsset = require("../fixedAsset").router
 
 module.exports = {
     orderRouter,
@@ -187,5 +188,6 @@ module.exports = {
     accountDailyBalance,
     businessDate,
     databaseBackup,
-    loyalty
+    loyalty,
+    fixedAsset
 }

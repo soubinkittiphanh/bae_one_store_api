@@ -16,10 +16,10 @@ function generateRandomString(length) {
 
 const createHulkStockCard = (req, res) => {
 
-    const { inputter, product_id, totalCost, stocCardkQty,productId,srcLocationId } = req.body;
-    const costPerUnit = totalCost ;
+    const { inputter, product_id, totalCost, stocCardkQty, productId, srcLocationId } = req.body;
+    const costPerUnit = totalCost;
     const lockingSessionId = Date.now();
-    logger.info("Product ID ===> "+productId)
+    logger.info("Product ID ===> " + productId)
     const rowsToInsert = [
 
     ]
@@ -43,7 +43,7 @@ const createHulkStockCard = (req, res) => {
             isActive: true,
             locationId: srcLocationId,
         })
-        logger.warn("Row insert productId ===> "+rowsToInsert[0]['productId'])
+        logger.warn("Row insert productId ===> " + rowsToInsert[0]['productId'])
     }
     Card.bulkCreate(rowsToInsert)
         .then(() => {
@@ -68,12 +68,16 @@ const rebuildStockValue = async (req, res) => {
     //**************** Script card version cardsale table logic *****************/
 
     //**************** Script card version without cardsale table logic *****************/
-    const sqlCom = `UPDATE product pro 
-    INNER JOIN (SELECT d.productId AS card_pro_id,COUNT(d.card_number) AS card_count 
-    FROM card d 
-    WHERE d.card_isused=0 OR d.saleLineId is null
-    GROUP BY d.product_id) proc ON proc.card_pro_id=pro.id 
-    SET pro.stock_count=proc.card_count;`
+    const sqlCom = `UPDATE product pro
+LEFT JOIN (
+    SELECT productId, COUNT(card_number) AS card_count
+    FROM card
+    WHERE card_isused = 0 
+      AND saleLineId IS NULL 
+      AND isActive = 1
+    GROUP BY productId
+) proc ON proc.productId = pro.id
+SET pro.stock_count = IFNULL(proc.card_count, 0);`
     //**************** Script card version without cardsale table logic *****************/
     try {
         const [rows, fields] = await dbAsync.execute(sqlCom);

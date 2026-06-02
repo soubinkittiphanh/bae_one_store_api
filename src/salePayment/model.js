@@ -20,7 +20,7 @@ module.exports = (sequelize, DataTypes) => {
         updatedAt: 'updateTimestamp',
         freezeTableName: true,
         sync: {
-            alter: false,
+            alter: true,
             force: false
         }
     });
@@ -34,6 +34,11 @@ module.exports = (sequelize, DataTypes) => {
         SalePayment.belongsTo(models.payment, {
             foreignKey: 'paymentId',
             as: 'paymentMethod',
+        });
+
+        SalePayment.belongsTo(models.ticket, {
+            foreignKey: 'ticketId',
+            as: 'ticket',
         });
     };
 

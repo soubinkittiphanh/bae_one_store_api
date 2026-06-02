@@ -124,6 +124,7 @@ const buildApp = async () => {
     app.use('/api/businessDate', myRouter.businessDate);
     app.use('/api/database', myRouter.databaseBackup);
     app.use('/api/loyalty', myRouter.loyalty);
+    app.use('/api/fixed-assets', myRouter.fixedAsset);
 
     Router.category(app);
     Router.product(app);

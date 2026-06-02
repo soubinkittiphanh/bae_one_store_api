@@ -117,4 +117,58 @@ exports.getAllByDate = async (req, res) => {
   }
 };
 
+exports.previewUnpostedBatch = async (req, res) => {
+  try {
+    let { startDate, endDate, module } = req.query;
+
+    if (req.query.date) {
+      try {
+        const parsedDate = JSON.parse(req.query.date);
+        startDate = startDate || parsedDate.startDate;
+        endDate = endDate || parsedDate.endDate;
+      } catch (e) {
+        // Ignore error
+      }
+    }
+
+    if (!startDate || !endDate || !module) {
+      return res.status(400).json({ error: 'startDate, endDate, and module are required parameters.' });
+    }
+
+    if (module !== 'AP' && module !== 'AR') {
+      return res.status(400).json({ error: 'module must be either "AP" or "AR".' });
+    }
+
+    const GLPostingService = require('./postingService');
+    const preview = await GLPostingService.previewUnposted(startDate, endDate, module);
+    res.status(200).json(preview);
+  } catch (error) {
+    console.error('Error previewing unposted batch:', error);
+    res.status(500).json({ error: error.message || 'An error occurred during preview' });
+  }
+};
+
+exports.postBatch = async (req, res) => {
+  try {
+    const { startDate, endDate, module } = req.body;
+    const userId = req.user?.id || 1;
+
+    if (!startDate || !endDate || !module) {
+      return res.status(400).json({ error: 'startDate, endDate, and module are required in request body.' });
+    }
+
+    if (module !== 'AP' && module !== 'AR') {
+      return res.status(400).json({ error: 'module must be either "AP" or "AR".' });
+    }
+
+    const GLPostingService = require('./postingService');
+    const result = await GLPostingService.postBatch(startDate, endDate, module, userId);
+    res.status(200).json({ message: 'Batch posting executed successfully', data: result });
+  } catch (error) {
+    console.error('Error executing batch posting:', error);
+    res.status(500).json({ error: error.message || 'An error occurred during batch posting' });
+  }
+};
+
+
 

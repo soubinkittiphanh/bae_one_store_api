@@ -13,5 +13,7 @@ router
     .get("/find", controller.getAllGeneralLedgerEntries)
     .get("/findByDate", controller.getAllByDate)
     .get("/find/:id", controller.getGeneralLedgerEntryById)
+    .get("/posting/preview", controller.previewUnpostedBatch)
+    .post("/posting/batch", controller.postBatch)
     // .post("/bulkCreate",service.createHulkStockCard)
 module.exports = router

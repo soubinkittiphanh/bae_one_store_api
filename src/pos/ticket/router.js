@@ -23,6 +23,7 @@ router.get('/filter/pending', ticketController.getPendingTickets);
 router.get('/reports/sales', ticketController.getSalesReport);
 router.get('/reports/top-products', ticketController.getTopProductsReport);
 router.get('/reports/payment-methods', ticketController.getPaymentMethodsReport);
+router.get('/reports/daily-summary', ticketController.getDailySummaryReport);
 router.get('/reports/hourly-sales', ticketController.getHourlySalesReport);
 router.get('/reports/staff-performance', ticketController.getStaffPerformanceReport);
 

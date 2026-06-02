@@ -160,6 +160,10 @@ module.exports = (sequelize, DataTypes) => {
             foreignKey: 'ticketId',
             as: 'ticketLines',
         });
+        Ticket.hasMany(models.salePayment, {
+            foreignKey: 'ticketId',
+            as: 'salePayments',
+        });
         Ticket.belongsTo(models.user, {
             foreignKey: 'createUserId',
             as: 'createUser',

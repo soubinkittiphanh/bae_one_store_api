@@ -1,27 +1,43 @@
+// ===============================================================
+// AR INVOICE HEADER ROUTES
+// ===============================================================
 const express = require('express');
 const router = express.Router();
-const arInvoiceController = require('./controller');
+const InvoiceHeaderController = require('./controller');
 
-// Middleware imports (adjust based on your middleware structure)
-const { authenticate } = require('../middleware/auth');
-const { validateInvoice, validateInvoiceUpdate } = require('../middleware/validation');
+// ROUTES
+// GET /api/invoices - Get all invoices with pagination and filtering
+router.get('/', InvoiceHeaderController.findAll);
 
-// Apply authentication middleware to all routes
-router.use(authenticate);
+router.get('/sequence', InvoiceHeaderController.getNextInvoiceNumber);
+// GET /api/invoices/search - Search invoices
+router.get('/search', InvoiceHeaderController.search);
 
-// GET routes
-router.get('/', arInvoiceController.getAllInvoices);
-router.get('/stats', arInvoiceController.getInvoiceStats);
-router.get('/:id', arInvoiceController.getInvoiceById);
+// GET /api/invoices/statistics - Get invoice statistics
+router.get('/statistics', InvoiceHeaderController.getStatistics);
 
-// POST routes
-router.post('/', validateInvoice, arInvoiceController.createInvoice);
+// GET /api/invoices/:id - Get single invoice by ID
+router.get('/:id', InvoiceHeaderController.findById);
+router.get('/audit/:id', InvoiceHeaderController.findAuditByHeaderId);
 
-// PUT routes
-router.put('/:id', validateInvoiceUpdate, arInvoiceController.updateInvoice);
-router.put('/:id/status', arInvoiceController.updateInvoiceStatus);
+// POST /api/invoices - Create new invoice
+router.post('/', InvoiceHeaderController.create);
 
-// DELETE routes
-router.delete('/:id', arInvoiceController.deleteInvoice);
+// PUT /api/invoices/:id - Update invoice
+router.put('/:id', InvoiceHeaderController.update);
+
+// PATCH /api/invoices/:id/status - Update invoice status only
+router.patch('/:id/status', InvoiceHeaderController.updateStatus);
+
+// DELETE /api/invoices/:id - Delete invoice
+router.delete('/:id', InvoiceHeaderController.delete);
 
 module.exports = router;
+
+// Usage example in your main app file:
+/*
+const invoiceRoutes = require('./routes/invoiceRoutes');
+
+// Use the routes
+app.use('/api/invoices', invoiceRoutes);
+*/
