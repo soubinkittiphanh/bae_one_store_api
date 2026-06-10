@@ -48,7 +48,17 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING,
             allowNull: true,
             comment: 'Note about the promotion applied'
-        }
+        },
+        colorId: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            comment: 'Reference to Color table'
+        },
+        sizeId: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            comment: 'Reference to Size table'
+        },
     }, {
         sequelize,
         // don't forget to enable timestamps!
@@ -81,6 +91,18 @@ module.exports = (sequelize, DataTypes) => {
             foreignKey: 'ticketLineId',
             as: 'cards',
         });
+        if (models.Color) {
+            TicketLine.belongsTo(models.Color, {
+                foreignKey: 'colorId',
+                as: 'color'
+            });
+        }
+        if (models.Size) {
+            TicketLine.belongsTo(models.Size, {
+                foreignKey: 'sizeId',
+                as: 'size'
+            });
+        }
     };
 
     return TicketLine;

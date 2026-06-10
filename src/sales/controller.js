@@ -44,30 +44,52 @@ const validateStockForLines = async (lines, locationId) => {
 
   const stockValidationErrors = [];
 
+  // Fetch STOCK.VAR parameter from SPF
+  const spfStockVarParam = await spfService.getSPFByCode('STOCK.VAR');
+  const checkVariant = spfStockVarParam && spfStockVarParam.value === 'Y';
+  logger.info(`STOCK.VAR parameter value is: ${spfStockVarParam ? spfStockVarParam.value : 'not set'} (checkVariant: ${checkVariant})`);
+
   for (const line of lines) {
     // Check if this line requires stock validation
-    if (line.validateStockOnSale === 1) {
+    const shouldValidate = line.validateStockOnSale === 1 ||
+      (line.product && line.product.validateStockOnSale);
+
+    if (shouldValidate) {
       logger.info(`Validating stock for line with productId: ${line.productId}`);
 
-      const requiredQty = line.unitRate * line.quantity;
+      const requiredQty = (line.unitRate || 1) * line.quantity;
 
       // Check available cards/stock for this product at this location
+      const whereCondition = {
+        productId: line.productId,
+        saleLineId: null,
+        card_isused: 0,
+        locationId: locationId,
+        isActive: true
+      };
+
+      // Add variant checks if STOCK.VAR is active and properties are provided
+      if (checkVariant) {
+        if (line.colorId !== undefined && line.colorId !== null) {
+          whereCondition.colorId = line.colorId;
+        }
+        if (line.sizeId !== undefined && line.sizeId !== null) {
+          whereCondition.sizeId = line.sizeId;
+        }
+      }
+
       const availableCards = await Card.findAll({
-        where: {
-          productId: line.productId,
-          saleLineId: null,
-          card_isused: 0,
-          locationId: locationId,
-          isActive: true
-        },
+        where: whereCondition,
         order: [['createdAt', 'DESC']]
       });
 
-      logger.info(`Product ${line.productId} requires ${requiredQty} units, available: ${availableCards.length}`);
+      logger.info(`Product ${line.productId} (Color: ${line.colorId}, Size: ${line.sizeId}) requires ${requiredQty} units, available: ${availableCards.length}`);
 
       if (availableCards.length < requiredQty) {
         stockValidationErrors.push({
           productId: line.productId,
+          colorId: checkVariant ? line.colorId : null,
+          sizeId: checkVariant ? line.sizeId : null,
           required: requiredQty,
           available: availableCards.length,
           shortage: requiredQty - availableCards.length
@@ -829,6 +851,11 @@ exports.reverseSaleHeader = async (req, res) => {
   }
 };
 const assignHeaderId = async (lines, id, lockingSessionId, isUpdate, locationId) => {
+  // Fetch STOCK.VAR parameter from SPF
+  const spfStockVarParam = await spfService.getSPFByCode('STOCK.VAR');
+  const checkVariant = spfStockVarParam && spfStockVarParam.value === 'Y';
+  logger.info(`[assignHeaderId] STOCK.VAR parameter value is: ${spfStockVarParam ? spfStockVarParam.value : 'not set'} (checkVariant: ${checkVariant})`);
+
   for (const iterator of lines) {
     iterator.headerId = id;
     iterator.saleHeaderId = id;
@@ -852,8 +879,16 @@ const assignHeaderId = async (lines, id, lockingSessionId, isUpdate, locationId)
           const currentRequiredQty = (iterator.unitRate || 1) * iterator.quantity;
           const actualLinkedCount = previousCards.length;
 
-          // A. Same Product: Adjust quantity
-          if (actualLinkedCount > 0 && previousCards[0].productId == iterator.productId) {
+          // Check if it's same product and same variant properties
+          const sameProduct = actualLinkedCount > 0 && previousCards[0].productId == iterator.productId;
+          const sameVariant = !checkVariant || (
+            actualLinkedCount > 0 &&
+            previousCards[0].colorId == iterator.colorId &&
+            previousCards[0].sizeId == iterator.sizeId
+          );
+
+          // A. Same Product and Variant: Adjust quantity
+          if (actualLinkedCount > 0 && sameProduct && sameVariant) {
             if (currentRequiredQty > actualLinkedCount) {
               const diff = currentRequiredQty - actualLinkedCount;
               await reserveCard(iterator, lockingSessionId, diff, locationId);
@@ -870,7 +905,7 @@ const assignHeaderId = async (lines, id, lockingSessionId, isUpdate, locationId)
               });
             }
           }
-          // B. Product Swap: Release all old cards, lock all new cards
+          // B. Product/Variant Swap: Release all old cards, lock all new cards
           else {
             if (actualLinkedCount > 0) {
               await Card.update({ card_isused: 0, saleLineId: null, locking_session_id: '' }, {
@@ -900,21 +935,37 @@ const updateProductStockCount = async (lines) => {
 };
 
 const reserveCard = async (line, lockingSessionId, qty, locationId) => {
-  logger.info(`[RESERVE] Product: ${line.productId}, Qty: ${qty}`);
+  logger.info(`[RESERVE] Product: ${line.productId}, Qty: ${qty}, Color: ${line.colorId}, Size: ${line.sizeId}`);
+
+  // Fetch STOCK.VAR parameter from SPF
+  const spfStockVarParam = await spfService.getSPFByCode('STOCK.VAR');
+  const checkVariant = spfStockVarParam && spfStockVarParam.value === 'Y';
+
+  const whereCondition = {
+    productId: line.productId,
+    saleLineId: null,
+    card_isused: 0,
+    locationId
+  };
+
+  if (checkVariant) {
+    if (line.colorId !== undefined && line.colorId !== null) {
+      whereCondition.colorId = line.colorId;
+    }
+    if (line.sizeId !== undefined && line.sizeId !== null) {
+      whereCondition.sizeId = line.sizeId;
+    }
+  }
 
   const cards = await Card.findAll({
     limit: qty,
     order: [['createdAt', 'DESC']],
-    where: {
-      productId: line.productId,
-      saleLineId: null,
-      card_isused: 0,
-      locationId
-    }
+    where: whereCondition
   });
 
   if (!cards || cards.length < qty) {
-    throw new Error(`Insufficient stock for Product ${line.productId}`);
+    const variantStr = checkVariant ? ` (Color: ${line.colorId}, Size: ${line.sizeId})` : '';
+    throw new Error(`Insufficient stock for Product ${line.productId}${variantStr}`);
   }
 
   await Card.update({
@@ -1934,4 +1985,6 @@ exports.removeGiftFromSale = async (req, res) => {
     });
   }
 };
+
+exports.validateStockForLines = validateStockForLines;
 

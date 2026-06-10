@@ -24,6 +24,7 @@ const SalePayment = require('../../models').salePayment;
 
 const common = require('../../common');
 const productService = require('../../product/service');
+const spfService = require('../../spf/service');
 
 // Helper function to post ticket to sale tables
 const postTicketToSale = async (ticketId, transaction) => {
@@ -946,11 +947,15 @@ const ticketController = {
             });
             const productMap = new Map(products.map(p => [p.id, p]));
 
+            // Fetch STOCK.VAR parameter from SPF
+            const spfStockVarParam = await spfService.getSPFByCode('STOCK.VAR');
+            const checkVariant = spfStockVarParam && spfStockVarParam.value === 'Y';
+            console.log('=== STARTING STOCK VALIDATION FOR TICKET ===, checkVariant:', checkVariant);
+
             // Stock validation logic before ticket creation
             const stockValidationErrors = [];
             const lockingSessionId = common.generateLockingSessionId();
             
-            console.log('=== STARTING STOCK VALIDATION FOR TICKET ===');
             for (const line of ticketLines) {
                 const product = productMap.get(line.productId);
                 if (!product) {
@@ -965,15 +970,26 @@ const ticketController = {
                     const qty = parseInt(line.quantity || 1);
                     console.log(`✓ Product ${line.productId} (${product.pro_name}) REQUIRES stock validation - checking inventory...`);
                     
+                    const whereCondition = {
+                        productId: line.productId,
+                        ticketLineId: null,
+                        card_isused: 0,
+                        locationId
+                    };
+
+                    if (checkVariant) {
+                        if (line.colorId !== undefined && line.colorId !== null) {
+                            whereCondition.colorId = line.colorId;
+                        }
+                        if (line.sizeId !== undefined && line.sizeId !== null) {
+                            whereCondition.sizeId = line.sizeId;
+                        }
+                    }
+
                     const availableCards = await Card.findAll({
                         limit: qty,
                         order: [['createdAt', 'DESC']],
-                        where: {
-                            productId: line.productId,
-                            ticketLineId: null,
-                            card_isused: 0,
-                            locationId
-                        },
+                        where: whereCondition,
                         transaction
                     });
                     
@@ -982,6 +998,8 @@ const ticketController = {
                         stockValidationErrors.push({
                             productId: line.productId,
                             productName: product.pro_name,
+                            colorId: checkVariant ? line.colorId : null,
+                            sizeId: checkVariant ? line.sizeId : null,
                             required: qty,
                             available: availableQty,
                             shortage: qty - availableQty
@@ -998,9 +1016,10 @@ const ticketController = {
             if (stockValidationErrors.length > 0) {
                 await transaction.rollback();
                 console.error(`=== STOCK VALIDATION FAILED ===`);
-                const errorDetails = stockValidationErrors.map(err =>
-                    `Product #${err.productId} (${err.productName}): Need ${err.required}, Available ${err.available}, Short ${err.shortage}`
-                ).join('; ');
+                const errorDetails = stockValidationErrors.map(err => {
+                    const variantStr = checkVariant ? ` (Color: ${err.colorId}, Size: ${err.sizeId})` : '';
+                    return `Product #${err.productId}${variantStr} (${err.productName}): Need ${err.required}, Available ${err.available}, Short ${err.shortage}`;
+                }).join('; ');
                 
                 return res.status(400).json({
                     success: false,
@@ -1068,7 +1087,9 @@ const ticketController = {
                         is_promotion_item: line.is_promotion_item || false,
                         original_price: line.original_price || null,
                         discount_amount: line.discount_amount || 0,
-                        promotion_note: line.promotion_note || null
+                        promotion_note: line.promotion_note || null,
+                        colorId: line.colorId || null,
+                        sizeId: line.sizeId || null
                     }, { transaction });
                     
                     console.log(`✅ Ticket line created with ID ${ticketLine.id} for product ${line.productId}`);
@@ -1078,15 +1099,26 @@ const ticketController = {
                     if (product.validateStockOnSale) {
                         console.log(`Reserving ${qty} stock cards for product ${line.productId} (${product.pro_name})`);
                         
+                        const whereCondition = {
+                            productId: line.productId,
+                            ticketLineId: null,
+                            card_isused: 0,
+                            locationId
+                        };
+
+                        if (checkVariant) {
+                            if (line.colorId !== undefined && line.colorId !== null) {
+                                whereCondition.colorId = line.colorId;
+                            }
+                            if (line.sizeId !== undefined && line.sizeId !== null) {
+                                whereCondition.sizeId = line.sizeId;
+                            }
+                        }
+
                         const availableCards = await Card.findAll({
                             limit: qty,
                             order: [['createdAt', 'DESC']],
-                            where: {
-                                productId: line.productId,
-                                ticketLineId: null,
-                                card_isused: 0,
-                                locationId
-                            },
+                            where: whereCondition,
                             transaction
                         });
                         
@@ -1138,7 +1170,9 @@ const ticketController = {
                                 isActive: true,
                                 currencyId: currencyId,
                                 locationId: locationId,
-                                ticketLineId: ticketLine.id
+                                ticketLineId: ticketLine.id,
+                                colorId: line.colorId || null,
+                                sizeId: line.sizeId || null
                             });
                         }
                         
@@ -1309,12 +1343,16 @@ const ticketController = {
                 });
                 const productMap = new Map(products.map(p => [p.id, p]));
 
+                // Fetch STOCK.VAR parameter from SPF
+                const spfStockVarParam = await spfService.getSPFByCode('STOCK.VAR');
+                const checkVariant = spfStockVarParam && spfStockVarParam.value === 'Y';
+                console.log('=== STARTING STOCK VALIDATION FOR TICKET UPDATE ===, checkVariant:', checkVariant);
+
                 // Stock validation for the new lines
                 const stockValidationErrors = [];
                 const lockingSessionId = common.generateLockingSessionId();
                 const locationId = ticket.locationId || updateData.locationId;
 
-                console.log('=== STARTING STOCK VALIDATION FOR TICKET UPDATE ===');
                 for (const line of ticketLines) {
                     const product = productMap.get(line.productId);
                     if (!product) {
@@ -1329,15 +1367,26 @@ const ticketController = {
                         const qty = parseInt(line.quantity || 1);
                         console.log(`✓ Product ${line.productId} (${product.pro_name}) REQUIRES stock validation - checking inventory...`);
 
+                        const whereCondition = {
+                            productId: line.productId,
+                            ticketLineId: null,
+                            card_isused: 0,
+                            locationId
+                        };
+
+                        if (checkVariant) {
+                            if (line.colorId !== undefined && line.colorId !== null) {
+                                whereCondition.colorId = line.colorId;
+                            }
+                            if (line.sizeId !== undefined && line.sizeId !== null) {
+                                whereCondition.sizeId = line.sizeId;
+                            }
+                        }
+
                         const availableCards = await Card.findAll({
                             limit: qty,
                             order: [['createdAt', 'DESC']],
-                            where: {
-                                productId: line.productId,
-                                ticketLineId: null,
-                                card_isused: 0,
-                                locationId
-                            },
+                            where: whereCondition,
                             transaction
                         });
 
@@ -1346,6 +1395,8 @@ const ticketController = {
                             stockValidationErrors.push({
                                 productId: line.productId,
                                 productName: product.pro_name,
+                                colorId: checkVariant ? line.colorId : null,
+                                sizeId: checkVariant ? line.sizeId : null,
                                 required: qty,
                                 available: availableQty,
                                 shortage: qty - availableQty
@@ -1362,9 +1413,10 @@ const ticketController = {
                 if (stockValidationErrors.length > 0) {
                     await transaction.rollback();
                     console.error(`=== STOCK VALIDATION FAILED ON UPDATE ===`);
-                    const errorDetails = stockValidationErrors.map(err =>
-                        `Product #${err.productId} (${err.productName}): Need ${err.required}, Available ${err.available}, Short ${err.shortage}`
-                    ).join('; ');
+                    const errorDetails = stockValidationErrors.map(err => {
+                        const variantStr = checkVariant ? ` (Color: ${err.colorId}, Size: ${err.sizeId})` : '';
+                        return `Product #${err.productId}${variantStr} (${err.productName}): Need ${err.required}, Available ${err.available}, Short ${err.shortage}`;
+                    }).join('; ');
 
                     return res.status(400).json({
                         success: false,
@@ -1396,7 +1448,9 @@ const ticketController = {
                         is_promotion_item: line.is_promotion_item || false,
                         original_price: line.original_price || null,
                         discount_amount: line.discount_amount || 0,
-                        promotion_note: line.promotion_note || null
+                        promotion_note: line.promotion_note || null,
+                        colorId: line.colorId || null,
+                        sizeId: line.sizeId || null
                     }, { transaction });
 
                     console.log(`✅ Ticket line created with ID ${ticketLine.id} for product ${line.productId}`);
@@ -1406,15 +1460,26 @@ const ticketController = {
                     if (product.validateStockOnSale) {
                         console.log(`Reserving ${qty} stock cards for product ${line.productId} (${product.pro_name})`);
 
+                        const whereCondition = {
+                            productId: line.productId,
+                            ticketLineId: null,
+                            card_isused: 0,
+                            locationId
+                        };
+
+                        if (checkVariant) {
+                            if (line.colorId !== undefined && line.colorId !== null) {
+                                whereCondition.colorId = line.colorId;
+                            }
+                            if (line.sizeId !== undefined && line.sizeId !== null) {
+                                whereCondition.sizeId = line.sizeId;
+                            }
+                        }
+
                         const availableCards = await Card.findAll({
                             limit: qty,
                             order: [['createdAt', 'DESC']],
-                            where: {
-                                productId: line.productId,
-                                ticketLineId: null,
-                                card_isused: 0,
-                                locationId
-                            },
+                            where: whereCondition,
                             transaction
                         });
 
@@ -1466,7 +1531,9 @@ const ticketController = {
                                 isActive: true,
                                 currencyId: currencyId,
                                 locationId: locationId,
-                                ticketLineId: ticketLine.id
+                                ticketLineId: ticketLine.id,
+                                colorId: line.colorId || null,
+                                sizeId: line.sizeId || null
                             });
                         }
 

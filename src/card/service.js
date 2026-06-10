@@ -1,6 +1,7 @@
 const logger = require('../api/logger');
 const dbAsync = require('../config/dbconAsync');
-const Card = require('../models').card
+const Card = require('../models').card;
+const Product = require('../models').product;
 const common = require('../common');
 const { Op } = require('sequelize');
 const productService = require('./../product/service')
@@ -83,15 +84,30 @@ const createHulkStockCard = async (req, res) => {
         logger.warn("Row insert productId ===> " + rowsToInsert[0]['productId'])
     }
 
-    Card.bulkCreate(rowsToInsert)
-        .then(() => {
-            logger.info('Rows inserted successfully')
-            return res.status(200).send("Transaction completed")
-        })
-        .catch((error) => {
-            logger.error('Error inserting rows:', error)
-            return res.status(403).send("Server error " + error)
-        });
+    try {
+        await Card.bulkCreate(rowsToInsert);
+        logger.info('Rows inserted successfully');
+
+        // Update product's costCurrencyId
+        if (productId) {
+            await Product.update(
+                { costCurrencyId: currencyId ?? 1 },
+                { where: { id: productId } }
+            );
+            logger.info(`Updated product costCurrencyId to ${currencyId ?? 1} for productId ${productId}`);
+        } else if (product_id) {
+            await Product.update(
+                { costCurrencyId: currencyId ?? 1 },
+                { where: { pro_id: product_id } }
+            );
+            logger.info(`Updated product costCurrencyId to ${currencyId ?? 1} for product_id ${product_id}`);
+        }
+
+        return res.status(200).send("Transaction completed");
+    } catch (error) {
+        logger.error('Error in createHulkStockCard:', error);
+        return res.status(403).send("Server error " + error);
+    }
 }
 
 // TODO: Lets continues here for stock adjustment 

@@ -57,6 +57,16 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: false,
             defaultValue: false,
         },
+        colorId: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            comment: 'Reference to Color table'
+        },
+        sizeId: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            comment: 'Reference to Size table'
+        },
     }, {
         sequelize,
         // don't forget to enable timestamps!
@@ -111,6 +121,22 @@ module.exports = (sequelize, DataTypes) => {
             foreignKey: 'saleLineId', // Add the foreign key that exists in card table
             as: 'cards'
         });
+
+        // SaleLine -> Color (Many-to-One)
+        if (models.Color) {
+            SaleLine.belongsTo(models.Color, {
+                foreignKey: 'colorId',
+                as: 'color'
+            });
+        }
+
+        // SaleLine -> Size (Many-to-One)
+        if (models.Size) {
+            SaleLine.belongsTo(models.Size, {
+                foreignKey: 'sizeId',
+                as: 'size'
+            });
+        }
     };
 
     return SaleLine;
