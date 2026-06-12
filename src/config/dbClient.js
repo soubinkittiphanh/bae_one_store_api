@@ -13,7 +13,13 @@ const clientDB = {
         "database": "dcommerce_pro_peeair4_2024",
         "port": 3306,
     },
-
+    "temp": {
+        "host": "localhost",
+        "user": "root",
+        "password": "SDAT@3480",
+        "database": "temp",
+        "port": 3306,
+    },
 
     // "dev": {
     //     "host": "mariadb-202130-0.cloudclusters.net",

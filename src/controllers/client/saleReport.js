@@ -3,6 +3,8 @@ const dbAsync = require('../../config/dbconAsync');
 const interalResponse = require('../../common')
 const logger = require('../../api/logger')
 const common = require("../../common")
+const db = require('../../models');
+const { QueryTypes } = require('sequelize');
 const topSaleByMonth = async (req, res) => {
     let { month, top } = req.query;
     if (!top) top = 10
@@ -184,11 +186,126 @@ const dailySaleSummary = async (req, res) => {
     }
 }
 
+const backdateStockReport = async (req, res) => {
+    let { date, productId } = req.query;
+    
+    // Parse target date (default to current time)
+    const targetDate = date ? new Date(date) : new Date();
+    
+    if (isNaN(targetDate.getTime())) {
+        return res.status(400).json({
+            success: false,
+            message: "Invalid date format. Please use ISO format or YYYY-MM-DD HH:mm:ss"
+        });
+    }
+
+    let productCondition = '';
+    const replacements = { backdate: targetDate };
+
+    if (productId) {
+        productCondition = 'AND p.id = :productId';
+        replacements.productId = productId;
+    }
+
+    const sql = `
+        SELECT 
+            p.id AS productId,
+            p.pro_id AS productCode,
+            p.pro_name AS productName,
+            p.stock_count AS currentStock,
+            p.pro_price AS retailPrice,
+            p.cost_price AS productCostPrice,
+            
+            -- Stock quantity at backdate
+            SUM(
+                CASE 
+                    -- Rule 1: Card was created at or before the backdate
+                    WHEN c.card_input_date <= :backdate
+                         AND (
+                             -- Rule 2: Card is still available/active
+                             (c.card_isused = 0 AND c.isActive = 1)
+                             -- Rule 3: Card was deleted/adjusted but AFTER the backdate
+                             OR (c.card_isused = 2 AND c.update_time > :backdate)
+                             -- Rule 4: Card was sold via saleLine but AFTER the backdate
+                             OR (c.saleLineId IS NOT NULL AND sl.createdAt > :backdate)
+                             -- Rule 5: Card was sold via ticketLine but AFTER the backdate
+                             OR (c.ticketLineId IS NOT NULL AND tl.createdAt > :backdate)
+                             -- Rule 6: Card was transferred via transferLine but AFTER the backdate
+                             OR (c.transferLineId IS NOT NULL AND tr.createdAt > :backdate)
+                         )
+                    THEN 1
+                    ELSE 0
+                END
+            ) AS stockAtBackdate,
+
+            -- Total cost value at backdate (sum of individual card costs)
+            SUM(
+                CASE 
+                    WHEN c.card_input_date <= :backdate
+                         AND (
+                             (c.card_isused = 0 AND c.isActive = 1)
+                             OR (c.card_isused = 2 AND c.update_time > :backdate)
+                             OR (c.saleLineId IS NOT NULL AND sl.createdAt > :backdate)
+                             OR (c.ticketLineId IS NOT NULL AND tl.createdAt > :backdate)
+                             OR (c.transferLineId IS NOT NULL AND tr.createdAt > :backdate)
+                         )
+                    THEN IFNULL(c.cost, 0)
+                    ELSE 0
+                END
+            ) AS costValueAtBackdate,
+
+            -- Total retail value at backdate (quantity * retail price)
+            SUM(
+                CASE 
+                    WHEN c.card_input_date <= :backdate
+                         AND (
+                             (c.card_isused = 0 AND c.isActive = 1)
+                             OR (c.card_isused = 2 AND c.update_time > :backdate)
+                             OR (c.saleLineId IS NOT NULL AND sl.createdAt > :backdate)
+                             OR (c.ticketLineId IS NOT NULL AND tl.createdAt > :backdate)
+                             OR (c.transferLineId IS NOT NULL AND tr.createdAt > :backdate)
+                         )
+                    THEN 1
+                    ELSE 0
+                END
+            ) * p.pro_price AS retailValueAtBackdate
+
+        FROM product p
+        LEFT JOIN card c ON c.productId = p.id
+        LEFT JOIN saleLine sl ON sl.id = c.saleLineId
+        LEFT JOIN ticketLine tl ON tl.id = c.ticketLineId
+        LEFT JOIN transferLine tr ON tr.id = c.transferLineId
+        WHERE p.isActive = 1 AND p._category = 'product' ${productCondition}
+        GROUP BY p.id
+        ORDER BY p.pro_name ASC;
+    `;
+
+    try {
+        const rows = await db.sequelize.query(sql, {
+            replacements,
+            type: QueryTypes.SELECT
+        });
+        
+        return res.status(200).json({
+            success: true,
+            backdate: targetDate.toISOString(),
+            data: rows
+        });
+    } catch (error) {
+        logger.error('Error fetching backdate stock report: ' + error);
+        return res.status(500).json({
+            success: false,
+            message: 'Server error: ' + error.message
+        });
+    }
+};
+
 module.exports = {
     topSaleByMonth,
     dailySaleStatistic,
     codAndCash,
     topSaleMinimartByMonth,
     saleByMainCategory,
-    dailySaleSummary
+    dailySaleSummary,
+    backdateStockReport
 }

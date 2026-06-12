@@ -11,5 +11,6 @@ router.get("/topsaleMinimart",controllers.topSaleMinimartByMonth)
 .get('/cod_n_cash_report',controllers.codAndCash)
 .get('/saleByMainCategory',controllers.saleByMainCategory)
 .get('/dailySaleSummary',controllers.dailySaleSummary)
+.get('/backdateStockReport', controllers.backdateStockReport)
 
 module.exports = router
