@@ -1,10 +1,19 @@
 
 
 const logger = require("./api/logger.js");
-const buildApp = require("./app.js");
-const env = require("./config");
-const userService = require('../src/user/service.js')
+const executeSqlScript = require("./helper/sqlExecutor.js");
+
 const startApp = async () => {
+    try {
+        // Run SQL cleanup script first (e.g. toomanykey.sql) before sync/router imports
+        await executeSqlScript();
+    } catch (err) {
+        logger.error("Failed executing initial SQL script:", err);
+    }
+
+    const buildApp = require("./app.js");
+    const env = require("./config");
+    const userService = require('../src/user/service.js');
 
     const app = await buildApp();
 
@@ -13,8 +22,6 @@ const startApp = async () => {
         logger.info("app is runing: " + env.port || 4000);
         logger.warn("env: " + env.db.database);
     }).setTimeout(0)
-
-
-
 }
 startApp();
+

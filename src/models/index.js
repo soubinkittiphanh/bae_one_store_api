@@ -162,8 +162,8 @@ const initializeModels = () => {
     Size: require("../size/model")(sequelize, DataTypes),
     card: require("../card/model")(sequelize, DataTypes),
     Transaction: require("../transaction/model")(sequelize, DataTypes),
-    gl: require("../GL/model")(sequelize, DataTypes),
     glPostingBatch: require("../GL/postingBatchModel")(sequelize, DataTypes),
+    gl: require("../GL/model")(sequelize, DataTypes),
     chartAccount: require("../account/model")(sequelize, DataTypes),
     fixedAssetProduct: require("../fixedAsset/productModel")(sequelize, DataTypes),
     fixedAssetContract: require("../fixedAsset/contractModel")(sequelize, DataTypes),
@@ -561,7 +561,7 @@ const setupAssociations = (db) => {
 // Database synchronization
 const synchronizeDatabase = async (db) => {
   try {
-    await db.sequelize.sync({ force: false, alter: true });
+    await db.sequelize.sync({ force: false, alter: { drop: false } });
     logger.info("Database client is synchronized");
 
     const userService = require('../user/service');
@@ -572,7 +572,7 @@ const synchronizeDatabase = async (db) => {
   }
 
   try {
-    await db.centralSequelize.sync({ force: false, alter: true });
+    await db.centralSequelize.sync({ force: false, alter: { drop: false } });
     logger.info("Database central is synchronized");
   } catch (error) {
     logger.error("Error synchronizing central database:", error);

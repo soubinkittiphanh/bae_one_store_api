@@ -5,14 +5,16 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "predev": "npm install && npm install bcrypt",
     "dev": "cross-env TZ=Asia/Vientiane nodemon src/index.js",
+    "prestart": "npm install && npm install bcrypt",
     "start": "cross-env TZ=Asia/Vientiane node src/index.js"
   },
   "author": "what the dev",
   "license": "ISC",
   "dependencies": {
     "axios": "^0.22.0",
-    "bcrypt": "^5.0.1",
+    "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
     "dotenv": "^10.0.0",
     "exceljs": "^4.4.0",
