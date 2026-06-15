@@ -14,7 +14,7 @@ const updateProductCountById = async (id, transaction = null) => {
                 stock_count: literal(`(
             SELECT COUNT(card.card_number)
             FROM card
-            WHERE card.productId = ${id} AND card.card_isused = 0 AND card.saleLineId IS NULL AND card.ticketLineId IS NULL
+            WHERE card.productId = ${id} AND card.card_isused = 0 AND card.saleLineId IS NULL AND card.ticketLineId IS NULL AND card.isActive = 1
           )`)
             }, { transaction })
         }
@@ -39,7 +39,7 @@ const updateProductCountGroup = async (productIdList, transaction = null) => {
                 stock_count: literal(`(
             SELECT COUNT(card.card_number)
             FROM card
-            WHERE card.productId = ${iterator.id} AND card.card_isused = 0 AND card.saleLineId IS NULL AND card.ticketLineId IS NULL
+            WHERE card.productId = ${iterator.id} AND card.card_isused = 0 AND card.saleLineId IS NULL AND card.ticketLineId IS NULL AND card.isActive = 1
           )`)
             }, { transaction })
         }

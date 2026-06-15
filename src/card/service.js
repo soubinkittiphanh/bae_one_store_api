@@ -32,11 +32,13 @@ const createHulkStockCard = async (req, res) => {
             productId,
             card_isused: 0,
             saleLineId: null, // Ensure card is not sold/linked to a sale line
+            isActive: true,
         }
         if (srcLocationId) {
             whereCondition.locationId = srcLocationId;
         }
         await adjustStock(whereCondition, stockCardQty, inputter)
+        await productService.updateProductCountById(productId)
         return res.status(200).send("Transaction completed")
     }
 
@@ -102,7 +104,9 @@ const createHulkStockCard = async (req, res) => {
             );
             logger.info(`Updated product costCurrencyId to ${currencyId ?? 1} for product_id ${product_id}`);
         }
-
+        if (productId) {
+            await productService.updateProductCountById(productId)
+        }
         return res.status(200).send("Transaction completed");
     } catch (error) {
         logger.error('Error in createHulkStockCard:', error);
@@ -483,7 +487,7 @@ const createAutoHulkStockCard = async (line) => {
 const adjustStockCard = async (productId, stockCount, product_code) => {
     try {
         const currentStock = await Card.count({
-            where: { productId, card_isused: 0, saleLineId: null }
+            where: { productId, card_isused: 0, saleLineId: null, isActive: true }
         });
 
         // If the current stock is greater than the desired stock count, delete excess entries
@@ -491,7 +495,7 @@ const adjustStockCard = async (productId, stockCount, product_code) => {
             const excess = currentStock - stockCount;
 
             await Card.destroy({
-                where: { productId, card_isused: 0 },
+                where: { productId, card_isused: 0, isActive: true },
                 order: [['id', 'ASC']], // Ensuring older records are deleted first
                 limit: excess // Deleting only the excess amount
             });

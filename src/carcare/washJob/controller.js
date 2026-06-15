@@ -242,9 +242,9 @@ const reserveCardsForWashJobLines = async (washJobLines, locationId, transaction
   return reservationResults;
 };
 
-const updateProductStockCountForWashJob = async (lines) => {
+const updateProductStockCountForWashJob = async (lines, transaction = null) => {
   const productIdList = lines.map((item) => item.productId);
-  await productService.updateProductCountGroup(productIdList);
+  await productService.updateProductCountGroup(productIdList, transaction);
 };
 
 
@@ -601,7 +601,8 @@ exports.deleteWashJob = async (req, res) => {
 
 
 exports.createSaleFromWashJob = async (req, res) => {
-  const { paymentId, userId, validateStock = true } = req.body;
+  logger.info(`========== createSaleFromWashJob req.body: ${JSON.stringify(req.body)} ==========`);
+  const { paymentId, userId, validateStock = true, locationId: bodyLocationId } = req.body;
   const washJobId = req.params.id;
   
   // Get default values
@@ -622,6 +623,8 @@ exports.createSaleFromWashJob = async (req, res) => {
   if (!washJob) {
     return res.status(404).json({ message: "Wash job not found" });
   }
+
+  const locationId = bodyLocationId || washJob.locationId || dfLocation.id;
   
   // VALIDATION: Check if already posted
   if (washJob.saleHeaderId) {
@@ -648,9 +651,7 @@ exports.createSaleFromWashJob = async (req, res) => {
   
   if (validateStock && washJob.lines && washJob.lines.length > 0) {
     logger.info("===== Starting Stock Validation for WashJob =====");
-    logger.info(`Validating stock for ${washJob.lines.length} wash job lines before creating sale`);
-    
-    const locationId = washJob.locationId || dfLocation.id;
+    logger.info(`Validating stock for ${washJob.lines.length} wash job lines before creating sale for location ${locationId}`);
     
     try {
       // Check if auto stock creation is needed first
@@ -667,7 +668,7 @@ exports.createSaleFromWashJob = async (req, res) => {
           washJobId: washJobId,
           stockErrors: stockValidationErrors,
           details: stockValidationErrors.map(err => 
-            err.error || `${err.productName || `Product ${err.productId}`}: Need ${err.required}, Available ${err.available}, Short ${err.shortage}`
+             err.error || `${err.productName || `Product ${err.productId}`}: Need ${err.required}, Available ${err.available}, Short ${err.shortage}`
           )
         });
       }
@@ -707,7 +708,7 @@ exports.createSaleFromWashJob = async (req, res) => {
       currencyId: dfCurrency.id,
       userId: userId,
       referenceNo: `WJ-${washJob.id}`,
-      locationId: washJob.locationId || dfLocation.id,
+      locationId: locationId,
       customerId: washJob.customerId || null,
       orderTableId: null,
       washJobId: washJob.id,
@@ -745,7 +746,7 @@ exports.createSaleFromWashJob = async (req, res) => {
         logger.info(`Starting batch card reservation for ${cardReservationData.length} lines`);
         cardReservationResults = await reserveCardsForWashJobLines(
           cardReservationData, 
-          washJob.locationId || dfLocation.id, 
+          locationId, 
           t
         );
         logger.info(`Batch card reservation completed successfully`);
@@ -762,7 +763,7 @@ exports.createSaleFromWashJob = async (req, res) => {
 
     // 5. Update product stock counts
     if (validateStock && washJob.lines && washJob.lines.length > 0) {
-      await updateProductStockCountForWashJob(washJob.lines);
+      await updateProductStockCountForWashJob(washJob.lines, t);
     }
 
     await t.commit();

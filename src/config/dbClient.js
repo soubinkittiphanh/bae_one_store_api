@@ -32,7 +32,7 @@ const clientDB = {
         "host": "localhost",
         "user": "root",
         "password": "SDAT@3480",
-        "database": "dcommerce_dev",
+        "database": "dcommerce_pro_carcare_sokpaluang",
         // "database": "dc_carcare_dev",
         "port": 3306,
     },

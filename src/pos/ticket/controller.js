@@ -116,7 +116,8 @@ const postTicketToSale = async (ticketId, transaction) => {
                         productId: line.productId,
                         saleLineId: null,
                         card_isused: 0,
-                        locationId
+                        locationId,
+                        isActive: true
                     },
                     transaction
                 });
@@ -316,7 +317,8 @@ const reserveCardForTicket = async (line, lockingSessionId, qty, locationId, tra
             productId: line.productId,
             saleLineId: null,
             card_isused: 0,
-            locationId
+            locationId,
+            isActive: true
         },
         transaction
     });

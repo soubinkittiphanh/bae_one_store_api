@@ -225,7 +225,7 @@ const fetchProductFromLocation = async (req, res) => {
     FROM
       card c
     WHERE
-      c.card_isused = 0 AND c.locationId = ${locationId}
+      c.card_isused = 0 AND c.locationId = ${locationId} AND c.isActive = 1
     GROUP BY
       c.productId
   ) c ON c.productId = p.id
@@ -469,7 +469,7 @@ const fetchProductFromLocationV1 = async (req, res) => {
         COUNT(c.card_number) AS stock,
         c.productId
       FROM card c
-      WHERE c.card_isused = 0 AND c.locationId = ?
+      WHERE c.card_isused = 0 AND c.locationId = ? AND c.isActive = 1
       GROUP BY c.productId
     ) c ON c.productId = p.id
     LEFT JOIN image_path i ON i.pro_id = p.pro_id
@@ -712,13 +712,31 @@ const fetchProdMobileV0 = async (req, res) => {
 const fetchProdMobile = async (req, res) => {
   logger.info("*************** FETCH PRODUCT ***************");
   logger.info(`*************Payload: *****************ss`);
+  const { locationId } = req.query;
+
+  let cardCountSelect = 'p.stock_count AS card_count';
+  let cardJoin = '';
+
+  if (locationId) {
+    const locId = parseInt(locationId);
+    if (!isNaN(locId)) {
+      cardCountSelect = 'IFNULL(c.stock, 0) AS card_count';
+      cardJoin = `LEFT JOIN (
+        SELECT COUNT(card.card_number) AS stock, card.productId
+        FROM card
+        WHERE card.card_isused = 0 AND card.locationId = ${locId} AND card.isActive = 1
+        GROUP BY card.productId
+      ) c ON c.productId = p.id`;
+    }
+  }
+
   const sqlCom = `
    SELECT 
   p.*,
   c.categ_name,
   IFNULL(i.img_name, 'No image') AS img_name,
   i.img_path,
-  p.stock_count AS card_count,
+  ${cardCountSelect},
   IFNULL(s.cnt, 0) AS sale_count,
   p.cost_price,
   p._category,
@@ -754,6 +772,7 @@ const fetchProdMobile = async (req, res) => {
 FROM product p
 LEFT JOIN category c ON c.categ_id = p.pro_category
 LEFT JOIN image_path i ON i.pro_id = p.pro_id
+${cardJoin}
 LEFT JOIN (
   SELECT IFNULL(COUNT(pro_id),0) AS cnt, pro_id FROM card_sale GROUP BY pro_id
 ) s ON s.pro_id = p.pro_id
@@ -761,8 +780,6 @@ LEFT JOIN (
 WHERE p.isActive = TRUE
 GROUP BY p.pro_id
 ORDER BY p.pro_price;
-
-
 `;
   Db.query(sqlCom, (er, re) => {
     if (er) return res.send('SQL ' + er)
