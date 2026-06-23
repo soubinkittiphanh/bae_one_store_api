@@ -576,6 +576,9 @@ const setupAssociations = (db) => {
 const synchronizeDatabase = async (db) => {
   try {
     await db.sequelize.query('SET FOREIGN_KEY_CHECKS = 0');
+    // Phase 1: Create new tables that do not exist yet
+    await db.sequelize.sync({ force: false });
+    // Phase 2: Alter existing tables to add fields and constraints
     await db.sequelize.sync({ force: false, alter: { drop: false } });
     await db.sequelize.query('SET FOREIGN_KEY_CHECKS = 1');
     logger.info("Database client is synchronized");
@@ -590,6 +593,9 @@ const synchronizeDatabase = async (db) => {
 
   try {
     await db.centralSequelize.query('SET FOREIGN_KEY_CHECKS = 0');
+    // Phase 1: Create new tables that do not exist yet
+    await db.centralSequelize.sync({ force: false });
+    // Phase 2: Alter existing tables to add fields and constraints
     await db.centralSequelize.sync({ force: false, alter: { drop: false } });
     await db.centralSequelize.query('SET FOREIGN_KEY_CHECKS = 1');
     logger.info("Database central is synchronized");
