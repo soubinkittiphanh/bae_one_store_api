@@ -196,6 +196,8 @@ const initializeModels = () => {
     // Other models
     vendor: require("../vendor/model")(sequelize, DataTypes),
     shipping: require("../shipping/model")(sequelize, DataTypes),
+    shipping_order: require("../shippingOrder/model")(sequelize, DataTypes),
+    shipping_checkout_batch: require("../shippingCheckoutBatch/model")(sequelize, DataTypes),
     service: require("../service/model")(sequelize, DataTypes),
     authority: require("../authority/model")(sequelize, DataTypes),
     terminal: require("../terminal/model")(sequelize, DataTypes),
@@ -340,6 +342,18 @@ const defineOrderAssociations = (db) => {
   db.customer.belongsTo(db.shipping, { foreignKey: 'shippingId', as: 'shipping' });
   db.rider.hasMany(db.order, { as: 'shippingOrders' });
   db.rider.hasMany(db.customer, { as: 'orders' });
+
+  // Shipping order associations
+  db.shipping_order.belongsTo(db.client, { foreignKey: 'customer_id', as: 'customer' });
+  db.client.hasMany(db.shipping_order, { foreignKey: 'customer_id', as: 'shippingOrders' });
+  db.shipping_order.belongsTo(db.currency, { foreignKey: 'currency_id', as: 'currency' });
+
+  // Shipping checkout batch associations
+  db.shipping_checkout_batch.belongsTo(db.client, { foreignKey: 'customer_id', as: 'customer' });
+  db.client.hasMany(db.shipping_checkout_batch, { foreignKey: 'customer_id', as: 'checkoutBatches' });
+  db.shipping_checkout_batch.hasMany(db.shipping_order, { foreignKey: 'checkout_batch_id', as: 'orders' });
+  db.shipping_order.belongsTo(db.shipping_checkout_batch, { foreignKey: 'checkout_batch_id', as: 'checkoutBatch' });
+  db.shipping_checkout_batch.hasMany(db.salePayment, { foreignKey: 'shippingCheckoutBatchId', as: 'payments' });
 };
 
 // Sales associations
@@ -561,20 +575,26 @@ const setupAssociations = (db) => {
 // Database synchronization
 const synchronizeDatabase = async (db) => {
   try {
+    await db.sequelize.query('SET FOREIGN_KEY_CHECKS = 0');
     await db.sequelize.sync({ force: false, alter: { drop: false } });
+    await db.sequelize.query('SET FOREIGN_KEY_CHECKS = 1');
     logger.info("Database client is synchronized");
 
     const userService = require('../user/service');
     const brandNewDB = await userService.ensureDefaultUserExists();
     logger.info("Default user check complete.");
   } catch (error) {
+    try { await db.sequelize.query('SET FOREIGN_KEY_CHECKS = 1'); } catch (e) {}
     logger.error("Error synchronizing database:", error);
   }
 
   try {
+    await db.centralSequelize.query('SET FOREIGN_KEY_CHECKS = 0');
     await db.centralSequelize.sync({ force: false, alter: { drop: false } });
+    await db.centralSequelize.query('SET FOREIGN_KEY_CHECKS = 1');
     logger.info("Database central is synchronized");
   } catch (error) {
+    try { await db.centralSequelize.query('SET FOREIGN_KEY_CHECKS = 1'); } catch (e) {}
     logger.error("Error synchronizing central database:", error);
   }
 };

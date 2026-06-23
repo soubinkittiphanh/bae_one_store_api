@@ -13,18 +13,18 @@ exports.getPrinters = async (req, res) => {
 
 exports.upsertPrinter = async (req, res) => {
     try {
-        const { type, printerName } = req.body;
+        const { type, printerName, connectionType, ipAddress, macAddress } = req.body;
 
-        // Find if a printer of this type (ticket/kitchen) already exists
+        // Find if a printer of this type (ticket/kitchen/bar) already exists
         const existing = await printerModel.findOne({ where: { type } });
 
         if (existing) {
-            // Update the existing printer name
-            await existing.update({ printerName });
+            // Update the existing printer fields
+            await existing.update({ printerName, connectionType, ipAddress, macAddress });
             return res.status(200).json({ message: `${type} printer updated`, data: existing });
         } else {
             // Create a new entry if it doesn't exist
-            const newPrinter = await printerModel.create({ type, printerName });
+            const newPrinter = await printerModel.create({ type, printerName, connectionType, ipAddress, macAddress });
             return res.status(201).json({ message: `${type} printer created`, data: newPrinter });
         }
     } catch (error) {

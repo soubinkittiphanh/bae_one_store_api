@@ -8,6 +8,15 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING(100),
             defaultValue: '',
         },
+        shippingCheckoutBatchId: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            defaultValue: null,
+            references: {
+                model: 'shipping_checkout_batches',
+                key: 'id'
+            }
+        },
         isActive: {
             type: DataTypes.BOOLEAN,
             allowNull: false,
@@ -39,6 +48,11 @@ module.exports = (sequelize, DataTypes) => {
         SalePayment.belongsTo(models.ticket, {
             foreignKey: 'ticketId',
             as: 'ticket',
+        });
+
+        SalePayment.belongsTo(models.shipping_checkout_batch, {
+            foreignKey: 'shippingCheckoutBatchId',
+            as: 'shippingCheckoutBatch',
         });
     };
 

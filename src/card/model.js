@@ -35,7 +35,7 @@ module.exports = (sequelize, DataTypes) => {
         },
         locking_session_id: {
             type: DataTypes.STRING,
-            allowNull: false,
+            allowNull: true,
         },
         card_input_date: {
             type: DataTypes.DATE,

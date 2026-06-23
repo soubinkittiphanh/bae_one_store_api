@@ -67,6 +67,7 @@ const buildApp = async () => {
     app.use("/api/terminal", myRouter.terminal)
     app.use("/api/user", myRouter.user)
     app.use("/api/shipping", myRouter.shipping)
+    app.use("/api/shipping-orders", myRouter.shippingOrder)
     app.use("/api/company", myRouter.company)
     app.use("/api/tutorial", myRouter.tutorial)
     app.use("/api/group", myRouter.group)
