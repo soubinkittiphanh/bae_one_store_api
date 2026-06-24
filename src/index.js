@@ -19,10 +19,17 @@ const startApp = async () => {
 
     // Check & seed REDEEM product
     try {
-        const { product } = require('./models');
+        const { product, unit, company } = require('./models');
         const redeemProduct = await product.findByPk(999);
         if (!redeemProduct) {
             logger.info("Seeding REDEEM product (ID 999)");
+            
+            // Find first available unit and company IDs
+            const firstUnit = await unit.findOne();
+            const firstCompany = await company.findOne();
+            const unitId = firstUnit ? firstUnit.id : 1;
+            const companyId = firstCompany ? firstCompany.id : 1;
+
             await product.create({
                 id: 999,
                 pro_id: 999,
@@ -30,11 +37,37 @@ const startApp = async () => {
                 pro_price: 0,
                 validateStockOnSale: false,
                 isActive: true,
-                _category: 'service'
+                _category: 'service',
+                receiveUnitId: unitId,
+                stockUnitId: unitId,
+                baseUnitId: unitId,
+                companyId: companyId
             });
-            logger.info("REDEEM product seeded successfully");
+            logger.info(`REDEEM product seeded successfully with unitId: ${unitId}, companyId: ${companyId}`);
         } else {
-            logger.info("REDEEM product already exists");
+            // Ensure existing REDEEM product has unitId and companyId populated if they are null
+            const firstUnit = await unit.findOne();
+            const firstCompany = await company.findOne();
+            const unitId = firstUnit ? firstUnit.id : 1;
+            const companyId = firstCompany ? firstCompany.id : 1;
+
+            let updated = false;
+            if (!redeemProduct.receiveUnitId || !redeemProduct.stockUnitId || !redeemProduct.baseUnitId) {
+                redeemProduct.receiveUnitId = redeemProduct.receiveUnitId || unitId;
+                redeemProduct.stockUnitId = redeemProduct.stockUnitId || unitId;
+                redeemProduct.baseUnitId = redeemProduct.baseUnitId || unitId;
+                updated = true;
+            }
+            if (!redeemProduct.companyId) {
+                redeemProduct.companyId = companyId;
+                updated = true;
+            }
+            if (updated) {
+                await redeemProduct.save();
+                logger.info(`Existing REDEEM product updated with unitId: ${unitId}, companyId: ${companyId}`);
+            } else {
+                logger.info("REDEEM product already exists and is fully configured");
+            }
         }
     } catch (err) {
         logger.error("Failed to seed REDEEM product:", err);
