@@ -17,6 +17,29 @@ const startApp = async () => {
 
     const app = await buildApp();
 
+    // Check & seed REDEEM product
+    try {
+        const { product } = require('./models');
+        const redeemProduct = await product.findByPk(999);
+        if (!redeemProduct) {
+            logger.info("Seeding REDEEM product (ID 999)");
+            await product.create({
+                id: 999,
+                pro_id: 999,
+                pro_name: 'REDEEM',
+                pro_price: 0,
+                validateStockOnSale: false,
+                isActive: true,
+                _category: 'service'
+            });
+            logger.info("REDEEM product seeded successfully");
+        } else {
+            logger.info("REDEEM product already exists");
+        }
+    } catch (err) {
+        logger.error("Failed to seed REDEEM product:", err);
+    }
+
     app.listen(env.port || 4000, () => {
         logger.info("Dcommerce is up")
         logger.info("app is runing: " + env.port || 4000);

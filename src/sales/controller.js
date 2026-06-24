@@ -51,8 +51,12 @@ const validateStockForLines = async (lines, locationId) => {
 
   for (const line of lines) {
     // Check if this line requires stock validation
-    const shouldValidate = line.validateStockOnSale === 1 ||
-      (line.product && line.product.validateStockOnSale);
+    const isRedeem = line.productId === 999;
+    const shouldValidate = !isRedeem && (
+      line.validateStockOnSale === true ||
+      line.validateStockOnSale === 1 ||
+      (line.validateStockOnSale !== false && line.validateStockOnSale !== 0 && line.product && line.product.validateStockOnSale)
+    );
 
     if (shouldValidate) {
       logger.info(`Validating stock for line with productId: ${line.productId}`);
@@ -114,7 +118,13 @@ const autoCreateStock = async (lines, locationId) => {
     if (spfStockCheckParam.value == 'N') {
       for (const line of lines) {
         // Only auto-create stock for lines that require stock validation
-        if (line.validateStockOnSale === 1) {
+        const isRedeem = line.productId === 999;
+        const shouldValidate = !isRedeem && (
+          line.validateStockOnSale === true ||
+          line.validateStockOnSale === 1 ||
+          (line.validateStockOnSale !== false && line.validateStockOnSale !== 0 && line.product && line.product.validateStockOnSale)
+        );
+        if (shouldValidate) {
           logger.info(`LINE OBJECT DATA ${JSON.stringify(line)}`);
           const cardTemp = {
             inputter: 1,
@@ -257,7 +267,7 @@ exports.createSaleHeaderOnly = async (req, res) => {
       await loyaltyTransaction.update(
         { 
           saleHeaderId: saleHeader.id,
-          remark: `Points redeemed for discount in sale #${saleHeader.id}`
+          remark: `Redeemed points on Sale ID: ${saleHeader.id}`
         },
         { where: { saleHeaderId: null, clientId, type: 'REDEEMED' } }
       );
@@ -554,7 +564,7 @@ exports.createSaleHeader = async (req, res) => {
         await loyaltyTransaction.update(
           { 
             saleHeaderId: saleHeader.id,
-            remark: `Points redeemed for discount in sale #${saleHeader.id}`
+            remark: `Redeemed points on Sale ID: ${saleHeader.id}`
           },
           { where: { saleHeaderId: null, clientId, type: 'REDEEMED' }, transaction: t }
         );
@@ -861,8 +871,12 @@ const assignHeaderId = async (lines, id, lockingSessionId, isUpdate, locationId)
     iterator.saleHeaderId = id;
 
     // Use iterator.product.validateStockOnSale if it's nested, or directly
-    const shouldValidate = iterator.validateStockOnSale === 1 ||
-      (iterator.product && iterator.product.validateStockOnSale);
+    const isRedeem = iterator.productId === 999;
+    const shouldValidate = !isRedeem && (
+      iterator.validateStockOnSale === true ||
+      iterator.validateStockOnSale === 1 ||
+      (iterator.validateStockOnSale !== false && iterator.validateStockOnSale !== 0 && iterator.product && iterator.product.validateStockOnSale)
+    );
 
     if (shouldValidate) {
       try {

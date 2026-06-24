@@ -103,13 +103,20 @@ exports.reversePointsForSale = async (saleHeaderId, transaction) => {
         for (const txn of txns) {
             logger.info(`Reversing loyalty transaction ${txn.id} for sale ${saleHeaderId}`);
 
+            let remark = `Reversal of transaction #${txn.id} due to sale cancellation`;
+            if (txn.type === 'REDEEMED') {
+                remark = `Refunded points from Cancelled Sale ID: ${saleHeaderId}`;
+            } else if (txn.type === 'AWARDED') {
+                remark = `Reversal of awarded points for Sale ID: ${saleHeaderId}`;
+            }
+
             // Create reversal transaction
             await loyaltyTransaction.create({
                 clientId: txn.clientId,
                 saleHeaderId: txn.saleHeaderId,
                 points: -txn.points,
                 type: 'CANCELLED',
-                remark: `Reversal of transaction #${txn.id} due to sale cancellation`
+                remark
             }, { transaction });
 
             // Update client balance (reverse the previous change)
