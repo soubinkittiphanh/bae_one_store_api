@@ -162,7 +162,7 @@ const clientDB = {
         "host": "150.95.31.23",
         "user": "root",
         "password": "sdat@3480",
-        "database": process.env.DB_NAME || 'dcommerce_demo',
+        "database": process.env.DB_NAME || 'dcommerce_demo_minimart',
         "port": 3306,
     },
 

@@ -384,6 +384,7 @@ const definePurchaseOrderAssociations = (db) => {
   db.poLine.belongsTo(db.poHeader, { foreignKey: 'headerId', as: 'header' });
   db.poLine.belongsTo(db.product, { foreignKey: 'productId', as: 'product' });
   db.poLine.belongsTo(db.unit, { foreignKey: 'unitId', as: 'unit' });
+  db.poLine.belongsTo(db.currency, { foreignKey: 'currencyId', as: 'currency' });
 
   // PO history associations
   db.poHeaderHIS.belongsTo(db.poHeader, { foreignKey: 'ORGheaderId', as: 'ORGheader' });

@@ -33,7 +33,7 @@ const getPOLineById = async (req, res) => {
 
 // Create a new PO line
 const createPOLine = async (req, res) => {
-  const { rate, qty, price, total, isActive, locking_session_id } = req.body;
+  const { rate, qty, price, total, isActive, locking_session_id, currencyId, exchangeRate } = req.body;
   try {
     const newPOLine = await POLine.create({
       rate,
@@ -42,6 +42,8 @@ const createPOLine = async (req, res) => {
       total,
       isActive,
       locking_session_id,
+      currencyId,
+      exchangeRate,
     });
     res.status(200).json(newPOLine);
   } catch (error) {
@@ -53,7 +55,7 @@ const createPOLine = async (req, res) => {
 // Update an existing PO line by ID
 const updatePOLineById = async (req, res) => {
   const { id } = req.params;
-  const { rate, qty, price, total, isActive, locking_session_id } = req.body;
+  const { rate, qty, price, total, isActive, locking_session_id, currencyId, exchangeRate } = req.body;
   try {
     const poLine = await POLine.findOne({ where: { id } });
     if (!poLine) {
@@ -67,6 +69,8 @@ const updatePOLineById = async (req, res) => {
         total,
         isActive,
         locking_session_id,
+        currencyId,
+        exchangeRate,
       },
       { where: { id } }
     );

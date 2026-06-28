@@ -28,6 +28,14 @@ module.exports = (sequelize, DataTypes) => {
         locking_session_id: {
             type: DataTypes.STRING,
         },
+        currencyId: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+        },
+        exchangeRate: {
+            type: DataTypes.DOUBLE,
+            defaultValue: 1,
+        },
     }, {
         sequelize,
         // don't forget to enable timestamps!
