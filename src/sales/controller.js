@@ -1265,7 +1265,8 @@ exports.getSaleHeaderById = async (req, res) => {
         include: [
           {
             model: Product,
-            as: "product"
+            as: "product",
+            include: ['images']
           },
           {
             model: Unit,

@@ -44,7 +44,14 @@ const PoHeaderController = {
           include: ['currency', 'vendor', {
             model: PoLine,
             as: "lines",
-            include: ['product', 'unit', 'currency'],
+            include: [
+              {
+                association: 'product',
+                include: ['images']
+              },
+              'unit',
+              'currency'
+            ],
 
           }]
         }
@@ -97,7 +104,14 @@ const PoHeaderController = {
           include: ['vendor', 'currency', {
             model: PoLine,
             as: "lines",
-            include: ['product', 'unit', 'currency'],
+            include: [
+              {
+                association: 'product',
+                include: ['images']
+              },
+              'unit',
+              'currency'
+            ],
           }]
         })
       })

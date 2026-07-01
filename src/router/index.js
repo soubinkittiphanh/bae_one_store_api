@@ -59,6 +59,10 @@ const moneyAdvance = require("../PWT/moneyAdvance/router")
 const moneyAdvanceReport = require("../PWT/moneyAdvanceReport/router")
 const moneySettlement = require("../PWT/moneySettlement/router")
 const accountStatement = require("../PWT/accountStatement/router")
+const project = require("../PWT/project/router")
+const projectContract = require("../PWT/projectContract/router")
+const projectInvoice = require("../PWT/projectInvoice/router")
+const withdrawalApplication = require("../PWT/withdrawalApplication/router")
 const bank = require("../bank/router")
 const bankAccount = require("../bankAccount/router")
 const ministry = require("../ministry/router")
@@ -151,6 +155,10 @@ module.exports = {
     moneyAdvance,
     moneyAdvanceReport,
     moneySettlement,
+    project,
+    projectContract,
+    projectInvoice,
+    withdrawalApplication,
     tax,
     bankAccount,
     ministry,

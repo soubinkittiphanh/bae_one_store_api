@@ -9,8 +9,11 @@ const createCustomer = async (req, res) => {
   try {
     const { cus_id, cus_pass, cus_name, cus_tel, cus_email, cus_active, village, district, province,terminals,groupId } = req.body;
     const customer = await User.create({ cus_id, cus_pass, cus_name, cus_tel, cus_email, cus_active, village, district, province,groupId });
-    await setTerminals(customer['id'],terminals,res)
-    // res.status(201).json(customer);
+    if (terminals) {
+      await setTerminals(customer['id'],terminals,res)
+    } else {
+      res.status(201).json(customer);
+    }
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -134,7 +137,6 @@ const updateCustomer = async (req, res) => {
   try {
     const { cus_id, cus_pass, cus_name, cus_tel, cus_email, cus_active, village, district, province,terminals,groupId } = req.body;
     const customer = await User.findByPk(id);
-    logger.warn(`TERMINAL LEN ${terminals.length} `)
     if (!customer) {
       return res.status(404).json({ message: 'Customer not found' });
     }
@@ -149,7 +151,12 @@ const updateCustomer = async (req, res) => {
     customer.province = province;
     customer.groupId = groupId;
     await customer.save();
-    await setTerminals(customer['id'],terminals,res)
+    if (terminals) {
+      logger.warn(`TERMINAL LEN ${terminals.length} `)
+      await setTerminals(customer['id'],terminals,res)
+    } else {
+      res.status(200).json(customer);
+    }
     // res.json(customer);
   } catch (error) {
     logger.error(`SAVE USER ERROR ${error}`)
@@ -164,7 +171,7 @@ const deleteCustomer = async (req, res) => {
     if (!customer) {
       return res.status(404).json({ message: 'Customer not found' });
     }
-    await User.destroy();
+    await customer.destroy();
     res.json({ message: 'Customer deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: error.message });
