@@ -1259,7 +1259,7 @@ exports.getSaleHeaderById = async (req, res) => {
   try {
     const { id } = req.params;
     const saleHeader = await SaleHeader.findByPk(id, {
-      include: ['lines', 'user', 'location', 'client', 'payment', 'currency', 'location', Customer, {
+      include: ['user', 'location', 'client', 'payment', 'currency', Customer, {
         model: Line,
         as: "lines",
         include: [
