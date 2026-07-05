@@ -477,6 +477,68 @@ const disableProductById = async (req, res) => {
   }
 };
 
+const bulkCreateProducts = async (req, res) => {
+  try {
+    const productsList = req.body.products;
+    if (!productsList || !Array.isArray(productsList) || productsList.length === 0) {
+      return res.status(400).json({ success: false, message: 'Invalid products data' });
+    }
+
+    const userId = req.user ? req.user.id : 1;
+    const createdProducts = [];
+
+    // Query last product pro_id
+    let lastId = await Product.max('pro_id');
+    let currentProId = lastId ? parseInt(lastId) + 1 : 1000;
+
+    for (const p of productsList) {
+      const productData = {
+        pro_category: p.pro_category,
+        pro_id: currentProId++,
+        pro_name: p.pro_name || '',
+        pro_price: parseFloat(p.pro_price) || 0,
+        pro_desc: p.pro_desc || '',
+        pro_status: p.pro_status == 1 || p.pro_status === true,
+        retail_cost_percent: parseFloat(p.pro_retail_price) || 0,
+        cost_price: parseFloat(p.cost_price) || 0,
+        locking_session_id: String(Date.now()),
+        minStock: parseInt(p.minStock) || 0,
+        barCode: p.barCode || '',
+        receiveUnitId: parseInt(p.receiveUnitId) || null,
+        stockUnitId: parseInt(p.stockUnitId) || null,
+        baseUnitId: parseInt(p.baseUnitId) || null,
+        costCurrencyId: parseInt(p.costCurrencyId) || null,
+        saleCurrencyId: parseInt(p.saleCurrencyId) || null,
+        isActive: p.isActive !== undefined ? (p.isActive == 1 || p.isActive === true) : true,
+        validateStockOnSale: p.validateStockOnSale == 1 || p.validateStockOnSale === true,
+        companyId: parseInt(p.companyId) || null,
+        vendorName: p.vendorName || '',
+        _category: p._category || 'product',
+        duration_minutes: parseInt(p.duration_minutes) || 0,
+        taxId: parseInt(p.taxId) || null
+      };
+
+      const newProduct = await Product.create(productData, {
+        context: { userId, reason: 'Product created via Excel Upload' }
+      });
+      createdProducts.push(newProduct);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Successfully imported ${createdProducts.length} products`,
+      count: createdProducts.length
+    });
+  } catch (error) {
+    console.error('Error bulk creating products:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getAllProducts,
   getProductById,
@@ -487,6 +549,7 @@ module.exports = {
   updateProductCountAll,
   disableProductById,
   getAllActiveProducts,
+  bulkCreateProducts,
   getProductAudit: async (req, res) => {
     try {
       const { id } = req.params;
