@@ -6,6 +6,57 @@ const logger = require("../../api/logger");
 const { apInvoiceSettlement, Transaction, currency, apSettlementAudit, apInvoiceSettlementLine, apInvoice, user, vendor, sequelize, Applicant, Agency } = require("../../models");
 const InvoiceLineItem = require("../../models").invoiceLineItem;
 
+async function getInvoiceIdsForSettlement(settlementId, transaction) {
+    const lines = await apInvoiceSettlementLine.findAll({
+        where: { settlementId },
+        include: [
+            {
+                model: InvoiceLineItem,
+                as: 'invoiceLineItem',
+                required: true
+            }
+        ],
+        transaction
+    });
+    return [...new Set(lines.map(line => line.invoiceLineItem?.invoiceId).filter(Boolean))];
+}
+
+async function updateInvoicePaidAmount(invoiceId, transaction) {
+    try {
+        const totalPaid = await apInvoiceSettlementLine.sum('amount', {
+            include: [
+                {
+                    model: InvoiceLineItem,
+                    as: 'invoiceLineItem',
+                    where: { invoiceId },
+                    required: true
+                },
+                {
+                    model: apInvoiceSettlement,
+                    as: 'settlement',
+                    where: {
+                        status: ['approved', 'completed']
+                    },
+                    required: true
+                }
+            ],
+            where: {
+                status: 'active'
+            },
+            transaction
+        });
+
+        const invoice = await apInvoice.findByPk(invoiceId, { transaction });
+        if (invoice) {
+            await invoice.update({ paidAmount: parseFloat(totalPaid) || 0 }, { transaction });
+            logger.info(`Updated invoice ${invoiceId} paidAmount to ${parseFloat(totalPaid) || 0}`);
+        }
+    } catch (err) {
+        logger.error(`Error updating paidAmount for invoice ${invoiceId}:`, err);
+        throw err;
+    }
+}
+
 class APSettlementController {
 
     // ===============================================================
@@ -526,6 +577,12 @@ class APSettlementController {
                 logger.info('No settlement lines to process');
             }
 
+            // Recalculate paidAmount for affected invoices
+            const invoiceIds = await getInvoiceIdsForSettlement(settlement.id, transaction);
+            for (const invoiceId of invoiceIds) {
+                await updateInvoicePaidAmount(invoiceId, transaction);
+            }
+
             await transaction.commit();
             logger.info('Transaction committed successfully');
 
@@ -648,7 +705,7 @@ class APSettlementController {
             });
 
             // Find existing settlement
-            const existingSettlement = await apInvoiceSettlement.findByPk(id);
+            const existingSettlement = await apInvoiceSettlement.findByPk(id, { transaction });
             if (!existingSettlement) {
                 await transaction.rollback();
                 return res.status(404).json({
@@ -656,6 +713,9 @@ class APSettlementController {
                     message: 'Settlement not found'
                 });
             }
+
+            // Get invoice IDs before update
+            const invoiceIdsBefore = await getInvoiceIdsForSettlement(id, transaction);
 
             // Store old values for audit
             const oldValues = {
@@ -822,6 +882,14 @@ class APSettlementController {
                 logger.info('All settlement lines updated successfully');
             }
 
+            // Get invoice IDs after update
+            const invoiceIdsAfter = await getInvoiceIdsForSettlement(id, transaction);
+            const allInvoiceIds = [...new Set([...invoiceIdsBefore, ...invoiceIdsAfter])];
+            
+            for (const invoiceId of allInvoiceIds) {
+                await updateInvoicePaidAmount(invoiceId, transaction);
+            }
+
             await transaction.commit();
             logger.info('Transaction committed successfully');
 
@@ -905,7 +973,7 @@ class APSettlementController {
         try {
             const { id } = req.params;
 
-            const settlement = await apInvoiceSettlement.findByPk(id);
+            const settlement = await apInvoiceSettlement.findByPk(id, { transaction });
             if (!settlement) {
                 await transaction.rollback();
                 return res.status(404).json({
@@ -913,6 +981,9 @@ class APSettlementController {
                     message: 'Settlement not found'
                 });
             }
+
+            // Get invoice IDs before deletion
+            const invoiceIds = await getInvoiceIdsForSettlement(id, transaction);
 
             // Check if settlement can be deleted
             if (settlement.canBeModified && !settlement.canBeModified()) {
@@ -931,6 +1002,11 @@ class APSettlementController {
 
             // Delete settlement
             await settlement.destroy({ transaction });
+
+            // Recalculate paidAmount for affected invoices
+            for (const invoiceId of invoiceIds) {
+                await updateInvoicePaidAmount(invoiceId, transaction);
+            }
 
             await transaction.commit();
 
@@ -956,11 +1032,13 @@ class APSettlementController {
     // APPROVE SETTLEMENT - UPDATED FOR YOUR MODEL
     // ===============================================================
     static async approveSettlement(req, res) {
+        const transaction = await sequelize.transaction();
         try {
             const { id } = req.params;
 
-            const settlement = await apInvoiceSettlement.findByPk(id);
+            const settlement = await apInvoiceSettlement.findByPk(id, { transaction });
             if (!settlement) {
+                await transaction.rollback();
                 return res.status(404).json({
                     success: false,
                     message: 'Settlement not found'
@@ -968,6 +1046,7 @@ class APSettlementController {
             }
 
             if (!settlement.canBeApproved()) {
+                await transaction.rollback();
                 return res.status(400).json({
                     success: false,
                     message: 'Settlement cannot be approved in current status'
@@ -977,17 +1056,29 @@ class APSettlementController {
             // Only update status since checkerId and approvedAt don't exist in your model
             await settlement.update({
                 status: 'approved'
-            });
+            }, { transaction });
 
             logger.info(`Settlement ${settlement.id} approved`);
+
+            // Recalculate paidAmount for affected invoices
+            const invoiceIds = await getInvoiceIdsForSettlement(id, transaction);
+            for (const invoiceId of invoiceIds) {
+                await updateInvoicePaidAmount(invoiceId, transaction);
+            }
+
+            await transaction.commit();
+
+            // Refetch settlement for response
+            const updatedSettlement = await apInvoiceSettlement.findByPk(id);
 
             res.status(200).json({
                 success: true,
                 message: 'Settlement approved successfully',
-                data: settlement
+                data: updatedSettlement
             });
 
         } catch (error) {
+            await transaction.rollback();
             logger.error('Error approving settlement:', error);
             res.status(500).json({
                 success: false,
@@ -1001,11 +1092,13 @@ class APSettlementController {
     // COMPLETE SETTLEMENT - UPDATED FOR YOUR MODEL
     // ===============================================================
     static async completeSettlement(req, res) {
+        const transaction = await sequelize.transaction();
         try {
             const { id } = req.params;
 
-            const settlement = await apInvoiceSettlement.findByPk(id);
+            const settlement = await apInvoiceSettlement.findByPk(id, { transaction });
             if (!settlement) {
+                await transaction.rollback();
                 return res.status(404).json({
                     success: false,
                     message: 'Settlement not found'
@@ -1013,6 +1106,7 @@ class APSettlementController {
             }
 
             if (!settlement.canBeCompleted()) {
+                await transaction.rollback();
                 return res.status(400).json({
                     success: false,
                     message: 'Settlement cannot be completed in current status'
@@ -1022,17 +1116,29 @@ class APSettlementController {
             // Only update status since completedAt doesn't exist in your model
             await settlement.update({
                 status: 'completed'
-            });
+            }, { transaction });
 
             logger.info(`Settlement ${settlement.id} completed`);
+
+            // Recalculate paidAmount for affected invoices
+            const invoiceIds = await getInvoiceIdsForSettlement(id, transaction);
+            for (const invoiceId of invoiceIds) {
+                await updateInvoicePaidAmount(invoiceId, transaction);
+            }
+
+            await transaction.commit();
+
+            // Refetch settlement for response
+            const updatedSettlement = await apInvoiceSettlement.findByPk(id);
 
             res.status(200).json({
                 success: true,
                 message: 'Settlement completed successfully',
-                data: settlement
+                data: updatedSettlement
             });
 
         } catch (error) {
+            await transaction.rollback();
             logger.error('Error completing settlement:', error);
             res.status(500).json({
                 success: false,

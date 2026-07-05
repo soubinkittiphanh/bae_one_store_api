@@ -75,14 +75,16 @@ module.exports = (sequelize, DataTypes) => {
             // Existing hook for business logic
             beforeSave: (invoice) => {
                 // Update status based on payment
-                if (invoice.paidAmount >= invoice.totalAmount) {
+                if (parseFloat(invoice.paidAmount) >= parseFloat(invoice.totalAmount)) {
                     invoice.status = 'paid';
-                } else if (invoice.paidAmount > 0) {
+                } else if (parseFloat(invoice.paidAmount) > 0) {
                     invoice.status = 'partially_paid';
+                } else if (['paid', 'partially_paid', 'overdue'].includes(invoice.status)) {
+                    invoice.status = 'approved';
                 }
 
                 // Check for overdue
-                if (invoice.dueDate < new Date() && invoice.status !== 'paid') {
+                if (invoice.dueDate && new Date(invoice.dueDate) < new Date() && invoice.status !== 'paid') {
                     invoice.status = 'overdue';
                 }
             },

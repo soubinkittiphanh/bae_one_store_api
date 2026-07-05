@@ -247,7 +247,9 @@ const getAllActiveProducts = async (req, res) => {
           required: false
         },
         'priceLists',
-        'images'
+        'images',
+        'costCurrency',
+        'saleCurrency'
       ],
       order: [[orderField, orderDirection]],
       distinct: true,
@@ -266,12 +268,17 @@ const getAllActiveProducts = async (req, res) => {
       stockUnitId: product.stockUnitId,
       receiveUnitId: product.receiveUnitId,
       baseUnitId: product.baseUnitId,
+      costCurrencyId: product.costCurrencyId,
+      saleCurrencyId: product.saleCurrencyId,
+      cost_price: product.cost_price,
 
       category: product.category,
       _category: product._category,
       unit: product.stockUnit,
       priceLists: product.priceLists || [],
-      images: product.images || []
+      images: product.images || [],
+      costCurrency: product.costCurrency,
+      saleCurrency: product.saleCurrency
     }));
 
     res.status(200).json({
