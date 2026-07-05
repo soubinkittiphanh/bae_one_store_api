@@ -94,6 +94,13 @@ const PoHeaderController = {
         // -------- create card for receiving line
         const cardCreated = await cardService.cardUtility(newReceiveLineCreated, locationId, currencyId, t)
         logger.info(`Create card completed ${cardCreated.length}`)
+
+        // Automatically update Purchase Order status if linked
+        if (req.body.poHeaderId) {
+          const purchasingService = require('../purchasing/service');
+          await purchasingService.updatePoStatus(req.body.poHeaderId, t);
+        }
+
         return { newPoHeader, newReceiveLineCreated };
       });
       return res.status(201).json(result)
@@ -124,6 +131,13 @@ const PoHeaderController = {
         let oldLines = req.body.lines.filter(el => el.id != null)
         const bothLines = oldLines.concat(newLineWithHeader)
         await lineService.simpleUpdateBulk(bothLines, locationId, currencyId, t)
+
+        // Automatically update Purchase Order status if linked
+        if (poHeader.poHeaderId || req.body.poHeaderId) {
+          const purchasingService = require('../purchasing/service');
+          await purchasingService.updatePoStatus(poHeader.poHeaderId || req.body.poHeaderId, t);
+        }
+
         return await RECHeader.findByPk(req.params.id, {
           include: ['vendor', 'currency', {
             model: RECLine,
@@ -146,7 +160,13 @@ const PoHeaderController = {
         return res.status(404).send('PoHeader not found');
       }
 
-      await poHeader.destroy();
+      await sequelize.transaction(async (t) => {
+        await poHeader.destroy({ transaction: t });
+        if (poHeader.poHeaderId) {
+          const purchasingService = require('../purchasing/service');
+          await purchasingService.updatePoStatus(poHeader.poHeaderId, t);
+        }
+      });
       res.json({ message: 'PoHeader deleted successfully' });
     } catch (error) {
       logger.error(error);
