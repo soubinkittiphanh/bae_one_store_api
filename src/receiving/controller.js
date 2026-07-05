@@ -74,7 +74,7 @@ const PoHeaderController = {
         }, "poHeader"]
       });
       if (!poHeader) {
-        return res.status(401).send('PoHeader not found');
+        return res.status(404).send('PoHeader not found');
       }
       res.json(poHeader);
     } catch (error) {
