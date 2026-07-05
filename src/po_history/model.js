@@ -14,7 +14,7 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING,
         },
         status: {
-            type: DataTypes.ENUM('PENDING', 'PARTIAL', 'COMPLETED'),
+            type: DataTypes.ENUM('DRAFT', 'PENDING', 'APPROVED', 'SENT_TO_SUPPLIER', 'PARTIAL', 'COMPLETED', 'CANCELLED'),
             allowNull: false
         },
         exchangeRate: {

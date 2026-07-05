@@ -178,10 +178,17 @@ const cardController = {
         dateFrom,
         dateTo,
         productId,
-        inputter
+        inputter,
+        card_isused,
+        days
       } = req.query;
 
       let whereClause = {};
+
+      // Filter by card_isused if provided
+      if (card_isused !== undefined) {
+        whereClause.card_isused = card_isused;
+      }
 
       // Filter by expiry status
       if (expiryStatus === 'expired') {
@@ -189,11 +196,12 @@ const cardController = {
           [Op.lt]: new Date()
         };
       } else if (expiryStatus === 'expiring') {
-        const thirtyDaysFromNow = new Date();
-        thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+        const expiringDays = parseInt(days) || 30;
+        const targetDate = new Date();
+        targetDate.setDate(targetDate.getDate() + expiringDays);
 
         whereClause.expiryDate = {
-          [Op.between]: [new Date(), thirtyDaysFromNow]
+          [Op.between]: [new Date(), targetDate]
         };
       } else if (!includeExpired) {
         whereClause[Op.or] = [
@@ -279,6 +287,12 @@ const cardController = {
             model: User,
             as: 'creator',
             attributes: ['id', 'cus_name', 'cus_id'],
+            required: false
+          },
+          {
+            model: Location,
+            as: 'location',
+            attributes: ['id', 'name', 'description'],
             required: false
           }
         ],
@@ -476,6 +490,7 @@ const cardController = {
   // Enhanced get count and sum grouped by product with Size and Color stats
   async getAllCountAndSumGroupByProduct(req, res) {
     try {
+      const days = parseInt(req.query.days) || 30;
       const cardStats = await Card.findAll({
         attributes: [
           'product_id',
@@ -484,7 +499,7 @@ const cardController = {
           [sequelize.fn('COUNT',
             sequelize.literal('CASE WHEN expiryDate < NOW() THEN 1 END')), 'expiredCount'],
           [sequelize.fn('COUNT',
-            sequelize.literal('CASE WHEN expiryDate BETWEEN NOW() AND DATE_ADD(NOW(), INTERVAL 30 DAY) THEN 1 END')), 'expiringSoonCount'],
+            sequelize.literal(`CASE WHEN expiryDate BETWEEN NOW() AND DATE_ADD(NOW(), INTERVAL ${days} DAY) THEN 1 END`)), 'expiringSoonCount'],
           [sequelize.fn('COUNT',
             sequelize.literal('CASE WHEN colorId IS NOT NULL THEN 1 END')), 'withColorCount'],
           [sequelize.fn('COUNT',
