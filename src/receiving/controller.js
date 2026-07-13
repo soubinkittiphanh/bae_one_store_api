@@ -48,7 +48,13 @@ const PoHeaderController = {
           include: ['currency', 'vendor', {
             model: RECLine,
             as: "lines",
-            include: ['product', 'unit'],
+            include: [
+              {
+                association: 'product',
+                include: ['images']
+              },
+              'unit'
+            ],
 
           }, "poHeader"]
         }
