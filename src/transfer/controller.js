@@ -207,7 +207,7 @@ exports.getTransfersByDate = async (req, res) => {
 exports.getTransferById = async (req, res) => {
   try {
     const { id } = req.params;
-    const transfer = await TransferHeader.findByPk(id, { include: ['lines', 'user', 'srcLocation','desLocation', {
+    const transfer = await TransferHeader.findByPk(id, { include: ['user', 'srcLocation','desLocation', {
       model: Line,
       as: "lines",
       include: [
