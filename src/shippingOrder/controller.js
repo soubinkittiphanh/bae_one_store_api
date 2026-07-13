@@ -215,6 +215,11 @@ module.exports = {
           id: { [Op.in]: orderIds },
           status: 'ARRIVED'
         },
+        include: [{
+          model: db.currency,
+          as: 'currency',
+          attributes: ['id', 'code', 'name', 'symbol', 'rate', 'exchangeDirection']
+        }],
         transaction
       });
 
@@ -235,8 +240,28 @@ module.exports = {
       }
       const customerId = customerIds[0];
 
-      // Calculate total price
-      const totalPrice = orders.reduce((sum, o) => sum + parseFloat(o.final_price || 0), 0);
+      // Retrieve default local currency
+      const localCurrency = await db.currency.findOne({
+        where: { isLocalCCY: true },
+        transaction
+      });
+      const defaultCurrency = localCurrency || await db.currency.findOne({ transaction });
+
+      // Calculate total price in local currency
+      let totalPrice = 0;
+      for (const o of orders) {
+        const price = parseFloat(o.final_price || 0);
+        const fromCurrency = o.currency;
+        if (!fromCurrency || !defaultCurrency || fromCurrency.id === defaultCurrency.id) {
+          totalPrice += price;
+        } else {
+          if (fromCurrency.exchangeDirection === 'local_to_foreign') {
+            totalPrice += price / (parseFloat(fromCurrency.rate) || 1.0);
+          } else {
+            totalPrice += price * (parseFloat(fromCurrency.rate) || 1.0);
+          }
+        }
+      }
 
       // Create the checkout batch
       const batch = await db.shipping_checkout_batch.create({

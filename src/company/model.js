@@ -126,6 +126,10 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: false,
             defaultValue: false,
         },
+        term_condition: {
+            type: DataTypes.TEXT,
+            allowNull: true,
+        },
     }, {
         sequelize,
         timestamps: true,

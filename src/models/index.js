@@ -26,7 +26,7 @@ const createSequelizeInstance = (database, options = {}) => {
 
 // Main database connection
 const sequelize = createSequelizeInstance(env.database, {
-  pool: { max: 10, min: 10, acquire: 30000, idle: 10000 },
+  pool: { max: 10, min: 0, acquire: 30000, idle: 10000 },
   define: {
     indexes: [] // Empty array instead of false
   }
