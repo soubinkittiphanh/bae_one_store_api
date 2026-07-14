@@ -9,6 +9,7 @@ exports.create = async (req, res) => {
       code: req.body.bnk_code,
       bank_name: req.body.bnk_name,
       bank_remark: req.body.bnk_remark,
+      config: req.body.bnk_config ? (typeof req.body.bnk_config === 'string' ? JSON.parse(req.body.bnk_config) : req.body.bnk_config) : null,
       isActive: req.body.isActive !== undefined ? req.body.isActive : true
     };
 
@@ -48,7 +49,8 @@ exports.update = async (req, res) => {
     const bankData = {
       code: req.body.bnk_code,
       bank_name: req.body.bnk_name,
-      bank_remark: req.body.bnk_remark
+      bank_remark: req.body.bnk_remark,
+      config: req.body.bnk_config ? (typeof req.body.bnk_config === 'string' ? JSON.parse(req.body.bnk_config) : req.body.bnk_config) : null
     };
 
     const [updated] = await Bank.update(bankData, {

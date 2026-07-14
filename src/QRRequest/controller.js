@@ -1,7 +1,7 @@
 const logger = require('../api/logger');
 const db = require('../models');
 const axios = require('axios');
-
+const providerFactory = require('./providers/ProviderFactory');
 
 /**
  * QR Controller
@@ -16,6 +16,7 @@ class QRController {
     async generateQR(req, res) {
         try {
             const {
+                bankCode = 'IB', // Default to Indochina Bank
                 memberId,
                 txnAmount,
                 purposeOfTxn,
@@ -28,7 +29,7 @@ class QRController {
             } = req.body;
 
             // Validate required fields
-            const requiredFields = ['txnAmount', 'billNumber', 'merchantId', 'storeLabel', 'terminalLabel'];
+            const requiredFields = ['txnAmount', 'billNumber', 'storeLabel', 'terminalLabel'];
             const missingFields = requiredFields.filter(field => !req.body[field]);
 
             if (missingFields.length > 0) {
@@ -51,15 +52,36 @@ class QRController {
             // Auto-set callback URL from body or default fallback
             const callbackUrl = requestedCallbackUrl || `http://150.95.31.23:8921/api/v1/direct/callback`;
 
-            logger.info(`Using callback URL: ${callbackUrl}`);
+            logger.info(`Using callback URL for bankCode ${bankCode}: ${callbackUrl}`);
+
+            // Fetch Bank Configuration from Database
+            let config = {};
+            try {
+                const bankRecord = await db.bank.findOne({
+                    where: {
+                        code: bankCode.toUpperCase(),
+                        isActive: true
+                    }
+                });
+                if (bankRecord && bankRecord.config) {
+                    config = typeof bankRecord.config === 'string' 
+                        ? JSON.parse(bankRecord.config) 
+                        : bankRecord.config;
+                    logger.info(`Loaded secure configuration for bank: ${bankCode}`);
+                } else {
+                    logger.warn(`No active database config found for bank: ${bankCode}. Using request parameter defaults.`);
+                }
+            } catch (dbError) {
+                logger.warn(`Failed to fetch bank configuration from database: ${dbError.message}. Falling back to request parameter defaults.`);
+            }
 
             // Create QR Request record
             const qrRequest = await db.QRRequest.create({
-                memberId,
+                memberId: memberId || config.memberId || 'KOKKOKMOV',
                 txnAmount,
                 purposeOfTxn: purposeOfTxn || '',
                 billNumber,
-                merchantId,
+                merchantId: merchantId || config.merchantId || '',
                 storeLabel,
                 terminalLabel,
                 memberDateTime,
@@ -67,14 +89,15 @@ class QRController {
                 requestStatus: 'PENDING'
             });
 
-            logger.info(`QR Request created: ${billNumber}`);
+            logger.info(`QR Request record created: ${billNumber}`);
 
-            // Call Bank API to generate QR
+            // Call Bank API using selected Provider
             try {
-                const bankResponse = await callBankAPI({
+                const provider = providerFactory.getProvider(bankCode);
+                const bankResponse = await provider.generateQR(config, {
                     memberId,
-                    txnAmount: txnAmount.toString(),
-                    purposeOfTxn: purposeOfTxn || '',
+                    txnAmount,
+                    purposeOfTxn,
                     billNumber,
                     merchantId,
                     password,
@@ -98,14 +121,14 @@ class QRController {
                     storeLabel: bankResponse.qrInformation?.storeLabel || storeLabel,
                     terminalLabel: bankResponse.qrInformation?.terminalLabel || terminalLabel,
                     receiverId: bankResponse.qrInformation?.receiverId || null,
-                    rawResponse: bankResponse
+                    rawResponse: bankResponse.rawResponse || bankResponse
                 });
 
                 // Update request status to SUCCESS
                 qrRequest.requestStatus = 'SUCCESS';
                 await qrRequest.save();
 
-                logger.info(`QR generated successfully: ${billNumber}`);
+                logger.info(`QR generated successfully: ${billNumber} for bank ${bankCode}`);
 
                 return res.status(201).json({
                     success: true,
@@ -123,7 +146,7 @@ class QRController {
 
             } catch (bankError) {
                 // Bank API call failed
-                logger.error(`Bank API error for ${billNumber}:`, bankError.message);
+                logger.error(`Bank API error for ${billNumber} (${bankCode}):`, bankError.message);
 
                 // Update request status to FAILED
                 qrRequest.requestStatus = 'FAILED';
@@ -131,7 +154,7 @@ class QRController {
 
                 return res.status(500).json({
                     success: false,
-                    message: 'Failed to generate QR code from bank',
+                    message: `Failed to generate QR code from bank: ${bankCode}`,
                     error: bankError.message
                 });
             }
@@ -153,38 +176,61 @@ class QRController {
     async handleCallback(req, res) {
         try {
             const callbackData = req.body;
-
             logger.info('Received payment callback:', JSON.stringify(callbackData));
 
-            const {
-                instId,
-                txnAmount,
-                txnRefId,
-                additionalInfo,
-                paymentAccount,
-                paymentAccountName,
-                callbackRegDate,
-                callBackConfirmDate,
-                txnStatus,
-                message,
-                storeLabel,
-                terminalLabel
-            } = callbackData;
+            // Determine Bank Code from callback payload structure
+            let bankCode = 'IB';
+            if (callbackData.Service_Id || callbackData.Trans_Id) {
+                bankCode = 'LVB';
+            }
 
-            // Find QR request by storeLabel and terminalLabel
-            // Bank doesn't send billNumber in callback, so we match by store/terminal/amount
-            const qrRequest = await db.QRRequest.findOne({
-                where: {
-                    storeLabel,
-                    terminalLabel,
-                    txnAmount: parseFloat(txnAmount),
-                    requestStatus: 'SUCCESS'
-                },
-                order: [['createdAt', 'DESC']]
-            });
+            // Fetch Bank Config
+            let config = {};
+            try {
+                const bankRecord = await db.bank.findOne({
+                    where: {
+                        code: bankCode,
+                        isActive: true
+                    }
+                });
+                if (bankRecord && bankRecord.config) {
+                    config = typeof bankRecord.config === 'string' 
+                        ? JSON.parse(bankRecord.config) 
+                        : bankRecord.config;
+                }
+            } catch (err) {
+                logger.warn(`Failed to retrieve bank config for callback: ${err.message}`);
+            }
+
+            // Verify signature/callback using provider
+            const provider = providerFactory.getProvider(bankCode);
+            const verified = await provider.verifyCallback(config, callbackData);
+
+            // Find matching QR request
+            let qrRequest = null;
+            if (bankCode === 'LVB') {
+                // LVB sends Trans_Id which is the billNumber itself
+                qrRequest = await db.QRRequest.findOne({
+                    where: {
+                        billNumber: verified.billNumber,
+                        requestStatus: 'SUCCESS'
+                    }
+                });
+            } else {
+                // Indochina Bank does not send billNumber, match by store, terminal and amount
+                qrRequest = await db.QRRequest.findOne({
+                    where: {
+                        storeLabel: callbackData.storeLabel,
+                        terminalLabel: callbackData.terminalLabel,
+                        txnAmount: parseFloat(verified.txnAmount),
+                        requestStatus: 'SUCCESS'
+                    },
+                    order: [['createdAt', 'DESC']]
+                });
+            }
 
             if (!qrRequest) {
-                logger.error('QR request not found for callback:', { storeLabel, terminalLabel, txnAmount });
+                logger.error(`QR request not found for callback matching billNumber/details:`, verified);
                 return res.status(404).json({
                     success: false,
                     message: 'QR request not found'
@@ -193,29 +239,29 @@ class QRController {
 
             // Save payment callback
             const paymentCallback = await db.PaymentCallback.create({
-                instId,
-                txnAmount: parseFloat(txnAmount),
-                txnRefId,
-                additionalInfo,
-                paymentAccount,
-                paymentAccountName,
-                callbackRegDate: callbackRegDate ? new Date(callbackRegDate) : null,
-                callBackConfirmDate: callBackConfirmDate ? new Date(callBackConfirmDate) : null,
-                txnStatus,
-                message,
-                storeLabel,
-                terminalLabel,
+                instId: callbackData.instId || 'LVB',
+                txnAmount: verified.txnAmount,
+                txnRefId: verified.txnRefId,
+                additionalInfo: callbackData.additionalInfo || '',
+                paymentAccount: verified.paymentAccount,
+                paymentAccountName: verified.paymentAccountName,
+                callbackRegDate: callbackData.callbackRegDate ? new Date(callbackData.callbackRegDate) : new Date(),
+                callBackConfirmDate: callbackData.callBackConfirmDate ? new Date(callbackData.callBackConfirmDate) : new Date(),
+                txnStatus: verified.txnStatus,
+                message: verified.message,
+                storeLabel: callbackData.storeLabel || qrRequest.storeLabel,
+                terminalLabel: callbackData.terminalLabel || qrRequest.terminalLabel,
                 billNumber: qrRequest.billNumber,
-                isPaymentSuccess: txnStatus === '1',
+                isPaymentSuccess: verified.success,
                 rawCallbackData: callbackData
             });
 
-            logger.info(`Payment callback saved: ${paymentCallback.txnRefId}, Status: ${txnStatus === '1' ? 'SUCCESS' : 'FAILED'}`);
+            logger.info(`Payment callback saved: ${paymentCallback.txnRefId}, Success: ${verified.success}`);
 
             // Respond to bank
             return res.status(200).json({
                 success: true,
-                message: 'Callback received',
+                message: 'Callback received and processed',
                 billNumber: qrRequest.billNumber
             });
 
@@ -468,55 +514,6 @@ class QRController {
         }
     }
 
-}
-
-/**
- * Helper: Call Bank API to generate QR
- */
-async function callBankAPI(requestData) {
-    try {
-        const bankApiUrl = 'https://ibapigwuat.iblaos.com/IBInterBankServices';
-        // Use provided credentials or fallback to hardcoded defaults
-        const bankMemberId = requestData.memberId || 'KOKKOKMOV';
-        const bankPassword = requestData.password || '2RBKKUO6PHZ3XYOUSIGFH5W8Y5T71X362EWJ0DFYBYKNANABW4';
-
-        logger.info(`Attempting to login to bank API as ${bankMemberId}...`);
-
-        // Step 1: Login to get token
-        const loginResponse = await axios.post(`${bankApiUrl}/member/login`, {
-            memberId: bankMemberId,
-            memberPassword: bankPassword
-        });
-
-        if (loginResponse.data.RESP_CODE !== 'IBN0000') {
-            throw new Error(`Bank login failed: ${loginResponse.data.REASON}`);
-        }
-
-        const loginToken = loginResponse.data.loginToken;
-        logger.info('Bank login successful, token obtained');
-
-        // Step 2: Generate QR code
-        const qrResponse = await axios.post(
-            `${bankApiUrl}/member/bill/qr/generate`,
-            requestData,
-            {
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${loginToken}`
-                }
-            }
-        );
-
-        if (qrResponse.data.RESP_CODE !== 'IBN0000') {
-            throw new Error(`QR generation failed: ${qrResponse.data.REASON}`);
-        }
-
-        return qrResponse.data;
-
-    } catch (error) {
-        logger.error('Bank API call error:', error.message);
-        throw error;
-    }
 }
 
 /**

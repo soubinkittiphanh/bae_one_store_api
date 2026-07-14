@@ -20,6 +20,11 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.BOOLEAN,
             allowNull: false,
             defaultValue: true,
+        },
+        config: {
+            type: DataTypes.JSON,
+            allowNull: true,
+            comment: 'JSON configuration object containing payment integration credentials'
         }
     }, {
         sequelize,
