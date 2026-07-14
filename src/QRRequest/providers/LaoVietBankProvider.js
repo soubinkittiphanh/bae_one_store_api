@@ -2,6 +2,7 @@ const BasePaymentProvider = require('./BaseProvider');
 const axios = require('axios');
 const crypto = require('crypto');
 const https = require('https');
+const dns = require('dns');
 const logger = require('../../api/logger');
 
 class LaoVietBankProvider extends BasePaymentProvider {
@@ -39,6 +40,13 @@ class LaoVietBankProvider extends BasePaymentProvider {
         const rawLoginStr = `${privateKey}|${username}|${password}|${createDate}`;
         const loginSecureCode = crypto.createHash('md5').update(rawLoginStr).digest('hex');
 
+        const lvbAgent = new https.Agent({
+            rejectUnauthorized: false,
+            lookup: (hostname, options, callback) => {
+                dns.lookup(hostname, { family: 4 }, callback);
+            }
+        });
+
         const loginResponse = await axios.post(`${bankApiUrl}/v1/api/login`, {
             username,
             password,
@@ -46,7 +54,7 @@ class LaoVietBankProvider extends BasePaymentProvider {
             secure_code: loginSecureCode
         }, {
             timeout: 15000,
-            httpsAgent: new https.Agent({ rejectUnauthorized: false })
+            httpsAgent: lvbAgent
         });
 
         if (loginResponse.data.Response_Code !== '000') {
@@ -99,7 +107,7 @@ class LaoVietBankProvider extends BasePaymentProvider {
                 'Authorization': `Bearer ${token}`
             },
             timeout: 15000,
-            httpsAgent: new https.Agent({ rejectUnauthorized: false })
+            httpsAgent: lvbAgent
         });
 
         if (initResponse.data.Response_Code !== '000') {
