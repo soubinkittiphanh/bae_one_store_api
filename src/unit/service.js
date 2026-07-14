@@ -16,61 +16,73 @@ const createHulkUnit = (req, res) => {
         [
             {
                 name: 'each',
+                symbol: 'each',
                 unitRate: 1,
                 isActive: true
             },
             {
                 name: 'dozen',
+                symbol: 'dozen',
                 unitRate: 12,
                 isActive: true
             },
             {
                 name: 'pound',
+                symbol: 'pound',
                 unitRate: 16,
                 isActive: true
             },
             {
                 name: 'gallon',
+                symbol: 'gallon',
                 unitRate: 128,
                 isActive: true
             },
             {
                 name: 'bottle',
+                symbol: 'bottle',
                 unitRate: 1,
                 isActive: true
             },
             {
                 name: 'case',
+                symbol: 'case',
                 unitRate: 12,
                 isActive: true
             },
             {
                 name: 'can',
+                symbol: 'can',
                 unitRate: 1,
                 isActive: true
             },
             {
                 name: 'pack',
+                symbol: 'pack',
                 unitRate: 6,
                 isActive: true
             },
             {
                 name: 'piece',
+                symbol: 'piece',
                 unitRate: 1,
                 isActive: true
             },
             {
                 name: "meter",
+                symbol: 'meter',
                 unitRate: 1.0,
                 isActive: true
             },
             {
                 name: "liter",
+                symbol: 'liter',
                 unitRate: 0.001,
                 isActive: true
             },
             {
                 name: "kilogram",
+                symbol: 'kilogram',
                 unitRate: 1.0,
                 isActive: false
             },

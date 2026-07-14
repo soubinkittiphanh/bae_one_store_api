@@ -1,5 +1,10 @@
 
 
+const dns = require('dns');
+if (typeof dns.setDefaultResultOrder === 'function') {
+    dns.setDefaultResultOrder('ipv4first');
+}
+
 const logger = require("./api/logger.js");
 const executeSqlScript = require("./helper/sqlExecutor.js");
 

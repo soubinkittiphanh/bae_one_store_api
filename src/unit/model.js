@@ -43,6 +43,16 @@ module.exports = (sequelize, DataTypes) => {
             },
             field: 'conversion_rate'
         },
+        unitRate: {
+            type: DataTypes.VIRTUAL,
+            get() {
+                const val = this.getDataValue('conversionRate');
+                return val ? parseFloat(val) : 1.0000;
+            },
+            set(value) {
+                this.setDataValue('conversionRate', value);
+            }
+        },
         unitType: {
             type: DataTypes.ENUM('base', 'derived'),
             allowNull: false,

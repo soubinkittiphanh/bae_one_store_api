@@ -8,6 +8,15 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING(100),
             defaultValue: '',
         },
+        qrRequestId: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            defaultValue: null,
+            references: {
+                model: 'qr_request',
+                key: 'id'
+            }
+        },
         shippingCheckoutBatchId: {
             type: DataTypes.INTEGER,
             allowNull: true,
@@ -48,6 +57,11 @@ module.exports = (sequelize, DataTypes) => {
         SalePayment.belongsTo(models.ticket, {
             foreignKey: 'ticketId',
             as: 'ticket',
+        });
+
+        SalePayment.belongsTo(models.QRRequest, {
+            foreignKey: 'qrRequestId',
+            as: 'qrRequest',
         });
 
         SalePayment.belongsTo(models.shipping_checkout_batch, {

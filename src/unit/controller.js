@@ -63,6 +63,9 @@ exports.createUnitModel = async (req, res) => {
         if (!finalSymbol && name) {
             finalSymbol = name.toLowerCase().replace(/[^a-zA-Z0-9]/g, '').substring(0, 10);
         }
+        if (!finalSymbol || finalSymbol.trim() === '') {
+            finalSymbol = 'u_' + Math.random().toString(36).substring(2, 7);
+        }
 
         // Validation: derived units must have baseUnitId
         if (unitType === 'derived' && !baseUnitId) {

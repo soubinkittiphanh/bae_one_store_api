@@ -86,7 +86,8 @@ exports.createBulkSalePayment = async (req, res) => {
           saleHeaderId: payment.saleHeaderId,
           paymentId: payment.paymentId,
           amount: payment.amount,
-          referenceNo: payment.referenceNo || null
+          referenceNo: payment.referenceNo || null,
+          qrRequestId: payment.qrRequestId || null
         })),
         { transaction: t }
       );
