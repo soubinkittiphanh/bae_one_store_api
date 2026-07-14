@@ -1,6 +1,7 @@
 const BasePaymentProvider = require('./BaseProvider');
 const axios = require('axios');
 const crypto = require('crypto');
+const https = require('https');
 const logger = require('../../api/logger');
 
 class LaoVietBankProvider extends BasePaymentProvider {
@@ -43,6 +44,9 @@ class LaoVietBankProvider extends BasePaymentProvider {
             password,
             create_date: createDate,
             secure_code: loginSecureCode
+        }, {
+            timeout: 15000,
+            httpsAgent: new https.Agent({ rejectUnauthorized: false })
         });
 
         if (loginResponse.data.Response_Code !== '000') {
@@ -93,7 +97,9 @@ class LaoVietBankProvider extends BasePaymentProvider {
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
-            }
+            },
+            timeout: 15000,
+            httpsAgent: new https.Agent({ rejectUnauthorized: false })
         });
 
         if (initResponse.data.Response_Code !== '000') {

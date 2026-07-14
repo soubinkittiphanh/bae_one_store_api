@@ -37,6 +37,13 @@ const clientDB = {
         // "database": "dc_carcare_dev",
         "port": 3306,
     },
+    "payment_1": {
+        "host": "150.95.31.23",
+        "user": "root",
+        "password": "SDAT@3480",
+        "database": "dcommerce_pro_payment",
+        "port": 3306,
+    },
     "offline": {
         "host": "localhost",
         "user": "root",
@@ -50,7 +57,7 @@ const clientDB = {
         "host": "150.95.31.23",
         "user": "root",
         "password": "sdat@3480",
-        "database": "dcommerce_demo",
+        "database": "dcommerce_pro_payment",
         "port": 3306,
     },
     "ksouk": {

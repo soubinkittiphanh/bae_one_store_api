@@ -50,7 +50,7 @@ class QRController {
             const memberDateTime = generateDateTime();
 
             // Auto-set callback URL from body or default fallback
-            const callbackUrl = requestedCallbackUrl || `http://150.95.31.23:8921/api/v1/direct/callback`;
+            const callbackUrl = requestedCallbackUrl || `http://localhost:8888/api/v1/direct/callback`;
 
             logger.info(`Using callback URL for bankCode ${bankCode}: ${callbackUrl}`);
 
@@ -64,8 +64,8 @@ class QRController {
                     }
                 });
                 if (bankRecord && bankRecord.config) {
-                    config = typeof bankRecord.config === 'string' 
-                        ? JSON.parse(bankRecord.config) 
+                    config = typeof bankRecord.config === 'string'
+                        ? JSON.parse(bankRecord.config)
                         : bankRecord.config;
                     logger.info(`Loaded secure configuration for bank: ${bankCode}`);
                 } else {
@@ -146,7 +146,8 @@ class QRController {
 
             } catch (bankError) {
                 // Bank API call failed
-                logger.error(`Bank API error for ${billNumber} (${bankCode}):`, bankError.message);
+                const responseData = bankError.response ? JSON.stringify(bankError.response.data) : '';
+                logger.error(`Bank API error for ${billNumber} (${bankCode}): ${bankError.message} - Response: ${responseData}`);
 
                 // Update request status to FAILED
                 qrRequest.requestStatus = 'FAILED';
@@ -194,8 +195,8 @@ class QRController {
                     }
                 });
                 if (bankRecord && bankRecord.config) {
-                    config = typeof bankRecord.config === 'string' 
-                        ? JSON.parse(bankRecord.config) 
+                    config = typeof bankRecord.config === 'string'
+                        ? JSON.parse(bankRecord.config)
                         : bankRecord.config;
                 }
             } catch (err) {
