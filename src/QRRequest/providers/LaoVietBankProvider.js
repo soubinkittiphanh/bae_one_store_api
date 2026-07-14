@@ -53,6 +53,10 @@ class LaoVietBankProvider extends BasePaymentProvider {
             create_date: createDate,
             secure_code: loginSecureCode
         }, {
+            headers: {
+                'Content-Type': 'application/json',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            },
             timeout: 15000,
             httpsAgent: lvbAgent
         });
@@ -104,7 +108,8 @@ class LaoVietBankProvider extends BasePaymentProvider {
         const initResponse = await axios.post(`${bankApiUrl}/v1/api/init/`, payload, {
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
+                'Authorization': `Bearer ${token}`,
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
             },
             timeout: 15000,
             httpsAgent: lvbAgent
