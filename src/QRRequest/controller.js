@@ -439,10 +439,16 @@ class QRController {
 
             const qrRequests = await db.QRRequest.findAll({
                 where,
-                include: [{
-                    model: db.QRResponse,
-                    as: 'response'
-                }],
+                include: [
+                    {
+                        model: db.QRResponse,
+                        as: 'response'
+                    },
+                    {
+                        model: db.PaymentCallback,
+                        as: 'callbacks'
+                    }
+                ],
                 order: [['createdAt', 'DESC']],
                 limit: 100
             });
