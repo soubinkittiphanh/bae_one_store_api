@@ -152,6 +152,7 @@ const getAllProducts = async (req, res) => {
       pro_status: product.pro_status,
       pro_image_path: product.pro_image_path,
       barCode: product.barCode,
+      product_code: product.product_code,
       isActive: product.isActive,
       _category: product._category,
       createdAt: product.createdAt,
@@ -264,6 +265,7 @@ const getAllActiveProducts = async (req, res) => {
       stock_count: product.stock_count,
       minStock: product.minStock,
       barCode: product.barCode,
+      product_code: product.product_code,
       isActive: product.isActive,
       stockUnitId: product.stockUnitId,
       receiveUnitId: product.receiveUnitId,
@@ -359,7 +361,7 @@ const createProduct = async (req, res) => {
   let { pro_id, pro_name, pro_price, pro_desc, pro_status, validateStockOnSale,
     pro_image_path, retail_cost_percent, cost_price,
     stock_count, locking_session_id, isActive, minStock, barCode, saleCurrencyId, costCurrencyId, companyId, vendorName, _category,
-    receiveUnitId, stockUnitId, baseUnitId } = req.body;
+    receiveUnitId, stockUnitId, baseUnitId, product_code } = req.body;
   locking_session_id = Date.now()
   try {
     const newProduct = await Product.create({
@@ -385,6 +387,7 @@ const createProduct = async (req, res) => {
       receiveUnitId,
       stockUnitId,
       baseUnitId,
+      product_code,
     }, {
       context: { userId: req.user?.id || 1, reason: 'Product created via API' }
     });
@@ -405,7 +408,7 @@ const updateProductById = async (req, res) => {
   const { pro_id, pro_name, pro_price, pro_desc, pro_status, validateStockOnSale,
     pro_image_path, retail_cost_percent, cost_price, stock_count,
     isActive, minStock, barCode, saleCurrencyId, costCurrencyId, companyId, vendorName, _category,
-    receiveUnitId, stockUnitId, baseUnitId } = req.body;
+    receiveUnitId, stockUnitId, baseUnitId, product_code } = req.body;
   try {
     const product = await Product.findOne({ where: { id } });
     if (!product) {
@@ -427,7 +430,8 @@ const updateProductById = async (req, res) => {
         minStock,
         isActive,
         barCode, saleCurrencyId, costCurrencyId, companyId, vendorName, _category,
-        receiveUnitId, stockUnitId, baseUnitId
+        receiveUnitId, stockUnitId, baseUnitId,
+        product_code
       },
       { 
         context: { userId: req.user?.id || 1, reason: req.body.reason || 'Product updated via API' }
@@ -515,7 +519,8 @@ const bulkCreateProducts = async (req, res) => {
         vendorName: p.vendorName || '',
         _category: p._category || 'product',
         duration_minutes: parseInt(p.duration_minutes) || 0,
-        taxId: parseInt(p.taxId) || null
+        taxId: parseInt(p.taxId) || null,
+        product_code: p.product_code || null
       };
 
       const newProduct = await Product.create(productData, {

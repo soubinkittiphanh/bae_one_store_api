@@ -102,6 +102,7 @@ const createProd = async (req, imagesObj) => {
     const locking_session_id = Date.now()
     const isActive = body.isActive;
     const companyId = body.companyId;
+    const product_code = body.product_code || null;
     let sqlComImages = 'INSERT INTO image_path(pro_id, img_name, img_path,createdAt,updateTimestamp,productId )VALUES';
     logger.info("************* CREATE PRODUCT *****************");
     logger.info(`*************Payload: ${image_path} *****************`);/// test upload
@@ -124,9 +125,9 @@ const createProd = async (req, imagesObj) => {
     pro_category, pro_id, pro_name, pro_price, pro_desc, pro_status, 
     retail_cost_percent, cost_price, locking_session_id, createdAt, 
     updateTimestamp, minStock, barCode, receiveUnitId, stockUnitId, baseUnitId,
-    costCurrencyId, saleCurrencyId, isActive, companyId
+    costCurrencyId, saleCurrencyId, isActive, companyId, product_code
   )
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 `;
 
             // Values array to pass into the query
@@ -150,7 +151,8 @@ const createProd = async (req, imagesObj) => {
                 costCurrencyId,
                 saleCurrencyId,
                 isActive,
-                companyId
+                companyId,
+                product_code
             ];
             //*****************  INSERT PRODUCT SQL  *****************//
             logger.info("SQL CREATE PRODUCT SERVICE: " + sqlCom);
@@ -219,7 +221,8 @@ const createProdV1 = async (req, imagesObj) => {
             vendorName: body.vendorName || '',
             _category: body._category || 'product',
             duration_minutes: parseInt(body.duration_minutes) || 0,
-            taxId: parseInt(body.taxId) || null
+            taxId: parseInt(body.taxId) || null,
+            product_code: body.product_code || null
         };
 
         const newProduct = await Product.create(productData, {
@@ -295,7 +298,8 @@ const updateProd = async (req, imagesObj) => {
             vendorName: body.vendorName,
             _category: body._category || 'product',
             duration_minutes: parseInt(body.duration_minutes) || 0,
-            taxId: parseInt(body.taxId) || null
+            taxId: parseInt(body.taxId) || null,
+            product_code: body.product_code || null
         };
 
         await product.update(updateData, {

@@ -37,6 +37,7 @@ const createProd = async (req, res) => {
   const isActive = body.isActive;
   const companyId = body.companyId;
   const baseUnitId = body.baseUnitId;
+  const product_code = body.product_code || null;
   // return res.send("Okay")
   // const timestamps = new Date();
   let sqlComImages = 'INSERT INTO image_path(pro_id, img_name, img_path,createdAt,updateTimestamp,productId )VALUES';
@@ -49,8 +50,8 @@ const createProd = async (req, res) => {
     if (re.length < 1) pro_id = 1000;
     else pro_id = parseInt(re[0]['ID']) + 1
     const sqlCom = `INSERT INTO product(pro_category, pro_id, pro_name, pro_price, pro_desc, pro_status,retail_cost_percent,cost_price,
-            locking_session_id,createdAt,updateTimestamp,minStock,barCode,receiveUnitId,stockUnitId,baseUnitId,costCurrencyId,saleCurrencyId,isActive,companyId)
-        VALUES('${pro_cat}','${pro_id}','${pro_name}','${pro_price}','${pro_desc}','${pro_status}','${retail_percent}','${costPrice}',${locking_session_id},'${mysqlDateTime}','${mysqlDateTime}',${minStock},'${barCode}',${receiveUnitId},${stockUnitId},${baseUnitId},${costCurrencyId},${saleCurrencyId},${isActive},${companyId});`
+            locking_session_id,createdAt,updateTimestamp,minStock,barCode,receiveUnitId,stockUnitId,baseUnitId,costCurrencyId,saleCurrencyId,isActive,companyId,product_code)
+        VALUES('${pro_cat}','${pro_id}','${pro_name}','${pro_price}','${pro_desc}','${pro_status}','${retail_percent}','${costPrice}',${locking_session_id},'${mysqlDateTime}','${mysqlDateTime}',${minStock},'${barCode}',${receiveUnitId},${stockUnitId},${baseUnitId},${costCurrencyId},${saleCurrencyId},${isActive},${companyId},${product_code !== null ? `'${product_code}'` : 'NULL'});`
     //*****************  INSERT PRODUCT SQL  *****************//
     logger.info("SQL CREATE PRODUCT CONTROLLER: " + sqlCom);
     Db.query(sqlCom, (er, re) => {
@@ -100,6 +101,7 @@ const updateProd = async (req, res) => {
   const isActive = body.isActive;
   const companyId = body.companyId;
   const baseUnitId = body.baseUnitId;
+  const product_code = body.product_code || null;
   logger.info('cost ' + cost_price);
   const timestamps = new Date();
   const mysqlDatetime = timestamps.toISOString().slice(0, 19).replace('T', ' ');
@@ -110,7 +112,8 @@ const updateProd = async (req, res) => {
   const sqlCom = `UPDATE product SET pro_category='${pro_cat}', pro_name='${pro_name}', pro_price='${pro_price}', 
     pro_desc='${pro_desc}', pro_status='${pro_status}',retail_cost_percent='${retail_percent}',isActive=${isActive},
     cost_price='${cost_price}',minStock=${minStock},barCode='${barCode}',
-    receiveUnitId=${receiveUnitId},stockUnitId=${stockUnitId},baseUnitId=${baseUnitId},saleCurrencyId=${saleCurrencyId},costCurrencyId=${costCurrencyId},companyId=${companyId}
+    receiveUnitId=${receiveUnitId},stockUnitId=${stockUnitId},baseUnitId=${baseUnitId},saleCurrencyId=${saleCurrencyId},costCurrencyId=${costCurrencyId},companyId=${companyId},
+    product_code=${product_code !== null ? `'${product_code}'` : 'NULL'}
      WHERE pro_id='${pro_id}'`
   logger.info("************* UPDATE PRODUCT *****************");
   logger.info(`*************Payload: ${req.body.imagesObj} *****************`);
@@ -194,6 +197,7 @@ const fetchProductFromLocation = async (req, res) => {
     p.retail_cost_percent,
     p.locking_session_id,
     p.isActive,
+    p.product_code,
     t.categ_name,
     co.name as co_name,
     co.id as companyId,
@@ -369,6 +373,7 @@ const fetchProductFromLocation = async (req, res) => {
           costCurrencyId: product.costCurrencyId,
           taxId: product.taxId,
           isActive: product.isActive,
+          product_code: product.product_code,
           createdAt: null,
           updatedAt: null
         };
@@ -458,6 +463,7 @@ const fetchProductFromLocationV1 = async (req, res) => {
       p.isActive,
       p.pro_category,
       p.taxId,
+      p.product_code,
       t.name AS tax_name,
       t.rate AS tax_rate,
       t.code AS tax_code,
