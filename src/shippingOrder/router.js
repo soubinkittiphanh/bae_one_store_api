@@ -10,6 +10,7 @@ router.post('/scan-arrival', controller.scanArrival);
 router.put('/:id/confirm-arrival', controller.confirmArrival);
 router.post('/scan-pickup', controller.scanPickup);
 router.post('/complete-pickup', controller.completePickup);
+router.post('/:id/revert-pickup', controller.revertPickup);
 router.get('/', controller.findAll);
 router.post('/', controller.create);
 router.get('/checkout-batches/:id', controller.getCheckoutBatch);

@@ -457,5 +457,102 @@ module.exports = {
       console.error('Error in getCheckoutBatch:', error);
       return res.status(500).json({ message: 'Internal server error', error: error.message });
     }
+  },
+
+  /**
+   * Revert / Cancel Pickup for a Shipping Order
+   * Updates status back to ARRIVED, clears picked_up_at, and clears checkout_batch_id.
+   */
+  async revertPickup(req, res) {
+    const transaction = await db.sequelize.transaction();
+    try {
+      const { id } = req.params;
+
+      const order = await ShippingOrder.findOne({
+        where: { id, status: 'COMPLETED' },
+        transaction
+      });
+
+      if (!order) {
+        await transaction.rollback();
+        return res.status(404).json({ message: 'Completed shipping order not found' });
+      }
+
+      const batchId = order.checkout_batch_id;
+
+      // Revert the shipping order
+      order.status = 'ARRIVED';
+      order.picked_up_at = null;
+      order.checkout_batch_id = null;
+      await order.save({ transaction });
+
+      // If there are no other shipping orders remaining in this batch, delete/cancel the batch payments
+      if (batchId) {
+        const remainingOrders = await ShippingOrder.count({
+          where: { checkout_batch_id: batchId },
+          transaction
+        });
+
+        if (remainingOrders === 0) {
+          // Delete associated payments
+          await db.salePayment.destroy({
+            where: { shippingCheckoutBatchId: batchId },
+            transaction
+          });
+          // Delete the batch itself
+          await db.shipping_checkout_batch.destroy({
+            where: { id: batchId },
+            transaction
+          });
+        } else {
+          // Update the batch total price if some orders still remain
+          const ordersInBatch = await ShippingOrder.findAll({
+            where: { checkout_batch_id: batchId },
+            include: [{
+              model: db.currency,
+              as: 'currency',
+              attributes: ['id', 'code', 'symbol', 'rate', 'exchangeDirection']
+            }],
+            transaction
+          });
+
+          // Retrieve default local currency
+          const localCurrency = await db.currency.findOne({
+            where: { isLocalCCY: true },
+            transaction
+          });
+          const defaultCurrency = localCurrency || await db.currency.findOne({ transaction });
+
+          let newTotalPrice = 0;
+          for (const o of ordersInBatch) {
+            const price = parseFloat(o.final_price || 0);
+            const fromCurrency = o.currency;
+            if (!fromCurrency || !defaultCurrency || fromCurrency.id === defaultCurrency.id) {
+              newTotalPrice += price;
+            } else {
+              if (fromCurrency.exchangeDirection === 'local_to_foreign') {
+                newTotalPrice += price / (parseFloat(fromCurrency.rate) || 1.0);
+              } else {
+                newTotalPrice += price * (parseFloat(fromCurrency.rate) || 1.0);
+              }
+            }
+          }
+
+          await db.shipping_checkout_batch.update({
+            total_price: newTotalPrice
+          }, {
+            where: { id: batchId },
+            transaction
+          });
+        }
+      }
+
+      await transaction.commit();
+      return res.status(200).json({ message: 'Pickup reverted successfully' });
+    } catch (error) {
+      await transaction.rollback();
+      console.error('Error in revertPickup:', error);
+      return res.status(500).json({ message: 'Internal server error', error: error.message });
+    }
   }
 };
