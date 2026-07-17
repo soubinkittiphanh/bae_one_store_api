@@ -510,6 +510,189 @@ const adjustStockCard = async (productId, stockCount, product_code) => {
     }
 };
 
+const adjustStockBulk = async (req, res) => {
+    const { inputter, locationId, adjustments } = req.body;
+
+    if (!locationId) {
+        return res.status(400).json({ success: false, message: "Location ID is required" });
+    }
+
+    if (!adjustments || !Array.isArray(adjustments) || adjustments.length === 0) {
+        return res.status(400).json({ success: false, message: "No adjustments data provided" });
+    }
+
+    const { sequelize } = require('../models');
+    const transaction = await sequelize.transaction();
+
+    try {
+        const results = [];
+
+        for (const adj of adjustments) {
+            let { productId, pro_id, actualQty } = adj;
+            actualQty = parseInt(actualQty);
+            if (isNaN(actualQty) || actualQty < 0) {
+                results.push({
+                    productId,
+                    pro_id,
+                    success: false,
+                    message: "Invalid quantity specified"
+                });
+                continue;
+            }
+
+            // Find product in DB to verify and get cost/currency
+            let product = null;
+            if (productId) {
+                product = await Product.findOne({ where: { id: productId }, transaction });
+            } else if (pro_id) {
+                product = await Product.findOne({ where: { pro_id: pro_id }, transaction });
+            }
+
+            if (!product) {
+                results.push({
+                    productId,
+                    pro_id,
+                    success: false,
+                    message: "Product not found"
+                });
+                continue;
+            }
+
+            const dbProductId = product.id;
+            const dbProductCode = product.pro_id;
+
+            // Get current stock count for this product at this location
+            const currentStock = await Card.count({
+                where: {
+                    productId: dbProductId,
+                    locationId: locationId,
+                    card_isused: 0,
+                    saleLineId: null,
+                    isActive: true
+                },
+                transaction
+            });
+
+            const diff = actualQty - currentStock;
+
+            if (diff > 0) {
+                // Add diff cards
+                const rowsToInsert = [];
+                const lockingSessionId = Date.now();
+                const cost = product.cost_price || 0;
+                // Get currency info
+                const Currency = require('../models').currency;
+                const currencyId = product.costCurrencyId || 1;
+                let exchangeRate = 1;
+                if (Currency) {
+                    const curr = await Currency.findOne({ where: { id: currencyId }, transaction });
+                    if (curr) {
+                        exchangeRate = curr.rate || 1;
+                    }
+                }
+                const costLCY = cost * exchangeRate;
+
+                for (let i = 0; i < diff; i++) {
+                    const cardSequenceNumber = common.generateLockingSessionId(10);
+                    rowsToInsert.push({
+                        card_type_code: 10010, // Stock adjustment in
+                        product_id: dbProductCode,
+                        productId: dbProductId,
+                        cost: cost,
+                        costLCY: costLCY,
+                        card_number: cardSequenceNumber,
+                        card_isused: 0,
+                        locking_session_id: lockingSessionId,
+                        card_input_date: new Date(),
+                        inputter: inputter,
+                        update_user: inputter,
+                        update_time: new Date(),
+                        update_time_new: new Date(),
+                        isActive: true,
+                        currencyId: currencyId,
+                        exchangeRate: exchangeRate,
+                        locationId: locationId
+                    });
+                }
+                await Card.bulkCreate(rowsToInsert, { transaction });
+            } else if (diff < 0) {
+                // Remove (deactivate) Math.abs(diff) cards
+                const limit = Math.abs(diff);
+                const rowsToDelete = await Card.findAll({
+                    where: {
+                        productId: dbProductId,
+                        locationId: locationId,
+                        card_isused: 0,
+                        saleLineId: null,
+                        isActive: true
+                    },
+                    order: [['createdAt', 'ASC']], // deactivate oldest first
+                    limit: limit,
+                    transaction
+                });
+
+                const idsToDelete = rowsToDelete.map(row => row.id);
+
+                if (idsToDelete.length > 0) {
+                    await Card.update({
+                        card_isused: 2, // Stock adjustment out (2)
+                        isActive: false,
+                        update_user: inputter,
+                        update_time: new Date()
+                    }, {
+                        where: {
+                            id: {
+                                [Op.in]: idsToDelete,
+                            },
+                        },
+                        transaction
+                    });
+                }
+            }
+
+            // Update product counts
+            await productService.updateProductCountById(dbProductId);
+
+            results.push({
+                productId: dbProductId,
+                pro_id: dbProductCode,
+                pro_name: product.pro_name,
+                previousQty: currentStock,
+                actualQty: actualQty,
+                adjusted: diff,
+                success: true
+            });
+        }
+
+        // Commit transaction
+        await transaction.commit();
+
+        // Also run the global stock value rebuild to be absolutely safe (rebuildStockValue updates product table stock_count)
+        const sqlCom = `UPDATE product pro
+LEFT JOIN (
+    SELECT productId, COUNT(card_number) AS card_count
+    FROM card
+    WHERE card_isused = 0 
+      AND saleLineId IS NULL 
+      AND isActive = 1
+    GROUP BY productId
+) proc ON proc.productId = pro.id
+SET pro.stock_count = IFNULL(proc.card_count, 0);`;
+        await dbAsync.execute(sqlCom);
+
+        return res.status(200).json({
+            success: true,
+            message: `Successfully adjusted stock for ${results.filter(r => r.success).length} products`,
+            results
+        });
+
+    } catch (error) {
+        await transaction.rollback();
+        logger.error('Error in adjustStockBulk:', error);
+        return res.status(500).json({ success: false, message: "Server error: " + error.message });
+    }
+};
+
 // New utility functions for enhanced features
 
 const findCardsByColorAndSize = async (productId, colorId, sizeId) => {
@@ -626,6 +809,7 @@ module.exports = {
     createAutoHulkStockCard,
     adjustStock,
     adjustStockCard,
+    adjustStockBulk,
 
     // New enhanced functions
     findCardsByColorAndSize,

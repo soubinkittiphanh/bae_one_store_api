@@ -19,4 +19,5 @@ router.post("/create", controller.create)
     .get("/stock-movements", controller.stockmovements)
     .post("/bulkCreate",service.createHulkStockCard)
     .post("/rebuildStock",service.rebuildStockValue)
+    .post("/adjustStockBulk", service.adjustStockBulk)
 module.exports = router
