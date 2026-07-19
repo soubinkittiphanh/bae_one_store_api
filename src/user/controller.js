@@ -337,6 +337,37 @@ const resetPassword = async (req, res) => {
   }
 };
 
+// NEW FUNCTION: Delete Own Account (Self-service deletion)
+const deleteOwnAccount = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    logger.info(`Self-deletion request for user ID: ${userId}`);
+
+    const customer = await User.findByPk(userId);
+    if (!customer) {
+      logger.warn(`User not found for self-deletion, ID: ${userId}`);
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    await customer.destroy();
+    logger.info(`User ID: ${userId} successfully deleted their own account`);
+
+    res.status(200).json({
+      success: true,
+      message: 'Account deleted successfully'
+    });
+  } catch (error) {
+    logger.error(`Error deleting own account: ${error.message}`);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error while deleting account'
+    });
+  }
+};
+
 // Validation middleware for change password
 const validateChangePassword = [
   body('userId')
@@ -376,6 +407,7 @@ module.exports = {
   unlinkTerminal,
   changePassword,
   resetPassword,
+  deleteOwnAccount,
   validateChangePassword,
   validateResetPassword
 };

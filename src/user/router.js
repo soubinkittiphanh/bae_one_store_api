@@ -14,6 +14,7 @@ router
 .post("/linkterminal/:id", controller.linkTerminal)
 .post("/unlinkterminal/:id", controller.unlinkTerminal)
 .put("/update/:id", controller.updateCustomer)
+.delete("/delete-account", controller.deleteOwnAccount)
 .delete("/find/:id", controller.deleteCustomer)
 .get("/find", controller.getCustomers)
 .get("/find/:id", controller.getCustomerById)
