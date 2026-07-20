@@ -135,8 +135,15 @@ exports.previewUnpostedBatch = async (req, res) => {
       return res.status(400).json({ error: 'startDate, endDate, and module are required parameters.' });
     }
 
-    if (module !== 'AP' && module !== 'AR') {
-      return res.status(400).json({ error: 'module must be either "AP" or "AR".' });
+    const validModules = ['AP', 'AR', 'AP_SETTLEMENT', 'AR_RECEIPT', 'MONEY_SETTLEMENT'];
+    if (!validModules.includes(module)) {
+      return res.status(400).json({ error: `module must be one of: ${validModules.join(', ')}.` });
+    }
+
+    if (['AP_SETTLEMENT', 'AR_RECEIPT', 'MONEY_SETTLEMENT'].includes(module)) {
+      const GLCashPostingService = require('./cashPostingService');
+      const preview = await GLCashPostingService.previewUnposted(startDate, endDate, module);
+      return res.status(200).json(preview);
     }
 
     const GLPostingService = require('./postingService');
@@ -157,8 +164,15 @@ exports.postBatch = async (req, res) => {
       return res.status(400).json({ error: 'startDate, endDate, and module are required in request body.' });
     }
 
-    if (module !== 'AP' && module !== 'AR') {
-      return res.status(400).json({ error: 'module must be either "AP" or "AR".' });
+    const validModules = ['AP', 'AR', 'AP_SETTLEMENT', 'AR_RECEIPT', 'MONEY_SETTLEMENT'];
+    if (!validModules.includes(module)) {
+      return res.status(400).json({ error: `module must be one of: ${validModules.join(', ')}.` });
+    }
+
+    if (['AP_SETTLEMENT', 'AR_RECEIPT', 'MONEY_SETTLEMENT'].includes(module)) {
+      const GLCashPostingService = require('./cashPostingService');
+      const result = await GLCashPostingService.postBatch(startDate, endDate, module, userId);
+      return res.status(200).json({ message: 'Batch cash-posting executed successfully', data: result });
     }
 
     const GLPostingService = require('./postingService');

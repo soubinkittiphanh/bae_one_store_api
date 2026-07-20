@@ -22,11 +22,13 @@ router.get('/pl', APSettlementController.getAllSettlementsForPL);
 router.get('/:id', APSettlementController.getSettlementById);
 router.get('/audit/:id', APSettlementController.getSettlementAuditBySettlementId);
 
+const { uploadFiles } = require('../../middleware/multerConfig');
+
 // POST /api/settlements - Create new settlement`
-router.post('/', APSettlementController.createSettlement);
+router.post('/', uploadFiles, APSettlementController.createSettlement);
 
 // PUT /api/settlements/:id - Update existing settlement
-router.put('/:id', APSettlementController.updateSettlement);
+router.put('/:id', uploadFiles, APSettlementController.updateSettlement);
 
 // DELETE /api/settlements/:id - Delete settlement
 router.delete('/:id', APSettlementController.deleteSettlement);

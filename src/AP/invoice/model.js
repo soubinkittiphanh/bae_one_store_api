@@ -64,6 +64,10 @@ module.exports = (sequelize, DataTypes) => {
         glBatchId: {
             type: DataTypes.STRING(100),
             allowNull: true
+        },
+        documents: {
+            type: DataTypes.JSON,
+            allowNull: true
         }
     }, {
         sequelize,

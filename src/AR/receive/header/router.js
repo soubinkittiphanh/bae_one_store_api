@@ -23,11 +23,13 @@ router.get('/by-invoice/:invoiceHeaderId', ReceiveHeaderController.findByInvoice
 // GET /api/receive-headers/:id - Get single receive header by ID
 router.get('/:id', ReceiveHeaderController.findById);
 
+const { uploadFiles } = require('../../../middleware/multerConfig');
+
 // POST /api/receive-headers - Create new receive header
-router.post('/', ReceiveHeaderController.create);
+router.post('/', uploadFiles, ReceiveHeaderController.create);
 
 // PUT /api/receive-headers/:id - Update receive header
-router.put('/:id', ReceiveHeaderController.update);
+router.put('/:id', uploadFiles, ReceiveHeaderController.update);
 
 // DELETE /api/receive-headers/:id - Delete receive header
 router.delete('/:id', ReceiveHeaderController.delete);

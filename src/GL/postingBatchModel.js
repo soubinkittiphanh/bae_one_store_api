@@ -21,7 +21,7 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: false
         },
         module: {
-            type: DataTypes.ENUM('AR', 'AP', 'ALL', 'FA'),
+            type: DataTypes.ENUM('AR', 'AP', 'ALL', 'FA', 'GL', 'AP_SETTLEMENT', 'AR_RECEIPT', 'MONEY_SETTLEMENT'),
             allowNull: false
         },
         totalEntriesPosted: {

@@ -403,5 +403,31 @@ module.exports = {
                 error: error.message
             });
         }
+    },
+
+    async revalueCurrency(req, res) {
+        try {
+            const { bankAccountId, closingRate } = req.body;
+            const userId = req.user?.id || 1;
+
+            if (!bankAccountId || !closingRate) {
+                return res.status(400).json({ error: 'bankAccountId and closingRate are required' });
+            }
+
+            const RevalService = require('./revaluationService');
+            const result = await RevalService.revalue(bankAccountId, closingRate, userId);
+            
+            res.status(200).json({
+                success: true,
+                message: result.message,
+                data: result
+            });
+        } catch (error) {
+            logger.error('Error in currency revaluation controller:', error);
+            res.status(500).json({
+                success: false,
+                message: error.message || 'Internal server error'
+            });
+        }
     }
 };

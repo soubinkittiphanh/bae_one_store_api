@@ -59,6 +59,22 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING(100),
             allowNull: true,
         },
+        projectId: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+        },
+        contractId: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+        },
+        ministryId: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+        },
+        categoryId: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+        },
     }, {
         sequelize,
         // don't forget to enable timestamps!

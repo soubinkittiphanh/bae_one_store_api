@@ -35,9 +35,23 @@ class APInvoiceController {
     // ===============================================================
     // FIXED: CREATE INVOICE WITH LINE ITEMS
     // ===============================================================
+    static async cleanupUploadedFiles(files) {
+        if (!files) return;
+        try {
+            const fs = require('fs');
+            const allFiles = [...(files.documents || [])];
+            for (const file of allFiles) {
+                if (fs.existsSync(file.path)) {
+                    fs.unlinkSync(file.path);
+                }
+            }
+        } catch (error) {
+            logger.error('Error cleaning up files:', error);
+        }
+    }
+
     static async createInvoice(req, res) {
         // Start a database transaction
-
         const transaction = await sequelize.transaction();
 
         try {
@@ -59,9 +73,20 @@ class APInvoiceController {
                 lineItems = []  // 🎯 NEW: Extract line items from request
             } = req.body;
 
+            // Support multipart/form-data where arrays are stringified
+            let parsedLineItems = lineItems;
+            if (typeof lineItems === 'string') {
+                try {
+                    parsedLineItems = JSON.parse(lineItems);
+                } catch (e) {
+                    parsedLineItems = [];
+                }
+            }
+
             // Validation for header
             if (!invoiceNumber || !invoiceDate || !dueDate || !totalAmount) {
                 await transaction.rollback();
+                await APInvoiceController.cleanupUploadedFiles(req.files);
                 return res.status(400).json({
                     success: false,
                     message: 'Missing required fields: invoiceNumber, invoiceDate, dueDate, totalAmount, vendorId'
@@ -69,8 +94,9 @@ class APInvoiceController {
             }
 
             // 🎯 NEW: Validate line items
-            if (!lineItems || lineItems.length === 0) {
+            if (!parsedLineItems || parsedLineItems.length === 0) {
                 await transaction.rollback();
+                await APInvoiceController.cleanupUploadedFiles(req.files);
                 return res.status(400).json({
                     success: false,
                     message: 'At least one line item is required'
@@ -78,10 +104,11 @@ class APInvoiceController {
             }
 
             // Validate each line item
-            for (let i = 0; i < lineItems.length; i++) {
-                const line = lineItems[i];
+            for (let i = 0; i < parsedLineItems.length; i++) {
+                const line = parsedLineItems[i];
                 if (!line.description || !line.quantity || !line.unitPrice) {
                     await transaction.rollback();
+                    await APInvoiceController.cleanupUploadedFiles(req.files);
                     return res.status(400).json({
                         success: false,
                         message: `Line item ${i + 1} is missing required fields: description, quantity, unitPrice`
@@ -96,11 +123,35 @@ class APInvoiceController {
 
             if (existingInvoice) {
                 await transaction.rollback();
+                await APInvoiceController.cleanupUploadedFiles(req.files);
                 return res.status(400).json({
                     success: false,
                     message: 'Invoice number already exists'
                 });
             }
+
+            // Process uploaded documents
+            let documentsData = [];
+            if (req.files && req.files.documents) {
+                documentsData = req.files.documents.map(file => ({
+                    name: file.originalname,
+                    filename: file.filename,
+                    path: file.path.replace(/\\/g, '/'),
+                    mimetype: file.mimetype,
+                    size: file.size,
+                    uploadedAt: new Date()
+                }));
+            }
+
+            let initialDocs = [];
+            if (req.body.documents) {
+                try {
+                    initialDocs = typeof req.body.documents === 'string' ? JSON.parse(req.body.documents) : req.body.documents;
+                } catch (e) {
+                    initialDocs = [];
+                }
+            }
+            const documents = [...initialDocs, ...documentsData];
 
             // 🎯 STEP 1: Create invoice header
             const invoice = await db.apInvoice.create({
@@ -116,13 +167,14 @@ class APInvoiceController {
                 currencyId,
                 makerId,
                 note,
+                documents: documents.length > 0 ? documents : null,
                 status: 'draft'
             }, { transaction });
 
             // 🎯 STEP 2: Create line items
             const createdLineItems = [];
-            for (let i = 0; i < lineItems.length; i++) {
-                const line = lineItems[i];
+            for (let i = 0; i < parsedLineItems.length; i++) {
+                const line = parsedLineItems[i];
 
                 const lineItem = await db.invoiceLineItem.create({
                     invoiceId: invoice.id,  // 🎯 Link to created invoice
@@ -175,6 +227,9 @@ class APInvoiceController {
         } catch (error) {
             // 🎯 Rollback transaction on any error
             await transaction.rollback();
+            if (req.files) {
+                await APInvoiceController.cleanupUploadedFiles(req.files);
+            }
             logger.error('Error creating AP Invoice:', error);
             res.status(500).json({
                 success: false,
@@ -208,12 +263,23 @@ class APInvoiceController {
                 lineItems = []
             } = req.body;
 
+            // Support multipart/form-data where arrays are stringified
+            let parsedLineItems = lineItems;
+            if (typeof lineItems === 'string') {
+                try {
+                    parsedLineItems = JSON.parse(lineItems);
+                } catch (e) {
+                    parsedLineItems = [];
+                }
+            }
+
             logger.info(`Updating AP Invoice ID: ${id}`);
 
             // Find existing invoice
             const existingInvoice = await db.apInvoice.findByPk(id);
             if (!existingInvoice) {
                 await transaction.rollback();
+                await APInvoiceController.cleanupUploadedFiles(req.files);
                 return res.status(404).json({
                     success: false,
                     message: 'Invoice not found'
@@ -221,13 +287,54 @@ class APInvoiceController {
             }
 
             // Validate line items
-            if (!lineItems || lineItems.length === 0) {
+            if (!parsedLineItems || parsedLineItems.length === 0) {
                 await transaction.rollback();
+                await APInvoiceController.cleanupUploadedFiles(req.files);
                 return res.status(400).json({
                     success: false,
                     message: 'At least one line item is required'
                 });
             }
+
+            // Process document updates
+            let newDocs = [];
+            if (req.files && req.files.documents) {
+                newDocs = req.files.documents.map(file => ({
+                    name: file.originalname,
+                    filename: file.filename,
+                    path: file.path.replace(/\\/g, '/'),
+                    mimetype: file.mimetype,
+                    size: file.size,
+                    uploadedAt: new Date()
+                }));
+            }
+
+            let existingDocs = [];
+            if (req.body.documents) {
+                try {
+                    existingDocs = typeof req.body.documents === 'string' ? JSON.parse(req.body.documents) : req.body.documents;
+                } catch (e) {
+                    existingDocs = [];
+                }
+            } else {
+                existingDocs = existingInvoice.documents || [];
+            }
+
+            // Clean up physically deleted files from server storage
+            const fs = require('fs');
+            const currentDocs = existingInvoice.documents || [];
+            const deletedDocs = currentDocs.filter(cDoc => !existingDocs.some(eDoc => eDoc.filename === cDoc.filename));
+            for (const doc of deletedDocs) {
+                if (doc.path && fs.existsSync(doc.path)) {
+                    try {
+                        fs.unlinkSync(doc.path);
+                    } catch (e) {
+                        logger.error('Error deleting physical file:', e);
+                    }
+                }
+            }
+
+            const documents = [...existingDocs, ...newDocs];
 
             // 🎯 STEP 1: Update invoice header
             await existingInvoice.update({
@@ -241,7 +348,8 @@ class APInvoiceController {
                 vendorId,
                 agencyId,
                 currencyId,
-                note
+                note,
+                documents: documents.length > 0 ? documents : null
             }, { transaction });
 
             // 🎯 STEP 2: Delete existing line items
@@ -251,8 +359,8 @@ class APInvoiceController {
             });
 
             // 🎯 STEP 3: Create new line items
-            for (let i = 0; i < lineItems.length; i++) {
-                const line = lineItems[i];
+            for (let i = 0; i < parsedLineItems.length; i++) {
+                const line = parsedLineItems[i];
 
                 await db.invoiceLineItem.create({
                     invoiceId: id,
@@ -300,6 +408,9 @@ class APInvoiceController {
 
         } catch (error) {
             await transaction.rollback();
+            if (req.files) {
+                await APInvoiceController.cleanupUploadedFiles(req.files);
+            }
             logger.error('Error updating AP Invoice:', error);
             res.status(500).json({
                 success: false,

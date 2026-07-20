@@ -357,6 +357,21 @@ class ReceiveHeaderController {
   }
   // CREATE NEW RECEIVE HEADER WITH ALLOCATION LINES
   // UPDATED CREATE METHOD - Invoice is now optional
+  static async cleanupUploadedFiles(files) {
+    if (!files) return;
+    try {
+      const fs = require('fs');
+      const allFiles = [...(files.documents || [])];
+      for (const file of allFiles) {
+        if (fs.existsSync(file.path)) {
+          fs.unlinkSync(file.path);
+        }
+      }
+    } catch (error) {
+      logger.error('Error cleaning up files:', error);
+    }
+  }
+
   static async create(req, res) {
     const transaction = await sequelize.transaction();
 
@@ -376,16 +391,27 @@ class ReceiveHeaderController {
         allocationLines = [] // Extract allocationLines from request body
       } = req.body;
 
+      // Support multipart/form-data where arrays are stringified
+      let parsedAllocationLines = allocationLines;
+      if (typeof allocationLines === 'string') {
+        try {
+          parsedAllocationLines = JSON.parse(allocationLines);
+        } catch (e) {
+          parsedAllocationLines = [];
+        }
+      }
+
       logger.info('Create receive header request:', {
         receiptNumber,
         invoiceHeaderId: invoiceHeaderId || 'none',
         totalReceivedAmount,
-        allocationLinesCount: allocationLines.length
+        allocationLinesCount: parsedAllocationLines.length
       });
 
       // Validate required fields
       if (!receiptNumber || !bookingDate || !receivedDate) {
         await transaction.rollback();
+        await ReceiveHeaderController.cleanupUploadedFiles(req.files);
         return res.status(400).json({
           success: false,
           message: 'Receipt number, booking date, and received date are required'
@@ -393,8 +419,9 @@ class ReceiveHeaderController {
       }
 
       // Validate allocation lines
-      if (!allocationLines || allocationLines.length === 0) {
+      if (!parsedAllocationLines || parsedAllocationLines.length === 0) {
         await transaction.rollback();
+        await ReceiveHeaderController.cleanupUploadedFiles(req.files);
         return res.status(400).json({
           success: false,
           message: 'At least one allocation line is required'
@@ -411,6 +438,7 @@ class ReceiveHeaderController {
 
       if (existingReceipt) {
         await transaction.rollback();
+        await ReceiveHeaderController.cleanupUploadedFiles(req.files);
         return res.status(400).json({
           success: false,
           message: 'Receipt number already exists'
@@ -422,6 +450,7 @@ class ReceiveHeaderController {
         const invoiceHeaderExists = await arInvoiceHeader.findByPk(invoiceHeaderId);
         if (!invoiceHeaderExists) {
           await transaction.rollback();
+          await ReceiveHeaderController.cleanupUploadedFiles(req.files);
           return res.status(400).json({
             success: false,
             message: 'Invoice header not found'
@@ -434,6 +463,7 @@ class ReceiveHeaderController {
         const inputterExists = await user.findByPk(validInputterId);
         if (!inputterExists) {
           await transaction.rollback();
+          await ReceiveHeaderController.cleanupUploadedFiles(req.files);
           return res.status(400).json({
             success: false,
             message: 'Inputter not found'
@@ -442,41 +472,66 @@ class ReceiveHeaderController {
       }
 
       // Validate allocation lines - UPDATED to support manual lines
-      for (const allocation of allocationLines) {
+      for (const allocation of parsedAllocationLines) {
         // Check if it's a manual line (no invoiceLineId) or invoice-based line
         const isManualLine = !allocation.invoiceLineId || allocation.isManual;
 
         if (isManualLine) {
           // For manual lines, require description and allocatedAmount
-          if (!allocation.description || !allocation.allocatedAmount) {
+          if (!allocation.description || !allocation.allocatedAmount || parseFloat(allocation.allocatedAmount) <= 0) {
             await transaction.rollback();
+            await ReceiveHeaderController.cleanupUploadedFiles(req.files);
             return res.status(400).json({
               success: false,
-              message: 'Manual allocation lines must have description and allocatedAmount'
+              message: 'Manual allocation lines require a description and a valid allocated amount'
             });
           }
         } else {
-          // For invoice-based lines, verify invoice line exists
+          // For invoice-based lines, require invoiceLineId, txnId, and allocatedAmount
+          if (!allocation.invoiceLineId || !allocation.txnId || !allocation.allocatedAmount || parseFloat(allocation.allocatedAmount) <= 0) {
+            await transaction.rollback();
+            await ReceiveHeaderController.cleanupUploadedFiles(req.files);
+            return res.status(400).json({
+              success: false,
+              message: 'Invoice-based allocation lines require an invoice line, financial code, and valid allocated amount'
+            });
+          }
+
+          // Verify invoice line exists
           const invoiceLineExists = await arInvoiceLine.findByPk(allocation.invoiceLineId);
           if (!invoiceLineExists) {
             await transaction.rollback();
+            await ReceiveHeaderController.cleanupUploadedFiles(req.files);
             return res.status(400).json({
               success: false,
-              message: `Invoice line ${allocation.invoiceLineId} not found`
+              message: `Invoice line ID ${allocation.invoiceLineId} not found`
             });
           }
         }
+      }
 
-        // Validate allocated amount for all lines
-        const allocatedAmount = parseFloat(allocation.allocatedAmount);
-        if (allocatedAmount <= 0) {
-          await transaction.rollback();
-          return res.status(400).json({
-            success: false,
-            message: 'Allocated amount must be greater than 0'
-          });
+      // Process uploaded documents
+      let documentsData = [];
+      if (req.files && req.files.documents) {
+        documentsData = req.files.documents.map(file => ({
+          name: file.originalname,
+          filename: file.filename,
+          path: file.path.replace(/\\/g, '/'),
+          mimetype: file.mimetype,
+          size: file.size,
+          uploadedAt: new Date()
+        }));
+      }
+
+      let initialDocs = [];
+      if (req.body.documents) {
+        try {
+          initialDocs = typeof req.body.documents === 'string' ? JSON.parse(req.body.documents) : req.body.documents;
+        } catch (e) {
+          initialDocs = [];
         }
       }
+      const documents = [...initialDocs, ...documentsData];
 
       // Create receive header with optional invoiceHeaderId
       const receiveHeader = await ReceiveHeader.create({
@@ -490,6 +545,7 @@ class ReceiveHeaderController {
         currencyId,
         referenceNumber,
         notes,
+        documents: documents.length > 0 ? documents : null,
         inputterId: validInputterId,
         makerId: req.user?.id
       }, { transaction });
@@ -497,7 +553,7 @@ class ReceiveHeaderController {
       logger.info('Receive header created:', { id: receiveHeader.id });
 
       // Create allocation lines (receive lines) - UPDATED to handle manual lines
-      const allocationLinesData = allocationLines.map(allocation => ({
+      const allocationLinesData = parsedAllocationLines.map(allocation => ({
         receiveHeaderId: receiveHeader.id,
         lineNumber: allocation.lineNumber,
         invoiceLineId: allocation.invoiceLineId || null, // Allow null for manual lines
@@ -559,6 +615,9 @@ class ReceiveHeaderController {
 
     } catch (error) {
       await transaction.rollback();
+      if (req.files) {
+        await ReceiveHeaderController.cleanupUploadedFiles(req.files);
+      }
       logger.error('Error creating receive header:', error);
       res.status(500).json({
         success: false,
@@ -576,14 +635,25 @@ class ReceiveHeaderController {
       const { id } = req.params;
       const { allocationLines, ...updateData } = req.body; // Extract allocationLines separately
 
+      // Support multipart/form-data where arrays are stringified
+      let parsedAllocationLines = allocationLines;
+      if (typeof allocationLines === 'string') {
+        try {
+          parsedAllocationLines = JSON.parse(allocationLines);
+        } catch (e) {
+          parsedAllocationLines = [];
+        }
+      }
+
       logger.info('Update receive header request:', {
         id,
-        allocationLinesCount: allocationLines ? allocationLines.length : 0
+        allocationLinesCount: parsedAllocationLines ? parsedAllocationLines.length : 0
       });
 
       const receiveHeader = await ReceiveHeader.findByPk(id);
       if (!receiveHeader) {
         await transaction.rollback();
+        await ReceiveHeaderController.cleanupUploadedFiles(req.files);
         return res.status(404).json({
           success: false,
           message: 'Receive header not found'
@@ -619,6 +689,7 @@ class ReceiveHeaderController {
 
         if (existingReceipt) {
           await transaction.rollback();
+          await ReceiveHeaderController.cleanupUploadedFiles(req.files);
           return res.status(400).json({
             success: false,
             message: 'Receipt number already exists'
@@ -631,6 +702,7 @@ class ReceiveHeaderController {
         const invoiceHeaderExists = await arInvoiceHeader.findByPk(updateData.invoiceHeaderId);
         if (!invoiceHeaderExists) {
           await transaction.rollback();
+          await ReceiveHeaderController.cleanupUploadedFiles(req.files);
           return res.status(400).json({
             success: false,
             message: 'Invoice header not found'
@@ -642,11 +714,55 @@ class ReceiveHeaderController {
         const inputterExists = await user.findByPk(updateData.inputterId);
         if (!inputterExists) {
           await transaction.rollback();
+          await ReceiveHeaderController.cleanupUploadedFiles(req.files);
           return res.status(400).json({
             success: false,
             message: 'Inputter not found'
           });
         }
+      }
+
+      // Process document updates
+      let newDocs = [];
+      if (req.files && req.files.documents) {
+        newDocs = req.files.documents.map(file => ({
+          name: file.originalname,
+          filename: file.filename,
+          path: file.path.replace(/\\/g, '/'),
+          mimetype: file.mimetype,
+          size: file.size,
+          uploadedAt: new Date()
+        }));
+      }
+
+      let existingDocs = [];
+      if (req.body.documents) {
+        try {
+          existingDocs = typeof req.body.documents === 'string' ? JSON.parse(req.body.documents) : req.body.documents;
+        } catch (e) {
+          existingDocs = [];
+        }
+      } else {
+        existingDocs = receiveHeader.documents || [];
+      }
+
+      // Clean up physically deleted files from server storage
+      const fs = require('fs');
+      const currentDocs = receiveHeader.documents || [];
+      const deletedDocs = currentDocs.filter(cDoc => !existingDocs.some(eDoc => eDoc.filename === cDoc.filename));
+      for (const doc of deletedDocs) {
+        if (doc.path && fs.existsSync(doc.path)) {
+          try {
+            fs.unlinkSync(doc.path);
+          } catch (e) {
+            logger.error('Error deleting physical file:', e);
+          }
+        }
+      }
+
+      updateData.documents = [...existingDocs, ...newDocs];
+      if (updateData.documents.length === 0) {
+        updateData.documents = null;
       }
 
       // Add update user info
@@ -656,7 +772,7 @@ class ReceiveHeaderController {
       await receiveHeader.update(updateData, { transaction });
 
       // Handle allocation lines if provided - UPDATED to support manual lines
-      if (allocationLines && Array.isArray(allocationLines)) {
+      if (parsedAllocationLines && Array.isArray(parsedAllocationLines)) {
         // Delete existing receive lines
         await arReceiveLine.destroy({
           where: { receiveHeaderId: id },
@@ -664,15 +780,16 @@ class ReceiveHeaderController {
         });
 
         // Create new allocation lines
-        if (allocationLines.length > 0) {
+        if (parsedAllocationLines.length > 0) {
           // Validate allocation lines - UPDATED
-          for (const allocation of allocationLines) {
+          for (const allocation of parsedAllocationLines) {
             const isManualLine = !allocation.invoiceLineId || allocation.isManual;
 
             if (isManualLine) {
               // For manual lines, require description and allocatedAmount
-              if (!allocation.description || !allocation.allocatedAmount) {
+              if (!allocation.description || !allocation.allocatedAmount || parseFloat(allocation.allocatedAmount) <= 0) {
                 await transaction.rollback();
+                await ReceiveHeaderController.cleanupUploadedFiles(req.files);
                 return res.status(400).json({
                   success: false,
                   message: 'Manual allocation lines must have description and allocatedAmount'
@@ -683,6 +800,7 @@ class ReceiveHeaderController {
               const invoiceLineExists = await arInvoiceLine.findByPk(allocation.invoiceLineId);
               if (!invoiceLineExists) {
                 await transaction.rollback();
+                await ReceiveHeaderController.cleanupUploadedFiles(req.files);
                 return res.status(400).json({
                   success: false,
                   message: `Invoice line ${allocation.invoiceLineId} not found`
@@ -694,6 +812,7 @@ class ReceiveHeaderController {
             const allocatedAmount = parseFloat(allocation.allocatedAmount);
             if (allocatedAmount <= 0) {
               await transaction.rollback();
+              await ReceiveHeaderController.cleanupUploadedFiles(req.files);
               return res.status(400).json({
                 success: false,
                 message: 'Allocated amount must be greater than 0'
@@ -701,7 +820,7 @@ class ReceiveHeaderController {
             }
           }
 
-          const allocationLinesData = allocationLines.map(allocation => ({
+          const allocationLinesData = parsedAllocationLines.map(allocation => ({
             receiveHeaderId: id,
             lineNumber: allocation.lineNumber,
             invoiceLineId: allocation.invoiceLineId || null, // Allow null for manual lines
@@ -768,6 +887,9 @@ class ReceiveHeaderController {
 
     } catch (error) {
       await transaction.rollback();
+      if (req.files) {
+        await ReceiveHeaderController.cleanupUploadedFiles(req.files);
+      }
       logger.error('Error updating receive header:', error);
       res.status(500).json({
         success: false,

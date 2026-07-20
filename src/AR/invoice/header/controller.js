@@ -237,8 +237,23 @@ class InvoiceHeaderController {
         }
     }
     // CREATE NEW INVOICE
+    static async cleanupUploadedFiles(files) {
+        if (!files) return;
+        try {
+            const fs = require('fs');
+            const allFiles = [...(files.documents || [])];
+            for (const file of allFiles) {
+                if (fs.existsSync(file.path)) {
+                    fs.unlinkSync(file.path);
+                }
+            }
+        } catch (error) {
+            logger.error('Error cleaning up files:', error);
+        }
+    }
+
     static async create(req, res) {
-        const transaction = await sequelize.transaction(); // You'll need to import sequelize
+        const transaction = await sequelize.transaction();
 
         try {
             const {
@@ -257,8 +272,19 @@ class InvoiceHeaderController {
                 lineItems = [] // Extract lineItems from request body
             } = req.body;
 
+            // Support multipart/form-data where arrays are stringified
+            let parsedLineItems = lineItems;
+            if (typeof lineItems === 'string') {
+                try {
+                    parsedLineItems = JSON.parse(lineItems);
+                } catch (e) {
+                    parsedLineItems = [];
+                }
+            }
+
             // Validate required fields
             if (!invoiceNumber || !invoiceDate || !agencyId) {
+                await InvoiceHeaderController.cleanupUploadedFiles(req.files);
                 return res.status(400).json({
                     success: false,
                     message: 'Invoice number, invoice date, and customer ID are required'
@@ -266,7 +292,8 @@ class InvoiceHeaderController {
             }
 
             // Validate line items
-            if (!lineItems || lineItems.length === 0) {
+            if (!parsedLineItems || parsedLineItems.length === 0) {
+                await InvoiceHeaderController.cleanupUploadedFiles(req.files);
                 return res.status(400).json({
                     success: false,
                     message: 'At least one line item is required'
@@ -280,6 +307,7 @@ class InvoiceHeaderController {
 
             if (existingInvoice) {
                 await transaction.rollback();
+                await InvoiceHeaderController.cleanupUploadedFiles(req.files);
                 return res.status(400).json({
                     success: false,
                     message: 'Invoice number already exists'
@@ -290,6 +318,7 @@ class InvoiceHeaderController {
             const customerExists = await Agency.findByPk(agencyId);
             if (!customerExists) {
                 await transaction.rollback();
+                await InvoiceHeaderController.cleanupUploadedFiles(req.files);
                 return res.status(400).json({
                     success: false,
                     message: 'Customer not found'
@@ -301,12 +330,36 @@ class InvoiceHeaderController {
                 const currencyExists = await currency.findByPk(currencyId);
                 if (!currencyExists) {
                     await transaction.rollback();
+                    await InvoiceHeaderController.cleanupUploadedFiles(req.files);
                     return res.status(400).json({
                         success: false,
                         message: 'Currency not found'
                     });
                 }
             }
+
+            // Process uploaded documents
+            let documentsData = [];
+            if (req.files && req.files.documents) {
+                documentsData = req.files.documents.map(file => ({
+                    name: file.originalname,
+                    filename: file.filename,
+                    path: file.path.replace(/\\/g, '/'),
+                    mimetype: file.mimetype,
+                    size: file.size,
+                    uploadedAt: new Date()
+                }));
+            }
+
+            let initialDocs = [];
+            if (req.body.documents) {
+                try {
+                    initialDocs = typeof req.body.documents === 'string' ? JSON.parse(req.body.documents) : req.body.documents;
+                } catch (e) {
+                    initialDocs = [];
+                }
+            }
+            const documents = [...initialDocs, ...documentsData];
 
             // Create invoice header
             const invoice = await InvoiceHeader.create({
@@ -322,11 +375,12 @@ class InvoiceHeaderController {
                 netAmount,
                 status,
                 description,
+                documents: documents.length > 0 ? documents : null,
                 makerId: req.user?.id
             }, { transaction });
 
             // Create invoice lines
-            const lineItemsData = lineItems.map(item => ({
+            const lineItemsData = parsedLineItems.map(item => ({
                 invoiceHeaderId: invoice.id, // Link to the created invoice header
                 lineNumber: item.lineNumber,
                 description: item.description,
@@ -380,6 +434,9 @@ class InvoiceHeaderController {
 
         } catch (error) {
             await transaction.rollback();
+            if (req.files) {
+                await InvoiceHeaderController.cleanupUploadedFiles(req.files);
+            }
             logger.error('Error creating invoice:', error);
             res.status(500).json({
                 success: false,
@@ -396,9 +453,19 @@ class InvoiceHeaderController {
             const { id } = req.params;
             const { lineItems, ...updateData } = req.body; // Extract lineItems separately
 
+            let parsedLineItems = lineItems;
+            if (typeof lineItems === 'string') {
+                try {
+                    parsedLineItems = JSON.parse(lineItems);
+                } catch (e) {
+                    parsedLineItems = [];
+                }
+            }
+
             const invoice = await InvoiceHeader.findByPk(id);
             if (!invoice) {
                 await transaction.rollback();
+                await InvoiceHeaderController.cleanupUploadedFiles(req.files);
                 return res.status(404).json({
                     success: false,
                     message: 'Invoice not found'
@@ -420,6 +487,7 @@ class InvoiceHeaderController {
 
                 if (existingInvoice) {
                     await transaction.rollback();
+                    await InvoiceHeaderController.cleanupUploadedFiles(req.files);
                     return res.status(400).json({
                         success: false,
                         message: 'Invoice number already exists'
@@ -432,6 +500,7 @@ class InvoiceHeaderController {
                 const customerExists = await Agency.findByPk(updateData.agencyId);
                 if (!customerExists) {
                     await transaction.rollback();
+                    await InvoiceHeaderController.cleanupUploadedFiles(req.files);
                     return res.status(400).json({
                         success: false,
                         message: 'Customer not found'
@@ -443,11 +512,55 @@ class InvoiceHeaderController {
                 const currencyExists = await currency.findByPk(updateData.currencyId);
                 if (!currencyExists) {
                     await transaction.rollback();
+                    await InvoiceHeaderController.cleanupUploadedFiles(req.files);
                     return res.status(400).json({
                         success: false,
                         message: 'Currency not found'
                     });
                 }
+            }
+
+            // Process document updates
+            let newDocs = [];
+            if (req.files && req.files.documents) {
+                newDocs = req.files.documents.map(file => ({
+                    name: file.originalname,
+                    filename: file.filename,
+                    path: file.path.replace(/\\/g, '/'),
+                    mimetype: file.mimetype,
+                    size: file.size,
+                    uploadedAt: new Date()
+                }));
+            }
+
+            let existingDocs = [];
+            if (req.body.documents) {
+                try {
+                    existingDocs = typeof req.body.documents === 'string' ? JSON.parse(req.body.documents) : req.body.documents;
+                } catch (e) {
+                    existingDocs = [];
+                }
+            } else {
+                existingDocs = invoice.documents || [];
+            }
+
+            // Clean up physically deleted files from server storage
+            const fs = require('fs');
+            const currentDocs = invoice.documents || [];
+            const deletedDocs = currentDocs.filter(cDoc => !existingDocs.some(eDoc => eDoc.filename === cDoc.filename));
+            for (const doc of deletedDocs) {
+                if (doc.path && fs.existsSync(doc.path)) {
+                    try {
+                        fs.unlinkSync(doc.path);
+                    } catch (e) {
+                        logger.error('Error deleting physical file:', e);
+                    }
+                }
+            }
+
+            updateData.documents = [...existingDocs, ...newDocs];
+            if (updateData.documents.length === 0) {
+                updateData.documents = null;
             }
 
             // Add update user info
@@ -457,7 +570,7 @@ class InvoiceHeaderController {
             await invoice.update(updateData, { transaction });
 
             // Handle line items if provided
-            if (lineItems && Array.isArray(lineItems)) {
+            if (parsedLineItems && Array.isArray(parsedLineItems)) {
                 // Delete existing line items
                 await arInvoiceLine.destroy({
                     where: { invoiceHeaderId: id },
@@ -465,8 +578,8 @@ class InvoiceHeaderController {
                 });
 
                 // Create new line items
-                if (lineItems.length > 0) {
-                    const lineItemsData = lineItems.map(item => ({
+                if (parsedLineItems.length > 0) {
+                    const lineItemsData = parsedLineItems.map(item => ({
                         invoiceHeaderId: id,
                         lineNumber: item.lineNumber,
                         description: item.description,
@@ -526,6 +639,9 @@ class InvoiceHeaderController {
         } catch (error) {
             logger.error('Error updating invoice:', error);
             await transaction.rollback();
+            if (req.files) {
+                await InvoiceHeaderController.cleanupUploadedFiles(req.files);
+            }
             res.status(500).json({
                 success: false,
                 message: 'Error updating invoice',

@@ -35,7 +35,6 @@ router.post("/convertRate", controller.convertRate)
 // Generate route
 router.post("/generate", controller.generate)
 
-// Bulk operations (uncomment if needed)
-// router.post("/bulkCreate", service.createBulkStockCard)
+router.post("/revalue", controller.revalueCurrency)
 
 module.exports = router

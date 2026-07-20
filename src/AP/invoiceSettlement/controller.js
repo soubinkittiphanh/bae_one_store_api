@@ -350,6 +350,21 @@ class APSettlementController {
     // ===============================================================
     // CREATE SETTLEMENT - UPDATED FOR YOUR MODEL
     // ===============================================================
+    static async cleanupUploadedFiles(files) {
+        if (!files) return;
+        try {
+            const fs = require('fs');
+            const allFiles = [...(files.documents || [])];
+            for (const file of allFiles) {
+                if (fs.existsSync(file.path)) {
+                    fs.unlinkSync(file.path);
+                }
+            }
+        } catch (error) {
+            logger.error('Error cleaning up files:', error);
+        }
+    }
+
     static async createSettlement(req, res) {
         const transaction = await sequelize.transaction();
         try {
@@ -376,8 +391,27 @@ class APSettlementController {
                 invoiceAllocations = [] // Keep for backward compatibility
             } = req.body;
 
+            // Support multipart/form-data where arrays are stringified
+            let parsedLines = settlementLines;
+            if (typeof settlementLines === 'string') {
+                try {
+                    parsedLines = JSON.parse(settlementLines);
+                } catch (e) {
+                    parsedLines = [];
+                }
+            }
+
+            let parsedAllocations = invoiceAllocations;
+            if (typeof invoiceAllocations === 'string') {
+                try {
+                    parsedAllocations = JSON.parse(invoiceAllocations);
+                } catch (e) {
+                    parsedAllocations = [];
+                }
+            }
+
             // Use settlementLines if provided, otherwise fall back to invoiceAllocations
-            const lines = settlementLines.length > 0 ? settlementLines : invoiceAllocations;
+            const lines = parsedLines.length > 0 ? parsedLines : parsedAllocations;
 
             logger.info('Extracted data:', {
                 settlementDate,
@@ -405,6 +439,7 @@ class APSettlementController {
                 });
 
                 await transaction.rollback();
+                await APInvoiceSettlementController.cleanupUploadedFiles(req.files);
                 return res.status(400).json({
                     success: false,
                     message: 'Missing required fields: settlementDate, paymentAmount, baseAmount'
@@ -412,6 +447,29 @@ class APSettlementController {
             }
 
             logger.info('Validation passed - creating main settlement record');
+
+            // Process uploaded documents
+            let documentsData = [];
+            if (req.files && req.files.documents) {
+                documentsData = req.files.documents.map(file => ({
+                    name: file.originalname,
+                    filename: file.filename,
+                    path: file.path.replace(/\\/g, '/'),
+                    mimetype: file.mimetype,
+                    size: file.size,
+                    uploadedAt: new Date()
+                }));
+            }
+
+            let initialDocs = [];
+            if (req.body.documents) {
+                try {
+                    initialDocs = typeof req.body.documents === 'string' ? JSON.parse(req.body.documents) : req.body.documents;
+                } catch (e) {
+                    initialDocs = [];
+                }
+            }
+            const documents = [...initialDocs, ...documentsData];
 
             // Create main settlement record
             const settlementData = {
@@ -426,6 +484,7 @@ class APSettlementController {
                 reference,
                 description,
                 note,
+                documents: documents.length > 0 ? documents : null,
                 makerId: makerId || req.user?.id,
                 checkerId
             };
@@ -643,6 +702,9 @@ class APSettlementController {
         } catch (error) {
             logger.error(` ERROR CREATING AP SETTLEMENT ${error}`)
             await transaction.rollback();
+            if (req.files) {
+                await APInvoiceSettlementController.cleanupUploadedFiles(req.files);
+            }
 
             logger.error('=== ERROR CREATING AP SETTLEMENT ===', {
                 error: {
@@ -688,8 +750,27 @@ class APSettlementController {
                 invoiceAllocations = [] // Keep for backward compatibility
             } = req.body;
 
+            // Support multipart/form-data where arrays are stringified
+            let parsedLines = settlementLines;
+            if (typeof settlementLines === 'string') {
+                try {
+                    parsedLines = JSON.parse(settlementLines);
+                } catch (e) {
+                    parsedLines = [];
+                }
+            }
+
+            let parsedAllocations = invoiceAllocations;
+            if (typeof invoiceAllocations === 'string') {
+                try {
+                    parsedAllocations = JSON.parse(invoiceAllocations);
+                } catch (e) {
+                    parsedAllocations = [];
+                }
+            }
+
             // Use settlementLines if provided, otherwise fall back to invoiceAllocations
-            const lines = settlementLines.length > 0 ? settlementLines : invoiceAllocations;
+            const lines = parsedLines.length > 0 ? parsedLines : parsedAllocations;
 
             logger.info(`=== UPDATING AP SETTLEMENT ID: ${id} ===`);
             logger.info('Update data received:', {
@@ -708,6 +789,7 @@ class APSettlementController {
             const existingSettlement = await apInvoiceSettlement.findByPk(id, { transaction });
             if (!existingSettlement) {
                 await transaction.rollback();
+                await APInvoiceSettlementController.cleanupUploadedFiles(req.files);
                 return res.status(404).json({
                     success: false,
                     message: 'Settlement not found'
@@ -732,11 +814,52 @@ class APSettlementController {
             // Check if settlement can be modified
             if (existingSettlement.canBeModified && !existingSettlement.canBeModified()) {
                 await transaction.rollback();
+                await APInvoiceSettlementController.cleanupUploadedFiles(req.files);
                 return res.status(400).json({
                     success: false,
                     message: 'Settlement cannot be modified in current status'
                 });
             }
+
+            // Process document updates
+            let newDocs = [];
+            if (req.files && req.files.documents) {
+                newDocs = req.files.documents.map(file => ({
+                    name: file.originalname,
+                    filename: file.filename,
+                    path: file.path.replace(/\\/g, '/'),
+                    mimetype: file.mimetype,
+                    size: file.size,
+                    uploadedAt: new Date()
+                }));
+            }
+
+            let existingDocs = [];
+            if (req.body.documents) {
+                try {
+                    existingDocs = typeof req.body.documents === 'string' ? JSON.parse(req.body.documents) : req.body.documents;
+                } catch (e) {
+                    existingDocs = [];
+                }
+            } else {
+                existingDocs = existingSettlement.documents || [];
+            }
+
+            // Clean up physically deleted files from server storage
+            const fs = require('fs');
+            const currentDocs = existingSettlement.documents || [];
+            const deletedDocs = currentDocs.filter(cDoc => !existingDocs.some(eDoc => eDoc.filename === cDoc.filename));
+            for (const doc of deletedDocs) {
+                if (doc.path && fs.existsSync(doc.path)) {
+                    try {
+                        fs.unlinkSync(doc.path);
+                    } catch (e) {
+                        logger.error('Error deleting physical file:', e);
+                    }
+                }
+            }
+
+            const documents = [...existingDocs, ...newDocs];
 
             // Update settlement
             const updateData = {
@@ -752,7 +875,8 @@ class APSettlementController {
                 bankAccountId,
                 makerId,
                 checkerId,
-                note
+                note,
+                documents: documents.length > 0 ? documents : null
             };
 
             const updatedSettlementData = await existingSettlement.update(updateData, { transaction });
@@ -942,6 +1066,9 @@ class APSettlementController {
 
         } catch (error) {
             await transaction.rollback();
+            if (req.files) {
+                await APInvoiceSettlementController.cleanupUploadedFiles(req.files);
+            }
             logger.error('=== ERROR UPDATING AP SETTLEMENT ===', {
                 error: {
                     message: error.message,

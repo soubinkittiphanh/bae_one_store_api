@@ -15,9 +15,11 @@ const {apInvoice}  = require("../../models");
 // ROUTES
 // ===============================================================
 
+const { uploadFiles } = require('../../middleware/multerConfig');
+
 // CREATE AP INVOICE
 // POST /api/ap-invoices
-router.post('/', APInvoiceController.createInvoice);
+router.post('/', uploadFiles, APInvoiceController.createInvoice);
 
 // GET ALL AP INVOICES WITH FILTERS
 // GET /api/ap-invoices?page=1&limit=10&status=draft&vendorId=123&startDate=2025-01-01&endDate=2025-12-31&search=INV
@@ -31,7 +33,7 @@ router.get('/audit/:id', APInvoiceController.getInvoiceAuditById);
 
 // UPDATE AP INVOICE
 // PUT /api/ap-invoices/:id
-router.put('/:id', APInvoiceController.updateInvoice);
+router.put('/:id', uploadFiles, APInvoiceController.updateInvoice);
 
 // APPROVE AP INVOICE
 // POST /api/ap-invoices/:id/approve

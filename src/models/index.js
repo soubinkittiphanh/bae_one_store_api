@@ -479,6 +479,10 @@ const defineFinancialAssociations = (db) => {
   db.gl.belongsTo(db.chartAccount, { foreignKey: 'drAccountId', as: 'drAccount' });
   db.gl.belongsTo(db.chartAccount, { foreignKey: 'crAccountId', as: 'crAccount' });
   db.gl.belongsTo(db.currency, { foreignKey: 'currencyId', as: 'currency' });
+  db.gl.belongsTo(db.Project, { foreignKey: 'projectId', as: 'project' });
+  db.gl.belongsTo(db.ProjectContract, { foreignKey: 'contractId', as: 'contract' });
+  db.gl.belongsTo(db.ministry, { foreignKey: 'ministryId', as: 'ministry' });
+  db.gl.belongsTo(db.ProjectBudget, { foreignKey: 'categoryId', as: 'category' });
 
   // Batch associations
   db.glPostingBatch.hasMany(db.gl, { foreignKey: 'glBatchId', sourceKey: 'batchNumber', as: 'glEntries' });

@@ -836,6 +836,134 @@ class MoneyAdvanceController {
 
   // =============== NEW REPORT METHODS ===============
 
+  static async getAgingReport(req, res) {
+    try {
+      const { ministryId, currencyId, asOfDate } = req.query;
+      const targetDate = asOfDate ? new Date(asOfDate) : new Date();
+
+      const whereClause = {
+        status: { [require('sequelize').Op.ne]: 'settled' }
+      };
+
+      if (ministryId) whereClause.ministryId = ministryId;
+      if (currencyId) whereClause.currencyId = currencyId;
+
+      const advances = await MoneyAdvance.findAll({
+        where: whereClause,
+        include: [
+          { model: currency, as: 'currency' },
+          { model: settlement, as: 'settlementLine' },
+          { model: ministry, as: 'ministry' }
+        ],
+        order: [['bookingDate', 'ASC']]
+      });
+
+      const agingBuckets = {
+        current: { count: 0, amount: 0, list: [] },
+        days_1_30: { count: 0, amount: 0, list: [] },
+        days_31_60: { count: 0, amount: 0, list: [] },
+        days_61_90: { count: 0, amount: 0, list: [] },
+        days_over_90: { count: 0, amount: 0, list: [] }
+      };
+
+      let grandTotalOutstanding = 0;
+
+      const processed = advances.map(adv => {
+        const totalSettled = adv.settlementLine?.reduce((sum, s) => sum + parseFloat(s.amount || 0), 0) || 0;
+        const outstanding = parseFloat(adv.amount) - totalSettled;
+        
+        if (outstanding <= 0) return null;
+
+        const issueDate = new Date(adv.bookingDate);
+        const diffTime = targetDate - issueDate;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        const advDetails = {
+          id: adv.id,
+          reference: adv.externalRefNo || `ADV-${adv.id}`,
+          bookingDate: adv.bookingDate,
+          dueDate: adv.dueDate,
+          amount: parseFloat(adv.amount),
+          outstanding: outstanding,
+          currency: adv.currency?.code || 'LAK',
+          ministry: adv.ministry?.name || 'Unknown PIU',
+          daysOutstanding: diffDays > 0 ? diffDays : 0
+        };
+
+        grandTotalOutstanding += outstanding;
+
+        if (diffDays <= 0) {
+          agingBuckets.current.count++;
+          agingBuckets.current.amount += outstanding;
+          agingBuckets.current.list.push(advDetails);
+        } else if (diffDays <= 30) {
+          agingBuckets.days_1_30.count++;
+          agingBuckets.days_1_30.amount += outstanding;
+          agingBuckets.days_1_30.list.push(advDetails);
+        } else if (diffDays <= 60) {
+          agingBuckets.days_31_60.count++;
+          agingBuckets.days_31_60.amount += outstanding;
+          agingBuckets.days_31_60.list.push(advDetails);
+        } else if (diffDays <= 90) {
+          agingBuckets.days_61_90.count++;
+          agingBuckets.days_61_90.amount += outstanding;
+          agingBuckets.days_61_90.list.push(advDetails);
+        } else {
+          agingBuckets.days_over_90.count++;
+          agingBuckets.days_over_90.amount += outstanding;
+          agingBuckets.days_over_90.list.push(advDetails);
+        }
+
+        return advDetails;
+      }).filter(Boolean);
+
+      const groupedByMinistry = {};
+      processed.forEach(adv => {
+        const mName = adv.ministry;
+        if (!groupedByMinistry[mName]) {
+          groupedByMinistry[mName] = {
+            ministryName: mName,
+            totalOutstanding: 0,
+            buckets: {
+              current: 0,
+              days_1_30: 0,
+              days_31_60: 0,
+              days_61_90: 0,
+              days_over_90: 0
+            },
+            advances: []
+          };
+        }
+
+        groupedByMinistry[mName].totalOutstanding += adv.outstanding;
+        groupedByMinistry[mName].advances.push(adv);
+        
+        if (adv.daysOutstanding <= 0) {
+          groupedByMinistry[mName].buckets.current += adv.outstanding;
+        } else if (adv.daysOutstanding <= 30) {
+          groupedByMinistry[mName].buckets.days_1_30 += adv.outstanding;
+        } else if (adv.daysOutstanding <= 60) {
+          groupedByMinistry[mName].buckets.days_31_60 += adv.outstanding;
+        } else if (adv.daysOutstanding <= 90) {
+          groupedByMinistry[mName].buckets.days_61_90 += adv.outstanding;
+        } else {
+          groupedByMinistry[mName].buckets.days_over_90 += adv.outstanding;
+        }
+      });
+
+      res.status(200).json({
+        asOfDate: targetDate.toISOString().slice(0, 10),
+        grandTotalOutstanding,
+        summary: agingBuckets,
+        groupedByPIU: Object.values(groupedByMinistry)
+      });
+
+    } catch (error) {
+      console.error('Error generating aging report:', error);
+      res.status(500).json({ error: error.message || 'Internal server error' });
+    }
+  }
+
   // GET /money-advances/report - Get report data with filters
   // Enhanced GET /money-advances/report - Get report data with additional fields
   static async getReport(req, res) {

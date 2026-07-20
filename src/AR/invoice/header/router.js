@@ -20,11 +20,13 @@ router.get('/statistics', InvoiceHeaderController.getStatistics);
 router.get('/:id', InvoiceHeaderController.findById);
 router.get('/audit/:id', InvoiceHeaderController.findAuditByHeaderId);
 
+const { uploadFiles } = require('../../../middleware/multerConfig');
+
 // POST /api/invoices - Create new invoice
-router.post('/', InvoiceHeaderController.create);
+router.post('/', uploadFiles, InvoiceHeaderController.create);
 
 // PUT /api/invoices/:id - Update invoice
-router.put('/:id', InvoiceHeaderController.update);
+router.put('/:id', uploadFiles, InvoiceHeaderController.update);
 
 // PATCH /api/invoices/:id/status - Update invoice status only
 router.patch('/:id/status', InvoiceHeaderController.updateStatus);

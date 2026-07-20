@@ -1,5 +1,6 @@
 
 const controller = require("./controller")
+const adbReportController = require("./adbReportController")
 const service = require("./service")
 const express = require("express")
 const router = express.Router()
@@ -15,5 +16,6 @@ router
     .get("/find/:id", controller.getGeneralLedgerEntryById)
     .get("/posting/preview", controller.previewUnpostedBatch)
     .post("/posting/batch", controller.postBatch)
-    // .post("/bulkCreate",service.createHulkStockCard)
+    .get("/reports/receipts-payments", adbReportController.getReceiptsAndPayments)
+    .get("/reports/budget-vs-actual", adbReportController.getBudgetVsActual)
 module.exports = router

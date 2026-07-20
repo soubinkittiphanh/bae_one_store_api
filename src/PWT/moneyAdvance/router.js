@@ -307,6 +307,7 @@ router.get('/summary-by-date', validateQuery, MoneyAdvanceController.getSummaryB
 // Report routes
 router.get('/report', validateReportQuery, MoneyAdvanceController.getReport);
 router.get('/report/export', validateReportQuery, MoneyAdvanceController.exportReport);
+router.get('/report/aging', MoneyAdvanceController.getAgingReport);
 
 // Ministry Summary Report routes
 router.get('/ministry-summary', validateMinistrySummaryQuery, MoneyAdvanceController.getMinistrySummary);

@@ -214,7 +214,11 @@ class GLPostingService {
                         glBatchId: batchNumber,
                         drAccountId: drAccId,
                         crAccountId: crAccId,
-                        currencyId: currencyId
+                        currencyId: currencyId,
+                        projectId: line.projectId || doc.projectId || null,
+                        contractId: line.contractId || doc.contractId || null,
+                        ministryId: line.ministryId || doc.ministryId || null,
+                        categoryId: line.categoryId || doc.categoryId || null
                     }, { transaction: t });
 
                     totalEntriesPosted++;
