@@ -57,6 +57,15 @@ async function seed() {
                 target_systems: 'ALL',
                 isActive: true,
                 menuHeaderId: header.id
+            },
+            {
+                name: 'Project Reports',
+                llname: 'ລາຍງານໂຄງການ',
+                icon: 'mdi-file-chart-outline',
+                path: '/admin/accounting/project/reports',
+                target_systems: 'ALL',
+                isActive: true,
+                menuHeaderId: header.id
             }
         ];
 

@@ -219,6 +219,15 @@ const initializeModels = () => {
     accountDailyBalance: require("../accountDailyBalance/model")(sequelize, DataTypes),
     businessDate: require("../businessDate/model")(sequelize, DataTypes),
 
+    // Microfinance models
+    cifCustomer: require("../microfinance/cif/model")(sequelize, DataTypes),
+    microfinanceGroup: require("../microfinance/groups/model")(sequelize, DataTypes),
+    mfCollateral: require("../microfinance/collateral/model")(sequelize, DataTypes),
+    mfLoanProduct: require("../microfinance/products/model")(sequelize, DataTypes),
+    mfLoanAccount: require("../microfinance/accounts/model")(sequelize, DataTypes),
+    mfRepaymentSchedule: require("../microfinance/accounts/scheduleModel")(sequelize, DataTypes),
+    mfJournalEntry: require("../microfinance/journal/model")(sequelize, DataTypes),
+
     // Tutorial model (uses different DB)
     tuturial: require("../tutorial/model")(tutorialDB, DataTypes),
   };
@@ -589,7 +598,7 @@ const synchronizeDatabase = async (db) => {
     // Phase 1: Create new tables that do not exist yet
     await db.sequelize.sync({ force: false });
     // Phase 2: Alter existing tables to add fields and constraints
-    await db.sequelize.sync({ force: false, alter: { drop: false } });
+    // await db.sequelize.sync({ force: false, alter: { drop: false } });
     await db.sequelize.query('SET FOREIGN_KEY_CHECKS = 1');
     logger.info("Database client is synchronized");
 

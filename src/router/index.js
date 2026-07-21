@@ -99,6 +99,15 @@ const databaseBackup = require("../databaseBackup/router")
 const loyalty = require("../loyalty/router")
 const fixedAsset = require("../fixedAsset").router
 
+// Microfinance routers
+const mfCif = require("../microfinance/cif").router
+const mfGroups = require("../microfinance/groups").router
+const mfCollateral = require("../microfinance/collateral").router
+const mfProducts = require("../microfinance/products").router
+const mfAccounts = require("../microfinance/accounts").router
+const mfJournal = require("../microfinance/journal").router
+const mfBatch = require("../microfinance/batch").router
+
 module.exports = {
     orderRouter,
     dymCustomerRouter,
@@ -199,5 +208,12 @@ module.exports = {
     businessDate,
     databaseBackup,
     loyalty,
-    fixedAsset
+    fixedAsset,
+    mfCif,
+    mfGroups,
+    mfCollateral,
+    mfProducts,
+    mfAccounts,
+    mfJournal,
+    mfBatch
 }

@@ -165,6 +165,13 @@ const clientDB = {
         "database": "dcommerce_pro_dc",
         "port": 3306,
     },
+    "autofood": {
+        "host": "150.95.31.23",
+        "user": "root",
+        "password": "sdat@3480",
+        "database": "dcommerce_pro_autofood",
+        "port": 3306,
+    },
     "env_auto": {
         "host": "150.95.31.23",
         "user": "root",

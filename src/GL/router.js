@@ -18,4 +18,8 @@ router
     .post("/posting/batch", controller.postBatch)
     .get("/reports/receipts-payments", adbReportController.getReceiptsAndPayments)
     .get("/reports/budget-vs-actual", adbReportController.getBudgetVsActual)
+    .get("/reports/advance-aging", adbReportController.getAdvanceAgingReport)
+    .get("/reports/withdrawal-applications", adbReportController.getWithdrawalApplicationReport)
+    .get("/reports/statement-of-expenditures", adbReportController.getStatementOfExpenditures)
+    .get("/reports/fixed-asset-register", adbReportController.getFixedAssetRegister)
 module.exports = router

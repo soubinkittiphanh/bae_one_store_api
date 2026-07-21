@@ -131,6 +131,15 @@ const buildApp = async () => {
     app.use('/api/loyalty', myRouter.loyalty);
     app.use('/api/fixed-assets', myRouter.fixedAsset);
 
+    // Microfinance module routing
+    app.use('/api/mf/cif', myRouter.mfCif);
+    app.use('/api/mf/groups', myRouter.mfGroups);
+    app.use('/api/mf/collateral', myRouter.mfCollateral);
+    app.use('/api/mf/products', myRouter.mfProducts);
+    app.use('/api/mf/accounts', myRouter.mfAccounts);
+    app.use('/api/mf/journal', myRouter.mfJournal);
+    app.use('/api/mf/batch', myRouter.mfBatch);
+
     Router.category(app);
     Router.product(app);
     Router.sale(app);

@@ -196,6 +196,235 @@ class ADBReportController {
             res.status(500).json({ error: error.message || "Internal server error" });
         }
     }
+
+    /**
+     * Advance Outstanding Statement with chronological aging (0-30, 31-60, 61-90, >90 days)
+     * GET /api/gl/reports/advance-aging
+     */
+    static async getAdvanceAgingReport(req, res) {
+        try {
+            const { targetDate = new Date().toISOString().split('T')[0] } = req.query;
+
+            // Fetch all approved advances up to targetDate
+            const advances = await db.moneyAdvance.findAll({
+                where: {
+                    status: 'approved',
+                    bookingDate: { [Op.lte]: targetDate }
+                },
+                include: [
+                    { model: db.user, as: 'maker', attributes: ['id', 'cus_name'] },
+                    { model: db.currency, as: 'currency', attributes: ['id', 'code'] },
+                    { model: db.ministry, as: 'ministry', attributes: ['id', 'ministryCode', 'ministryName'] }
+                ]
+            });
+
+            const reports = [];
+            for (const adv of advances) {
+                // Get settlements for this advance up to targetDate
+                const settlements = await db.moneySettlement.findAll({
+                    where: {
+                        moneyAdvanceId: adv.id,
+                        bookingDate: { [Op.lte]: targetDate }
+                    }
+                });
+
+                const totalSettled = settlements.reduce((sum, s) => sum + parseFloat(s.amount || 0), 0);
+                const outstanding = parseFloat(adv.amount || 0) - totalSettled;
+
+                if (outstanding > 0.01) {
+                    const bookingDate = adv.bookingDate || adv.createdAt;
+                    const diffTime = new Date(targetDate) - new Date(bookingDate);
+                    const diffDays = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+
+                    let ageCategory = '0-30';
+                    if (diffDays > 30 && diffDays <= 60) ageCategory = '31-60';
+                    else if (diffDays > 60 && diffDays <= 90) ageCategory = '61-90';
+                    else if (diffDays > 90) ageCategory = '>90';
+
+                    reports.push({
+                        id: adv.id,
+                        advanceNumber: adv.advanceNumber || `#${adv.id}`,
+                        bookingDate,
+                        amount: parseFloat(adv.amount),
+                        totalSettled,
+                        outstanding,
+                        diffDays,
+                        ageCategory,
+                        currency: adv.currency?.code || 'LAK',
+                        ministryCode: adv.ministry?.ministryCode || 'N/A',
+                        ministryName: adv.ministry?.ministryName || 'N/A',
+                        recipient: adv.maker?.cus_name || 'N/A'
+                    });
+                }
+            }
+
+            return res.json({ success: true, data: reports });
+        } catch (error) {
+            logger.error("Error generating Advance Aging report:", error);
+            return res.status(500).json({ error: error.message || "Internal server error" });
+        }
+    }
+
+    /**
+     * Statement of Withdrawal Applications
+     * GET /api/gl/reports/withdrawal-applications
+     */
+    static async getWithdrawalApplicationReport(req, res) {
+        try {
+            const { projectId } = req.query;
+            const where = {};
+            if (projectId) where.projectId = projectId;
+
+            const was = await db.WithdrawalApplication.findAll({
+                where,
+                include: [
+                    { model: db.Project, as: 'project' },
+                    { 
+                        model: db.ProjectInvoice, 
+                        as: 'invoices',
+                        include: [
+                            { 
+                                model: db.ProjectContract, 
+                                as: 'contract',
+                                include: [{ model: db.currency, as: 'currency' }]
+                            }
+                        ]
+                    }
+                ],
+                order: [['waDate', 'DESC']]
+            });
+
+            return res.json({ success: true, data: was });
+        } catch (error) {
+            logger.error("Error generating Withdrawal Application report:", error);
+            return res.status(500).json({ error: error.message || "Internal server error" });
+        }
+    }
+
+    /**
+     * Statement of Expenditures (SOE) Sheet
+     * GET /api/gl/reports/statement-of-expenditures
+     */
+    static async getStatementOfExpenditures(req, res) {
+        try {
+            const { projectId, startDate, endDate } = req.query;
+
+            const where = {
+                status: 'PAID'
+            };
+
+            const contractWhere = {};
+            if (projectId) contractWhere.projectId = projectId;
+
+            const invoices = await db.ProjectInvoice.findAll({
+                where,
+                include: [
+                    {
+                        model: db.ProjectContract,
+                        as: 'contract',
+                        where: contractWhere,
+                        include: [
+                            { model: db.Project, as: 'project' },
+                            { model: db.currency, as: 'currency' }
+                        ]
+                    },
+                    {
+                        model: db.WithdrawalApplication,
+                        as: 'withdrawalApplication'
+                    }
+                ],
+                order: [['invoiceDate', 'DESC']]
+            });
+
+            // Filter by date range if provided
+            let filteredInvoices = invoices;
+            if (startDate && endDate) {
+                filteredInvoices = invoices.filter(inv => inv.invoiceDate >= startDate && inv.invoiceDate <= endDate);
+            }
+
+            const data = filteredInvoices.map(inv => ({
+                id: inv.id,
+                invoiceNumber: inv.invoiceNumber,
+                invoiceDate: inv.invoiceDate,
+                claimNumber: inv.claimNumber,
+                grossAmount: parseFloat(inv.grossAmount),
+                retentionAmount: parseFloat(inv.retentionAmount),
+                netAmount: parseFloat(inv.netAmount),
+                adbFundingAmount: parseFloat(inv.adbFundingAmount),
+                counterpartFundingAmount: parseFloat(inv.counterpartFundingAmount),
+                contractNumber: inv.contract?.contractNumber,
+                contractorName: inv.contract?.contractorName,
+                categoryName: inv.contract?.categoryName,
+                currency: inv.contract?.currency?.code || 'USD',
+                waNumber: inv.withdrawalApplication?.waNumber || 'N/A',
+                waDate: inv.withdrawalApplication?.waDate || null
+            }));
+
+            return res.json({ success: true, data });
+        } catch (error) {
+            logger.error("Error generating SOE report:", error);
+            return res.status(500).json({ error: error.message || "Internal server error" });
+        }
+    }
+
+    /**
+     * Fixed Asset Register / Listing
+     * GET /api/gl/reports/fixed-asset-register
+     */
+    static async getFixedAssetRegister(req, res) {
+        try {
+            const { targetDate } = req.query;
+            const where = {};
+            if (targetDate) {
+                where.acquisitionDate = { [Op.lte]: targetDate };
+            }
+
+            const assets = await db.fixedAssetContract.findAll({
+                where,
+                include: [
+                    { model: db.fixedAssetProduct, as: 'fixedAssetProduct' },
+                    { model: db.location, as: 'location' },
+                    { model: db.vendor, as: 'vendor' },
+                    { model: db.currency, as: 'currency' },
+                    { model: db.fixedAssetDepreciation, as: 'depreciationSchedule' }
+                ]
+            });
+
+            const data = assets.map(asset => {
+                const totalCost = parseFloat(asset.acquisitionCost || 0);
+                
+                // Calculate accumulated depreciation up to targetDate
+                const queryDate = targetDate ? new Date(targetDate) : new Date();
+                const accumulatedDepr = (asset.depreciationSchedule || [])
+                    .filter(d => d.isPosted && new Date(d.periodDate) <= queryDate)
+                    .reduce((sum, d) => sum + parseFloat(d.depreciationAmount || 0), 0);
+
+                const bookValue = totalCost - accumulatedDepr;
+
+                return {
+                    id: asset.id,
+                    contractNumber: asset.contractNumber,
+                    assetName: asset.assetName,
+                    serialNumber: asset.serialNumber,
+                    acquisitionDate: asset.acquisitionDate,
+                    acquisitionCost: totalCost,
+                    accumulatedDepreciation: accumulatedDepr,
+                    bookValue,
+                    status: asset.status,
+                    location: asset.location?.locationName || 'N/A',
+                    vendor: asset.vendor?.vendorName || 'N/A',
+                    currency: asset.currency?.code || 'USD',
+                    productName: asset.fixedAssetProduct?.productName || 'N/A',
+                    productCode: asset.fixedAssetProduct?.productCode || 'N/A'
+                };
+            });
+
+            return res.json({ success: true, data });
+        } catch (error) {
+            logger.error("Error generating Fixed Asset Register report:", error);
+            return res.status(500).json({ error: error.message || "Internal server error" });
+        }
+    }
 }
 
 module.exports = ADBReportController;
