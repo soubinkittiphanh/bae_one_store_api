@@ -598,7 +598,7 @@ const synchronizeDatabase = async (db) => {
     // Phase 1: Create new tables that do not exist yet
     await db.sequelize.sync({ force: false });
     // Phase 2: Alter existing tables to add fields and constraints
-    // await db.sequelize.sync({ force: false, alter: { drop: false } });
+    await db.sequelize.sync({ force: false, alter: { drop: false } });
     await db.sequelize.query('SET FOREIGN_KEY_CHECKS = 1');
     logger.info("Database client is synchronized");
 

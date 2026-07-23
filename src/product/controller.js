@@ -544,7 +544,62 @@ const bulkCreateProducts = async (req, res) => {
   }
 };
 
+const bulkUpdatePrices = async (req, res) => {
+  try {
+    const updates = req.body.updates;
+    if (!updates || !Array.isArray(updates) || updates.length === 0) {
+      return res.status(400).json({ success: false, message: 'Invalid updates data' });
+    }
+
+    const userId = req.user ? req.user.id : 1;
+    let updatedCount = 0;
+
+    for (const update of updates) {
+      let product = null;
+
+      if (update.id) {
+        product = await Product.findByPk(update.id);
+      } else if (update.barCode) {
+        product = await Product.findOne({ where: { barCode: update.barCode } });
+      } else if (update.product_code) {
+        product = await Product.findOne({ where: { product_code: update.product_code } });
+      }
+
+      if (product) {
+        const updateData = {};
+        if (update.cost_price !== undefined && update.cost_price !== null && !isNaN(update.cost_price)) {
+          updateData.cost_price = parseFloat(update.cost_price);
+        }
+        if (update.pro_price !== undefined && update.pro_price !== null && !isNaN(update.pro_price)) {
+          updateData.pro_price = parseFloat(update.pro_price);
+        }
+
+        if (Object.keys(updateData).length > 0) {
+          await product.update(updateData, {
+            context: { userId, reason: 'Bulk price update via Excel' }
+          });
+          updatedCount++;
+        }
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Successfully updated prices for ${updatedCount} products`,
+      count: updatedCount
+    });
+  } catch (error) {
+    console.error('Error bulk updating prices:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
+  bulkUpdatePrices,
   getAllProducts,
   getProductById,
   createProduct,

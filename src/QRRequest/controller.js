@@ -177,7 +177,7 @@ class QRController {
     async handleCallback(req, res) {
         try {
             const callbackData = req.body;
-            logger.info('Received payment callback:', JSON.stringify(callbackData));
+            logger.info(`Received payment callback: ${JSON.stringify(callbackData)}`);
 
             // Determine Bank Code from callback payload structure
             let bankCode = 'IB';

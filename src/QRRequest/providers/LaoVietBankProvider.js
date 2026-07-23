@@ -138,27 +138,49 @@ class LaoVietBankProvider extends BasePaymentProvider {
     }
 
     async verifyCallback(config, callbackData) {
-        // Callback verification logic for LVB
-        // Check signature:
-        // PRIVATE_KEY|Service_Id|Merchant_Id|InitTrandate|Trans_Id|Response_Code|Response_TxnCode|List|Redirect_Url
+        // Log callbackData explicitly as a string so Winston simple format doesn't omit it
+        logger.info(`[LVB Provider] Received callback payload: ${JSON.stringify(callbackData)}`);
+
         const privateKey = config.privateKey || 'eaYKHfjmy9UZ4KqdEs2uIpXgsEKYqj';
-        const serviceId = callbackData.Service_Id || '';
-        const merchantId = callbackData.Merchant_Id || '';
-        const trandate = callbackData.Trandate || '';
-        const transId = callbackData.Trans_Id || '';
-        const responseCode = callbackData.Response_Code || '';
-        const responseTxnCode = callbackData.Response_TxnCode || '';
-        const list = callbackData.List || '';
-        const redirectUrl = callbackData.Redirect_Url || '';
+
+        // Support case-insensitive lookup for callback properties
+        const getCaseInsensitive = (obj, targetKey) => {
+            if (obj[targetKey] !== undefined) return obj[targetKey];
+            const lowerTarget = targetKey.toLowerCase();
+            for (const key of Object.keys(obj)) {
+                if (key.toLowerCase() === lowerTarget) {
+                    return obj[key];
+                }
+            }
+            return '';
+        };
+
+        const serviceId = getCaseInsensitive(callbackData, 'Service_Id') || getCaseInsensitive(callbackData, 'serviceId');
+        const merchantId = getCaseInsensitive(callbackData, 'Merchant_Id') || getCaseInsensitive(callbackData, 'merchantId');
+        
+        // LVB callback might send Trandate or InitTrandate
+        const trandate = getCaseInsensitive(callbackData, 'InitTrandate') || 
+                         getCaseInsensitive(callbackData, 'Trandate') || 
+                         getCaseInsensitive(callbackData, 'init_trandate') || 
+                         getCaseInsensitive(callbackData, 'trandate');
+
+        const transId = getCaseInsensitive(callbackData, 'Trans_Id') || getCaseInsensitive(callbackData, 'transId');
+        const responseCode = getCaseInsensitive(callbackData, 'Response_Code') || getCaseInsensitive(callbackData, 'responseCode');
+        const responseTxnCode = getCaseInsensitive(callbackData, 'Response_TxnCode') || getCaseInsensitive(callbackData, 'responseTxnCode');
+        const list = getCaseInsensitive(callbackData, 'List') || getCaseInsensitive(callbackData, 'list');
+        const redirectUrl = getCaseInsensitive(callbackData, 'Redirect_Url') || getCaseInsensitive(callbackData, 'redirectUrl');
 
         const rawStr = `${privateKey}|${serviceId}|${merchantId}|${trandate}|${transId}|${responseCode}|${responseTxnCode}|${list}|${redirectUrl}`;
         const calculatedSecureCode = crypto.createHash('md5').update(rawStr).digest('hex');
 
-        if (calculatedSecureCode !== callbackData.Secure_Code) {
-            logger.error('[LVB Provider] Callback signature mismatch:', {
-                received: callbackData.Secure_Code,
-                calculated: calculatedSecureCode
-            });
+        const receivedSecureCode = getCaseInsensitive(callbackData, 'Secure_Code') || 
+                                   getCaseInsensitive(callbackData, 'SecureCode') || 
+                                   getCaseInsensitive(callbackData, 'secure_code') || 
+                                   getCaseInsensitive(callbackData, 'secureCode') || 
+                                   getCaseInsensitive(callbackData, 'signature');
+
+        if (calculatedSecureCode !== receivedSecureCode) {
+            logger.error(`[LVB Provider] Callback signature mismatch. Received Secure_Code: "${receivedSecureCode}", Calculated: "${calculatedSecureCode}", Raw String: "${rawStr}"`);
             throw new Error('Callback signature verification failed');
         }
 
