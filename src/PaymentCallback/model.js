@@ -100,8 +100,8 @@ module.exports = (sequelize, DataTypes) => {
         tableName: 'payment_callback',
         hooks: {
             beforeCreate: (callback) => {
-                // Auto-set isPaymentSuccess based on txnStatus
-                callback.isPaymentSuccess = callback.txnStatus === '1';
+                // Auto-set isPaymentSuccess based on txnStatus (1 for Indochina Bank, 000 for Lao-Viet Bank)
+                callback.isPaymentSuccess = !!callback.isPaymentSuccess || callback.txnStatus === '1' || callback.txnStatus === '000';
             }
         }
     });
