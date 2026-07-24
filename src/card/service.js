@@ -651,7 +651,7 @@ const adjustStockBulk = async (req, res) => {
             }
 
             // Update product counts
-            await productService.updateProductCountById(dbProductId);
+            await productService.updateProductCountById(dbProductId, transaction);
 
             results.push({
                 productId: dbProductId,
