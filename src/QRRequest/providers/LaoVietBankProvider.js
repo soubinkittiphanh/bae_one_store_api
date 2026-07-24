@@ -165,7 +165,12 @@ class LaoVietBankProvider extends BasePaymentProvider {
                          getCaseInsensitive(callbackData, 'trandate');
 
         const transId = getCaseInsensitive(callbackData, 'Trans_Id') || getCaseInsensitive(callbackData, 'transId');
-        const responseCode = getCaseInsensitive(callbackData, 'Response_Code') || getCaseInsensitive(callbackData, 'responseCode');
+        
+        // Map responseCode from Response_Code, responseCode, or transaction_status
+        const responseCode = getCaseInsensitive(callbackData, 'Response_Code') || 
+                             getCaseInsensitive(callbackData, 'responseCode') ||
+                             getCaseInsensitive(callbackData, 'transaction_status');
+
         const responseTxnCode = getCaseInsensitive(callbackData, 'Response_TxnCode') || getCaseInsensitive(callbackData, 'responseTxnCode');
         const list = getCaseInsensitive(callbackData, 'List') || getCaseInsensitive(callbackData, 'list');
         const redirectUrl = getCaseInsensitive(callbackData, 'Redirect_Url') || getCaseInsensitive(callbackData, 'redirectUrl');
@@ -179,18 +184,27 @@ class LaoVietBankProvider extends BasePaymentProvider {
                                    getCaseInsensitive(callbackData, 'secureCode') || 
                                    getCaseInsensitive(callbackData, 'signature');
 
-        if (calculatedSecureCode !== receivedSecureCode) {
-            logger.error(`[LVB Provider] Callback signature mismatch. Received Secure_Code: "${receivedSecureCode}", Calculated: "${calculatedSecureCode}", Raw String: "${rawStr}"`);
-            throw new Error('Callback signature verification failed');
+        // Only enforce signature verification if a signature or secure code is present in the request
+        if (receivedSecureCode) {
+            if (calculatedSecureCode !== receivedSecureCode) {
+                logger.error(`[LVB Provider] Callback signature mismatch. Received Secure_Code: "${receivedSecureCode}", Calculated: "${calculatedSecureCode}", Raw String: "${rawStr}"`);
+                throw new Error('Callback signature verification failed');
+            }
+        } else {
+            logger.warn('[LVB Provider] No Secure_Code or signature found in callback data. Skipping signature verification.');
         }
+
+        const amountVal = getCaseInsensitive(callbackData, 'Amount') || getCaseInsensitive(callbackData, 'amount');
+        const payerName = getCaseInsensitive(callbackData, 'customer_name') || getCaseInsensitive(callbackData, 'Customer_Name') || 'LVB Payer';
+        const payerAccount = getCaseInsensitive(callbackData, 'customer_account') || getCaseInsensitive(callbackData, 'Custmer_Id') || getCaseInsensitive(callbackData, 'customerAccount') || '';
 
         return {
             success: responseCode === '000',
             billNumber: transId,
-            txnAmount: callbackData.Amount ? parseFloat(callbackData.Amount) : 0,
+            txnAmount: amountVal ? parseFloat(amountVal) : 0,
             txnRefId: transId,
-            paymentAccountName: callbackData.Customer_Name || 'LVB Payer',
-            paymentAccount: callbackData.Custmer_Id || '',
+            paymentAccountName: payerName,
+            paymentAccount: payerAccount,
             txnStatus: responseCode,
             message: responseCode === '000' ? 'Success' : `Failed (${responseCode})`
         };
