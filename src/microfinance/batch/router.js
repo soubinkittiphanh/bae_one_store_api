@@ -6,5 +6,7 @@ const router = express.Router();
 router.use(validateToken);
 
 router.post('/run-eod', controller.runEOD);
+router.post('/run', controller.runEOD);
+router.get('/status', controller.getStatus);
 
 module.exports = router;

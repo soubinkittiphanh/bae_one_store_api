@@ -259,6 +259,32 @@ async function runEOD(req, res) {
   }
 }
 
+async function getStatus(req, res) {
+  try {
+    let businessDateRecord = await db.businessDate.findOne({
+      where: { status: 'OPEN' }
+    });
+
+    let currentBusinessDate;
+    if (businessDateRecord) {
+      currentBusinessDate = businessDateRecord.currentDate;
+    } else {
+      currentBusinessDate = new Date().toISOString().split('T')[0];
+    }
+
+    return res.status(200).json({
+      success: true,
+      currentBusinessDate
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+}
+
 module.exports = {
-  runEOD
+  runEOD,
+  getStatus
 };

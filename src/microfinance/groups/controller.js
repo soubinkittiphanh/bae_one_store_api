@@ -38,7 +38,7 @@ async function findAll(req, res) {
         { model: db.microfinanceGroup, as: 'parentCenter' },
         { model: db.microfinanceGroup, as: 'subGroups' },
         { model: db.cifCustomer, as: 'members' },
-        { model: db.user, as: 'loanOfficer', attributes: ['id', 'username', 'email'] }
+        { model: db.user, as: 'loanOfficer', attributes: ['id', ['cus_name', 'username'], ['cus_email', 'email']] }
       ]
     });
     return res.status(200).json({ success: true, data: groups });
@@ -55,7 +55,7 @@ async function findOne(req, res) {
         { model: db.microfinanceGroup, as: 'parentCenter' },
         { model: db.microfinanceGroup, as: 'subGroups' },
         { model: db.cifCustomer, as: 'members' },
-        { model: db.user, as: 'loanOfficer', attributes: ['id', 'username', 'email'] }
+        { model: db.user, as: 'loanOfficer', attributes: ['id', ['cus_name', 'username'], ['cus_email', 'email']] }
       ]
     });
     if (!group) {
