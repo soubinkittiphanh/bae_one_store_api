@@ -32,11 +32,11 @@ async function seed() {
         // 2. Seed LaoVietBank (LVB) configuration
         const lvbConfig = {
             apiUrl: 'https://laovietbank.com.la:5678',
-            privateKey: 'A7CaFcHeMhPkRpUrWtZw3y6B8DaGdJfMjQm',
-            serviceId: '055001',
-            merchantId: '055001_1',
-            merchantName: 'DCommerce POS',
-            username: '055001',
+            privateKey: 'eaYKHfjmy9UZ4KqdEs2uIpXgsEKYqj',
+            serviceId: '055022',
+            merchantId: '055022_1',
+            merchantName: 'SATHAPHONE MINI MART',
+            username: '055022',
             password: '7y&4%3#ft38MHPW'
         };
 
