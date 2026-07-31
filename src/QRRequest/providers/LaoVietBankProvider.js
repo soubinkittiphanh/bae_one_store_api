@@ -30,15 +30,6 @@ class LaoVietBankProvider extends BasePaymentProvider {
     async generateQR(config, requestData) {
         const bankApiUrl = config.apiUrl || 'https://laovietbank.com.la:5678';
         const privateKey = config.privateKey || 'eaYKHfjmy9UZ4KqdEs2uIpXgsEKYqj';
-        const username = config.username || '055022_1';
-        const password = config.password || 'ZIvsHAQyRJ2RfvcE';
-
-        logger.info(`[LVB Provider] Logging in to LVB API as ${username}...`);
-
-        // Step 1: Login to get Bearer token
-        const createDate = this.generateCreateDate();
-        const rawLoginStr = `${privateKey}|${username}|${password}|${createDate}`;
-        const loginSecureCode = crypto.createHash('md5').update(rawLoginStr).digest('hex');
 
         const lvbAgent = new https.Agent({
             rejectUnauthorized: false,
@@ -47,28 +38,7 @@ class LaoVietBankProvider extends BasePaymentProvider {
             }
         });
 
-        const loginResponse = await axios.post(`${bankApiUrl}/v1/api/login`, {
-            username,
-            password,
-            create_date: createDate,
-            secure_code: loginSecureCode
-        }, {
-            headers: {
-                'Content-Type': 'application/json',
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-            },
-            timeout: 15000,
-            httpsAgent: lvbAgent
-        });
-
-        if (loginResponse.data.Response_Code !== '000') {
-            throw new Error(`LVB login failed: ${loginResponse.data.Response_Code}`);
-        }
-
-        const token = loginResponse.data.token;
-        logger.info('[LVB Provider] Login successful, token obtained');
-
-        // Step 2: Call dynamic QR Init API
+        // Call dynamic QR Init API
         const serviceId = config.serviceId || '055022';
         const merchantId = config.merchantId || '055022_1';
         const merchantName = config.merchantName || 'SATHAPHONE MINI MART';
@@ -105,15 +75,18 @@ class LaoVietBankProvider extends BasePaymentProvider {
             Secure_Code: initSecureCode
         };
 
+        logger.info(`[LVB Provider] Sending QR Init Request Payload: ${JSON.stringify(payload)}`);
+
         const initResponse = await axios.post(`${bankApiUrl}/v1/api/init/`, payload, {
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
             },
             timeout: 15000,
             httpsAgent: lvbAgent
         });
+
+        logger.info(`[LVB Provider] Received QR Init Response: ${JSON.stringify(initResponse.data)}`);
 
         if (initResponse.data.Response_Code !== '000') {
             throw new Error(`LVB QR Init failed: ${initResponse.data.Response_Code}`);
