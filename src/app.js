@@ -24,6 +24,77 @@ const buildApp = async () => {
     // DEBUG: Test if ANY public route works
     app.get("/test-public", (req, res) => res.send("Public works!"));
 
+    // In-memory store for public e-menu draft orders and waiter calls
+    const publicDraftOrders = [];
+    const publicWaiterCalls = [];
+
+    app.get("/api/order/draft/list", (req, res) => {
+        res.json(publicDraftOrders);
+    });
+
+    app.post("/api/order/draft/add", (req, res) => {
+        const { table, items } = req.body;
+        if (!table) {
+            return res.status(400).json({ success: false, message: "Table is required" });
+        }
+        // Remove existing draft for this table
+        const index = publicDraftOrders.findIndex(o => o.table === table);
+        if (index !== -1) {
+            publicDraftOrders.splice(index, 1);
+        }
+        publicDraftOrders.push({
+            table,
+            items: items || [],
+            timestamp: new Date().toISOString()
+        });
+        res.json({ success: true, message: "Draft order added" });
+    });
+
+    app.post("/api/order/draft/clear", (req, res) => {
+        const { table } = req.body;
+        if (!table) {
+            return res.status(400).json({ success: false, message: "Table is required" });
+        }
+        const index = publicDraftOrders.findIndex(o => o.table === table);
+        if (index !== -1) {
+            publicDraftOrders.splice(index, 1);
+        }
+        res.json({ success: true, message: "Draft order cleared" });
+    });
+
+    app.get("/api/tables/waiter-calls", (req, res) => {
+        res.json(publicWaiterCalls);
+    });
+
+    app.post("/api/tables/waiter-call/add", (req, res) => {
+        const { table, time, timestamp } = req.body;
+        if (!table) {
+            return res.status(400).json({ success: false, message: "Table is required" });
+        }
+        const index = publicWaiterCalls.findIndex(c => c.table === table);
+        if (index !== -1) {
+            publicWaiterCalls.splice(index, 1);
+        }
+        publicWaiterCalls.push({
+            table,
+            time: time || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            timestamp: timestamp || new Date().toISOString()
+        });
+        res.json({ success: true, message: "Waiter call added" });
+    });
+
+    app.post("/api/tables/waiter-call/clear", (req, res) => {
+        const { table } = req.body;
+        if (!table) {
+            return res.status(400).json({ success: false, message: "Table is required" });
+        }
+        const index = publicWaiterCalls.findIndex(c => c.table === table);
+        if (index !== -1) {
+            publicWaiterCalls.splice(index, 1);
+        }
+        res.json({ success: true, message: "Waiter call cleared" });
+    });
+
 
     app.get("/api/public/company/findAll", companyController.getAllActiveCompanies)
     app.post("/api/v1/direct/callback", qrPayment.handleCallback)
