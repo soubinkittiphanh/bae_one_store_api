@@ -20,24 +20,24 @@ const sequelize = new Sequelize(env.database, env.user, env.password, {
     dateStrings: true, // Also set here for good measure
   },
   
-  pool: { max: 10, min: 10, acquire: 30000, idle: 10000 },
+  pool: { max: 2, min: 0, acquire: 30000, idle: 10000 },
 });
 
-// Tutorial database
-const tutorialDB = new Sequelize('tutorial_db', env.user, env.password, {
-  host: env.host,
-  dialect: 'mariadb',
-  port: env.port,
-  pool: { max: 5, min: 2, acquire: 30000, idle: 10000 },
-});
+// Tutorial database (Not used by startup sqlExecutor script - commented out to prevent connection leak)
+// const tutorialDB = new Sequelize('tutorial_db', env.user, env.password, {
+//   host: env.host,
+//   dialect: 'mariadb',
+//   port: env.port,
+//   pool: { max: 5, min: 2, acquire: 30000, idle: 10000 },
+// });
 
 // Authenticate
 sequelize.authenticate()
-  .then(() => logger.info('client_db Connection established'))
-  .catch(err => logger.error('client_db Connection error:', err));
+  .then(() => logger.info('client_db (SQL executor) Connection established'))
+  .catch(err => logger.error('client_db (SQL executor) Connection error:', err));
 
-tutorialDB.authenticate()
-  .then(() => logger.info('tutorial_db Connection established'))
-  .catch(err => logger.error('tutorial_db Connection error:', err));
+// tutorialDB.authenticate()
+//   .then(() => logger.info('tutorial_db Connection established'))
+//   .catch(err => logger.error('tutorial_db Connection error:', err));
 
-module.exports = { sequelize, tutorialDB };
+module.exports = { sequelize };

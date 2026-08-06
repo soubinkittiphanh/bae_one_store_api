@@ -33,6 +33,10 @@ module.exports = (sequelize, DataTypes) => {
         accounts: {
             type: DataTypes.STRING,
         },
+        taxId: {
+            type: DataTypes.STRING,
+            allowNull: true,
+        },
         village: {
             type: DataTypes.STRING,
         },

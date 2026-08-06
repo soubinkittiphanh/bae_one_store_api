@@ -10,7 +10,7 @@ const createSequelizeInstance = (database, options = {}) => {
     port: env.port,
     pool: {
       max: 10,
-      min: 2,
+      min: 0,
       acquire: 30000,
       idle: 10000
     },
@@ -34,7 +34,7 @@ const sequelize = createSequelizeInstance(env.database, {
 
 // Tutorial database connection
 const tutorialDB = createSequelizeInstance('tutorial_db', {
-  pool: { max: 5, min: 2, acquire: 30000, idle: 10000 }
+  pool: { max: 5, min: 0, acquire: 30000, idle: 10000 }
 });
 
 // Database authentication

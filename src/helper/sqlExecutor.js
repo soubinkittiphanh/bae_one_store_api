@@ -111,52 +111,61 @@ const dropGeneralLedgerDeprecatedFields = async () => {
  * to drop redundant indexes before Sequelize synchronization runs.
  */
 const executeSqlScript = async () => {
-  // First run the dynamic general_ledger cleanup to ensure constraints are dropped correctly across any client DB
-  await dropGeneralLedgerDeprecatedFields();
-
-  const filePath = path.join(__dirname, '../../toomanykey.sql');
-  if (!fs.existsSync(filePath)) {
-    logger.warn(`SQL cleanup script not found at ${filePath}, skipping.`);
-    return;
-  }
-
-  logger.info(`Starting execution of SQL script: ${filePath}`);
   try {
-    const sqlContent = fs.readFileSync(filePath, 'utf8');
+    // First run the dynamic general_ledger cleanup to ensure constraints are dropped correctly across any client DB
+    await dropGeneralLedgerDeprecatedFields();
 
-    // Parse the file into clean statements:
-    // 1. Split by newline to filter out comment lines (starting with -- or #)
-    // 2. Join back and split by semicolon (;) to get individual statements
-    const statements = sqlContent
-      .split('\n')
-      .map(line => line.trim())
-      .filter(line => !line.startsWith('--') && !line.startsWith('#'))
-      .join('\n')
-      .split(';')
-      .map(stmt => stmt.trim())
-      .filter(stmt => stmt.length > 0);
-
-    logger.info(`Found ${statements.length} SQL statements to execute.`);
-
-    let successCount = 0;
-    let failCount = 0;
-
-    for (const statement of statements) {
-      try {
-        // Use QueryTypes.BULKUPDATE to bypass the MariaDB metadata formatResults bug
-        await sequelize.query(statement, { type: QueryTypes.BULKUPDATE });
-        successCount++;
-      } catch (err) {
-        // Log failures as debug/verbose since tables or indexes might not exist yet,
-        // which is perfectly expected during initial runs.
-        failCount++;
-        logger.debug(`Statement failed: "${statement}". Error: ${err.message}`);
-      }
+    const filePath = path.join(__dirname, '../../toomanykey.sql');
+    if (!fs.existsSync(filePath)) {
+      logger.warn(`SQL cleanup script not found at ${filePath}, skipping.`);
+      return;
     }
 
-    logger.info(`Finished executing SQL script. Success: ${successCount}, Failed/Skipped: ${failCount}`);
-  } catch (error) {
-    logger.error(`Error reading or executing SQL script ${filePath}:`, error);
+    logger.info(`Starting execution of SQL script: ${filePath}`);
+    try {
+      const sqlContent = fs.readFileSync(filePath, 'utf8');
+
+      // Parse the file into clean statements:
+      // 1. Split by newline to filter out comment lines (starting with -- or #)
+      // 2. Join back and split by semicolon (;) to get individual statements
+      const statements = sqlContent
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => !line.startsWith('--') && !line.startsWith('#'))
+        .join('\n')
+        .split(';')
+        .map(stmt => stmt.trim())
+        .filter(stmt => stmt.length > 0);
+
+      logger.info(`Found ${statements.length} SQL statements to execute.`);
+
+      let successCount = 0;
+      let failCount = 0;
+
+      for (const statement of statements) {
+        try {
+          // Use QueryTypes.BULKUPDATE to bypass the MariaDB metadata formatResults bug
+          await sequelize.query(statement, { type: QueryTypes.BULKUPDATE });
+          successCount++;
+        } catch (err) {
+          // Log failures as debug/verbose since tables or indexes might not exist yet,
+          // which is perfectly expected during initial runs.
+          failCount++;
+          logger.debug(`Statement failed: "${statement}". Error: ${err.message}`);
+        }
+      }
+
+      logger.info(`Finished executing SQL script. Success: ${successCount}, Failed/Skipped: ${failCount}`);
+    } catch (error) {
+      logger.error(`Error reading or executing SQL script ${filePath}:`, error);
+    }
+  } finally {
+    try {
+      await sequelize.close();
+      logger.info("Closed temporary SQL executor database connection pool.");
+    } catch (err) {
+      logger.error("Error closing temporary SQL executor database connection pool:", err);
+    }
   }
 };
 
