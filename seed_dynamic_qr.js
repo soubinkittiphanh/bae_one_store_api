@@ -58,6 +58,33 @@ async function seed() {
             await lvbBank.save();
         }
 
+        // Seed BCEL (OnePay) configuration
+        const bcelConfig = {
+            apiUrl: 'https://bcel.la:8093/onepayservice',
+            clientId: 'pos_client_001',
+            clientSecret: 's3cr3t',
+            merchantId: 'mch6017b290520cf',
+            terminalId: 'ONEPAYPOS'
+        };
+
+        const [bcelBank, bcelCreated] = await db.bank.findOrCreate({
+            where: { code: 'BCEL' },
+            defaults: {
+                bank_name: 'BCEL Onepay',
+                bank_remark: 'BCEL Onepay dynamic QR integration',
+                config: bcelConfig,
+                isActive: true
+            }
+        });
+
+        if (bcelCreated) {
+            console.log("- Successfully seeded BCEL Onepay configuration.");
+        } else {
+            console.log("- BCEL Onepay already exists. Updating configuration to UAT defaults...");
+            bcelBank.config = bcelConfig;
+            await bcelBank.save();
+        }
+
         // 3. Seed DYN_QR = Y (Enable Dynamic QR payments)
         const [dynQrRecord, dynQrCreated] = await db.spf.findOrCreate({
             where: { code: 'DYN_QR' },
@@ -80,14 +107,16 @@ async function seed() {
             where: { code: 'DYN_QR_BankCode' },
             defaults: {
                 value: 'IB',
-                remark: 'Active dynamic QR bank code: IB or LVB',
+                remark: 'Active dynamic QR bank code: IB, LVB, or BCEL',
                 isActive: true
             }
         });
         if (spfCreated) {
             console.log("- Seeded DYN_QR_BankCode system parameter. Default: IB");
         } else {
-            console.log("- DYN_QR_BankCode system parameter already exists.");
+            console.log("- DYN_QR_BankCode system parameter already exists. Updating remark...");
+            spfRecord.remark = 'Active dynamic QR bank code: IB, LVB, or BCEL';
+            await spfRecord.save();
         }
 
         // 5. Seed DYN_MemberId (Fallback Override)

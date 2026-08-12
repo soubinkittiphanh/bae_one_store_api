@@ -25,6 +25,206 @@ const SalePayment = require('../../models').salePayment;
 const common = require('../../common');
 const productService = require('../../product/service');
 const spfService = require('../../spf/service');
+const Recipe = require('../../models').recipe;
+
+// Helper function to reserve ingredient stock cards for a product's recipe
+const reserveIngredientCardsForRecipe = async (ticketLine, product, lineQuantity, locationId, currencyMap, lockingSessionId, inputterId, transaction) => {
+    // 1. Fetch recipes for this product
+    const recipes = await Recipe.findAll({
+        where: { productId: product.id },
+        include: [{ model: Product, as: 'ingredient' }],
+        transaction
+    });
+
+    if (!recipes || recipes.length === 0) return false;
+
+    console.log(`[Recipe Inventory] Processing recipe with ${recipes.length} ingredients for product ${product.id} (${product.pro_name})`);
+
+    const productIdsForStockUpdate = [];
+
+    for (const recipe of recipes) {
+        const ingredient = recipe.ingredient;
+        if (!ingredient) continue;
+
+        const qtyNeeded = Math.ceil(recipe.quantity * lineQuantity);
+        if (qtyNeeded <= 0) continue;
+
+        productIdsForStockUpdate.push(ingredient.id);
+
+        if (ingredient.validateStockOnSale) {
+            console.log(`[Recipe Inventory] Reserving ${qtyNeeded} stock cards for ingredient ${ingredient.id} (${ingredient.pro_name})`);
+            const availableCards = await Card.findAll({
+                limit: qtyNeeded,
+                order: [['createdAt', 'DESC']],
+                where: {
+                    productId: ingredient.id,
+                    ticketLineId: null,
+                    card_isused: 0,
+                    locationId
+                },
+                transaction
+            });
+
+            if (!availableCards || availableCards.length < qtyNeeded) {
+                const availableCount = availableCards ? availableCards.length : 0;
+                throw new Error(`Stock not enough for ingredient #${ingredient.id} (${ingredient.pro_name}) required for product ${product.pro_name} - Needed: ${qtyNeeded}, Available: ${availableCount}`);
+            }
+
+            await Card.update(
+                {
+                    card_isused: 1,
+                    ticketLineId: ticketLine.id,
+                    locking_session_id: lockingSessionId
+                },
+                {
+                    where: {
+                        id: { [Op.in]: availableCards.map(c => c.id) }
+                    },
+                    transaction
+                }
+            );
+            console.log(`[Recipe Inventory] Successfully reserved ${availableCards.length} cards for ingredient ${ingredient.id}`);
+        } else {
+            console.log(`[Recipe Inventory] Creating ${qtyNeeded} fresh usage cards for non-stock ingredient ${ingredient.id} (${ingredient.pro_name})`);
+            const currencyId = ingredient.saleCurrencyId || 1;
+            const currency = currencyMap.get(currencyId);
+            const exchangeRate = currency ? currency.rate : 1;
+            const cost = ingredient.cost_price || 0;
+            const costLCY = cost * exchangeRate;
+
+            const cardRows = [];
+            for (let i = 0; i < qtyNeeded; i++) {
+                const cardSequenceNumber = common.generateLockingSessionId(10);
+                cardRows.push({
+                    card_type_code: 10010,
+                    product_id: ingredient.pro_id,
+                    productId: ingredient.id,
+                    cost: cost,
+                    costLCY: costLCY,
+                    exchangeRate: exchangeRate,
+                    card_number: cardSequenceNumber,
+                    card_isused: 1,
+                    locking_session_id: lockingSessionId,
+                    card_input_date: new Date(),
+                    inputter: inputterId || 1,
+                    update_user: inputterId || 1,
+                    update_time: new Date(),
+                    update_time_new: new Date(),
+                    isActive: true,
+                    currencyId: currencyId,
+                    locationId: locationId,
+                    ticketLineId: ticketLine.id
+                });
+            }
+
+            if (cardRows.length > 0) {
+                await Card.bulkCreate(cardRows, { transaction });
+                console.log(`[Recipe Inventory] Created and linked ${cardRows.length} fresh cards for ingredient ${ingredient.id}`);
+            }
+        }
+    }
+
+    // Trigger stock count updates for the ingredients
+    if (productIdsForStockUpdate.length > 0) {
+        await productService.updateProductCountGroup(productIdsForStockUpdate, transaction);
+    }
+
+    return true;
+};
+
+// Helper function to reserve ingredient stock cards for selected options/modifiers
+const reserveIngredientCardsForOptions = async (ticketLine, selectedOptions, locationId, currencyMap, lockingSessionId, inputterId, transaction) => {
+    if (!selectedOptions) return;
+    
+    // Parse JSON if it is a string
+    let parsedOptions = selectedOptions;
+    if (typeof selectedOptions === 'string') {
+        try {
+            parsedOptions = JSON.parse(selectedOptions);
+        } catch (e) {
+            console.error('[Options Inventory] Failed to parse selectedOptions string:', e);
+            return;
+        }
+    }
+    
+    if (!Array.isArray(parsedOptions)) return;
+    
+    for (const opt of parsedOptions) {
+        if (opt.ingredientProductId) {
+            const ingredient = await Product.findByPk(opt.ingredientProductId, { transaction });
+            if (ingredient) {
+                const qtyNeeded = ticketLine.quantity || 1;
+                if (ingredient.validateStockOnSale) {
+                    console.log(`[Options Inventory] Reserving ${qtyNeeded} stock cards for ingredient ${ingredient.id} (${ingredient.pro_name})`);
+                    const availableIngredientCards = await Card.findAll({
+                        limit: qtyNeeded,
+                        order: [['createdAt', 'DESC']],
+                        where: {
+                            productId: ingredient.id,
+                            ticketLineId: null,
+                            card_isused: 0,
+                            locationId
+                        },
+                        transaction
+                    });
+                    if (availableIngredientCards && availableIngredientCards.length >= qtyNeeded) {
+                        await Card.update(
+                            {
+                                card_isused: 1,
+                                ticketLineId: ticketLine.id,
+                                locking_session_id: lockingSessionId
+                            },
+                            {
+                                where: {
+                                    id: { [Op.in]: availableIngredientCards.map(c => c.id) }
+                                },
+                                transaction
+                            }
+                        );
+                        console.log(`[Options Inventory] Reserved ${availableIngredientCards.length} cards for ingredient ${ingredient.id}`);
+                    } else {
+                        console.warn(`[Options Inventory] Stock not enough for ingredient #${ingredient.id} (${ingredient.pro_name})`);
+                    }
+                } else {
+                    console.log(`[Options Inventory] Creating ${qtyNeeded} fresh usage cards for non-stock ingredient ${ingredient.id} (${ingredient.pro_name})`);
+                    const currencyId = ingredient.saleCurrencyId || 1;
+                    const currency = currencyMap.get(currencyId);
+                    const exchangeRate = currency ? currency.rate : 1;
+                    const cost = ingredient.cost_price || 0;
+                    
+                    const ingredientCardRows = [];
+                    for (let i = 0; i < qtyNeeded; i++) {
+                        const cardSequenceNumber = common.generateLockingSessionId(10);
+                        ingredientCardRows.push({
+                            card_type_code: 10010,
+                            product_id: ingredient.pro_id,
+                            productId: ingredient.id,
+                            card_number: cardSequenceNumber,
+                            card_password: '',
+                            card_isused: 1,
+                            price: 0,
+                            cost: cost,
+                            cost_lcy: cost * exchangeRate,
+                            ticketLineId: ticketLine.id,
+                            locationId,
+                            locking_session_id: lockingSessionId,
+                            card_input_date: new Date(),
+                            inputter: inputterId || 1,
+                            update_user: inputterId || 1,
+                            update_time: new Date(),
+                            update_time_new: new Date(),
+                            isActive: true
+                        });
+                    }
+                    await Card.bulkCreate(ingredientCardRows, { transaction });
+                }
+                
+                // Trigger stock count update for the ingredient product
+                await productService.updateProductCountGroup([ingredient.id], transaction);
+            }
+        }
+    }
+};
 
 // Helper function to post ticket to sale tables
 const postTicketToSale = async (ticketId, transaction) => {
@@ -484,7 +684,13 @@ const releaseCardsForTicket = async (ticketId, transaction) => {
         const reservedCardIds = [];
         const freshCardIds = [];
 
-        const productMap = new Map(ticketLines.map(tl => [tl.productId, tl.product]));
+        // Fetch all products associated with the cards to know if they require stock validation
+        const cardProductIds = [...new Set(cards.map(c => c.productId))];
+        const products = await Product.findAll({
+            where: { id: { [Op.in]: cardProductIds } },
+            transaction
+        });
+        const productMap = new Map(products.map(p => [p.id, p]));
 
         for (const card of cards) {
             const product = productMap.get(card.productId);
@@ -1091,98 +1297,125 @@ const ticketController = {
                         discount_amount: line.discount_amount || 0,
                         promotion_note: line.promotion_note || null,
                         colorId: line.colorId || null,
-                        sizeId: line.sizeId || null
+                        sizeId: line.sizeId || null,
+                        selectedOptions: line.selectedOptions || null
                     }, { transaction });
                     
                     console.log(`✅ Ticket line created with ID ${ticketLine.id} for product ${line.productId}`);
                     
                     const qty = parseInt(line.quantity || 1);
                     
-                    if (product.validateStockOnSale) {
-                        console.log(`Reserving ${qty} stock cards for product ${line.productId} (${product.pro_name})`);
-                        
-                        const whereCondition = {
-                            productId: line.productId,
-                            ticketLineId: null,
-                            card_isused: 0,
-                            locationId
-                        };
+                    // 1. Try to reserve cards for recipe ingredients first
+                    const isRecipeProcessed = await reserveIngredientCardsForRecipe(
+                        ticketLine,
+                        product,
+                        parseFloat(line.quantity || 1),
+                        locationId,
+                        currencyMap,
+                        lockingSessionId,
+                        createUserId,
+                        transaction
+                    );
 
-                        if (checkVariant) {
-                            if (line.colorId !== undefined && line.colorId !== null) {
-                                whereCondition.colorId = line.colorId;
-                            }
-                            if (line.sizeId !== undefined && line.sizeId !== null) {
-                                whereCondition.sizeId = line.sizeId;
-                            }
-                        }
+                    // 2. If no recipe exists, process the main product itself
+                    if (!isRecipeProcessed) {
+                        if (product.validateStockOnSale) {
+                            console.log(`Reserving ${qty} stock cards for product ${line.productId} (${product.pro_name})`);
+                            
+                            const whereCondition = {
+                                productId: line.productId,
+                                ticketLineId: null,
+                                card_isused: 0,
+                                locationId
+                            };
 
-                        const availableCards = await Card.findAll({
-                            limit: qty,
-                            order: [['createdAt', 'DESC']],
-                            where: whereCondition,
-                            transaction
-                        });
-                        
-                        if (!availableCards || availableCards.length < qty) {
-                            throw new Error(`Stock not enough for product #${line.productId} - this should have been caught in validation`);
-                        }
-                        
-                        const [numUpdated] = await Card.update(
-                            {
-                                card_isused: 1,
-                                ticketLineId: ticketLine.id,
-                                locking_session_id: lockingSessionId
-                            },
-                            {
-                                where: {
-                                    id: { [Op.in]: availableCards.map(c => c.id) }
-                                },
+                            if (checkVariant) {
+                                if (line.colorId !== undefined && line.colorId !== null) {
+                                    whereCondition.colorId = line.colorId;
+                                }
+                                if (line.sizeId !== undefined && line.sizeId !== null) {
+                                    whereCondition.sizeId = line.sizeId;
+                                }
+                            }
+
+                            const availableCards = await Card.findAll({
+                                limit: qty,
+                                order: [['createdAt', 'DESC']],
+                                where: whereCondition,
                                 transaction
-                            }
-                        );
-                        console.log(`✓ Reserved and linked ${numUpdated} cards to ticket line ${ticketLine.id}`);
-                    } else {
-                        console.log(`Creating ${qty} fresh cards for non-stock product ${line.productId} (${product.pro_name})`);
-                        
-                        const currencyId = product.saleCurrencyId || 1;
-                        const currency = currencyMap.get(currencyId);
-                        const exchangeRate = currency ? currency.rate : 1;
-                        const cost = product.cost_price || 0;
-                        const costLCY = cost * exchangeRate;
-                        
-                        const cardRows = [];
-                        for (let i = 0; i < qty; i++) {
-                            const cardSequenceNumber = common.generateLockingSessionId(10);
-                            cardRows.push({
-                                card_type_code: 10010, // Stock type code
-                                product_id: product.pro_id, // Legacy product code
-                                productId: line.productId, // Primary key
-                                cost: cost,
-                                costLCY: costLCY,
-                                exchangeRate: exchangeRate,
-                                card_number: cardSequenceNumber,
-                                card_isused: 1, // Mark as used immediately
-                                locking_session_id: lockingSessionId,
-                                card_input_date: new Date(),
-                                inputter: createUserId || 1,
-                                update_user: createUserId || 1,
-                                update_time: new Date(),
-                                update_time_new: new Date(),
-                                isActive: true,
-                                currencyId: currencyId,
-                                locationId: locationId,
-                                ticketLineId: ticketLine.id,
-                                colorId: line.colorId || null,
-                                sizeId: line.sizeId || null
                             });
-                        }
-                        
-                        if (cardRows.length > 0) {
-                            await Card.bulkCreate(cardRows, { transaction });
-                            console.log(`✓ Created and linked ${cardRows.length} fresh cards for product ${line.productId} to ticket line ${ticketLine.id}`);
+                            
+                            if (!availableCards || availableCards.length < qty) {
+                                throw new Error(`Stock not enough for product #${line.productId} - this should have been caught in validation`);
+                            }
+                            
+                            const [numUpdated] = await Card.update(
+                                {
+                                    card_isused: 1,
+                                    ticketLineId: ticketLine.id,
+                                    locking_session_id: lockingSessionId
+                                },
+                                {
+                                    where: {
+                                        id: { [Op.in]: availableCards.map(c => c.id) }
+                                    },
+                                    transaction
+                                }
+                            );
+                            console.log(`✓ Reserved and linked ${numUpdated} cards to ticket line ${ticketLine.id}`);
+                        } else {
+                            console.log(`Creating ${qty} fresh cards for non-stock product ${line.productId} (${product.pro_name})`);
+                            
+                            const currencyId = product.saleCurrencyId || 1;
+                            const currency = currencyMap.get(currencyId);
+                            const exchangeRate = currency ? currency.rate : 1;
+                            const cost = product.cost_price || 0;
+                            const costLCY = cost * exchangeRate;
+                            
+                            const cardRows = [];
+                            for (let i = 0; i < qty; i++) {
+                                const cardSequenceNumber = common.generateLockingSessionId(10);
+                                cardRows.push({
+                                    card_type_code: 10010, // Stock type code
+                                    product_id: product.pro_id, // Legacy product code
+                                    productId: line.productId, // Primary key
+                                    cost: cost,
+                                    costLCY: costLCY,
+                                    exchangeRate: exchangeRate,
+                                    card_number: cardSequenceNumber,
+                                    card_isused: 1, // Mark as used immediately
+                                    locking_session_id: lockingSessionId,
+                                    card_input_date: new Date(),
+                                    inputter: createUserId || 1,
+                                    update_user: createUserId || 1,
+                                    update_time: new Date(),
+                                    update_time_new: new Date(),
+                                    isActive: true,
+                                    currencyId: currencyId,
+                                    locationId: locationId,
+                                    ticketLineId: ticketLine.id,
+                                    colorId: line.colorId || null,
+                                    sizeId: line.sizeId || null
+                                });
+                            }
+                            
+                            if (cardRows.length > 0) {
+                                    await Card.bulkCreate(cardRows, { transaction });
+                                console.log(`✓ Created and linked ${cardRows.length} fresh cards for product ${line.productId} to ticket line ${ticketLine.id}`);
+                            }
                         }
                     }
+
+                    // Reserve ingredient cards for options
+                    await reserveIngredientCardsForOptions(
+                        ticketLine,
+                        line.selectedOptions,
+                        locationId,
+                        currencyMap,
+                        lockingSessionId,
+                        createUserId,
+                        transaction
+                    );
                 }
                 
                 // Update stock counts
@@ -1452,98 +1685,125 @@ const ticketController = {
                         discount_amount: line.discount_amount || 0,
                         promotion_note: line.promotion_note || null,
                         colorId: line.colorId || null,
-                        sizeId: line.sizeId || null
+                        sizeId: line.sizeId || null,
+                        selectedOptions: line.selectedOptions || null
                     }, { transaction });
 
                     console.log(`✅ Ticket line created with ID ${ticketLine.id} for product ${line.productId}`);
 
                     const qty = parseInt(line.quantity || 1);
 
-                    if (product.validateStockOnSale) {
-                        console.log(`Reserving ${qty} stock cards for product ${line.productId} (${product.pro_name})`);
+                    // 1. Try to reserve cards for recipe ingredients first
+                    const isRecipeProcessed = await reserveIngredientCardsForRecipe(
+                        ticketLine,
+                        product,
+                        parseFloat(line.quantity || 1),
+                        locationId,
+                        currencyMap,
+                        lockingSessionId,
+                        ticket.createUserId,
+                        transaction
+                    );
 
-                        const whereCondition = {
-                            productId: line.productId,
-                            ticketLineId: null,
-                            card_isused: 0,
-                            locationId
-                        };
+                    // 2. If no recipe exists, process the main product itself
+                    if (!isRecipeProcessed) {
+                        if (product.validateStockOnSale) {
+                            console.log(`Reserving ${qty} stock cards for product ${line.productId} (${product.pro_name})`);
+                            
+                            const whereCondition = {
+                                productId: line.productId,
+                                ticketLineId: null,
+                                card_isused: 0,
+                                locationId
+                            };
 
-                        if (checkVariant) {
-                            if (line.colorId !== undefined && line.colorId !== null) {
-                                whereCondition.colorId = line.colorId;
+                            if (checkVariant) {
+                                if (line.colorId !== undefined && line.colorId !== null) {
+                                    whereCondition.colorId = line.colorId;
+                                }
+                                if (line.sizeId !== undefined && line.sizeId !== null) {
+                                    whereCondition.sizeId = line.sizeId;
+                                }
                             }
-                            if (line.sizeId !== undefined && line.sizeId !== null) {
-                                whereCondition.sizeId = line.sizeId;
-                            }
-                        }
 
-                        const availableCards = await Card.findAll({
-                            limit: qty,
-                            order: [['createdAt', 'DESC']],
-                            where: whereCondition,
-                            transaction
-                        });
-
-                        if (!availableCards || availableCards.length < qty) {
-                            throw new Error(`Stock not enough for product #${line.productId} - this should have been caught in validation`);
-                        }
-
-                        const [numUpdated] = await Card.update(
-                            {
-                                card_isused: 1,
-                                ticketLineId: ticketLine.id,
-                                locking_session_id: lockingSessionId
-                            },
-                            {
-                                where: {
-                                    id: { [Op.in]: availableCards.map(c => c.id) }
-                                },
+                            const availableCards = await Card.findAll({
+                                limit: qty,
+                                order: [['createdAt', 'DESC']],
+                                where: whereCondition,
                                 transaction
-                            }
-                        );
-                        console.log(`✓ Reserved and linked ${numUpdated} cards to ticket line ${ticketLine.id}`);
-                    } else {
-                        console.log(`Creating ${qty} fresh cards for non-stock product ${line.productId} (${product.pro_name})`);
-
-                        const currencyId = product.saleCurrencyId || 1;
-                        const currency = currencyMap.get(currencyId);
-                        const exchangeRate = currency ? currency.rate : 1;
-                        const cost = product.cost_price || 0;
-                        const costLCY = cost * exchangeRate;
-
-                        const cardRows = [];
-                        for (let i = 0; i < qty; i++) {
-                            const cardSequenceNumber = common.generateLockingSessionId(10);
-                            cardRows.push({
-                                card_type_code: 10010, // Stock type code
-                                product_id: product.pro_id, // Legacy product code
-                                productId: line.productId, // Primary key
-                                cost: cost,
-                                costLCY: costLCY,
-                                exchangeRate: exchangeRate,
-                                card_number: cardSequenceNumber,
-                                card_isused: 1, // Mark as used immediately
-                                locking_session_id: lockingSessionId,
-                                card_input_date: new Date(),
-                                inputter: ticket.createUserId || 1,
-                                update_user: ticket.createUserId || 1,
-                                update_time: new Date(),
-                                update_time_new: new Date(),
-                                isActive: true,
-                                currencyId: currencyId,
-                                locationId: locationId,
-                                ticketLineId: ticketLine.id,
-                                colorId: line.colorId || null,
-                                sizeId: line.sizeId || null
                             });
-                        }
-
-                        if (cardRows.length > 0) {
-                            await Card.bulkCreate(cardRows, { transaction });
-                            console.log(`✓ Created and linked ${cardRows.length} fresh cards for product ${line.productId} to ticket line ${ticketLine.id}`);
+                            
+                            if (!availableCards || availableCards.length < qty) {
+                                throw new Error(`Stock not enough for product #${line.productId} - this should have been caught in validation`);
+                            }
+                            
+                            const [numUpdated] = await Card.update(
+                                {
+                                    card_isused: 1,
+                                    ticketLineId: ticketLine.id,
+                                    locking_session_id: lockingSessionId
+                                },
+                                {
+                                    where: {
+                                        id: { [Op.in]: availableCards.map(c => c.id) }
+                                    },
+                                    transaction
+                                }
+                            );
+                            console.log(`✓ Reserved and linked ${numUpdated} cards to ticket line ${ticketLine.id}`);
+                        } else {
+                            console.log(`Creating ${qty} fresh cards for non-stock product ${line.productId} (${product.pro_name})`);
+                            
+                            const currencyId = product.saleCurrencyId || 1;
+                            const currency = currencyMap.get(currencyId);
+                            const exchangeRate = currency ? currency.rate : 1;
+                            const cost = product.cost_price || 0;
+                            const costLCY = cost * exchangeRate;
+                            
+                            const cardRows = [];
+                            for (let i = 0; i < qty; i++) {
+                                const cardSequenceNumber = common.generateLockingSessionId(10);
+                                cardRows.push({
+                                    card_type_code: 10010, // Stock type code
+                                    product_id: product.pro_id, // Legacy product code
+                                    productId: line.productId, // Primary key
+                                    cost: cost,
+                                    costLCY: costLCY,
+                                    exchangeRate: exchangeRate,
+                                    card_number: cardSequenceNumber,
+                                    card_isused: 1, // Mark as used immediately
+                                    locking_session_id: lockingSessionId,
+                                    card_input_date: new Date(),
+                                    inputter: ticket.createUserId || 1,
+                                    update_user: ticket.createUserId || 1,
+                                    update_time: new Date(),
+                                    update_time_new: new Date(),
+                                    isActive: true,
+                                    currencyId: currencyId,
+                                    locationId: locationId,
+                                    ticketLineId: ticketLine.id,
+                                    colorId: line.colorId || null,
+                                    sizeId: line.sizeId || null
+                                });
+                            }
+                            
+                            if (cardRows.length > 0) {
+                                    await Card.bulkCreate(cardRows, { transaction });
+                                console.log(`✓ Created and linked ${cardRows.length} fresh cards for product ${line.productId} to ticket line ${ticketLine.id}`);
+                            }
                         }
                     }
+
+                    // Reserve ingredient cards for options
+                    await reserveIngredientCardsForOptions(
+                        ticketLine,
+                        line.selectedOptions,
+                        locationId,
+                        currencyMap,
+                        lockingSessionId,
+                        ticket.createUserId || 1,
+                        transaction
+                    );
                 }
 
                 // Update stock counts

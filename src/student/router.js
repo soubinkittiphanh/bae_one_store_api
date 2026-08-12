@@ -19,6 +19,9 @@ router.get('/identify/:cardUid', studentController.getByCardUid);
 // Update student profile
 router.put('/update/:id', studentController.update);
 
+// Get student billing statement and history
+router.get('/:id/billing', studentController.getBillingStatement);
+
 // Delete student
 router.delete('/delete/:id', studentController.delete);
 

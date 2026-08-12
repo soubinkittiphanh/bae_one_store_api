@@ -24,6 +24,23 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING,
             allowNull: true,
         },
+        classId: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            comment: 'Reference to schoolClass model'
+        },
+        parentName: {
+            type: DataTypes.STRING,
+            allowNull: true
+        },
+        parentPhone: {
+            type: DataTypes.STRING,
+            allowNull: true
+        },
+        parentEmail: {
+            type: DataTypes.STRING,
+            allowNull: true
+        },
         isActive: {
             type: DataTypes.BOOLEAN,
             allowNull: false,
@@ -52,6 +69,18 @@ module.exports = (sequelize, DataTypes) => {
         Student.hasOne(models.bankAccount, {
             foreignKey: 'studentId',
             as: 'bankAccount'
+        });
+
+        // Student -> SchoolClass
+        Student.belongsTo(models.schoolClass, {
+            foreignKey: 'classId',
+            as: 'schoolClass'
+        });
+
+        // Student -> SchoolInvoice
+        Student.hasMany(models.schoolInvoice, {
+            foreignKey: 'studentId',
+            as: 'invoices'
         });
     };
 

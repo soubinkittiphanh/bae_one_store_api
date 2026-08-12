@@ -309,9 +309,54 @@ class QRController {
             }
 
             // Check if payment has been made
-            const latestCallback = qrRequest.callbacks && qrRequest.callbacks.length > 0
+            let latestCallback = qrRequest.callbacks && qrRequest.callbacks.length > 0
                 ? qrRequest.callbacks[0]
                 : null;
+
+            // Active Polling for BCEL Bank (which does not support push callbacks)
+            if ((!latestCallback || !latestCallback.isPaymentSuccess) && qrRequest.response?.rawResponse?.bankCode === 'BCEL') {
+                try {
+                    // Fetch bank config for BCEL
+                    const bankRecord = await db.bank.findOne({
+                        where: {
+                            code: 'BCEL',
+                            isActive: true
+                        }
+                    });
+                    if (bankRecord) {
+                        const config = typeof bankRecord.config === 'string'
+                            ? JSON.parse(bankRecord.config)
+                            : bankRecord.config;
+
+                        const provider = providerFactory.getProvider('BCEL');
+                        const statusResult = await provider.checkPaymentStatus(config, billNumber);
+
+                        if (statusResult && statusResult.success) {
+                            // Save payment callback since it is confirmed paid
+                            latestCallback = await db.PaymentCallback.create({
+                                instId: 'BCEL',
+                                txnAmount: statusResult.txnAmount,
+                                txnRefId: statusResult.txnRefId || billNumber,
+                                additionalInfo: '',
+                                paymentAccount: statusResult.paymentAccount || '',
+                                paymentAccountName: statusResult.paymentAccountName || '',
+                                callbackRegDate: new Date(),
+                                callBackConfirmDate: new Date(),
+                                txnStatus: '0',
+                                message: 'Paid via direct status query',
+                                storeLabel: qrRequest.storeLabel,
+                                terminalLabel: qrRequest.terminalLabel,
+                                billNumber: qrRequest.billNumber,
+                                isPaymentSuccess: true,
+                                rawCallbackData: statusResult.rawResponse
+                            });
+                            logger.info(`BCEL payment status confirmed via active polling. Saved callback record for ${billNumber}.`);
+                        }
+                    }
+                } catch (pollError) {
+                    logger.error(`Error polling BCEL payment status for ${billNumber}: ${pollError.message}`);
+                }
+            }
 
             const paymentStatus = {
                 billNumber: qrRequest.billNumber,

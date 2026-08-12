@@ -374,6 +374,7 @@ const fetchProductFromLocation = async (req, res) => {
           taxId: product.taxId,
           isActive: product.isActive,
           product_code: product.product_code,
+          _category: product._category,
           createdAt: null,
           updatedAt: null
         };
@@ -462,6 +463,7 @@ const fetchProductFromLocationV1 = async (req, res) => {
       p.baseUnitId,
       p.isActive,
       p.pro_category,
+      p._category,
       p.taxId,
       p.product_code,
       t.name AS tax_name,

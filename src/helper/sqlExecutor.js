@@ -107,6 +107,77 @@ const dropGeneralLedgerDeprecatedFields = async () => {
 };
 
 /**
+ * Automatically sets schoolInvoiceId to NULL for any schoolPayment records
+ * that reference a non-existent schoolInvoice ID. This prevents foreign key 
+ * constraint failures when Sequelize alters or adds constraints.
+ */
+const cleanOrphanedSchoolPayments = async () => {
+  try {
+    const dbName = sequelize.config.database;
+    
+    // Helper to check if a table exists
+    const tableExists = async (tableName) => {
+      const result = await sequelize.query(`
+        SELECT TABLE_NAME 
+        FROM INFORMATION_SCHEMA.TABLES 
+        WHERE TABLE_SCHEMA = :dbName 
+          AND LOWER(TABLE_NAME) = :tableName
+      `, {
+        replacements: { dbName, tableName: tableName.toLowerCase() },
+        type: QueryTypes.SELECT
+      });
+      return result.length > 0;
+    };
+
+    // Helper to check if a table has a specific column
+    const hasColumn = async (tableName, colName) => {
+      const result = await sequelize.query(`
+        SELECT COLUMN_NAME 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_SCHEMA = :dbName 
+          AND LOWER(TABLE_NAME) = :tableName
+          AND LOWER(COLUMN_NAME) = :colName
+      `, {
+        replacements: { dbName, tableName: tableName.toLowerCase(), colName: colName.toLowerCase() },
+        type: QueryTypes.SELECT
+      });
+      return result.length > 0;
+    };
+
+    const hasPaymentTable = await tableExists('schoolPayment');
+    const hasInvoiceTable = await tableExists('schoolInvoice');
+
+    if (hasPaymentTable && hasInvoiceTable && await hasColumn('schoolPayment', 'schoolInvoiceId')) {
+      logger.info("Checking for orphaned schoolInvoiceId references in schoolPayment...");
+      const orphanedCount = await sequelize.query(`
+        SELECT COUNT(*) as count 
+        FROM \`schoolPayment\` 
+        WHERE \`schoolInvoiceId\` NOT IN (SELECT \`id\` FROM \`schoolInvoice\`) 
+          AND \`schoolInvoiceId\` IS NOT NULL
+      `, {
+        type: QueryTypes.SELECT
+      });
+
+      const count = orphanedCount[0]?.count || 0;
+      if (count > 0) {
+        logger.info(`Found ${count} orphaned schoolPayment records referencing non-existent invoices. Cleaning them up...`);
+        await sequelize.query(`
+          UPDATE \`schoolPayment\` 
+          SET \`schoolInvoiceId\` = NULL 
+          WHERE \`schoolInvoiceId\` NOT IN (SELECT \`id\` FROM \`schoolInvoice\`) 
+            AND \`schoolInvoiceId\` IS NOT NULL
+        `, { type: QueryTypes.BULKUPDATE });
+        logger.info("Orphaned schoolPayment records successfully updated to NULL.");
+      } else {
+        logger.info("No orphaned schoolPayment records found.");
+      }
+    }
+  } catch (error) {
+    logger.error("Error executing schoolPayment orphaned records cleanup:", error);
+  }
+};
+
+/**
  * Reads and executes the SQL cleanup script (toomanykey.sql)
  * to drop redundant indexes before Sequelize synchronization runs.
  */
@@ -114,6 +185,9 @@ const executeSqlScript = async () => {
   try {
     // First run the dynamic general_ledger cleanup to ensure constraints are dropped correctly across any client DB
     await dropGeneralLedgerDeprecatedFields();
+
+    // Clean up orphaned schoolInvoiceId references in schoolPayment
+    await cleanOrphanedSchoolPayments();
 
     const filePath = path.join(__dirname, '../../toomanykey.sql');
     if (!fs.existsSync(filePath)) {

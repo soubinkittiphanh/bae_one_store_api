@@ -96,7 +96,9 @@ const buildApp = async () => {
     });
 
 
+    const spfController = require("./spf/controller")
     app.get("/api/public/company/findAll", companyController.getAllActiveCompanies)
+    app.get("/api/public/spf/find", spfController.getAllSPF)
     app.post("/api/v1/direct/callback", qrPayment.handleCallback)
 
     app.use("/api/product-temps", myRouter.productTemp)
@@ -132,6 +134,8 @@ const buildApp = async () => {
     app.use("/api/sale-payment", myRouter.salePayment)
     app.use("/api/saleLine", myRouter.saleLine)
     app.use("/api/product", myRouter.product)
+    app.use("/api/product-option-groups", myRouter.productOptionGroup)
+    app.use("/api/product-options", myRouter.productOption)
     // app.use("/api/product-temps",myRouter.productTemp)
     app.use("/api/recipes", myRouter.recipe)
     app.use("/api/transfer", myRouter.transfer)
@@ -198,6 +202,17 @@ const buildApp = async () => {
     app.use('/api/transactions', myRouter.transactionEntry);
     app.use('/api/accountDailyBalance', myRouter.accountDailyBalance);
     app.use('/api/businessDate', myRouter.businessDate);
+
+    // School module routes (prefixed with /api/school/ and validated via token middleware)
+    const { validateToken } = require("./api/jwtApi");
+    app.use('/api/school/academic-years', validateToken, myRouter.schoolAcademicYear);
+    app.use('/api/school/classes', validateToken, myRouter.schoolClass);
+    app.use('/api/school/fee-items', validateToken, myRouter.schoolFeeItem);
+    app.use('/api/school/fee-structures', validateToken, myRouter.schoolFeeStructure);
+    app.use('/api/school/invoices', validateToken, myRouter.schoolInvoice);
+    app.use('/api/school/payments', validateToken, myRouter.schoolPayment);
+    app.use('/api/school/reports', validateToken, myRouter.schoolReport);
+    app.use('/api/school/shifts', validateToken, myRouter.schoolShift);
     app.use('/api/database', myRouter.databaseBackup);
     app.use('/api/loyalty', myRouter.loyalty);
     app.use('/api/fixed-assets', myRouter.fixedAsset);

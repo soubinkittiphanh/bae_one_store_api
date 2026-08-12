@@ -94,6 +94,14 @@ const student = require("../student/router")
 const nfcCard = require("../nfcCard/router")
 const transactionEntry = require("../transactionEntry/router")
 const accountDailyBalance = require("../accountDailyBalance/router")
+const schoolAcademicYear = require("../school/academicYear/router")
+const schoolClass = require("../school/class/router")
+const schoolFeeItem = require("../school/feeItem/router")
+const schoolFeeStructure = require("../school/feeStructure/router")
+const schoolInvoice = require("../school/invoice/router")
+const schoolPayment = require("../school/payment/router")
+const schoolReport = require("../school/report/router")
+const schoolShift = require("../school/shift/router")
 const businessDate = require("../businessDate/router")
 const databaseBackup = require("../databaseBackup/router")
 const loyalty = require("../loyalty/router")
@@ -107,6 +115,8 @@ const mfProducts = require("../microfinance/products").router
 const mfAccounts = require("../microfinance/accounts").router
 const mfJournal = require("../microfinance/journal").router
 const mfBatch = require("../microfinance/batch").router
+const productOptionGroup = require("../productOptionGroup").router
+const productOption = require("../productOption").router
 
 module.exports = {
     orderRouter,
@@ -205,6 +215,14 @@ module.exports = {
     transactionEntry,
     mainCategory,
     accountDailyBalance,
+    schoolAcademicYear,
+    schoolClass,
+    schoolFeeItem,
+    schoolFeeStructure,
+    schoolInvoice,
+    schoolPayment,
+    schoolReport,
+    schoolShift,
     businessDate,
     databaseBackup,
     loyalty,
@@ -215,5 +233,7 @@ module.exports = {
     mfProducts,
     mfAccounts,
     mfJournal,
-    mfBatch
+    mfBatch,
+    productOptionGroup,
+    productOption
 }

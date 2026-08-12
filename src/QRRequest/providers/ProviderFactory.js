@@ -1,5 +1,6 @@
 const IndochinaBankProvider = require('./IndochinaBankProvider');
 const LaoVietBankProvider = require('./LaoVietBankProvider');
+const BcelProvider = require('./BcelProvider');
 
 class ProviderFactory {
     constructor() {
@@ -7,7 +8,9 @@ class ProviderFactory {
             'IB': new IndochinaBankProvider(),
             'INDOCHINA': new IndochinaBankProvider(),
             'LVB': new LaoVietBankProvider(),
-            'LAOVIETBANK': new LaoVietBankProvider()
+            'LAOVIETBANK': new LaoVietBankProvider(),
+            'BCEL': new BcelProvider(),
+            'ONEPAY': new BcelProvider()
         };
     }
 

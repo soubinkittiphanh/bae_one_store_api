@@ -7,7 +7,7 @@ module.exports = {
     async create(req, res) {
         const t = await sequelize.transaction();
         try {
-            const { studentId, firstName, lastName, grade, phoneNumber } = req.body;
+            const { studentId, firstName, lastName, grade, phoneNumber, classId, parentName, parentPhone, parentEmail } = req.body;
 
             // Create the student profile
             const newStudent = await student.create({
@@ -15,7 +15,11 @@ module.exports = {
                 firstName,
                 lastName,
                 grade,
-                phoneNumber
+                phoneNumber,
+                classId,
+                parentName,
+                parentPhone,
+                parentEmail
             }, { transaction: t });
 
             // Automatically create their 'Wallet' with 0 balance
@@ -78,13 +82,31 @@ module.exports = {
             return res.status(500).json({ error: error.message });
         }
     },
-    // 4. Get all students with their wallet and active cards
+    // 4. Get all students with their wallet, active cards and class details (with filtering)
     async getAll(req, res) {
         try {
+            const { search, classId } = req.query;
+            const whereClause = { isActive: true };
+
+            if (classId) {
+                whereClause.classId = classId;
+            }
+
+            if (search) {
+                const { Op } = require('sequelize');
+                whereClause[Op.or] = [
+                    { studentId: { [Op.like]: `%${search}%` } },
+                    { firstName: { [Op.like]: `%${search}%` } },
+                    { lastName: { [Op.like]: `%${search}%` } }
+                ];
+            }
+
             const students = await student.findAll({
+                where: whereClause,
                 include: [
                     { model: bankAccount, as: 'bankAccount' },
-                    { model: nfcCard, as: 'nfcCards', where: { isActive: true }, required: false }
+                    { model: nfcCard, as: 'nfcCards', where: { isActive: true }, required: false },
+                    { model: require("../models").schoolClass, as: 'schoolClass' }
                 ],
                 order: [['createdAt', 'DESC']]
             });
@@ -98,9 +120,9 @@ module.exports = {
     // 5. Update a student profile
     async update(req, res) {
         try {
-            const { firstName, lastName, grade, phoneNumber } = req.body;
+            const { firstName, lastName, grade, phoneNumber, classId, parentName, parentPhone, parentEmail } = req.body;
             const updated = await student.update(
-                { firstName, lastName, grade, phoneNumber },
+                { firstName, lastName, grade, phoneNumber, classId, parentName, parentPhone, parentEmail },
                 { where: { id: req.params.id } }
             );
 
@@ -134,6 +156,54 @@ module.exports = {
             return res.status(200).json({ message: "Student deactivated successfully" });
         } catch (error) {
             logger.error("Error deleting student:", error);
+            return res.status(500).json({ error: error.message });
+        }
+    },
+
+    // 7. Get student billing statement and history
+    async getBillingStatement(req, res) {
+        try {
+            const studentId = req.params.id;
+            const studentInfo = await student.findByPk(studentId, {
+                include: [
+                    { model: require("../models").schoolClass, as: 'schoolClass' },
+                    {
+                        model: require("../models").schoolInvoice,
+                        as: 'invoices',
+                        include: [
+                            { model: require("../models").schoolInvoiceLine, as: 'lines', include: [{ model: require("../models").feeItem, as: 'feeItem' }] },
+                            { model: require("../models").schoolPayment, as: 'payments', include: [{ model: require("../models").payment, as: 'paymentMethod' }] }
+                        ]
+                    }
+                ]
+            });
+
+            if (!studentInfo) {
+                return res.status(404).json({ message: "Student not found" });
+            }
+
+            // Calculate billing overview
+            const totalInvoiced = studentInfo.invoices.reduce((sum, inv) => sum + inv.totalAmount, 0);
+            const totalPaid = studentInfo.invoices.reduce((sum, inv) => sum + inv.paidAmount, 0);
+            const totalOutstanding = totalInvoiced - totalPaid;
+
+            return res.status(200).json({
+                student: {
+                    id: studentInfo.id,
+                    studentId: studentInfo.studentId,
+                    firstName: studentInfo.firstName,
+                    lastName: studentInfo.lastName,
+                    class: studentInfo.schoolClass ? studentInfo.schoolClass.name : 'N/A'
+                },
+                summary: {
+                    totalInvoiced,
+                    totalPaid,
+                    totalOutstanding
+                },
+                invoices: studentInfo.invoices
+            });
+        } catch (error) {
+            logger.error("Error fetching student billing statement:", error);
             return res.status(500).json({ error: error.message });
         }
     }

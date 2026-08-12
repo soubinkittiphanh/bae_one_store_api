@@ -12,7 +12,8 @@ const createSequelizeInstance = (database, options = {}) => {
       max: 10,
       min: 0,
       acquire: 30000,
-      idle: 10000
+      idle: 10000,
+      
     },
     timezone: '+07:00',
     dialectOptions: {
@@ -26,7 +27,7 @@ const createSequelizeInstance = (database, options = {}) => {
 
 // Main database connection
 const sequelize = createSequelizeInstance(env.database, {
-  pool: { max: 10, min: 0, acquire: 30000, idle: 10000 },
+  pool: { max: 10, min: 0, acquire: 30000, idle: 10000, },
   define: {
     indexes: [] // Empty array instead of false
   }
@@ -34,7 +35,7 @@ const sequelize = createSequelizeInstance(env.database, {
 
 // Tutorial database connection
 const tutorialDB = createSequelizeInstance('tutorial_db', {
-  pool: { max: 5, min: 0, acquire: 30000, idle: 10000 }
+  pool: { max: 5, min: 0, acquire: 30000, idle: 10000, }
 });
 
 // Database authentication
@@ -88,6 +89,14 @@ const initializeModels = () => {
     category: require("../category/model")(sequelize, DataTypes),
     student: require("../student/model")(sequelize, DataTypes),
     nfcCard: require("../nfcCard/model")(sequelize, DataTypes),
+    academicYear: require("../school/academicYear/model")(sequelize, DataTypes),
+    schoolClass: require("../school/class/model")(sequelize, DataTypes),
+    feeItem: require("../school/feeItem/model")(sequelize, DataTypes),
+    feeStructure: require("../school/feeStructure/model")(sequelize, DataTypes),
+    schoolInvoice: require("../school/invoice/model")(sequelize, DataTypes),
+    schoolInvoiceLine: require("../school/invoice/line/model")(sequelize, DataTypes),
+    schoolPayment: require("../school/payment/model")(sequelize, DataTypes),
+    cashierShift: require("../school/shift/model")(sequelize, DataTypes),
     transactionEntry: require("../transactionEntry/model")(sequelize, DataTypes),
     // Product related models
     tax: require("../tax/model")(sequelize, DataTypes),
@@ -98,6 +107,8 @@ const initializeModels = () => {
     image: require("../image/model")(sequelize, DataTypes),
     priceList: require("../priceList/model")(sequelize, DataTypes),
     webProductGroup: require("../web_product_group/model")(sequelize, DataTypes),
+    ProductOptionGroup: require("../productOptionGroup/model")(sequelize, DataTypes),
+    ProductOption: require("../productOption/model")(sequelize, DataTypes),
 
     // Customer and order models
     customer: require("../dynamicCustomer/model")(sequelize, DataTypes),
@@ -279,9 +290,25 @@ const defineAssociations = (db) => {
   // Location and company associations
   defineLocationAssociations(db);
 
+  // School Billing module associations
+  defineSchoolAssociations(db);
 
   // Many-to-many associations
   defineManyToManyAssociations(db);
+};
+
+const defineSchoolAssociations = (db) => {
+  // AcademicYear associations
+  db.academicYear.hasMany(db.schoolClass, { foreignKey: 'academicYearId', as: 'classes' });
+  db.academicYear.hasMany(db.feeStructure, { foreignKey: 'academicYearId', as: 'feeStructures' });
+  db.academicYear.hasMany(db.schoolInvoice, { foreignKey: 'academicYearId', as: 'invoices' });
+
+  // SchoolClass associations
+  db.schoolClass.hasMany(db.feeStructure, { foreignKey: 'classId', as: 'feeStructures' });
+
+  // FeeItem associations
+  db.feeItem.hasMany(db.feeStructure, { foreignKey: 'feeItemId', as: 'feeStructures' });
+  db.feeItem.hasMany(db.schoolInvoiceLine, { foreignKey: 'feeItemId', as: 'invoiceLines' });
 };
 
 // User and Group associations
@@ -317,6 +344,8 @@ const defineProductAssociations = (db) => {
   db.priceList.belongsTo(db.product, { foreignKey: 'productId', as: 'product' });
   db.priceList.belongsTo(db.currency, { foreignKey: 'currencyId', as: 'currency' });
 
+  // Product Option Groups & Options associations
+  db.product.hasMany(db.ProductOptionGroup, { foreignKey: 'productId', as: 'optionGroups' });
 };
 
 // Order associations
@@ -605,6 +634,26 @@ const synchronizeDatabase = async (db) => {
     const userService = require('../user/service');
     const brandNewDB = await userService.ensureDefaultUserExists();
     logger.info("Default user check complete.");
+
+    // Seed USE_BUSINESS_DATE SPF Configuration if it doesn't exist
+    try {
+      const spfModel = db.spf;
+      if (spfModel) {
+        const [record, created] = await spfModel.findOrCreate({
+          where: { code: 'USE_BUSINESS_DATE' },
+          defaults: {
+            value: 'N',
+            remark: 'Enable POS Business Date tracking and Daily Open/Close check [Y/N]',
+            isActive: true
+          }
+        });
+        if (created) {
+          logger.info("Seeded USE_BUSINESS_DATE system parameter as 'N'.");
+        }
+      }
+    } catch (spfError) {
+      logger.error("Error seeding USE_BUSINESS_DATE system parameter:", spfError);
+    }
   } catch (error) {
     try { await db.sequelize.query('SET FOREIGN_KEY_CHECKS = 1'); } catch (e) {}
     logger.error("Error synchronizing database:", error);
@@ -630,6 +679,9 @@ setupAssociations(db);
 
 if (process.env.NO_SYNC !== 'true') {
   synchronizeDatabase(db);
-}
+};
+
+// Trigger reload to verify synchronization success
+
 
 module.exports = db;

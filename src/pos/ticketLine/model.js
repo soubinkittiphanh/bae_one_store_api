@@ -59,6 +59,11 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: true,
             comment: 'Reference to Size table'
         },
+        selectedOptions: {
+            type: DataTypes.JSON,
+            allowNull: true,
+            comment: 'JSON array of selected options and modifiers'
+        },
     }, {
         sequelize,
         // don't forget to enable timestamps!
