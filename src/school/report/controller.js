@@ -46,7 +46,8 @@ module.exports = {
     // 2. Export Lists of Students with Overdue or Outstanding Balances
     async getOverdueBalances(req, res) {
         try {
-            const { classId, academicYearId } = req.query;
+            const { classId, academicYearId, feeItemId } = req.query;
+            const models = require("../../models");
             
             const whereClause = {
                 isActive: true,
@@ -73,35 +74,67 @@ module.exports = {
                 studentInclude.where = { classId };
             }
 
+            const queryInclusions = [
+                studentInclude,
+                { model: academicYear, as: 'academicYear', attributes: ['id', 'name'] }
+            ];
+
+            const lineInclude = {
+                model: models.schoolInvoiceLine,
+                as: 'lines',
+                attributes: ['id', 'amount', 'feeItemId'],
+                include: [{ model: models.feeItem, as: 'feeItem', attributes: ['id', 'name'] }]
+            };
+
+            if (feeItemId) {
+                lineInclude.where = { feeItemId };
+                lineInclude.required = true;
+            }
+            queryInclusions.push(lineInclude);
+
             const outstandingInvoices = await schoolInvoice.findAll({
                 where: whereClause,
-                include: [
-                    studentInclude,
-                    { model: academicYear, as: 'academicYear', attributes: ['id', 'name'] }
-                ],
+                include: queryInclusions,
                 order: [['balanceAmount', 'DESC']]
             });
 
             // Map and format response
-            const report = outstandingInvoices.map(invoice => ({
-                invoiceId: invoice.id,
-                invoiceNumber: invoice.invoiceNumber,
-                dueDate: invoice.dueDate,
-                status: invoice.status,
-                totalAmount: invoice.totalAmount,
-                paidAmount: invoice.paidAmount,
-                balanceAmount: invoice.balanceAmount,
-                academicYear: invoice.academicYear ? invoice.academicYear.name : 'N/A',
-                student: {
-                    id: invoice.student ? invoice.student.id : null,
-                    studentId: invoice.student ? invoice.student.studentId : 'N/A',
-                    name: invoice.student ? `${invoice.student.firstName} ${invoice.student.lastName}` : 'N/A',
-                    class: invoice.student?.schoolClass ? invoice.student.schoolClass.name : 'N/A',
-                    phone: invoice.student ? invoice.student.phoneNumber : 'N/A',
-                    parentName: invoice.student ? invoice.student.parentName : 'N/A',
-                    parentPhone: invoice.student ? invoice.student.parentPhone : 'N/A'
+            const report = outstandingInvoices.map(invoice => {
+                let displayTotal = invoice.totalAmount;
+                let displayPaid = invoice.paidAmount;
+                let displayBalance = invoice.balanceAmount;
+                let feeItemDetail = null;
+
+                if (feeItemId && invoice.lines && invoice.lines.length > 0) {
+                    const targetLine = invoice.lines[0];
+                    const ratio = invoice.totalAmount > 0 ? (invoice.paidAmount / invoice.totalAmount) : 0;
+                    displayTotal = targetLine.amount;
+                    displayPaid = targetLine.amount * ratio;
+                    displayBalance = targetLine.amount * (1 - ratio);
+                    feeItemDetail = targetLine.feeItem ? targetLine.feeItem.name : '';
                 }
-            }));
+
+                return {
+                    invoiceId: invoice.id,
+                    invoiceNumber: invoice.invoiceNumber,
+                    dueDate: invoice.dueDate,
+                    status: invoice.status,
+                    totalAmount: displayTotal,
+                    paidAmount: displayPaid,
+                    balanceAmount: displayBalance,
+                    feeItemDetail,
+                    academicYear: invoice.academicYear ? invoice.academicYear.name : 'N/A',
+                    student: {
+                        id: invoice.student ? invoice.student.id : null,
+                        studentId: invoice.student ? invoice.student.studentId : 'N/A',
+                        name: invoice.student ? `${invoice.student.firstName} ${invoice.student.lastName}` : 'N/A',
+                        class: invoice.student?.schoolClass ? invoice.student.schoolClass.name : 'N/A',
+                        phone: invoice.student ? invoice.student.phoneNumber : 'N/A',
+                        parentName: invoice.student ? invoice.student.parentName : 'N/A',
+                        parentPhone: invoice.student ? invoice.student.parentPhone : 'N/A'
+                    }
+                };
+            });
 
             return res.status(200).json(report);
         } catch (error) {
