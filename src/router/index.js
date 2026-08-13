@@ -96,6 +96,7 @@ const transactionEntry = require("../transactionEntry/router")
 const accountDailyBalance = require("../accountDailyBalance/router")
 const schoolAcademicYear = require("../school/academicYear/router")
 const schoolClass = require("../school/class/router")
+const schoolRoom = require("../school/room/router")
 const schoolFeeItem = require("../school/feeItem/router")
 const schoolFeeStructure = require("../school/feeStructure/router")
 const schoolInvoice = require("../school/invoice/router")
@@ -217,6 +218,7 @@ module.exports = {
     accountDailyBalance,
     schoolAcademicYear,
     schoolClass,
+    schoolRoom,
     schoolFeeItem,
     schoolFeeStructure,
     schoolInvoice,

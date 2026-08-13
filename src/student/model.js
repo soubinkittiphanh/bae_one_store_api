@@ -20,6 +20,10 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING,
             allowNull: true,
         },
+        room: {
+            type: DataTypes.STRING,
+            allowNull: true,
+        },
         phoneNumber: {
             type: DataTypes.STRING,
             allowNull: true,
@@ -28,6 +32,11 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.INTEGER,
             allowNull: true,
             comment: 'Reference to schoolClass model'
+        },
+        roomId: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            comment: 'Reference to schoolRoom model'
         },
         parentName: {
             type: DataTypes.STRING,
@@ -75,6 +84,12 @@ module.exports = (sequelize, DataTypes) => {
         Student.belongsTo(models.schoolClass, {
             foreignKey: 'classId',
             as: 'schoolClass'
+        });
+
+        // Student -> SchoolRoom
+        Student.belongsTo(models.schoolRoom, {
+            foreignKey: 'roomId',
+            as: 'schoolRoom'
         });
 
         // Student -> SchoolInvoice

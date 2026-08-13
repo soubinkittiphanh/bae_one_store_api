@@ -1,9 +1,9 @@
 module.exports = (sequelize, DataTypes) => {
-    const SchoolClass = sequelize.define('schoolClass', {
+    const SchoolRoom = sequelize.define('schoolRoom', {
         name: {
             type: DataTypes.STRING(100),
             allowNull: false,
-            comment: 'e.g. Grade 1A, Grade 2'
+            comment: 'e.g. Room 101, Room A'
         },
         isActive: {
             type: DataTypes.BOOLEAN,
@@ -18,20 +18,16 @@ module.exports = (sequelize, DataTypes) => {
         freezeTableName: true
     });
 
-    SchoolClass.associate = models => {
-        SchoolClass.belongsTo(models.academicYear, {
-            foreignKey: 'academicYearId',
-            as: 'academicYear'
-        });
-        SchoolClass.hasMany(models.student, {
+    SchoolRoom.associate = models => {
+        SchoolRoom.belongsTo(models.schoolClass, {
             foreignKey: 'classId',
+            as: 'schoolClass'
+        });
+        SchoolRoom.hasMany(models.student, {
+            foreignKey: 'roomId',
             as: 'students'
-        });
-        SchoolClass.hasMany(models.schoolRoom, {
-            foreignKey: 'classId',
-            as: 'schoolRooms'
         });
     };
 
-    return SchoolClass;
+    return SchoolRoom;
 };

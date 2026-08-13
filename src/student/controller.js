@@ -7,7 +7,7 @@ module.exports = {
     async create(req, res) {
         const t = await sequelize.transaction();
         try {
-            const { studentId, firstName, lastName, grade, phoneNumber, classId, parentName, parentPhone, parentEmail } = req.body;
+            const { studentId, firstName, lastName, grade, phoneNumber, classId, roomId, parentName, parentPhone, parentEmail, room } = req.body;
 
             // Create the student profile
             const newStudent = await student.create({
@@ -17,9 +17,11 @@ module.exports = {
                 grade,
                 phoneNumber,
                 classId,
+                roomId,
                 parentName,
                 parentPhone,
-                parentEmail
+                parentEmail,
+                room
             }, { transaction: t });
 
             // Automatically create their 'Wallet' with 0 balance
@@ -74,7 +76,9 @@ module.exports = {
             const data = await student.findByPk(req.params.id, {
                 include: [
                     { model: bankAccount, as: 'bankAccount' },
-                    { model: nfcCard, as: 'nfcCards', where: { isActive: true }, required: false }
+                    { model: nfcCard, as: 'nfcCards', where: { isActive: true }, required: false },
+                    { model: require("../models").schoolClass, as: 'schoolClass' },
+                    { model: require("../models").schoolRoom, as: 'schoolRoom' }
                 ]
             });
             return res.status(200).json(data);
@@ -106,7 +110,8 @@ module.exports = {
                 include: [
                     { model: bankAccount, as: 'bankAccount' },
                     { model: nfcCard, as: 'nfcCards', where: { isActive: true }, required: false },
-                    { model: require("../models").schoolClass, as: 'schoolClass' }
+                    { model: require("../models").schoolClass, as: 'schoolClass' },
+                    { model: require("../models").schoolRoom, as: 'schoolRoom' }
                 ],
                 order: [['createdAt', 'DESC']]
             });
@@ -120,9 +125,9 @@ module.exports = {
     // 5. Update a student profile
     async update(req, res) {
         try {
-            const { firstName, lastName, grade, phoneNumber, classId, parentName, parentPhone, parentEmail } = req.body;
+            const { firstName, lastName, grade, phoneNumber, classId, roomId, parentName, parentPhone, parentEmail, room } = req.body;
             const updated = await student.update(
-                { firstName, lastName, grade, phoneNumber, classId, parentName, parentPhone, parentEmail },
+                { firstName, lastName, grade, phoneNumber, classId, roomId, parentName, parentPhone, parentEmail, room },
                 { where: { id: req.params.id } }
             );
 

@@ -207,6 +207,7 @@ const buildApp = async () => {
     const { validateToken } = require("./api/jwtApi");
     app.use('/api/school/academic-years', validateToken, myRouter.schoolAcademicYear);
     app.use('/api/school/classes', validateToken, myRouter.schoolClass);
+    app.use('/api/school/rooms', validateToken, myRouter.schoolRoom);
     app.use('/api/school/fee-items', validateToken, myRouter.schoolFeeItem);
     app.use('/api/school/fee-structures', validateToken, myRouter.schoolFeeStructure);
     app.use('/api/school/invoices', validateToken, myRouter.schoolInvoice);

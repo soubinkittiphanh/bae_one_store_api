@@ -91,6 +91,7 @@ const initializeModels = () => {
     nfcCard: require("../nfcCard/model")(sequelize, DataTypes),
     academicYear: require("../school/academicYear/model")(sequelize, DataTypes),
     schoolClass: require("../school/class/model")(sequelize, DataTypes),
+    schoolRoom: require("../school/room/model")(sequelize, DataTypes),
     feeItem: require("../school/feeItem/model")(sequelize, DataTypes),
     feeStructure: require("../school/feeStructure/model")(sequelize, DataTypes),
     schoolInvoice: require("../school/invoice/model")(sequelize, DataTypes),
