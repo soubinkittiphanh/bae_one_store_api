@@ -178,5 +178,64 @@ module.exports = {
             logger.error("Error generating class-room summary report:", error);
             return res.status(500).json({ message: "Internal Server Error", error: error.message });
         }
+    },
+
+    // 4. Fee Item Invoice Summary
+    async getFeeItemSummary(req, res) {
+        try {
+            const { academicYearId } = req.query;
+            const models = require("../../models");
+
+            const invoiceLines = await models.schoolInvoiceLine.findAll({
+                include: [
+                    {
+                        model: models.schoolInvoice,
+                        as: 'invoice',
+                        where: { isActive: true, ...(academicYearId ? { academicYearId } : {}) }
+                    },
+                    {
+                        model: models.feeItem,
+                        as: 'feeItem',
+                        attributes: ['id', 'name']
+                    }
+                ]
+            });
+
+            const summaryMap = {};
+
+            invoiceLines.forEach(line => {
+                const item = line.feeItem;
+                const itemId = item?.id || 'unknown';
+                const itemName = item?.name || 'Unassigned Fee Item';
+
+                if (!summaryMap[itemId]) {
+                    summaryMap[itemId] = {
+                        feeItemId: itemId,
+                        feeItemName: itemName,
+                        lineCount: 0,
+                        totalBilled: 0,
+                        totalPaid: 0,
+                        totalPending: 0
+                    };
+                }
+
+                const g = summaryMap[itemId];
+                const inv = line.invoice;
+                const paymentRatio = inv.totalAmount > 0 ? (inv.paidAmount / inv.totalAmount) : 0;
+                
+                const linePaid = line.amount * paymentRatio;
+                const linePending = line.amount - linePaid;
+
+                g.lineCount += 1;
+                g.totalBilled += line.amount;
+                g.totalPaid += linePaid;
+                g.totalPending += linePending;
+            });
+
+            return res.status(200).json(Object.values(summaryMap));
+        } catch (error) {
+            logger.error("Error generating fee item summary report:", error);
+            return res.status(500).json({ message: "Internal Server Error", error: error.message });
+        }
     }
 };
