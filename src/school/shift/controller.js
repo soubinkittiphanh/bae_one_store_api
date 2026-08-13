@@ -80,5 +80,79 @@ module.exports = {
             logger.error("Error fetching active shift:", error);
             return res.status(500).json({ message: "Internal Server Error", error: error.message });
         }
+    },
+
+    async getShiftReport(req, res) {
+        try {
+            const shiftId = req.params.id;
+            const models = require("../../models");
+
+            const shift = await cashierShift.findByPk(shiftId, {
+                include: [{ model: models.user, as: 'user', attributes: ['id', 'cus_name', 'username'] }]
+            });
+
+            if (!shift) {
+                return res.status(404).json({ message: "Shift record not found" });
+            }
+
+            // Find all payments collected during this shift
+            const payments = await models.schoolPayment.findAll({
+                where: { cashierShiftId: shiftId, isActive: true },
+                include: [{ model: models.payment, as: 'paymentMethod', attributes: ['id', 'payment_code', 'payment_name'] }]
+            });
+
+            // Group payments by payment method
+            const paymentSummaryMap = {};
+            let totalCollected = 0;
+            let cashCollected = 0;
+
+            payments.forEach(p => {
+                const methodCode = p.paymentMethod ? p.paymentMethod.payment_code : 'UNKNOWN';
+                const methodName = p.paymentMethod ? p.paymentMethod.payment_name : 'Unknown';
+
+                if (!paymentSummaryMap[methodCode]) {
+                    paymentSummaryMap[methodCode] = {
+                        methodCode,
+                        methodName,
+                        totalAmount: 0,
+                        transactionCount: 0
+                    };
+                }
+
+                paymentSummaryMap[methodCode].totalAmount += p.amount;
+                paymentSummaryMap[methodCode].transactionCount += 1;
+                totalCollected += p.amount;
+
+                // Cash payments affect expected closing cash in the drawer
+                if (methodCode.toUpperCase() === 'CASH') {
+                    cashCollected += p.amount;
+                }
+            });
+
+            const expectedClosingCash = shift.openingCash + cashCollected;
+
+            return res.status(200).json({
+                shift: {
+                    id: shift.id,
+                    status: shift.status,
+                    openTime: shift.openTime,
+                    closeTime: shift.closeTime,
+                    openingCash: shift.openingCash,
+                    closingCash: shift.closingCash,
+                    expectedClosingCash
+                },
+                cashier: shift.user ? {
+                    id: shift.user.id,
+                    name: shift.user.cus_name || shift.user.username,
+                    username: shift.user.username
+                } : null,
+                payments: Object.values(paymentSummaryMap),
+                totalCollected,
+                expectedClosingCash
+            });
+        } catch (error) {
+            logger.error("Error generating shift summary report:", error);
+            return res.status(500).json({ message: "Internal Server Error", error: error.message });
+        }
     }
 };

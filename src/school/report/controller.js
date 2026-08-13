@@ -108,5 +108,75 @@ module.exports = {
             logger.error("Error generating outstanding balance report:", error);
             return res.status(500).json({ message: "Internal Server Error", error: error.message });
         }
+    },
+
+    // 3. Class and Room Invoice Summaries
+    async getClassRoomSummary(req, res) {
+        try {
+            const { academicYearId } = req.query;
+            const whereClause = { isActive: true };
+            if (academicYearId) {
+                whereClause.academicYearId = academicYearId;
+            }
+
+            const invoices = await schoolInvoice.findAll({
+                where: whereClause,
+                include: [
+                    {
+                        model: student,
+                        as: 'student',
+                        include: [
+                            { model: schoolClass, as: 'schoolClass', attributes: ['id', 'name'] },
+                            { model: require("../../models").schoolRoom, as: 'schoolRoom', attributes: ['id', 'name'] }
+                        ]
+                    }
+                ]
+            });
+
+            // Group by class and room
+            const summaryMap = {};
+
+            invoices.forEach(inv => {
+                const s = inv.student;
+                const classId = s?.schoolClass?.id || 'unknown';
+                const className = s?.schoolClass?.name || 'Unassigned Class';
+                const roomId = s?.schoolRoom?.id || 'unknown';
+                const roomName = s?.schoolRoom?.name || 'Unassigned Room';
+
+                const groupKey = `${classId}-${roomId}`;
+
+                if (!summaryMap[groupKey]) {
+                    summaryMap[groupKey] = {
+                        classId,
+                        className,
+                        roomId,
+                        roomName,
+                        totalInvoices: 0,
+                        totalAmount: 0,
+                        paidAmount: 0,
+                        balanceAmount: 0,
+                        paidCount: 0,
+                        pendingCount: 0
+                    };
+                }
+
+                const g = summaryMap[groupKey];
+                g.totalInvoices += 1;
+                g.totalAmount += inv.totalAmount;
+                g.paidAmount += inv.paidAmount;
+                g.balanceAmount += inv.balanceAmount;
+
+                if (inv.status === 'PAID') {
+                    g.paidCount += 1;
+                } else {
+                    g.pendingCount += 1;
+                }
+            });
+
+            return res.status(200).json(Object.values(summaryMap));
+        } catch (error) {
+            logger.error("Error generating class-room summary report:", error);
+            return res.status(500).json({ message: "Internal Server Error", error: error.message });
+        }
     }
 };
