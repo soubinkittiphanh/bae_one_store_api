@@ -7,12 +7,13 @@ class BcelProvider extends BasePaymentProvider {
         super();
         this.tokenCache = {
             token: null,
-            expiry: null
+            expiry: null,
+            mcid: null
         };
     }
 
     /**
-     * Retrieve a valid JWT bearer token from BCEL pos/authen API.
+     * Retrieve a valid JWT bearer token from BCEL pos/authen or authen API.
      * Implements in-memory caching to avoid rate limit (5 req / 60 s).
      */
     async getAccessToken(config, requestData = {}) {
@@ -25,28 +26,40 @@ class BcelProvider extends BasePaymentProvider {
 
         const authUrl = config.apiUrl || 'https://bcel.la:8093/onepayservice';
         
-        // requestData parameters from SPF UI take precedence over DB seeded defaults
-        const clientId = requestData.memberId || config.clientId || config.memberId;
-        const clientSecret = requestData.password || config.clientSecret || config.password;
-        const mcid = requestData.merchantId || config.merchantId;
+        // requestData parameters from SPF UI take precedence and should not be mixed with default database configurations
+        const isRequestOverride = !!requestData.memberId;
+        const clientId = isRequestOverride ? requestData.memberId : (config.clientId || config.memberId);
+        const clientSecret = isRequestOverride ? requestData.password : (config.clientSecret || config.password);
+        const mcid = isRequestOverride ? requestData.merchantId : config.merchantId;
 
-        if (!clientId || !clientSecret || !mcid) {
-            throw new Error('BCEL Provider: Missing configuration credentials (clientId, clientSecret, or merchantId)');
+        if (!clientId || !clientSecret) {
+            throw new Error('BCEL Provider: Missing configuration credentials (username/clientId and password/clientSecret)');
         }
 
         // Remove trailing slashes from API URL
         const cleanAuthUrl = authUrl.replace(/\/+$/, '');
 
-        logger.info(`[BCEL Provider] Authenticating POS terminal for mcid: ${mcid}...`);
-        
-        const authResponse = await axios.post(`${cleanAuthUrl}/pos/authen`, {
-            id: clientId,
-            secret: clientSecret,
-            mcid: mcid
-        }, {
-            headers: { 'Content-Type': 'application/json' },
-            timeout: 10000
-        });
+        let authResponse;
+        if (clientId && clientSecret && mcid && mcid.trim() !== '') {
+            logger.info(`[BCEL Provider] Authenticating POS terminal for mcid: ${mcid} using /pos/authen...`);
+            authResponse = await axios.post(`${cleanAuthUrl}/pos/authen`, {
+                id: clientId,
+                secret: clientSecret,
+                mcid: mcid
+            }, {
+                headers: { 'Content-Type': 'application/json' },
+                timeout: 10000
+            });
+        } else {
+            logger.info(`[BCEL Provider] Authenticating merchant user: ${clientId} using /authen...`);
+            authResponse = await axios.post(`${cleanAuthUrl}/authen`, {
+                username: clientId,
+                password: clientSecret
+            }, {
+                headers: { 'Content-Type': 'application/json' },
+                timeout: 10000
+            });
+        }
 
         if (!authResponse.data || !authResponse.data.jwt) {
             throw new Error(`BCEL Authentication failed: ${authResponse.data?.message || 'No JWT token received'}`);
@@ -55,8 +68,9 @@ class BcelProvider extends BasePaymentProvider {
         this.tokenCache.token = authResponse.data.jwt;
         // Parse expiry from response (e.g., "2025-06-22T12:00:00Z")
         this.tokenCache.expiry = authResponse.data.expire ? new Date(authResponse.data.expire) : new Date(now.getTime() + 24 * 60 * 60 * 1000); // fallback to 24h
+        this.tokenCache.mcid = authResponse.data.user?.MCID || mcid || '';
         
-        logger.info(`[BCEL Provider] Authentication successful. Token expires at: ${this.tokenCache.expiry}`);
+        logger.info(`[BCEL Provider] Authentication successful. Token expires at: ${this.tokenCache.expiry}, MCID: ${this.tokenCache.mcid}`);
         return this.tokenCache.token;
     }
 
@@ -107,7 +121,7 @@ class BcelProvider extends BasePaymentProvider {
                 qrString: rawData.data.qrc,
                 txnAmount: parseFloat(amount),
                 txnCurrency: 'LAK',
-                merchantId: config.merchantId,
+                merchantId: this.tokenCache.mcid || config.merchantId || requestData.merchantId || '',
                 billNumber: uuid,
                 storeLabel: requestData.storeLabel,
                 terminalLabel: requestData.terminalLabel

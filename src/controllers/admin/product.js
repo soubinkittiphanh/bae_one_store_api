@@ -198,6 +198,7 @@ const fetchProductFromLocation = async (req, res) => {
     p.locking_session_id,
     p.isActive,
     p.product_code,
+    p.createdAt,
     t.categ_name,
     co.name as co_name,
     co.id as companyId,
@@ -375,7 +376,7 @@ const fetchProductFromLocation = async (req, res) => {
           isActive: product.isActive,
           product_code: product.product_code,
           _category: product._category,
-          createdAt: null,
+          createdAt: product.createdAt,
           updatedAt: null
         };
 
@@ -466,6 +467,7 @@ const fetchProductFromLocationV1 = async (req, res) => {
       p._category,
       p.taxId,
       p.product_code,
+      p.createdAt,
       t.name AS tax_name,
       t.rate AS tax_rate,
       t.code AS tax_code,
