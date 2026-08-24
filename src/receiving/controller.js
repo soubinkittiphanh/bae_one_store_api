@@ -107,6 +107,15 @@ const PoHeaderController = {
           await purchasingService.updatePoStatus(req.body.poHeaderId, t);
         }
 
+        // POST STOCK TOPUP JOURNAL ENTRY TO GL
+        try {
+          const AccountingPostingService = require('../GL/accountingPostingService');
+          await AccountingPostingService.postStockTopupEntry(newPoHeader, req.body.lines || [], t);
+        } catch (glError) {
+          logger.error('Failed to post stock topup GL entry: ' + glError.message);
+          throw glError;
+        }
+
         return { newPoHeader, newReceiveLineCreated };
       });
       return res.status(201).json(result)
@@ -161,12 +170,21 @@ const PoHeaderController = {
 
   deleteById: async (req, res) => {
     try {
-      const poHeader = await RECHeader.findByPk(req.params.id);
+      const poHeader = await RECHeader.findByPk(req.params.id, { include: ['lines'] });
       if (!poHeader) {
         return res.status(404).send('PoHeader not found');
       }
 
       await sequelize.transaction(async (t) => {
+        // POST REVERSAL JOURNAL ENTRY TO GL (Before destroying records)
+        try {
+          const AccountingPostingService = require('../GL/accountingPostingService');
+          await AccountingPostingService.postStockDeletionEntry(poHeader, poHeader.lines || [], t);
+        } catch (glError) {
+          logger.error('Failed to post stock deletion GL entry: ' + glError.message);
+          throw glError;
+        }
+
         await poHeader.destroy({ transaction: t });
         if (poHeader.poHeaderId) {
           const purchasingService = require('../purchasing/service');

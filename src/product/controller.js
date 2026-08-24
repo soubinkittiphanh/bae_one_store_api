@@ -1,5 +1,5 @@
 
-const { product: Product, webProductGroup: WebGroup, category: Category, unit: Unit, productAudit, user: User } = require('../models');
+const { product: Product, webProductGroup: WebGroup, category: Category, unit: Unit, productAudit, user: User, productUnit: ProductUnit } = require('../models');
 const { body, validationResult } = require('express-validator');
 const logger = require('../api/logger');
 const { literal, Op } = require('sequelize');
@@ -305,7 +305,22 @@ const getAllActiveProducts = async (req, res) => {
 const getProductById = async (req, res) => {
   const { id } = req.params;
   try {
-    const product = await Product.findOne({ include: ['costCurrency', 'saleCurrency', 'images'], where: { id } });
+    const product = await Product.findOne({
+      include: [
+        'costCurrency',
+        'saleCurrency',
+        'images',
+        'stockUnit',
+        'baseUnit',
+        'receiveUnit',
+        {
+          model: ProductUnit,
+          as: 'productUnits',
+          include: [{ model: Unit, as: 'unit', attributes: ['id', 'name', 'symbol', 'conversionRate'] }]
+        }
+      ],
+      where: { id }
+    });
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
     }
@@ -361,8 +376,10 @@ const createProduct = async (req, res) => {
   let { pro_id, pro_name, pro_price, pro_desc, pro_status, validateStockOnSale,
     pro_image_path, retail_cost_percent, cost_price,
     stock_count, locking_session_id, isActive, minStock, barCode, saleCurrencyId, costCurrencyId, companyId, vendorName, _category,
-    receiveUnitId, stockUnitId, baseUnitId, product_code } = req.body;
-  locking_session_id = Date.now()
+    receiveUnitId, stockUnitId, baseUnitId, product_code, productUnits } = req.body;
+  locking_session_id = Date.now();
+  
+  const transaction = await Product.sequelize.transaction();
   try {
     const newProduct = await Product.create({
       pro_id,
@@ -389,10 +406,27 @@ const createProduct = async (req, res) => {
       baseUnitId,
       product_code,
     }, {
+      transaction,
       context: { userId: req.user?.id || 1, reason: 'Product created via API' }
     });
+
+    if (productUnits && Array.isArray(productUnits)) {
+      for (const unitItem of productUnits) {
+        await ProductUnit.create({
+          productId: newProduct.id,
+          unitId: unitItem.unitId,
+          price: unitItem.price,
+          barCode: unitItem.barCode,
+          isBaseUnit: unitItem.isBaseUnit || false,
+          isActive: unitItem.isActive !== undefined ? unitItem.isActive : true
+        }, { transaction });
+      }
+    }
+
+    await transaction.commit();
     res.status(200).json(newProduct);
   } catch (error) {
+    await transaction.rollback();
     console.error(error);
     res.status(500).json({ message: 'Internal server error' });
   }
@@ -408,10 +442,13 @@ const updateProductById = async (req, res) => {
   const { pro_id, pro_name, pro_price, pro_desc, pro_status, validateStockOnSale,
     pro_image_path, retail_cost_percent, cost_price, stock_count,
     isActive, minStock, barCode, saleCurrencyId, costCurrencyId, companyId, vendorName, _category,
-    receiveUnitId, stockUnitId, baseUnitId, product_code } = req.body;
+    receiveUnitId, stockUnitId, baseUnitId, product_code, productUnits } = req.body;
+  
+  const transaction = await Product.sequelize.transaction();
   try {
     const product = await Product.findOne({ where: { id } });
     if (!product) {
+      await transaction.rollback();
       return res.status(404).json({ message: 'Product not found' });
     }
     await product.update(
@@ -434,11 +471,53 @@ const updateProductById = async (req, res) => {
         product_code
       },
       { 
+        transaction,
         context: { userId: req.user?.id || 1, reason: req.body.reason || 'Product updated via API' }
       }
     );
+
+    if (productUnits && Array.isArray(productUnits)) {
+      const incomingIds = productUnits.map(item => item.id).filter(id => id);
+
+      // Delete units not in incoming list
+      await ProductUnit.destroy({
+        where: {
+          productId: id,
+          id: { [Op.notIn]: incomingIds }
+        },
+        transaction
+      });
+
+      // Create/Update incoming units
+      for (const unitItem of productUnits) {
+        if (unitItem.id) {
+          await ProductUnit.update({
+            unitId: unitItem.unitId,
+            price: unitItem.price,
+            barCode: unitItem.barCode,
+            isBaseUnit: unitItem.isBaseUnit || false,
+            isActive: unitItem.isActive !== undefined ? unitItem.isActive : true
+          }, {
+            where: { id: unitItem.id, productId: id },
+            transaction
+          });
+        } else {
+          await ProductUnit.create({
+            productId: id,
+            unitId: unitItem.unitId,
+            price: unitItem.price,
+            barCode: unitItem.barCode,
+            isBaseUnit: unitItem.isBaseUnit || false,
+            isActive: unitItem.isActive !== undefined ? unitItem.isActive : true
+          }, { transaction });
+        }
+      }
+    }
+
+    await transaction.commit();
     res.status(200).json({ message: 'Product updated successfully' });
   } catch (error) {
+    await transaction.rollback();
     console.error(error);
     res.status(500).json({ message: 'Internal server error' });
   }

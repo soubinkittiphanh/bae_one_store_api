@@ -229,6 +229,20 @@ const createProdV1 = async (req, imagesObj) => {
             context: { userId, reason: 'Product created via Dashboard' }
         });
 
+        if (body.productUnits && Array.isArray(body.productUnits)) {
+            const ProductUnit = require('../models').productUnit;
+            for (const unitItem of body.productUnits) {
+                await ProductUnit.create({
+                    productId: newProduct.id,
+                    unitId: unitItem.unitId,
+                    price: parseFloat(unitItem.price) || 0,
+                    barCode: unitItem.barCode,
+                    isBaseUnit: unitItem.isBaseUnit || false,
+                    isActive: unitItem.isActive !== undefined ? unitItem.isActive : true
+                });
+            }
+        }
+
         if (imagesObj.length > 0) {
             const ImageModel = require('../models').image;
             const images = imagesObj.map(img => ({
@@ -305,6 +319,43 @@ const updateProd = async (req, imagesObj) => {
         await product.update(updateData, {
             context: { userId, reason: 'Product updated via Dashboard' }
         });
+
+        if (body.productUnits && Array.isArray(body.productUnits)) {
+            const ProductUnit = require('../models').productUnit;
+            const incomingIds = body.productUnits.map(item => item.id).filter(id => id);
+
+            // Delete units not in incoming list
+            await ProductUnit.destroy({
+                where: {
+                    productId: product.id,
+                    id: { [Op.notIn]: incomingIds }
+                }
+            });
+
+            // Create/Update incoming units
+            for (const unitItem of body.productUnits) {
+                if (unitItem.id) {
+                    await ProductUnit.update({
+                        unitId: unitItem.unitId,
+                        price: parseFloat(unitItem.price) || 0,
+                        barCode: unitItem.barCode,
+                        isBaseUnit: unitItem.isBaseUnit || false,
+                        isActive: unitItem.isActive !== undefined ? unitItem.isActive : true
+                    }, {
+                        where: { id: unitItem.id, productId: product.id }
+                    });
+                } else {
+                    await ProductUnit.create({
+                        productId: product.id,
+                        unitId: unitItem.unitId,
+                        price: parseFloat(unitItem.price) || 0,
+                        barCode: unitItem.barCode,
+                        isBaseUnit: unitItem.isBaseUnit || false,
+                        isActive: unitItem.isActive !== undefined ? unitItem.isActive : true
+                    });
+                }
+            }
+        }
 
         // Step 3: Insert new images
         if (imagesObj.length > 0) {

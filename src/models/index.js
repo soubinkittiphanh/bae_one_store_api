@@ -105,6 +105,7 @@ const initializeModels = () => {
     productAudit: require("../product/auditModel")(sequelize, DataTypes),
     productTemp: require("../productTemp/model")(sequelize, DataTypes),
     productSize: require("../product_size/model")(sequelize, DataTypes),
+    productUnit: require("../productUnit/model")(sequelize, DataTypes),
     image: require("../image/model")(sequelize, DataTypes),
     priceList: require("../priceList/model")(sequelize, DataTypes),
     webProductGroup: require("../web_product_group/model")(sequelize, DataTypes),
@@ -344,7 +345,6 @@ const defineProductAssociations = (db) => {
   db.productSize.belongsTo(db.product, { foreignKey: 'productId', as: 'product' });
   db.priceList.belongsTo(db.product, { foreignKey: 'productId', as: 'product' });
   db.priceList.belongsTo(db.currency, { foreignKey: 'currencyId', as: 'currency' });
-
   // Product Option Groups & Options associations
   db.product.hasMany(db.ProductOptionGroup, { foreignKey: 'productId', as: 'optionGroups' });
 };

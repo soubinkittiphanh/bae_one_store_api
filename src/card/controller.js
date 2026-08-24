@@ -72,7 +72,8 @@ const cardController = {
         hasExpiry,
         hasLot,
         colorId,
-        sizeId
+        sizeId,
+        unitId
       } = req.body;
 
       // Validate required fields
@@ -126,7 +127,8 @@ const cardController = {
           
           // Size and Color fields
           colorId: colorId || null,
-          sizeId: sizeId || null
+          sizeId: sizeId || null,
+          unitId: unitId || null
         };
 
         cards.push(cardData);

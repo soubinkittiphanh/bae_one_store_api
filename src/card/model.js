@@ -168,6 +168,11 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: true,
             comment: 'Reference to Product table (alternative to product_id)'
         },
+        unitId: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            comment: 'Reference to Unit table (defines the unit of this stock card, if applicable)'
+        },
 
         // COMPUTED FIELDS (can be added as virtual or calculated)
         isExpired: {
@@ -341,6 +346,13 @@ module.exports = (sequelize, DataTypes) => {
             Card.belongsTo(models.product, {
                 foreignKey: 'productId',
                 as: 'product'
+            });
+        }
+        
+        if (models.unit) {
+            Card.belongsTo(models.unit, {
+                foreignKey: 'unitId',
+                as: 'unit'
             });
         }
         

@@ -418,5 +418,28 @@ module.exports = (db) => {
         as: 'customer'
     })
 
+    // ProductUnit associations
+    if (db.productUnit) {
+        db.productUnit.belongsTo(db.product, {
+            foreignKey: 'productId',
+            as: 'product'
+        });
+        db.productUnit.belongsTo(db.unit, {
+            foreignKey: 'unitId',
+            as: 'unit'
+        });
+        db.product.hasMany(db.productUnit, {
+            foreignKey: 'productId',
+            as: 'productUnits'
+        });
+    }
+
+    // Card-unit association
+    if (db.unit) {
+        db.card.belongsTo(db.unit, {
+            foreignKey: 'unitId',
+            as: 'unit'
+        });
+    }
 };
 // Add the rest of the associations

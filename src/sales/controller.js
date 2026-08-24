@@ -835,6 +835,15 @@ exports.reverseSaleHeader = async (req, res) => {
       // REVERSE LOYALTY POINTS
       await loyaltyService.reversePointsForSale(id, t);
 
+      // POST REVERSAL JOURNAL ENTRY TO GL
+      try {
+        const AccountingPostingService = require('../GL/accountingPostingService');
+        await AccountingPostingService.postSaleReversalEntry(saleHeader, t);
+      } catch (glError) {
+        logger.error('Failed to post sale reversal GL entry: ' + glError.message);
+        throw glError;
+      }
+
       return { updatedRecord, numUpdated };
     })
 

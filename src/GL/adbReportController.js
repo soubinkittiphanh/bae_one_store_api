@@ -425,6 +425,383 @@ class ADBReportController {
             return res.status(500).json({ error: error.message || "Internal server error" });
         }
     }
+
+    /**
+     * Statement of Financial Position (Balance Sheet)
+     * GET /api/gl/reports/balance-sheet
+     */
+    static async getBalanceSheet(req, res) {
+        try {
+            const { asOfDate = new Date().toISOString().split('T')[0], projectId } = req.query;
+            const targetDate = new Date(asOfDate);
+            if (isNaN(targetDate.getTime())) {
+                return res.status(400).json({ error: "Invalid asOfDate format. Please use YYYY-MM-DD" });
+            }
+
+            // Load active currencies and determine configured local (home) currency
+            const currencies = await db.currency.findAll({ where: { isActive: true } });
+            const localCurrency = currencies.find(c => c.isLocalCCY === true || c.isLocalCCY === 1) || { code: 'LAK', rate: 1.0, exchangeDirection: 'local_to_foreign', symbol: '₭' };
+
+            const convertToHomeCurrency = (amount, currencyCodeOrId) => {
+                const val = parseFloat(amount || 0);
+                if (isNaN(val) || val === 0) return 0;
+
+                const fromCurrency = currencies.find(c => c.code === currencyCodeOrId || c.id === currencyCodeOrId);
+                
+                // Step 1: Convert amount to LAK (base currency of the DB)
+                let amountInLAK = val;
+                if (fromCurrency) {
+                    if (fromCurrency.code !== 'LAK') {
+                        if (fromCurrency.exchangeDirection === 'local_to_foreign') {
+                            amountInLAK = val / (parseFloat(fromCurrency.rate) || 1.0);
+                        } else {
+                            amountInLAK = val * (parseFloat(fromCurrency.rate) || 1.0);
+                        }
+                    }
+                }
+
+                // Step 2: Convert LAK to localCurrency (home currency)
+                if (localCurrency.code === 'LAK') {
+                    return amountInLAK;
+                }
+                if (localCurrency.exchangeDirection === 'local_to_foreign') {
+                    return amountInLAK * (parseFloat(localCurrency.rate) || 1.0);
+                } else {
+                    return amountInLAK / (parseFloat(localCurrency.rate) || 1.0);
+                }
+            };
+
+            if (projectId) {
+                // Mode A: Project-based from General Ledger
+                const project = await db.Project.findByPk(projectId);
+                if (!project) {
+                    return res.status(404).json({ error: "Project not found" });
+                }
+
+                // Fetch all GL entries for this project up to asOfDate
+                const glEntries = await db.gl.findAll({
+                    where: {
+                        projectId,
+                        bookingDate: { [Op.lte]: asOfDate },
+                        status: 'POSTED'
+                    },
+                    include: [
+                        { model: db.chartAccount, as: 'drAccount' },
+                        { model: db.chartAccount, as: 'crAccount' }
+                    ]
+                });
+
+                const accountBalances = {};
+
+                glEntries.forEach(entry => {
+                    if (entry.drAccount) {
+                        const acc = entry.drAccount;
+                        if (!accountBalances[acc.id]) {
+                            accountBalances[acc.id] = { id: acc.id, accountName: acc.accountName, accountNumber: acc.accountNumber, accountType: acc.accountType, balance: 0 };
+                        }
+                        if (acc.accountType === 'Asset' || acc.accountType === 'Expense') {
+                            accountBalances[acc.id].balance += parseFloat(entry.localDebit || entry.debit || 0);
+                        } else {
+                            accountBalances[acc.id].balance -= parseFloat(entry.localDebit || entry.debit || 0);
+                        }
+                    }
+                    if (entry.crAccount) {
+                        const acc = entry.crAccount;
+                        if (!accountBalances[acc.id]) {
+                            accountBalances[acc.id] = { id: acc.id, accountName: acc.accountName, accountNumber: acc.accountNumber, accountType: acc.accountType, balance: 0 };
+                        }
+                        if (acc.accountType === 'Asset' || acc.accountType === 'Expense') {
+                            accountBalances[acc.id].balance -= parseFloat(entry.localCredit || entry.credit || 0);
+                        } else {
+                            accountBalances[acc.id].balance += parseFloat(entry.localCredit || entry.credit || 0);
+                        }
+                    }
+                });
+
+                const assets = [];
+                const liabilities = [];
+                const equity = [];
+
+                Object.values(accountBalances).forEach(acc => {
+                    if (Math.abs(acc.balance) < 0.01) return;
+                    if (acc.accountType === 'Asset') {
+                        assets.push(acc);
+                    } else if (acc.accountType === 'Liability') {
+                        liabilities.push(acc);
+                    } else if (acc.accountType === 'Equity') {
+                        equity.push(acc);
+                    }
+                });
+
+                const totalAssets = assets.reduce((sum, a) => sum + a.balance, 0);
+                const totalLiabilities = liabilities.reduce((sum, l) => sum + l.balance, 0);
+                const totalEquity = equity.reduce((sum, e) => sum + e.balance, 0);
+
+                return res.json({
+                    success: true,
+                    mode: 'Project/GL',
+                    projectName: project.projectName || project.name,
+                    asOfDate,
+                    currencyCode: localCurrency.code,
+                    currencySymbol: localCurrency.symbol || localCurrency.code,
+                    assets: { items: assets, total: totalAssets },
+                    liabilities: { items: liabilities, total: totalLiabilities },
+                    equity: { items: equity, total: totalEquity }
+                });
+            } else {
+                // Mode B: Global POS / Minimart POS Mode
+
+                // 1. Assets: Cash & Bank
+                const activeBankAccounts = await db.bankAccount.findAll({ where: { isActive: true } });
+                const bankBalances = [];
+                let totalCashAndBank = 0;
+
+                for (const acc of activeBankAccounts) {
+                    const snapshot = await db.accountDailyBalance.findOne({
+                        where: {
+                            bankAccountId: acc.id,
+                            date: { [Op.lte]: asOfDate }
+                        },
+                        order: [['date', 'DESC']]
+                    });
+
+                    const balance = snapshot ? parseFloat(snapshot.closingBalance || 0) : parseFloat(acc.balance || 0);
+                    const convertedBalance = convertToHomeCurrency(balance, acc.currency);
+                    totalCashAndBank += convertedBalance;
+                    bankBalances.push({
+                        id: acc.id,
+                        accountName: acc.accountName,
+                        accountNumber: acc.accountNumber,
+                        accountType: acc.accountType,
+                        balance: convertedBalance,
+                        originalBalance: balance,
+                        originalCurrency: acc.currency
+                    });
+                }
+
+                // 2. Assets: Inventory Cost Value
+                let rawInventoryCostValue = 0;
+                try {
+                    const rows = await db.sequelize.query(`
+                        SELECT 
+                            SUM(
+                                CASE 
+                                    WHEN c.card_input_date <= :backdate
+                                         AND (
+                                             (c.card_isused = 0 AND c.isActive = 1)
+                                             OR (c.card_isused = 2 AND c.update_time > :backdate)
+                                             OR (c.saleLineId IS NOT NULL AND sl.createdAt > :backdate)
+                                             OR (c.ticketLineId IS NOT NULL AND tl.createdAt > :backdate)
+                                             OR (c.transferLineId IS NOT NULL AND tr.createdAt > :backdate)
+                                         )
+                                    THEN IFNULL(c.cost, 0)
+                                    ELSE 0
+                                END
+                            ) AS costValueAtBackdate
+                        FROM product p
+                        LEFT JOIN card c ON c.productId = p.id
+                        LEFT JOIN saleLine sl ON sl.id = c.saleLineId
+                        LEFT JOIN ticketLine tl ON tl.id = c.ticketLineId
+                        LEFT JOIN transferLine tr ON tr.id = c.transferLineId
+                        WHERE p.isActive = 1 AND p._category = 'product'
+                    `, {
+                        replacements: { backdate: targetDate },
+                        type: db.sequelize.QueryTypes.SELECT
+                    });
+                    
+                    rawInventoryCostValue = parseFloat(rows[0]?.costValueAtBackdate || 0);
+                } catch (error) {
+                    logger.warn("Error running backdate stock query, falling back to current product valuation: " + error.message);
+                    const products = await db.product.findAll({ where: { isActive: true } });
+                    rawInventoryCostValue = products.reduce((sum, p) => sum + (parseFloat(p.stock_count || p.stock || 0) * parseFloat(p.cost_price || p.costPrice || 0)), 0);
+                }
+                const inventoryCostValue = convertToHomeCurrency(rawInventoryCostValue, 'LAK');
+
+                // 3. Assets: Accounts Receivable (AR)
+                const unpaidARInvoices = await db.arInvoiceHeader.findAll({
+                    where: {
+                        invoiceDate: { [Op.lte]: asOfDate },
+                        status: { [Op.notIn]: ['paid', 'cancelled'] }
+                    },
+                    include: [{ model: db.arReceiveHeaderV2, as: 'receiveHeaders', required: false }]
+                });
+                let totalAR = 0;
+                unpaidARInvoices.forEach(inv => {
+                    const totalPaid = (inv.receiveHeaders || []).reduce((sum, rec) => sum + parseFloat(rec.totalReceivedAmount || 0), 0);
+                    const outstanding = parseFloat(inv.totalAmount || 0) - totalPaid;
+                    if (outstanding > 0) {
+                        totalAR += convertToHomeCurrency(outstanding, inv.currencyId);
+                    }
+                });
+
+                // 4. Liabilities: Accounts Payable (AP)
+                const unpaidAPInvoices = await db.apInvoice.findAll({
+                    where: {
+                        invoiceDate: { [Op.lte]: asOfDate },
+                        status: { [Op.notIn]: ['paid', 'cancelled'] }
+                    },
+                    include: [{ model: db.apInvoiceSettlement, as: 'settlements', required: false }]
+                });
+                let totalAP = 0;
+                unpaidAPInvoices.forEach(inv => {
+                    const totalSettled = (inv.settlements || []).reduce((sum, set) => sum + parseFloat(set.paymentAmount || 0), 0);
+                    const outstanding = parseFloat(inv.totalAmount || 0) - totalSettled;
+                    if (outstanding > 0) {
+                        totalAP += convertToHomeCurrency(outstanding, inv.currencyId);
+                    }
+                });
+
+                // 5. Equity: Net Profit (from P&L)
+                const sales = await db.saleHeader.findAll({
+                    where: {
+                        bookingDate: { [Op.lte]: asOfDate },
+                        isActive: true
+                    }
+                });
+                let totalSalesRevenue = 0;
+                sales.forEach(s => {
+                    totalSalesRevenue += convertToHomeCurrency(s.total, s.currencyId);
+                });
+
+                const settlements = await db.apInvoiceSettlement.findAll({
+                    where: {
+                        settlementDate: { [Op.lte]: asOfDate },
+                        status: { [Op.notIn]: ['cancelled', 'draft'] }
+                    }
+                });
+                let totalExpenses = 0;
+                settlements.forEach(s => {
+                    totalExpenses += convertToHomeCurrency(s.paymentAmount, s.currencyId);
+                });
+                const netProfit = totalSalesRevenue - totalExpenses;
+
+                const totalAssets = totalCashAndBank + inventoryCostValue + totalAR;
+                const totalLiabilities = totalAP;
+                const otherEquity = totalAssets - totalLiabilities - netProfit;
+
+                const assetsList = [
+                    { accountName: "Cash & Bank Balances (ເງິນສົດ & ທະນາຄານ)", balance: totalCashAndBank, details: bankBalances },
+                    { accountName: "Inventory Valuation (ມູນຄ່າສິນຄ້າໃນສະຕັອກ)", balance: inventoryCostValue },
+                    { accountName: "Accounts Receivable (ໜີ້ຕ້ອງຮັບ AR)", balance: totalAR }
+                ];
+
+                const liabilitiesList = [
+                    { accountName: "Accounts Payable (ໜີ້ຕ້ອງສົ່ງ AP)", balance: totalAP }
+                ];
+
+                const equityList = [
+                    { accountName: "Retained Earnings / Net Profit (ກຳໄລສະສົມ)", balance: netProfit },
+                    { accountName: "Owner's Capital / Other Equity (ທຶນອື່ນໆ)", balance: otherEquity }
+                ];
+
+                return res.json({
+                    success: true,
+                    mode: 'Global POS/Minimart',
+                    asOfDate,
+                    currencyCode: localCurrency.code,
+                    currencySymbol: localCurrency.symbol || localCurrency.code,
+                    assets: { items: assetsList, total: totalAssets },
+                    liabilities: { items: liabilitiesList, total: totalLiabilities },
+                    equity: { items: equityList, total: totalAssets - totalLiabilities }
+                });
+            }
+        } catch (error) {
+            logger.error("Error generating Balance Sheet:", error);
+            return res.status(500).json({ error: error.message || "Internal server error" });
+        }
+    }
+
+    /**
+     * Trial Balance Report
+     * GET /api/gl/reports/trial-balance
+     */
+    static async getTrialBalance(req, res) {
+        try {
+            const { asOfDate = new Date().toISOString().split('T')[0], projectId } = req.query;
+            const targetDate = new Date(asOfDate);
+            if (isNaN(targetDate.getTime())) {
+                return res.status(400).json({ error: "Invalid asOfDate format. Please use YYYY-MM-DD" });
+            }
+
+            // 1. Fetch active accounts
+            const accounts = await db.chartAccount.findAll({ where: { isActive: true } });
+
+            // 2. Fetch all GL entries up to asOfDate
+            const whereClause = {
+                bookingDate: { [db.Sequelize.Op.lte]: asOfDate },
+                status: 'POSTED'
+            };
+            if (projectId) {
+                whereClause.projectId = projectId;
+            }
+
+            const glEntries = await db.gl.findAll({
+                where: whereClause,
+                include: [
+                    { model: db.chartAccount, as: 'drAccount' },
+                    { model: db.chartAccount, as: 'crAccount' }
+                ]
+            });
+
+            const accountBalances = {};
+            accounts.forEach(acc => {
+                accountBalances[acc.id] = {
+                    id: acc.id,
+                    accountNumber: acc.accountNumber,
+                    accountName: acc.accountName,
+                    accountType: acc.accountType,
+                    totalDebits: 0,
+                    totalCredits: 0,
+                    debitBalance: 0,
+                    creditBalance: 0
+                };
+            });
+
+            glEntries.forEach(entry => {
+                const drAmt = parseFloat(entry.localDebit !== null && entry.localDebit !== undefined ? entry.localDebit : (entry.debit || 0));
+                const crAmt = parseFloat(entry.localCredit !== null && entry.localCredit !== undefined ? entry.localCredit : (entry.credit || 0));
+
+                if (entry.drAccountId && accountBalances[entry.drAccountId]) {
+                    accountBalances[entry.drAccountId].totalDebits += drAmt;
+                }
+                if (entry.crAccountId && accountBalances[entry.crAccountId]) {
+                    accountBalances[entry.crAccountId].totalCredits += crAmt;
+                }
+            });
+
+            let sumDebits = 0;
+            let sumCredits = 0;
+
+            Object.values(accountBalances).forEach(acc => {
+                const net = acc.totalDebits - acc.totalCredits;
+                if (net > 0) {
+                    acc.debitBalance = parseFloat(net.toFixed(2));
+                    acc.creditBalance = 0;
+                } else if (net < 0) {
+                    acc.debitBalance = 0;
+                    acc.creditBalance = parseFloat(Math.abs(net).toFixed(2));
+                } else {
+                    acc.debitBalance = 0;
+                    acc.creditBalance = 0;
+                }
+                sumDebits += acc.debitBalance;
+                sumCredits += acc.creditBalance;
+            });
+
+            return res.json({
+                success: true,
+                asOfDate,
+                accounts: Object.values(accountBalances).filter(acc => acc.totalDebits > 0 || acc.totalCredits > 0),
+                totalDebits: parseFloat(sumDebits.toFixed(2)),
+                totalCredits: parseFloat(sumCredits.toFixed(2))
+            });
+
+        } catch (error) {
+            logger.error("Error generating Trial Balance report:", error);
+            return res.status(500).json({ error: error.message || "Internal server error" });
+        }
+    }
+
 }
 
 module.exports = ADBReportController;

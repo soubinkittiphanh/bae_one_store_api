@@ -594,10 +594,30 @@ const fetchProductFromLocationV1 = async (req, res) => {
       return p;
     });
 
+    // Fetch all active product units and attach them
+    const ProductUnitModel = require('../../models').productUnit;
+    const UnitModel = require('../../models').unit;
+    const productUnits = await ProductUnitModel.findAll({
+      where: { isActive: true },
+      include: [{ model: UnitModel, as: 'unit', attributes: ['id', 'name', 'symbol', 'conversionRate'] }]
+    });
+
+    const unitsByProductId = productUnits.reduce((acc, pu) => {
+      const pId = pu.productId;
+      if (!acc[pId]) acc[pId] = [];
+      acc[pId].push(pu.toJSON());
+      return acc;
+    }, {});
+
+    const finalResultsWithUnits = finalResults.map(product => ({
+      ...product,
+      productUnits: unitsByProductId[product.id] || []
+    }));
+
     res.status(200).json({
       success: true,
-      data: finalResults,
-      count: finalResults.length,
+      data: finalResultsWithUnits,
+      count: finalResultsWithUnits.length,
       filters: {
         locationId: parseInt(locationId),
         companyId: companyId ? parseInt(companyId) : null,
@@ -802,16 +822,51 @@ ORDER BY p.pro_price;
   })
 }
 const fetchProdId = async (req, res) => {
-  logger.info("*************** FETCH PRODUCT BY ID  ***************");
-  logger.info(`*************Payload: *****************`);
+  logger.info("*************** FETCH PRODUCT BY ID (Sequelize) ***************");
   const pro_id = req.body.proid;
-  Db.query(`SELECT p.*,i.img_name,i.img_path FROM product p 
-    LEFT JOIN image_path i ON i.productId=p.id 
-    WHERE p.pro_id=${pro_id}`, (er, re) => {
-    if (er) return res.send('SQL ' + er)
-    res.send(re)
-  })
-  //1635062891981300
+  const { product: Product, image: Image, productUnit: ProductUnit, unit: Unit } = require('../../models');
+
+  try {
+    const product = await Product.findOne({
+      where: { pro_id },
+      include: [
+        {
+          model: Image,
+          as: 'images',
+          attributes: ['img_name', 'img_path']
+        },
+        {
+          model: ProductUnit,
+          as: 'productUnits',
+          include: [{ model: Unit, as: 'unit', attributes: ['id', 'name', 'symbol', 'conversionRate'] }]
+        }
+      ]
+    });
+
+    if (!product) {
+      return res.status(404).send('Product not found');
+    }
+
+    const baseObj = product.toJSON();
+    const images = baseObj.images || [];
+
+    const results = images.length > 0 ? images.map(img => ({
+      ...baseObj,
+      img_name: img.img_name,
+      img_path: img.img_path,
+      productUnits: baseObj.productUnits || []
+    })) : [{
+      ...baseObj,
+      img_name: null,
+      img_path: null,
+      productUnits: baseObj.productUnits || []
+    }];
+
+    res.send(results);
+  } catch (error) {
+    logger.error('Error in fetchProdId:', error);
+    res.status(500).send('SQL ' + error.message);
+  }
 }
 
 const updateImageProductId = () => {

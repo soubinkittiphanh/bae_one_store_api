@@ -1,3 +1,4 @@
+const db = require("../../models");
 const logger = require("../../api/logger");
 const productService = require('../../product/service');
 const SaleLine = require("../../models").saleLine;
@@ -56,6 +57,17 @@ const createBulkSaleLine = async (res, lines, lockingSessionId) => {
 
     const productIdList = linesCreated.map(item => item.productId);
     await productService.updateProductCountGroup(productIdList);
+
+    // POST ACCOUNTING JOURNAL ENTRY TO GL
+    try {
+      const saleHeader = await db.saleHeader.findByPk(lines[0].headerId);
+      if (saleHeader) {
+        const AccountingPostingService = require('../../GL/accountingPostingService');
+        await AccountingPostingService.postSaleEntry(saleHeader, null);
+      }
+    } catch (glError) {
+      logger.error('Failed to post sale GL entry: ' + glError.message);
+    }
 
     if (res && !res.headersSent) res.status(200).send(`Transaction completed-${lines[0].headerId}`);
     return linesCreated;
@@ -121,6 +133,17 @@ const createBulkSaleLineWithoutRes = async (lines, lockingSessionId) => {
         await fullReversal(linesCreated[0]['id']);
         throw new Error("Card is not updated correctly and inventory amount will not be correctly");
       }
+    }
+
+    // POST ACCOUNTING JOURNAL ENTRY TO GL
+    try {
+      const saleHeader = await db.saleHeader.findByPk(lines[0].headerId);
+      if (saleHeader) {
+        const AccountingPostingService = require('../../GL/accountingPostingService');
+        await AccountingPostingService.postSaleEntry(saleHeader, null);
+      }
+    } catch (glError) {
+      logger.error('Failed to post sale GL entry (without res): ' + glError.message);
     }
   } catch (error) {
     // ********************************************

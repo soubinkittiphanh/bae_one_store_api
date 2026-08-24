@@ -22,4 +22,6 @@ router
     .get("/reports/withdrawal-applications", adbReportController.getWithdrawalApplicationReport)
     .get("/reports/statement-of-expenditures", adbReportController.getStatementOfExpenditures)
     .get("/reports/fixed-asset-register", adbReportController.getFixedAssetRegister)
+    .get("/reports/balance-sheet", adbReportController.getBalanceSheet)
+    .get("/reports/trial-balance", adbReportController.getTrialBalance)
 module.exports = router

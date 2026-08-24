@@ -45,7 +45,7 @@ const clientDB = {
         "port": 3306,
     },
     "offline": {
-        "host": "localhost",
+        "host": "127.0.0.1",
         "user": "root",
         "password": "sdat@3480",
         // "database": "dcommerce_pro_carcare_sokpaluang",
