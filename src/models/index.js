@@ -174,6 +174,7 @@ const initializeModels = () => {
     Color: require("../color/model")(sequelize, DataTypes),
     Size: require("../size/model")(sequelize, DataTypes),
     card: require("../card/model")(sequelize, DataTypes),
+    cardAudit: require("../card/auditModel")(sequelize, DataTypes),
     Transaction: require("../transaction/model")(sequelize, DataTypes),
     glPostingBatch: require("../GL/postingBatchModel")(sequelize, DataTypes),
     gl: require("../GL/model")(sequelize, DataTypes),

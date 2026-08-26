@@ -141,6 +141,8 @@ const adjustStock = async (whereCondition, stockCardQty, inputter = null) => {
                         [Op.in]: idsToDelete,
                     },
                 },
+                individualHooks: true,
+                context: { userId: inputter || 1, reason: `ປັບຫຼຸດສະຕັອກ: -${Math.abs(stockCardQty)}` }
             });
             logger.info(`Deactivated (marked inactive/used=2) ${idsToDelete.length} rows.`);
         } else {
@@ -614,7 +616,11 @@ const adjustStockBulk = async (req, res) => {
                         locationId: locationId
                     });
                 }
-                await Card.bulkCreate(rowsToInsert, { transaction });
+                await Card.bulkCreate(rowsToInsert, { 
+                    transaction,
+                    individualHooks: true,
+                    context: { userId: inputter || 1, reason: `ປັບເພີ່ມສະຕັອກ: +${diff}` }
+                });
             } else if (diff < 0) {
                 // Remove (deactivate) Math.abs(diff) cards
                 const limit = Math.abs(diff);
@@ -645,13 +651,14 @@ const adjustStockBulk = async (req, res) => {
                                 [Op.in]: idsToDelete,
                             },
                         },
-                        transaction
+                        transaction,
+                        individualHooks: true,
+                        context: { userId: inputter || 1, reason: `ປັບຫຼຸດສະຕັອກ: -${Math.abs(diff)}` }
                     });
                 }
             }
 
-            // Update product counts
-            await productService.updateProductCountById(dbProductId, transaction);
+            // Update product counts will occur after transaction commits to prevent deadlock
 
             results.push({
                 productId: dbProductId,
@@ -666,6 +673,17 @@ const adjustStockBulk = async (req, res) => {
 
         // Commit transaction
         await transaction.commit();
+
+        // Update product counts after commit to avoid deadlock
+        for (const resItem of results) {
+            if (resItem.success) {
+                try {
+                    await productService.updateProductCountById(resItem.productId);
+                } catch (cntError) {
+                    logger.error(`Error updating product count for productId: ${resItem.productId}`, cntError);
+                }
+            }
+        }
 
         // Also run the global stock value rebuild to be absolutely safe (rebuildStockValue updates product table stock_count)
         const sqlCom = `UPDATE product pro
@@ -687,7 +705,13 @@ SET pro.stock_count = IFNULL(proc.card_count, 0);`;
         });
 
     } catch (error) {
-        await transaction.rollback();
+        if (transaction && !transaction.finished) {
+            try {
+                await transaction.rollback();
+            } catch (rbError) {
+                logger.error('Error rolling back transaction:', rbError);
+            }
+        }
         logger.error('Error in adjustStockBulk:', error);
         return res.status(500).json({ success: false, message: "Server error: " + error.message });
     }

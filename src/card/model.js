@@ -286,6 +286,75 @@ module.exports = (sequelize, DataTypes) => {
                     isActive: true
                 }
             }
+        },
+        hooks: {
+            afterCreate: async (card, options) => {
+                try {
+                    if (options.context?.userId) {
+                        const AuditModel = sequelize.models.CardAudit;
+                        if (!AuditModel) return;
+
+                        await AuditModel.createAuditRecord(
+                            card.toJSON(),
+                            options.context.userId,
+                            'CREATE',
+                            options.context.reason || 'Card created',
+                            options.transaction
+                        );
+                    }
+                } catch (error) {
+                    console.error('Failed to create audit record after card create:', error);
+                }
+            },
+
+            beforeUpdate: async (card, options) => {
+                try {
+                    const isSoftDelete = card.changed('isActive') && !card.isActive;
+                    const isAdjustment = card.changed('card_isused') && card.card_isused === 2;
+                    const isCriticalEdit = card.changed('serialNo') || card.changed('cost') || card.changed('card_number');
+
+                    if (isSoftDelete || isAdjustment || isCriticalEdit) {
+                        const AuditModel = sequelize.models.CardAudit;
+                        if (!AuditModel) return;
+
+                        const currentRecord = await sequelize.models.card.findByPk(card.id, { transaction: options.transaction });
+                        if (currentRecord) {
+                            const userId = options.context?.userId || card.update_user || 1;
+                            const actionReason = isSoftDelete ? 'Card deactivated (soft-deleted)' :
+                                                 isAdjustment ? 'Card adjusted out (stock decrease)' : 
+                                                 'Card fields modified';
+
+                            await AuditModel.createAuditRecord(
+                                currentRecord.toJSON(),
+                                userId,
+                                'UPDATE',
+                                options.context?.reason || actionReason,
+                                options.transaction
+                            );
+                        }
+                    }
+                } catch (error) {
+                    console.error('Failed to create audit record before card update:', error);
+                }
+            },
+
+            beforeDestroy: async (card, options) => {
+                try {
+                    const AuditModel = sequelize.models.CardAudit;
+                    if (!AuditModel) return;
+
+                    const userId = options.context?.userId || 1;
+                    await AuditModel.createAuditRecord(
+                        card.toJSON(),
+                        userId,
+                        'DELETE',
+                        options.context?.reason || 'Card hard-deleted (destroyed)',
+                        options.transaction
+                    );
+                } catch (error) {
+                    console.error('Failed to create audit record before card destroy:', error);
+                }
+            }
         }
     });
 

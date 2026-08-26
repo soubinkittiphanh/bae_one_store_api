@@ -480,7 +480,8 @@ const cardController = {
         sizeId: req.body.sizeId
       }, {
         where: { id: cardId },
-        returning: true
+        returning: true,
+        context: { userId: req.user?.id || req.body.update_user || 1, reason: req.body.reason || 'Card updated via API' }
       });
 
       return res.status(200).json(updatedCard);
@@ -777,7 +778,11 @@ const cardController = {
         });
       }
 
-      await Card.destroy({ where: { id: cardId } });
+      await Card.destroy({ 
+        where: { id: cardId },
+        individualHooks: true,
+        context: { userId: req.user?.id || 1, reason: req.query.reason || 'Card hard-deleted (destroyed)' }
+      });
       return res.status(204).send();
     } catch (error) {
       return res.status(400).json({ message: error.message });
@@ -806,7 +811,8 @@ const cardController = {
         locationId,
         location_name,
         SUM(CASE WHEN movement_type = 'stock_in' THEN quantity ELSE 0 END) as stockIn,
-        SUM(CASE WHEN movement_type = 'sold' THEN quantity ELSE 0 END) as sold
+        SUM(CASE WHEN movement_type = 'sold' THEN quantity ELSE 0 END) as sold,
+        SUM(CASE WHEN movement_type = 'deleted' THEN quantity ELSE 0 END) as deleted
       FROM product p
       LEFT JOIN (
         -- Stock additions (when cards are created - receiving stock)
@@ -819,8 +825,7 @@ const cardController = {
           l.name as location_name
         FROM card c
         LEFT JOIN location l ON c.locationId = l.id
-        WHERE c.isActive = 1
-          AND DATE(c.createdAt) BETWEEN ? AND ?
+        WHERE DATE(c.createdAt) BETWEEN ? AND ?
         GROUP BY c.productId, DATE(c.createdAt), c.locationId, l.name
         
         UNION ALL
@@ -837,9 +842,25 @@ const cardController = {
         INNER JOIN saleLine sl ON c.saleLineId = sl.id
         LEFT JOIN location l ON c.locationId = l.id
         WHERE c.saleLineId IS NOT NULL 
-          AND c.isActive = 1
           AND DATE(sl.createdAt) BETWEEN ? AND ?
         GROUP BY c.productId, DATE(sl.createdAt), c.locationId, l.name
+
+        UNION ALL
+
+        -- Deleted / Inactive Cards
+        SELECT 
+          c.productId as product_id,
+          DATE(c.update_time) as movement_date,
+          COUNT(*) as quantity,
+          'deleted' as movement_type,
+          c.locationId,
+          l.name as location_name
+        FROM card c
+        LEFT JOIN location l ON c.locationId = l.id
+        WHERE (c.isActive = 0 OR c.card_isused = 2)
+          AND c.update_time IS NOT NULL
+          AND DATE(c.update_time) BETWEEN ? AND ?
+        GROUP BY c.productId, DATE(c.update_time), c.locationId, l.name
       ) movements ON p.id = movements.product_id
       WHERE p.isActive = 1 ${categoryFilter}
         AND movements.movement_date IS NOT NULL
@@ -849,7 +870,7 @@ const cardController = {
     `;
 
       const results = await sequelize.query(query, {
-        replacements: [dateFrom, dateTo, dateFrom, dateTo],
+        replacements: [dateFrom, dateTo, dateFrom, dateTo, dateFrom, dateTo],
         type: sequelize.QueryTypes.SELECT
       });
 
@@ -894,27 +915,31 @@ const cardController = {
             locationName: row.location_name || 'Unknown Location',
             movements: new Map(),
             totalStockIn: 0,
-            totalSold: 0
+            totalSold: 0,
+            totalDeleted: 0
           });
         }
 
         const location = product.locations.get(locationKey);
 
-        if (row.movement_date && (row.stockIn > 0 || row.sold > 0)) {
+        if (row.movement_date && (row.stockIn > 0 || row.sold > 0 || row.deleted > 0)) {
           const existingMovement = location.movements.get(row.movement_date) || {
             date: row.movement_date,
             stockIn: 0,
-            sold: 0
+            sold: 0,
+            deleted: 0
           };
 
           existingMovement.stockIn += parseInt(row.stockIn) || 0;
           existingMovement.sold += parseInt(row.sold) || 0;
+          existingMovement.deleted += parseInt(row.deleted) || 0;
 
           location.movements.set(row.movement_date, existingMovement);
 
           // Update totals
           location.totalStockIn += parseInt(row.stockIn) || 0;
           location.totalSold += parseInt(row.sold) || 0;
+          location.totalDeleted += parseInt(row.deleted) || 0;
         }
       });
 
@@ -961,27 +986,29 @@ const cardController = {
             // Calculate starting balance by working backwards from current stock
             let totalMovementInPeriod = 0;
             location.movements.forEach(movement => {
-              totalMovementInPeriod += movement.stockIn - movement.sold;
+              totalMovementInPeriod += movement.stockIn - movement.sold - movement.deleted;
             });
 
             let runningBalance = currentLocationStock - totalMovementInPeriod;
 
             // Create movements for each date with running balance
             for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-              const dateKey = d.toISOString().split('T')[0];
+              const dateKey = d.toISOString().split(`T`)[0];
               const movement = location.movements.get(dateKey);
 
               const dailyStockIn = movement ? movement.stockIn : 0;
               const dailySold = movement ? movement.sold : 0;
+              const dailyDeleted = movement ? movement.deleted : 0;
 
               const startBalance = runningBalance;
-              runningBalance += dailyStockIn - dailySold;
+              runningBalance += dailyStockIn - dailySold - dailyDeleted;
 
               movementsArray.push({
                 date: dateKey,
                 stockIn: dailyStockIn,
                 sold: dailySold,
-                dailyNet: dailyStockIn - dailySold,
+                deleted: dailyDeleted,
+                dailyNet: dailyStockIn - dailySold - dailyDeleted,
                 startBalance: Math.max(0, startBalance), // Don't show negative starting balance
                 endBalance: Math.max(0, runningBalance)   // Don't show negative ending balance
               });
@@ -993,6 +1020,7 @@ const cardController = {
               movements: movementsArray,
               totalStockIn: location.totalStockIn,
               totalSold: location.totalSold,
+              totalDeleted: location.totalDeleted,
               currentStock: currentLocationStock
             });
           }
@@ -1027,6 +1055,57 @@ const cardController = {
         error: 'Failed to fetch stock movements',
         details: error.message
       });
+    }
+  },
+
+  async auditLogs(req, res) {
+    try {
+      const { productId, dateFrom, dateTo } = req.query;
+      const CardAudit = sequelize.models.CardAudit;
+      const User = sequelize.models.user;
+      const CardModel = sequelize.models.card;
+
+      const whereClause = {};
+      if (productId) {
+        whereClause[Op.or] = [
+          sequelize.literal(`JSON_EXTRACT(recordData, "$.product_id") = ${parseInt(productId)}`),
+          sequelize.literal(`JSON_EXTRACT(recordData, "$.productId") = ${parseInt(productId)}`)
+        ];
+      }
+      
+      if (dateFrom && dateTo) {
+        const start = new Date(dateFrom);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(dateTo);
+        end.setHours(23, 59, 59, 999);
+        whereClause.auditDate = {
+          [Op.between]: [start, end]
+        };
+      }
+
+      const logs = await CardAudit.findAll({
+        where: whereClause,
+        include: [
+          {
+            model: User,
+            as: 'user',
+            attributes: ['id', 'cus_name', 'cus_id']
+          },
+          {
+            model: CardModel,
+            as: 'card',
+            required: false,
+            attributes: ['id', 'card_number', 'serialNo', 'lotNumber']
+          }
+        ],
+        order: [['auditDate', 'DESC']],
+        limit: 100
+      });
+
+      return res.status(200).json(logs);
+    } catch (error) {
+      console.error('Error fetching card audit logs:', error);
+      return res.status(500).json({ error: error.message });
     }
   }
 };
