@@ -69,8 +69,8 @@ const fetchCard = async (req, res) => {
             });
         }
         
-        let whereConditions = ['c.product_id = ?'];
-        let queryParams = [proId];
+        let whereConditions = ['(c.productId = ? OR c.product_id = ?)'];
+        let queryParams = [proId, proId];
         
         // Date range filter
         if (fDate && tDate) {
@@ -109,13 +109,18 @@ const fetchCard = async (req, res) => {
                     s.description as size_description,
                     l.name as location_name,
                     curr.code as currency_code,
-                    curr.name as currency_name
+                    curr.name as currency_name,
+                    un.id as unit_id,
+                    un.name as unit_name,
+                    un.symbol as unit_symbol
                 FROM card c 
                 LEFT JOIN user u ON u.id = c.inputter
                 LEFT JOIN color co ON co.id = c.colorId AND co.isActive = 1
                 LEFT JOIN size s ON s.id = c.sizeId AND s.isActive = 1
                 LEFT JOIN location l ON l.id = c.locationId
                 LEFT JOIN currency curr ON curr.id = c.currencyId
+                LEFT JOIN product p ON p.id = c.productId
+                LEFT JOIN unitModel un ON un.id = COALESCE(c.unitId, p.baseUnitId) AND un.isActive = 1
                 WHERE ${whereClause}
                 ORDER BY c.card_input_date DESC
             `;
@@ -127,11 +132,16 @@ const fetchCard = async (req, res) => {
                     u.cus_name,
                     l.name as location_name,
                     curr.code as currency_code,
-                    curr.name as currency_name
+                    curr.name as currency_name,
+                    un.id as unit_id,
+                    un.name as unit_name,
+                    un.symbol as unit_symbol
                 FROM card c 
                 LEFT JOIN user u ON u.id = c.inputter
                 LEFT JOIN location l ON l.id = c.locationId
                 LEFT JOIN currency curr ON curr.id = c.currencyId
+                LEFT JOIN product p ON p.id = c.productId
+                LEFT JOIN unitModel un ON un.id = COALESCE(c.unitId, p.baseUnitId) AND un.isActive = 1
                 WHERE ${whereClause}
                 ORDER BY c.card_input_date DESC
             `;
@@ -190,6 +200,13 @@ const fetchCard = async (req, res) => {
                         currency: row.currency_code ? {
                             code: row.currency_code,
                             name: row.currency_name
+                        } : null,
+
+                        // Add unit object if unit data exists
+                        unit: row.unit_id ? {
+                            id: row.unit_id,
+                            name: row.unit_name,
+                            symbol: row.unit_symbol
                         } : null
                     };
                     
@@ -208,6 +225,9 @@ const fetchCard = async (req, res) => {
                     delete result.location_name;
                     delete result.currency_code;
                     delete result.currency_name;
+                    delete result.unit_id;
+                    delete result.unit_name;
+                    delete result.unit_symbol;
                     
                     return result;
                 });
@@ -381,8 +401,8 @@ const fetchCardsByFilter = async (req, res) => {
         let queryParams = [];
         
         if (productId) {
-            whereConditions.push('c.product_id = ?');
-            queryParams.push(productId);
+            whereConditions.push('(c.productId = ? OR c.product_id = ?)');
+            queryParams.push(productId, productId);
         }
         
         if (colorId) {
@@ -547,8 +567,8 @@ const getCardSummary = async (req, res) => {
         let queryParams = [];
         
         if (productId) {
-            whereClause += ' AND c.product_id = ?';
-            queryParams.push(productId);
+            whereClause += ' AND (c.productId = ? OR c.product_id = ?)';
+            queryParams.push(productId, productId);
         }
         
         const sqlCom = `

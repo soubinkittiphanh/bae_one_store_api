@@ -254,6 +254,7 @@ const createCardFromReceiving = async (receivingLines, locationId, currencyId, t
             newCardTemplate.update = new Date();
             newCardTemplate.update_time = new Date();
             newCardTemplate.receivingLineId = iterator['id'];
+            newCardTemplate.unitId = iterator['unitId'] || null;
 
             // Assign unique serial number if provided
             if (serialNo) {

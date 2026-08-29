@@ -14,7 +14,7 @@ const { Op } = require('sequelize');
 function replaceAll(str, find, replace) {
   return str.replace(new RegExp(find, 'g'), replace);
 }
-const PoHeaderController = {
+const ReceivingController = {
   getAll: async (req, res) => {
     try {
       const poHeaders = await RECHeader.findAll({ include: ['lines', 'currency', 'vendor', 'poHeader'] });
@@ -175,7 +175,41 @@ const PoHeaderController = {
         return res.status(404).send('PoHeader not found');
       }
 
+      const Card = require('../models').card;
+      const lineIds = (poHeader.lines || []).map(l => l.id);
+      const cards = await Card.findAll({
+        where: {
+          receivingLineId: {
+            [Op.in]: lineIds
+          }
+        }
+      });
+
+      const soldOutCards = cards.filter(c => c.card_isused === 1 || c.saleLineId !== null);
+      if (soldOutCards.length > 0) {
+        return res.status(400).send("ບໍ່ສາມາດຍົກເລີກໄດ້ ເນື່ອງຈາກມີບາງສິນຄ້າຖືກຂາຍອອກໄປແລ້ວ / Unable to cancel because some items are already sold out");
+      }
+
       await sequelize.transaction(async (t) => {
+        // Deactivate/soft-delete cards created by this receiving transaction
+        if (cards.length > 0) {
+          const cardIds = cards.map(c => c.id);
+          await Card.update({
+            isActive: false,
+            card_isused: 2, // Adjusted/deleted
+            update_user: req.user?.id || req.body.userId || 1,
+            update_time: new Date()
+          }, {
+            where: {
+              id: {
+                [Op.in]: cardIds
+              }
+            },
+            transaction: t,
+            individualHooks: true
+          });
+        }
+
         // POST REVERSAL JOURNAL ENTRY TO GL (Before destroying records)
         try {
           const AccountingPostingService = require('../GL/accountingPostingService');
@@ -191,6 +225,18 @@ const PoHeaderController = {
           await purchasingService.updatePoStatus(poHeader.poHeaderId, t);
         }
       });
+
+      // Update product stock count in database
+      const productService = require('../product/service');
+      const uniqueProductIds = [...new Set(cards.map(c => c.productId))];
+      for (const prodId of uniqueProductIds) {
+        try {
+          await productService.updateProductCountById(prodId);
+        } catch (cntError) {
+          logger.error(`Error updating product count for productId: ${prodId}`, cntError);
+        }
+      }
+
       res.json({ message: 'PoHeader deleted successfully' });
     } catch (error) {
       logger.error(error);
@@ -200,4 +246,4 @@ const PoHeaderController = {
 };
 
 
-module.exports = PoHeaderController;
+module.exports = ReceivingController;
