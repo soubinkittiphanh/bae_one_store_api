@@ -7,7 +7,7 @@ module.exports = {
     async create(req, res) {
         const t = await sequelize.transaction();
         try {
-            const { studentId, firstName, lastName, grade, phoneNumber, classId, roomId, parentName, parentPhone, parentEmail, room } = req.body;
+            const { studentId, firstName, lastName, grade, phoneNumber, classId, roomId, parentName, parentPhone, parentEmail, room, photoPath, optionalFeeItemIds } = req.body;
 
             // Create the student profile
             const newStudent = await student.create({
@@ -21,7 +21,8 @@ module.exports = {
                 parentName,
                 parentPhone,
                 parentEmail,
-                room
+                room,
+                photoPath
             }, { transaction: t });
 
             // Automatically create their 'Wallet' with 0 balance
@@ -33,6 +34,18 @@ module.exports = {
                 accountName: `${firstName} ${lastName} Wallet`,
                 isActive: true
             }, { transaction: t });
+
+            // Sync optional fee items
+            if (optionalFeeItemIds && optionalFeeItemIds.length > 0) {
+                await require("../models").studentFeeItem.bulkCreate(
+                    optionalFeeItemIds.map(feeItemId => ({
+                        studentId: newStudent.id,
+                        feeItemId,
+                        isActive: true
+                    })),
+                    { transaction: t }
+                );
+            }
 
             await t.commit();
             logger.info(`Created student and wallet for: ${studentId}`);
@@ -78,7 +91,8 @@ module.exports = {
                     { model: bankAccount, as: 'bankAccount' },
                     { model: nfcCard, as: 'nfcCards', where: { isActive: true }, required: false },
                     { model: require("../models").schoolClass, as: 'schoolClass' },
-                    { model: require("../models").schoolRoom, as: 'schoolRoom' }
+                    { model: require("../models").schoolRoom, as: 'schoolRoom' },
+                    { model: require("../models").studentFeeItem, as: 'studentFeeItems', where: { isActive: true }, required: false }
                 ]
             });
             return res.status(200).json(data);
@@ -124,19 +138,44 @@ module.exports = {
 
     // 5. Update a student profile
     async update(req, res) {
+        const t = await sequelize.transaction();
         try {
-            const { firstName, lastName, grade, phoneNumber, classId, roomId, parentName, parentPhone, parentEmail, room } = req.body;
+            const { firstName, lastName, grade, phoneNumber, classId, roomId, parentName, parentPhone, parentEmail, room, photoPath, optionalFeeItemIds } = req.body;
             const updated = await student.update(
-                { firstName, lastName, grade, phoneNumber, classId, roomId, parentName, parentPhone, parentEmail, room },
-                { where: { id: req.params.id } }
+                { firstName, lastName, grade, phoneNumber, classId, roomId, parentName, parentPhone, parentEmail, room, photoPath },
+                { where: { id: req.params.id }, transaction: t }
             );
 
             if (updated[0] === 0) {
+                await t.rollback();
                 return res.status(404).json({ message: "Student not found" });
             }
 
+            // Sync optional fee items
+            if (optionalFeeItemIds !== undefined) {
+                // Delete existing ones
+                await require("../models").studentFeeItem.destroy({
+                    where: { studentId: req.params.id },
+                    transaction: t
+                });
+                
+                // Bulk insert new ones
+                if (optionalFeeItemIds.length > 0) {
+                    await require("../models").studentFeeItem.bulkCreate(
+                        optionalFeeItemIds.map(feeItemId => ({
+                            studentId: req.params.id,
+                            feeItemId,
+                            isActive: true
+                        })),
+                        { transaction: t }
+                    );
+                }
+            }
+
+            await t.commit();
             return res.status(200).json({ message: "Student updated successfully" });
         } catch (error) {
+            await t.rollback();
             logger.error("Error updating student:", error);
             return res.status(500).json({ error: error.message });
         }
@@ -210,6 +249,21 @@ module.exports = {
         } catch (error) {
             logger.error("Error fetching student billing statement:", error);
             return res.status(500).json({ error: error.message });
+        }
+    },
+
+    // 8. Upload Student Photo
+    async uploadPhoto(req, res) {
+        try {
+            if (!req.files || !req.files.images || req.files.images.length === 0) {
+                return res.status(400).json({ message: "No image file uploaded" });
+            }
+            const file = req.files.images[0];
+            const photoPath = `/uploads/images/${file.filename}`;
+            return res.status(200).json({ photoPath });
+        } catch (error) {
+            logger.error("Error uploading student photo:", error);
+            return res.status(500).json({ message: "Error uploading student photo", error: error.message });
         }
     }
 };

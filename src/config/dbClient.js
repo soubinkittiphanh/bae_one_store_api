@@ -193,6 +193,13 @@ const clientDB = {
         "database": 'dcommerce_pro_sho',
         "port": 3306,
     },
+    "poukaofai": {
+        "host": "150.95.31.23",
+        "user": "root",
+        "password": "sdat@3480",
+        "database": 'dcommerce_pro_phoukaofai',
+        "port": 3306,
+    },
 
 }
 

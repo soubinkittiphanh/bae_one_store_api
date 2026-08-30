@@ -4,7 +4,7 @@ const logger = require("../../api/logger");
 module.exports = {
     async create(req, res) {
         try {
-            const { feeItemId, classId, academicYearId, amount } = req.body;
+            const { feeItemId, classId, academicYearId, amount, isOptional } = req.body;
             if (!feeItemId || !academicYearId || amount === undefined) {
                 return res.status(400).json({ message: "feeItemId, academicYearId, and amount are required" });
             }
@@ -13,7 +13,8 @@ module.exports = {
                 feeItemId,
                 classId: classId || null, // null means global
                 academicYearId,
-                amount
+                amount,
+                isOptional: !!isOptional
             });
 
             logger.info(`Created Fee Structure for item: ${feeItemId}, amount: ${amount}`);
@@ -43,9 +44,9 @@ module.exports = {
 
     async update(req, res) {
         try {
-            const { feeItemId, classId, academicYearId, amount, isActive } = req.body;
+            const { feeItemId, classId, academicYearId, amount, isActive, isOptional } = req.body;
             const updated = await feeStructure.update(
-                { feeItemId, classId: classId || null, academicYearId, amount, isActive },
+                { feeItemId, classId: classId || null, academicYearId, amount, isActive, isOptional },
                 { where: { id: req.params.id } }
             );
 

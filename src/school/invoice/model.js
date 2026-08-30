@@ -26,6 +26,11 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: false,
             defaultValue: 'UNPAID'
         },
+        billingMonth: {
+            type: DataTypes.STRING(7),
+            allowNull: true,
+            comment: 'Format YYYY-MM'
+        },
         dueDate: {
             type: DataTypes.DATEONLY,
             allowNull: true

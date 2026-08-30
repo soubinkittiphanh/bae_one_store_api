@@ -50,6 +50,10 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING,
             allowNull: true
         },
+        photoPath: {
+            type: DataTypes.STRING(255),
+            allowNull: true
+        },
         isActive: {
             type: DataTypes.BOOLEAN,
             allowNull: false,
@@ -96,6 +100,12 @@ module.exports = (sequelize, DataTypes) => {
         Student.hasMany(models.schoolInvoice, {
             foreignKey: 'studentId',
             as: 'invoices'
+        });
+
+        // Student -> StudentFeeItem
+        Student.hasMany(models.studentFeeItem, {
+            foreignKey: 'studentId',
+            as: 'studentFeeItems'
         });
     };
 

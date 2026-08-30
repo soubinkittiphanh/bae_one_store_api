@@ -1,9 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const studentController = require('./controller');
+const { uploadFiles } = require('../middleware/multerConfig');
 
 // Create a new student (and their automatic wallet)
 router.post('/', studentController.create);
+
+// Upload student photo
+router.post('/upload-photo', uploadFiles, studentController.uploadPhoto);
 
 // List all students
 router.get('/find', studentController.getAll);

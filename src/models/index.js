@@ -98,6 +98,7 @@ const initializeModels = () => {
     schoolInvoiceLine: require("../school/invoice/line/model")(sequelize, DataTypes),
     schoolPayment: require("../school/payment/model")(sequelize, DataTypes),
     cashierShift: require("../school/shift/model")(sequelize, DataTypes),
+    studentFeeItem: require("../school/studentFeeItem/model")(sequelize, DataTypes),
     transactionEntry: require("../transactionEntry/model")(sequelize, DataTypes),
     // Product related models
     tax: require("../tax/model")(sequelize, DataTypes),
@@ -312,6 +313,7 @@ const defineSchoolAssociations = (db) => {
   // FeeItem associations
   db.feeItem.hasMany(db.feeStructure, { foreignKey: 'feeItemId', as: 'feeStructures' });
   db.feeItem.hasMany(db.schoolInvoiceLine, { foreignKey: 'feeItemId', as: 'invoiceLines' });
+  db.feeItem.hasMany(db.studentFeeItem, { foreignKey: 'feeItemId', as: 'studentFeeItems' });
 };
 
 // User and Group associations
