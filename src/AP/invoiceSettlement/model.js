@@ -362,7 +362,7 @@ module.exports = (sequelize, DataTypes) => {
   };
 
   APSettlement.prototype.canBeModified = function () {
-    return ['draft', 'pending'].includes(this.status);
+    return ['draft', 'pending', 'approved'].includes(this.status);
   };
 
   APSettlement.prototype.canBeApproved = function () {

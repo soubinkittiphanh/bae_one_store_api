@@ -88,7 +88,7 @@ module.exports = (sequelize, DataTypes) => {
                 }
 
                 // Check for overdue
-                if (invoice.dueDate && new Date(invoice.dueDate) < new Date() && invoice.status !== 'paid') {
+                if (invoice.dueDate && new Date(invoice.dueDate) < new Date() && !['paid', 'cancelled'].includes(invoice.status)) {
                     invoice.status = 'overdue';
                 }
             },
