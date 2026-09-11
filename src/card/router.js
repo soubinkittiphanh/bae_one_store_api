@@ -19,6 +19,7 @@ router.post("/create", controller.create)
     .get("/stock-movements", controller.stockmovements)
     .get("/audit-logs", controller.auditLogs)
     .post("/bulkCreate",service.createHulkStockCard)
+    .post("/bulkCreateV2",service.createHulkStockCardV2)
     .post("/rebuildStock",service.rebuildStockValue)
     .post("/adjustStockBulk", service.adjustStockBulk)
 module.exports = router

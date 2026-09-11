@@ -309,6 +309,13 @@ module.exports = (sequelize, DataTypes) => {
             sourceKey: 'id'
         });
 
+        // Stock Daily Balance association
+        Product.hasMany(models.stockDailyBalance, {
+            as: 'stockDailyBalances',
+            foreignKey: 'productId',
+            sourceKey: 'id'
+        });
+
         // Many-to-Many with WebGroup (if you have a junction table)
         // Uncomment and adjust if you have a many-to-many relationship
         /*

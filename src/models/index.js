@@ -84,6 +84,7 @@ const initializeModels = () => {
     unit: require("../unit/model")(sequelize, DataTypes),
     printerModel: require("../printer/model")(sequelize, DataTypes),
     stockTransactionModel: require("../stockTransaction/model")(sequelize, DataTypes),
+    stockDailyBalance: require("../stockDailyBalance/model")(sequelize, DataTypes),
     // unit: require("../unit/model")(sequelize, DataTypes),
     mainCategory: require("../mainCategory/model")(sequelize, DataTypes),
     category: require("../category/model")(sequelize, DataTypes),

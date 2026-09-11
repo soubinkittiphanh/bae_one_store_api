@@ -2,6 +2,8 @@ const logger = require('../api/logger');
 const dbAsync = require('../config/dbconAsync');
 const Card = require('../models').card;
 const Product = require('../models').product;
+const Unit = require('../models').unit;
+const { sequelize } = require('../models');
 const common = require('../common');
 const { Op } = require('sequelize');
 const productService = require('./../product/service')
@@ -113,6 +115,208 @@ const createHulkStockCard = async (req, res) => {
         return res.status(403).send("Server error " + error);
     }
 }
+
+/**
+ * V2 Stock Add Function:
+ * Converts units on server and inserts rows in streaming chunks (2,500/batch)
+ * to prevent Node.js heap memory exhaustion and MySQL max_allowed_packet crashes.
+ */
+const createHulkStockCardV2 = async (req, res) => {
+    let {
+        inputter,
+        product_id,
+        productId,
+        quantity,
+        stockCardQty, // fallback if client sends stockCardQty
+        unitId,
+        conversionRate,
+        totalCost,
+        costInput,
+        costType = "perUnit",
+        srcLocationId,
+        currencyId,
+        exchangeRate,
+        // Optional attributes
+        colorId,
+        sizeId,
+        serialNo,
+        lotNumber,
+        expiryDate,
+        hasExpiry,
+        hasLot
+    } = req.body;
+
+    logger.info(`[createHulkStockCardV2] Received stock add for productId=${productId || product_id}, qty=${quantity ?? stockCardQty}, unitId=${unitId}`);
+
+    // 1. Resolve Product
+    let product = null;
+    if (productId) {
+        product = await Product.findByPk(productId, {
+            include: [
+                { association: "baseUnit" },
+                { association: "stockUnit" },
+                { association: "receiveUnit" }
+            ]
+        });
+    } else if (product_id) {
+        product = await Product.findOne({
+            where: { pro_id: product_id },
+            include: [
+                { association: "baseUnit" },
+                { association: "stockUnit" },
+                { association: "receiveUnit" }
+            ]
+        });
+    }
+
+    if (!productId && product) {
+        productId = product.id;
+    }
+    if (!product_id && product) {
+        product_id = product.pro_id;
+    }
+
+    // 2. Determine input quantity
+    const inputQty = parseFloat(quantity !== undefined && quantity !== null ? quantity : stockCardQty) || 0;
+
+    // Handle negative stock adjustment
+    if (inputQty < 0) {
+        const whereCondition = {
+            productId,
+            card_isused: 0,
+            saleLineId: null,
+            isActive: true,
+        };
+        if (srcLocationId) {
+            whereCondition.locationId = srcLocationId;
+        }
+        await adjustStock(whereCondition, inputQty, inputter);
+        await productService.updateProductCountById(productId);
+        return res.status(200).json({ success: true, message: "Stock adjustment completed" });
+    }
+
+    if (inputQty === 0) {
+        return res.status(400).json({ success: false, message: "Quantity must be greater than 0" });
+    }
+
+    // 3. Resolve conversion rate
+    let effectiveRate = 1.0;
+    if (conversionRate && parseFloat(conversionRate) > 0) {
+        effectiveRate = parseFloat(conversionRate);
+    } else if (product && unitId) {
+        const stockUnit = product.stockUnit || product.baseUnit;
+        const stockUnitId = stockUnit ? stockUnit.id : (product.stockUnitId || product.baseUnitId);
+
+        if (unitId === stockUnitId) {
+            effectiveRate = 1.0;
+        } else if (Unit) {
+            const selectedUnit = await Unit.findByPk(unitId);
+            if (selectedUnit) {
+                const selRate = parseFloat(selectedUnit.conversionRate || 1.0);
+                const stockRate = parseFloat(stockUnit?.conversionRate || 1.0);
+                effectiveRate = stockRate > 0 ? (selRate / stockRate) : selRate;
+            }
+        }
+    }
+
+    const totalBaseUnits = Math.round(inputQty * effectiveRate);
+    if (totalBaseUnits <= 0) {
+        return res.status(400).json({ success: false, message: "Invalid converted base unit quantity" });
+    }
+
+    // 4. Calculate costs
+    let calculatedTotalCost = parseFloat(totalCost) || 0;
+    if (!calculatedTotalCost && costInput !== undefined) {
+        if (costType === "total") {
+            calculatedTotalCost = parseFloat(costInput) || 0;
+        } else {
+            calculatedTotalCost = (parseFloat(costInput) || 0) * inputQty;
+        }
+    }
+
+    const costPerBaseUnit = totalBaseUnits > 0 ? (calculatedTotalCost / totalBaseUnits) : 0;
+    const rateLCY = parseFloat(exchangeRate) || 1.0;
+    const costLCY = costPerBaseUnit * rateLCY;
+    const lockingSessionId = Date.now();
+
+    logger.info(`[createHulkStockCardV2] Generating ${totalBaseUnits} cards in chunks (Rate: ${effectiveRate}, CostPerBaseUnit: ${costPerBaseUnit})`);
+
+    const transaction = await sequelize.transaction();
+
+    try {
+        const CHUNK_SIZE = 2500;
+        let insertedCount = 0;
+
+        for (let i = 0; i < totalBaseUnits; i += CHUNK_SIZE) {
+            const currentBatchSize = Math.min(CHUNK_SIZE, totalBaseUnits - i);
+            const chunkRows = [];
+
+            for (let j = 0; j < currentBatchSize; j++) {
+                const index = i + j;
+                const cardSequenceNumber = common.generateLockingSessionId(10);
+
+                chunkRows.push({
+                    card_type_code: 10010,
+                    product_id: product_id,
+                    productId: productId,
+                    cost: costPerBaseUnit,
+                    costLCY: costLCY,
+                    card_number: cardSequenceNumber,
+                    card_isused: 0,
+                    locking_session_id: lockingSessionId,
+                    card_input_date: new Date(),
+                    inputter: inputter || 1,
+                    update_user: inputter || 1,
+                    update_time: new Date(),
+                    update_time_new: new Date(),
+                    isActive: true,
+                    currencyId: currencyId ?? 1,
+                    exchangeRate: rateLCY,
+                    locationId: srcLocationId,
+                    colorId: colorId || null,
+                    sizeId: sizeId || null,
+                    serialNo: serialNo ? `${serialNo}_${index + 1}` : null,
+                    lotNumber: lotNumber || null,
+                    expiryDate: expiryDate || null,
+                    hasExpiry: hasExpiry || !!expiryDate,
+                    hasLot: hasLot || !!lotNumber,
+                    unitId: unitId || null
+                });
+            }
+
+            await Card.bulkCreate(chunkRows, { transaction });
+            insertedCount += chunkRows.length;
+        }
+
+        // Update product cost currency
+        if (productId) {
+            await Product.update(
+                { costCurrencyId: currencyId ?? 1 },
+                { where: { id: productId }, transaction }
+            );
+        }
+
+        await transaction.commit();
+
+        // Recalculate product stock count
+        if (productId) {
+            await productService.updateProductCountById(productId);
+        }
+
+        logger.info(`[createHulkStockCardV2] Successfully created ${insertedCount} stock cards for productId ${productId}`);
+        return res.status(200).json({
+            success: true,
+            message: `Successfully added ${inputQty} (${totalBaseUnits} base units) to stock`,
+            totalBaseUnits,
+            insertedCount
+        });
+    } catch (error) {
+        await transaction.rollback();
+        logger.error("[createHulkStockCardV2] Error:", error);
+        return res.status(500).json({ success: false, message: "Server error: " + error.message });
+    }
+};
+
 
 // TODO: Lets continues here for stock adjustment 
 const adjustStock = async (whereCondition, stockCardQty, inputter = null) => {
@@ -824,6 +1028,7 @@ const getExpiredCards = async () => {
 
 module.exports = {
     createHulkStockCard,
+    createHulkStockCardV2,
     rebuildStockValue,
     createCardFromReceiving,
     findCardsByReceivingLineIdList,
