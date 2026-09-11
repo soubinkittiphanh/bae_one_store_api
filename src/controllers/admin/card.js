@@ -120,7 +120,7 @@ const fetchCard = async (req, res) => {
                 LEFT JOIN location l ON l.id = c.locationId
                 LEFT JOIN currency curr ON curr.id = c.currencyId
                 LEFT JOIN product p ON p.id = c.productId
-                LEFT JOIN unitModel un ON un.id = COALESCE(c.unitId, p.baseUnitId) AND un.isActive = 1
+                LEFT JOIN unitModel un ON un.id = COALESCE(c.unitId, p.stockUnitId, p.baseUnitId) AND un.isActive = 1
                 WHERE ${whereClause}
                 ORDER BY c.card_input_date DESC
             `;
@@ -141,7 +141,7 @@ const fetchCard = async (req, res) => {
                 LEFT JOIN location l ON l.id = c.locationId
                 LEFT JOIN currency curr ON curr.id = c.currencyId
                 LEFT JOIN product p ON p.id = c.productId
-                LEFT JOIN unitModel un ON un.id = COALESCE(c.unitId, p.baseUnitId) AND un.isActive = 1
+                LEFT JOIN unitModel un ON un.id = COALESCE(c.unitId, p.stockUnitId, p.baseUnitId) AND un.isActive = 1
                 WHERE ${whereClause}
                 ORDER BY c.card_input_date DESC
             `;

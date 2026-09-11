@@ -181,6 +181,7 @@ const fetchProductFromLocation = async (req, res) => {
     p.barCode,
     p.receiveUnitId,
     p.stockUnitId,
+    p.baseUnitId,
     p.pro_name,
     p._category,
     p.vendorName,
@@ -344,6 +345,45 @@ const fetchProductFromLocation = async (req, res) => {
         }
       }
 
+      // Query product units
+      let productUnitsData = {};
+      try {
+        const productUnitsSql = `
+          SELECT pu.*, un.name as unit_name, un.symbol as unit_symbol, un.conversion_rate as unit_conversion_rate
+          FROM product_units pu
+          LEFT JOIN unitModel un ON un.id = pu.unitId
+          WHERE pu.isActive = TRUE
+        `;
+        const puResults = await new Promise((resolve, reject) => {
+          Db.query(productUnitsSql, (err, results) => {
+            if (err) reject(err);
+            else resolve(results);
+          });
+        });
+        productUnitsData = (puResults || []).reduce((acc, pu) => {
+          const prodId = pu.productId;
+          if (!acc[prodId]) acc[prodId] = [];
+          acc[prodId].push({
+            id: pu.id,
+            productId: pu.productId,
+            unitId: pu.unitId,
+            price: pu.price,
+            barCode: pu.barCode,
+            isBaseUnit: pu.isBaseUnit,
+            isActive: pu.isActive,
+            unit: {
+              id: pu.unitId,
+              name: pu.unit_name,
+              symbol: pu.unit_symbol,
+              conversionRate: pu.unit_conversion_rate
+            }
+          });
+          return acc;
+        }, {});
+      } catch (puErr) {
+        console.error('ProductUnits Query Error:', puErr);
+      }
+
       // Transform results to include tax and priceList arrays
       const transformedResults = productResults.map(product => {
         const transformedProduct = {
@@ -368,6 +408,8 @@ const fetchProductFromLocation = async (req, res) => {
           img_name: product.img_name,
           receiveUnitId: product.receiveUnitId,
           stockUnitId: product.stockUnitId,
+          baseUnitId: product.baseUnitId,
+          productUnits: productUnitsData[product.id] || [],
           pro_category: product.pro_category,
           validateStockOnSale: product.validateStockOnSale,
           saleCurrencyId: product.saleCurrencyId,

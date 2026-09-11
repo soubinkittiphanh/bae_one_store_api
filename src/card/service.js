@@ -200,13 +200,13 @@ const createHulkStockCardV2 = async (req, res) => {
     }
 
     // 3. Resolve conversion rate
+    const stockUnit = product ? (product.stockUnit || product.baseUnit) : null;
+    const stockUnitId = stockUnit ? stockUnit.id : (product?.stockUnitId || product?.baseUnitId || unitId);
+
     let effectiveRate = 1.0;
     if (conversionRate && parseFloat(conversionRate) > 0) {
         effectiveRate = parseFloat(conversionRate);
     } else if (product && unitId) {
-        const stockUnit = product.stockUnit || product.baseUnit;
-        const stockUnitId = stockUnit ? stockUnit.id : (product.stockUnitId || product.baseUnitId);
-
         if (unitId === stockUnitId) {
             effectiveRate = 1.0;
         } else if (Unit) {
@@ -280,7 +280,7 @@ const createHulkStockCardV2 = async (req, res) => {
                     expiryDate: expiryDate || null,
                     hasExpiry: hasExpiry || !!expiryDate,
                     hasLot: hasLot || !!lotNumber,
-                    unitId: unitId || null
+                    unitId: stockUnitId || null
                 });
             }
 
@@ -303,10 +303,11 @@ const createHulkStockCardV2 = async (req, res) => {
             await productService.updateProductCountById(productId);
         }
 
+        const stockUnitSymbol = stockUnit?.symbol || stockUnit?.name || 'units';
         logger.info(`[createHulkStockCardV2] Successfully created ${insertedCount} stock cards for productId ${productId}`);
         return res.status(200).json({
             success: true,
-            message: `Successfully added ${inputQty} (${totalBaseUnits} base units) to stock`,
+            message: `Successfully added ${inputQty} (${totalBaseUnits} ${stockUnitSymbol}) to stock`,
             totalBaseUnits,
             insertedCount
         });
