@@ -319,6 +319,195 @@ const createHulkStockCardV2 = async (req, res) => {
 };
 
 
+const createHulkStockCardV3 = async (req, res) => {
+    let {
+        inputter,
+        product_id,
+        productId,
+        quantity,
+        stockCardQty, // fallback if client sends stockCardQty
+        unitId,
+        conversionRate,
+        totalCost,
+        costInput,
+        costType = "perUnit",
+        srcLocationId,
+        currencyId,
+        exchangeRate,
+        // Optional attributes
+        colorId,
+        sizeId,
+        serialNo,
+        lotNumber,
+        expiryDate,
+        hasExpiry,
+        hasLot
+    } = req.body;
+
+    logger.info(`[createHulkStockCardV3] Received stock add for productId=${productId || product_id}, qty=${quantity ?? stockCardQty}, unitId=${unitId}`);
+
+    // 1. Resolve Product
+    let product = null;
+    if (productId) {
+        product = await Product.findByPk(productId, {
+            include: [
+                { association: "baseUnit" },
+                { association: "stockUnit" },
+                { association: "receiveUnit" }
+            ]
+        });
+    } else if (product_id) {
+        product = await Product.findOne({
+            where: { pro_id: product_id },
+            include: [
+                { association: "baseUnit" },
+                { association: "stockUnit" },
+                { association: "receiveUnit" }
+            ]
+        });
+    }
+
+    if (!productId && product) {
+        productId = product.id;
+    }
+    if (!product_id && product) {
+        product_id = product.pro_id;
+    }
+
+    // 2. Determine input quantity
+    const inputQty = parseFloat(quantity !== undefined && quantity !== null ? quantity : stockCardQty) || 0;
+
+    // Handle negative stock adjustment
+    if (inputQty < 0) {
+        const whereCondition = {
+            productId,
+            card_isused: 0,
+            saleLineId: null,
+            isActive: true,
+        };
+        if (srcLocationId) {
+            whereCondition.locationId = srcLocationId;
+        }
+        await adjustStock(whereCondition, inputQty, inputter);
+        await productService.updateProductCountById(productId);
+        return res.status(200).json({ success: true, message: "Stock adjustment completed" });
+    }
+
+    if (inputQty === 0) {
+        return res.status(400).json({ success: false, message: "Quantity must be greater than 0" });
+    }
+
+    // 3. Resolve conversion rate
+    const stockUnit = product ? (product.stockUnit || product.baseUnit) : null;
+    const stockUnitId = stockUnit ? stockUnit.id : (product?.stockUnitId || product?.baseUnitId || unitId);
+
+    let effectiveRate = 1.0;
+    if (conversionRate && parseFloat(conversionRate) > 0) {
+        effectiveRate = parseFloat(conversionRate);
+    } else if (product && unitId) {
+        if (unitId === stockUnitId) {
+            effectiveRate = 1.0;
+        } else if (Unit) {
+            const selectedUnit = await Unit.findByPk(unitId);
+            if (selectedUnit) {
+                const selRate = parseFloat(selectedUnit.conversionRate || 1.0);
+                const stockRate = parseFloat(stockUnit?.conversionRate || 1.0);
+                effectiveRate = stockRate > 0 ? (selRate / stockRate) : selRate;
+            }
+        }
+    }
+
+    const totalBaseUnits = Math.round(inputQty * effectiveRate);
+    if (totalBaseUnits <= 0) {
+        return res.status(400).json({ success: false, message: "Invalid converted base unit quantity" });
+    }
+
+    // 4. Calculate costs
+    let calculatedTotalCost = parseFloat(totalCost) || 0;
+    if (!calculatedTotalCost && costInput !== undefined) {
+        if (costType === "total") {
+            calculatedTotalCost = parseFloat(costInput) || 0;
+        } else {
+            calculatedTotalCost = (parseFloat(costInput) || 0) * inputQty;
+        }
+    }
+
+    const costPerBaseUnit = totalBaseUnits > 0 ? (calculatedTotalCost / totalBaseUnits) : 0;
+    const rateLCY = parseFloat(exchangeRate) || 1.0;
+    const costLCY = costPerBaseUnit * rateLCY;
+    const lockingSessionId = Date.now();
+
+    logger.info(`[createHulkStockCardV3] Generating ${totalBaseUnits} cards via raw SQL (Rate: ${effectiveRate}, CostPerBaseUnit: ${costPerBaseUnit})`);
+
+    const transaction = await sequelize.transaction();
+
+    try {
+        const CHUNK_SIZE = 10000;
+        let insertedCount = 0;
+        const now = new Date();
+        const baseSequence = common.generateLockingSessionId(10); // Generate once to save time
+
+        for (let i = 0; i < totalBaseUnits; i += CHUNK_SIZE) {
+            const currentBatchSize = Math.min(CHUNK_SIZE, totalBaseUnits - i);
+            const replacements = [];
+            const placeholders = [];
+
+            for (let j = 0; j < currentBatchSize; j++) {
+                const index = i + j;
+                const cardSequenceNumber = `${baseSequence}_${index}`;
+
+                placeholders.push('(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+                replacements.push(
+                    10010, product_id || null, productId || null, costPerBaseUnit, costLCY, cardSequenceNumber,
+                    0, lockingSessionId, now, inputter || 1, inputter || 1, now, now, 1,
+                    currencyId ?? 1, rateLCY, srcLocationId || null, colorId || null, sizeId || null,
+                    serialNo ? `${serialNo}_${index + 1}` : null, lotNumber || null, expiryDate || null,
+                    hasExpiry || !!expiryDate ? 1 : 0, hasLot || !!lotNumber ? 1 : 0, stockUnitId || null
+                );
+            }
+
+            const sql = `INSERT INTO card (
+                card_type_code, product_id, productId, cost, costLCY, card_number,
+                card_isused, locking_session_id, card_input_date, inputter, update_user,
+                update_time, update_time_new, isActive, currencyId, exchangeRate,
+                locationId, colorId, sizeId, serialNo, lotNumber, expiryDate,
+                hasExpiry, hasLot, unitId
+            ) VALUES ${placeholders.join(',')}`;
+
+            await sequelize.query(sql, { replacements, transaction });
+            insertedCount += currentBatchSize;
+        }
+
+        // Update product cost currency
+        if (productId) {
+            await Product.update(
+                { costCurrencyId: currencyId ?? 1 },
+                { where: { id: productId }, transaction }
+            );
+        }
+
+        await transaction.commit();
+
+        // Recalculate product stock count
+        if (productId) {
+            await productService.updateProductCountById(productId);
+        }
+
+        const stockUnitSymbol = stockUnit?.symbol || stockUnit?.name || 'units';
+        logger.info(`[createHulkStockCardV3] Successfully created ${insertedCount} stock cards for productId ${productId}`);
+        return res.status(200).json({
+            success: true,
+            message: `Successfully added ${inputQty} (${totalBaseUnits} ${stockUnitSymbol}) to stock`,
+            totalBaseUnits,
+            insertedCount
+        });
+    } catch (error) {
+        await transaction.rollback();
+        logger.error("[createHulkStockCardV3] Error:", error);
+        return res.status(500).json({ success: false, message: "Server error: " + error.message });
+    }
+};
+
 // TODO: Lets continues here for stock adjustment 
 const adjustStock = async (whereCondition, stockCardQty, inputter = null) => {
     try {
@@ -1030,6 +1219,7 @@ const getExpiredCards = async () => {
 module.exports = {
     createHulkStockCard,
     createHulkStockCardV2,
+    createHulkStockCardV3,
     rebuildStockValue,
     createCardFromReceiving,
     findCardsByReceivingLineIdList,
