@@ -10,11 +10,13 @@ router.use(validateToken)
 router
   // ========== SALE HEADER CRUD OPERATIONS ==========
   .post("/create", validator.createSaleHeaderValidator, controller.createSaleHeader)
+  .post("/create-v3", validator.createSaleHeaderValidator, controller.createSaleHeaderV3)
   .post("/create-header-only", validator.createSaleHeaderValidator, controller.createSaleHeaderOnly) // Multi-payment support
   .post("/create-line-only", validator.createSaleHeaderValidator, controller.createSaleLineOnly) // Multi-payment support
   .put("/complete-sale/:saleHeaderId", controller.completeSaleWithLines) // Complete sale after payments
   .put("/update/:id", validator.updateSaleHeaderValidator, controller.updateSaleHeader)
   .put("/update-v2/:id", validator.updateSaleHeaderValidator, controller.updateSaleHeaderV2)
+  .put("/update-v3/:id", validator.updateSaleHeaderValidator, controller.updateSaleHeaderV3)
   .put("/settle/:id", controller.settlement)
   .put("/reverse/:id", controller.reverseSaleHeader)
   .put("/postToInvoice/:id", validator.updateSaleHeaderValidator, controller.updateSaleHeaderPostToInvoice)

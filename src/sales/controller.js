@@ -843,6 +843,189 @@ exports.updateSaleHeaderV2 = async (req, res) => {
     });
   }
 };
+
+exports.createSaleHeaderV3 = async (req, res) => {
+  try {
+    let { bookingDate, qrRequestId, remark, discount, total, exchangeRate, isActive, lines, clientId, paymentId, currencyId, userId, referenceNo, locationId, customerForm, redeemedPoints = 0 } = req.body;
+    logger.info("===== Create Sale Header V3 =====" + JSON.stringify(req.body));
+
+    logger.warn(`====>  lines     ${JSON.stringify(lines)}`);
+
+    const stockValidationErrors = await validateStockForLinesV2(lines, locationId);
+
+    if (stockValidationErrors.length > 0) {
+      logger.error(`Stock validation failed: ${JSON.stringify(stockValidationErrors)}`);
+      return res.status(400).json({
+        success: false,
+        message: 'Insufficient stock for some items',
+        stockErrors: stockValidationErrors,
+        details: stockValidationErrors.map(err =>
+          `Product ${err.productId}: Need ${err.required}, Available ${err.available}, Short ${err.shortage}`
+        )
+      });
+    }
+
+    const checking = await autoCreateStock(lines, locationId);
+
+    const result = await sequelize.transaction(async (t) => {
+      let loyaltyDiscount = 0;
+      if (clientId && redeemedPoints > 0) {
+        loyaltyDiscount = await loyaltyService.redeemPoints(clientId, null, redeemedPoints, t);
+        remark = `${remark || ''} (Redeemed ${redeemedPoints} points)`.trim();
+      }
+
+      const saleHeader = await SaleHeader.create({
+        bookingDate, qrRequestId, remark, discount, total, exchangeRate, isActive,
+        clientId, paymentId, currencyId, userId, referenceNo, locationId,
+        redeemedPoints, loyaltyDiscount
+      }, { transaction: t });
+
+      if (paymentId || (req.body.payments && req.body.payments.length > 0)) {
+        await syncSalePayment(saleHeader.id, {
+          paymentId,
+          total,
+          referenceNo,
+          qrRequestId,
+          isActive: isActive !== undefined ? isActive : true,
+          payments: req.body.payments
+        }, t);
+      }
+
+      if (clientId && redeemedPoints > 0) {
+        const { loyaltyTransaction } = require('../models');
+        await loyaltyTransaction.update(
+          { 
+            saleHeaderId: saleHeader.id,
+            remark: `Redeemed points on Sale ID: ${saleHeader.id}`
+          },
+          { where: { saleHeaderId: null, clientId, type: 'REDEEMED' }, transaction: t }
+        );
+      }
+
+      let customer = null;
+
+      if (customerForm) {
+        delete customerForm.discount;
+        customerForm.saleHeaderId = saleHeader.id;
+        customer = await Customer.create(customerForm, { transaction: t });
+      }
+
+      const lockingSessionId = common.generateLockingSessionId();
+      const errorList = [];
+
+      try {
+        const linesWithHeaderId = await assignHeaderIdV2(lines, saleHeader.id, lockingSessionId, false, locationId);
+        lineService.createBulkSaleLineV2(res, linesWithHeaderId, lockingSessionId);
+      } catch (error) {
+        logger.error("Something wrong need to reverse header " + error);
+        res.status(500).send("Unfortunately " + error);
+        errorList.push(error);
+      }
+
+      const reversalRequire = errorList.length > 0 ? true : false;
+      return { customer, saleHeader, reversalRequire };
+    });
+
+    if (result.reversalRequire) {
+      await headerService.saleHeaderReversal(result.saleHeader.id);
+      return logger.warn(`Transaction reversed`);
+    }
+
+    if (clientId && result.saleHeader) {
+      await loyaltyService.awardPoints(clientId, result.saleHeader.id, total, null);
+    }
+  } catch (error) {
+    logger.error(`Error occurs ${error}`);
+    res.status(500).send(error);
+  }
+};
+
+exports.updateSaleHeaderV3 = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { bookingDate, remark, discount, total, exchangeRate, isActive, lines, clientId, paymentId, currencyId, userId, locationId, referenceNo, qrRequestId, payments } = req.body;
+
+    const saleHeader = await SaleHeader.findByPk(id);
+    if (!saleHeader) {
+      logger.error("Order Id " + id + ' is not found');
+      return res.status(404).json({
+        success: false,
+        message: 'Sale header not found'
+      });
+    }
+
+    logger.info("===== Update Sale Header V3 ===== ID: " + id);
+
+    if (lines && Array.isArray(lines) && lines.length > 0) {
+      const stockValidationErrors = await validateStockForLinesV2(lines, locationId);
+      if (stockValidationErrors.length > 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Insufficient stock for some items',
+          stockErrors: stockValidationErrors,
+          details: stockValidationErrors.map(err =>
+            `Product ${err.productId}: Need ${err.required}, Available ${err.available}, Short ${err.shortage}`
+          )
+        });
+      }
+      await autoCreateStock(lines, locationId);
+    }
+
+    const result = await sequelize.transaction(async (t) => {
+      if (lines && Array.isArray(lines) && lines.length > 0) {
+        const lockingSessionId = common.generateLockingSessionId();
+        await assignHeaderIdV2(lines, id, lockingSessionId, true, locationId);
+
+        const saleLineForCreate = lines.filter(el => el['id'] == null);
+        if (saleLineForCreate.length > 0) {
+          await lineService.createBulkSaleLineWithoutResV2(saleLineForCreate, lockingSessionId);
+        }
+
+        const saleLineForUpdate = lines.filter(el => el['id'] != null);
+        if (saleLineForUpdate.length > 0) {
+          await lineService.updateBulkSaleLineV2(saleLineForUpdate, lockingSessionId, locationId);
+        }
+      }
+
+      const updatedSaleHeader = await saleHeader.update({
+        bookingDate, remark, discount, total, exchangeRate, isActive,
+        clientId, paymentId, currencyId, userId, referenceNo, qrRequestId
+      }, { transaction: t });
+
+      await syncSalePayment(id, {
+        paymentId: paymentId !== undefined ? paymentId : saleHeader.paymentId,
+        total: total !== undefined ? total : saleHeader.total,
+        referenceNo: referenceNo !== undefined ? referenceNo : saleHeader.referenceNo,
+        qrRequestId: qrRequestId !== undefined ? qrRequestId : saleHeader.qrRequestId,
+        isActive: isActive !== undefined ? isActive : saleHeader.isActive,
+        payments
+      }, t);
+
+      if (lines && Array.isArray(lines) && lines.length > 0) {
+        updateProductStockCount(lines);
+      }
+
+      return { saleHeader: updatedSaleHeader };
+    });
+
+    const successMessage = `Successfully updated sale header - ${result.saleHeader.id}`;
+    res.status(200).send(`${successMessage} - ${result.saleHeader.id}`);
+
+  } catch (error) {
+    if (error.name === 'SequelizeValidationError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation error',
+        details: error.errors.map(err => err.message)
+      });
+    }
+    res.status(500).json({
+      success: false,
+      message: `Cannot update data: ${error.message || error}`,
+      error: error.message || error
+    });
+  }
+};
 exports.updateSaleHeader = async (req, res) => {
   try {
     const { id } = req.params;
@@ -2169,5 +2352,185 @@ exports.removeGiftFromSale = async (req, res) => {
   }
 };
 
+const validateStockForLinesV2 = async (lines, locationId) => {
+  logger.info(`[V2] Starting stock validation for ${lines.length} lines`);
+
+  const stockValidationErrors = [];
+
+  const spfStockVarParam = await spfService.getSPFByCode('STOCK.VAR');
+  const checkVariant = spfStockVarParam && spfStockVarParam.value === 'Y';
+
+  for (const line of lines) {
+    const isRedeem = line.productId === 999;
+    const shouldValidate = !isRedeem && (
+      line.validateStockOnSale === true ||
+      line.validateStockOnSale === 1 ||
+      (line.validateStockOnSale !== false && line.validateStockOnSale !== 0 && line.product && line.product.validateStockOnSale)
+    );
+
+    if (shouldValidate) {
+      const requiredQty = (line.unitRate || 1) * line.quantity;
+
+      const whereCondition = {
+        productId: line.productId,
+        saleLineId: null,
+        card_isused: 0,
+        locationId: locationId,
+        isActive: true
+      };
+
+      if (checkVariant) {
+        if (line.colorId !== undefined && line.colorId !== null) {
+          whereCondition.colorId = line.colorId;
+        }
+        if (line.sizeId !== undefined && line.sizeId !== null) {
+          whereCondition.sizeId = line.sizeId;
+        }
+      }
+
+      // V2: Use count instead of findAll
+      const availableCount = await Card.count({
+        where: whereCondition
+      });
+
+      if (availableCount < requiredQty) {
+        stockValidationErrors.push({
+          productId: line.productId,
+          colorId: checkVariant ? line.colorId : null,
+          sizeId: checkVariant ? line.sizeId : null,
+          required: requiredQty,
+          available: availableCount,
+          shortage: requiredQty - availableCount
+        });
+      }
+    }
+  }
+
+  return stockValidationErrors;
+};
+
+const reserveCardV2 = async (line, lockingSessionId, qty, locationId) => {
+  logger.info(`[V2 RESERVE] Product: ${line.productId}, Qty: ${qty}, Color: ${line.colorId}, Size: ${line.sizeId}`);
+
+  const spfStockVarParam = await spfService.getSPFByCode('STOCK.VAR');
+  const checkVariant = spfStockVarParam && spfStockVarParam.value === 'Y';
+  
+  const spfStockFifoParam = await spfService.getSPFByCode('STOCK.FIFO');
+  const consumeOrder = (spfStockFifoParam && spfStockFifoParam.value === 'N') ? 'DESC' : 'ASC';
+
+  const whereCondition = {
+    productId: line.productId,
+    saleLineId: null,
+    card_isused: 0,
+    locationId
+  };
+
+  if (checkVariant) {
+    if (line.colorId !== undefined && line.colorId !== null) {
+      whereCondition.colorId = line.colorId;
+    }
+    if (line.sizeId !== undefined && line.sizeId !== null) {
+      whereCondition.sizeId = line.sizeId;
+    }
+  }
+
+  // V2: Check stock via count
+  const count = await Card.count({ where: whereCondition });
+  if (count < qty) {
+    const variantStr = checkVariant ? ` (Color: ${line.colorId}, Size: ${line.sizeId})` : '';
+    throw new Error(`Insufficient stock for Product ${line.productId}${variantStr}`);
+  }
+
+  // Construct raw query for blazing fast updates
+  let sql = `UPDATE card SET locking_session_id = :lockId WHERE productId = :productId AND saleLineId IS NULL AND card_isused = 0 AND locationId = :locationId`;
+  let replacements = {
+    lockId: lockingSessionId,
+    productId: line.productId,
+    locationId: locationId,
+    qty: qty
+  };
+
+  if (checkVariant && line.colorId !== undefined && line.colorId !== null) {
+    sql += ` AND colorId = :colorId`;
+    replacements.colorId = line.colorId;
+  }
+  if (checkVariant && line.sizeId !== undefined && line.sizeId !== null) {
+    sql += ` AND sizeId = :sizeId`;
+    replacements.sizeId = line.sizeId;
+  }
+  
+  sql += ` ORDER BY createdAt ${consumeOrder} LIMIT :qty`;
+
+  await sequelize.query(sql, { replacements });
+};
+
+const assignHeaderIdV2 = async (lines, id, lockingSessionId, isUpdate, locationId) => {
+  const spfStockVarParam = await spfService.getSPFByCode('STOCK.VAR');
+  const checkVariant = spfStockVarParam && spfStockVarParam.value === 'Y';
+
+  for (const iterator of lines) {
+    iterator.headerId = id;
+    iterator.saleHeaderId = id;
+
+    const isRedeem = iterator.productId === 999;
+    const shouldValidate = !isRedeem && (
+      iterator.validateStockOnSale === true ||
+      iterator.validateStockOnSale === 1 ||
+      (iterator.validateStockOnSale !== false && iterator.validateStockOnSale !== 0 && iterator.product && iterator.product.validateStockOnSale)
+    );
+
+    if (shouldValidate) {
+      try {
+        if (!iterator.id) {
+          const qtyToLock = (iterator.unitRate || 1) * iterator.quantity;
+          await reserveCardV2(iterator, lockingSessionId, qtyToLock, locationId);
+        }
+        else {
+          const previousCardsCount = await Card.count({ where: { saleLineId: iterator.id } });
+          const previousCards = await Card.findAll({ where: { saleLineId: iterator.id }, limit: 1 });
+          
+          const currentRequiredQty = (iterator.unitRate || 1) * iterator.quantity;
+          const actualLinkedCount = previousCardsCount;
+
+          const sameProduct = actualLinkedCount > 0 && previousCards[0].productId == iterator.productId;
+          const sameVariant = !checkVariant || (
+            actualLinkedCount > 0 &&
+            previousCards[0].colorId == iterator.colorId &&
+            previousCards[0].sizeId == iterator.sizeId
+          );
+
+          if (actualLinkedCount > 0 && sameProduct && sameVariant) {
+            if (currentRequiredQty > actualLinkedCount) {
+              const diff = currentRequiredQty - actualLinkedCount;
+              await reserveCardV2(iterator, lockingSessionId, diff, locationId);
+            } else if (currentRequiredQty < actualLinkedCount) {
+              const releaseCount = actualLinkedCount - currentRequiredQty;
+              const sqlRelease = `UPDATE card SET card_isused = 0, saleLineId = NULL, locking_session_id = '' WHERE saleLineId = :saleLineId LIMIT :releaseCount`;
+              await sequelize.query(sqlRelease, {
+                replacements: { saleLineId: iterator.id, releaseCount }
+              });
+            }
+          }
+          else {
+            if (actualLinkedCount > 0) {
+              await Card.update({ card_isused: 0, saleLineId: null, locking_session_id: '' }, {
+                where: { saleLineId: iterator.id }
+              });
+              await productService.updateProductCountById(previousCards[0].productId);
+            }
+            await reserveCardV2(iterator, lockingSessionId, currentRequiredQty, locationId);
+          }
+        }
+      } catch (err) {
+        logger.error(`Stock assignment failed for productId ${iterator.productId}: ${err.message}`);
+        throw err;
+      }
+    }
+  }
+  return lines;
+};
+
 exports.validateStockForLines = validateStockForLines;
+exports.validateStockForLinesV2 = validateStockForLinesV2;
+exports.assignHeaderIdV2 = assignHeaderIdV2;
 
