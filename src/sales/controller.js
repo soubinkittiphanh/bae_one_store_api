@@ -49,6 +49,11 @@ const validateStockForLines = async (lines, locationId) => {
   const checkVariant = spfStockVarParam && spfStockVarParam.value === 'Y';
   logger.info(`STOCK.VAR parameter value is: ${spfStockVarParam ? spfStockVarParam.value : 'not set'} (checkVariant: ${checkVariant})`);
 
+  // Fetch STOCK.FIFO parameter from SPF, default to FIFO (ASC) unless explicitly 'N' (LIFO)
+  const spfStockFifoParam = await spfService.getSPFByCode('STOCK.FIFO');
+  const consumeOrder = (spfStockFifoParam && spfStockFifoParam.value === 'N') ? 'DESC' : 'ASC';
+  logger.info(`STOCK.FIFO parameter value is: ${spfStockFifoParam ? spfStockFifoParam.value : 'not set'} (consumeOrder: ${consumeOrder})`);
+
   for (const line of lines) {
     // Check if this line requires stock validation
     const isRedeem = line.productId === 999;
@@ -84,7 +89,7 @@ const validateStockForLines = async (lines, locationId) => {
 
       const availableCards = await Card.findAll({
         where: whereCondition,
-        order: [['createdAt', 'DESC']]
+        order: [['createdAt', consumeOrder]]
       });
 
       logger.info(`Product ${line.productId} (Color: ${line.colorId}, Size: ${line.sizeId}) requires ${requiredQty} units, available: ${availableCards.length}`);
@@ -139,6 +144,94 @@ const autoCreateStock = async (lines, locationId) => {
         }
       }
     }
+  }
+};
+
+const syncSalePayment = async (saleHeaderId, headerData, transaction = null) => {
+  try {
+    const { payments, paymentId, total, referenceNo, qrRequestId, isActive } = headerData;
+    const tOptions = transaction ? { transaction } : {};
+
+    const targetPaymentId = paymentId !== undefined && paymentId !== null ? paymentId : null;
+    const targetAmount = total !== undefined && total !== null ? parseFloat(total || 0) : null;
+    const targetRef = referenceNo !== undefined ? referenceNo : null;
+    const targetQr = qrRequestId !== undefined ? qrRequestId : null;
+    const targetActive = isActive !== undefined ? isActive : null;
+
+    // 1. If explicit multi-payments array is provided (more than 1 payment)
+    if (payments && Array.isArray(payments) && payments.length > 1) {
+      await SalePayment.destroy({
+        where: { saleHeaderId },
+        ...tOptions
+      });
+
+      const paymentRows = payments.map(p => ({
+        saleHeaderId,
+        paymentId: p.paymentId,
+        amount: parseFloat(p.amount || 0),
+        referenceNo: p.referenceNo || targetRef || "",
+        qrRequestId: p.qrRequestId || targetQr || null,
+        isActive: p.isActive !== undefined ? p.isActive : (targetActive !== null ? targetActive : true)
+      }));
+
+      await SalePayment.bulkCreate(paymentRows, tOptions);
+      logger.info(`Synced ${paymentRows.length} multi-payment records for saleHeader ${saleHeaderId}`);
+      return;
+    }
+
+    // 2. Single payment handling
+    // Priority: targetPaymentId (from header update) > payments[0].paymentId
+    const effectivePaymentId = targetPaymentId || (payments && payments[0] ? payments[0].paymentId : null);
+    const effectiveAmount = targetAmount !== null ? targetAmount : (payments && payments[0] ? parseFloat(payments[0].amount || 0) : null);
+    const effectiveRef = targetRef !== null ? targetRef : (payments && payments[0] ? payments[0].referenceNo : null);
+    const effectiveQr = targetQr !== null ? targetQr : (payments && payments[0] ? payments[0].qrRequestId : null);
+
+    const existingPayments = await SalePayment.findAll({
+      where: { saleHeaderId },
+      ...tOptions
+    });
+
+    if (existingPayments.length === 1) {
+      const updateFields = {};
+      if (effectivePaymentId !== null && effectivePaymentId !== undefined) updateFields.paymentId = effectivePaymentId;
+      if (effectiveAmount !== null && !isNaN(effectiveAmount)) updateFields.amount = effectiveAmount;
+      if (effectiveRef !== null) updateFields.referenceNo = effectiveRef;
+      if (effectiveQr !== null) updateFields.qrRequestId = effectiveQr;
+      if (targetActive !== null) updateFields.isActive = targetActive;
+
+      if (Object.keys(updateFields).length > 0) {
+        await existingPayments[0].update(updateFields, tOptions);
+        logger.info(`Updated existing salePayment for saleHeader ${saleHeaderId}: ${JSON.stringify(updateFields)}`);
+      }
+    } else if (existingPayments.length === 0) {
+      if (effectivePaymentId) {
+        await SalePayment.create({
+          saleHeaderId,
+          paymentId: effectivePaymentId,
+          amount: (effectiveAmount !== null && !isNaN(effectiveAmount)) ? effectiveAmount : 0,
+          referenceNo: effectiveRef || "Legacy Single Payment",
+          qrRequestId: effectiveQr,
+          isActive: targetActive !== null ? targetActive : true
+        }, tOptions);
+        logger.info(`Created new salePayment for saleHeader ${saleHeaderId}`);
+      }
+    } else if (existingPayments.length > 1 && effectivePaymentId !== null) {
+      await SalePayment.destroy({
+        where: { saleHeaderId },
+        ...tOptions
+      });
+      await SalePayment.create({
+        saleHeaderId,
+        paymentId: effectivePaymentId,
+        amount: (effectiveAmount !== null && !isNaN(effectiveAmount)) ? effectiveAmount : 0,
+        referenceNo: effectiveRef || "Single Payment",
+        qrRequestId: effectiveQr,
+        isActive: targetActive !== null ? targetActive : true
+      }, tOptions);
+      logger.info(`Replaced multiple salePayments with single payment for saleHeader ${saleHeaderId}`);
+    }
+  } catch (err) {
+    logger.error(`Error syncing salePayment for saleHeader ${saleHeaderId}: ${err}`);
   }
 };
 
@@ -558,6 +651,18 @@ exports.createSaleHeader = async (req, res) => {
         redeemedPoints, loyaltyDiscount
       }, { transaction: t });
 
+      // Automatically sync/create salePayment
+      if (paymentId || (req.body.payments && req.body.payments.length > 0)) {
+        await syncSalePayment(saleHeader.id, {
+          paymentId,
+          total,
+          referenceNo,
+          qrRequestId,
+          isActive: isActive !== undefined ? isActive : true,
+          payments: req.body.payments
+        }, t);
+      }
+
       // Update the loyalty transaction with the real saleHeaderId
       if (clientId && redeemedPoints > 0) {
         const { loyaltyTransaction } = require('../models');
@@ -624,7 +729,7 @@ exports.createSaleHeader = async (req, res) => {
 exports.updateSaleHeaderV2 = async (req, res) => {
   try {
     const { id } = req.params;
-    const { bookingDate, remark, discount, total, exchangeRate, isActive, lines, clientId, paymentId, currencyId, userId, locationId } = req.body;
+    const { bookingDate, remark, discount, total, exchangeRate, isActive, lines, clientId, paymentId, currencyId, userId, locationId, referenceNo, qrRequestId, payments } = req.body;
 
     const saleHeader = await SaleHeader.findByPk(id);
     if (!saleHeader) {
@@ -639,32 +744,41 @@ exports.updateSaleHeaderV2 = async (req, res) => {
     logger.warn(`====>  lines     ${JSON.stringify(lines)}`);
 
     // Validate stock using the same approach as create function
-    const stockValidationErrors = await validateStockForLines(lines, locationId);
-    if (stockValidationErrors.length > 0) {
-      logger.error(`Stock validation failed: ${JSON.stringify(stockValidationErrors)}`);
-      return res.status(400).json({
-        success: false,
-        message: 'Insufficient stock for some items',
-        stockErrors: stockValidationErrors,
-        details: stockValidationErrors.map(err =>
-          `Product ${err.productId}: Need ${err.required}, Available ${err.available}, Short ${err.shortage}`
-        )
-      });
-    }
+    if (lines && Array.isArray(lines) && lines.length > 0) {
+      const stockValidationErrors = await validateStockForLines(lines, locationId);
+      if (stockValidationErrors.length > 0) {
+        logger.error(`Stock validation failed: ${JSON.stringify(stockValidationErrors)}`);
+        return res.status(400).json({
+          success: false,
+          message: 'Insufficient stock for some items',
+          stockErrors: stockValidationErrors,
+          details: stockValidationErrors.map(err =>
+            `Product ${err.productId}: Need ${err.required}, Available ${err.available}, Short ${err.shortage}`
+          )
+        });
+      }
 
-    const checking = await autoCreateStock(lines, locationId);
+      await autoCreateStock(lines, locationId);
+    }
 
     const result = await sequelize.transaction(async (t) => {
       logger.info("Updating header");
-      const lockingSessionId = common.generateLockingSessionId();
-      await assignHeaderId(lines, id, lockingSessionId, true, locationId);
+      if (lines && Array.isArray(lines) && lines.length > 0) {
+        const lockingSessionId = common.generateLockingSessionId();
+        await assignHeaderId(lines, id, lockingSessionId, true, locationId);
 
-      // ********** Classify new or old saleLine ********** //
-      const saleLineForCreate = lines.filter(el => el['id'] == null);
-      logger.warn(`SaleLine for create count is ${saleLineForCreate.length}`);
+        // ********** Classify new or old saleLine ********** //
+        const saleLineForCreate = lines.filter(el => el['id'] == null);
+        logger.warn(`SaleLine for create count is ${saleLineForCreate.length}`);
 
-      if (saleLineForCreate.length > 0) {
-        await lineService.createBulkSaleLineWithoutRes(saleLineForCreate, lockingSessionId);
+        if (saleLineForCreate.length > 0) {
+          await lineService.createBulkSaleLineWithoutRes(saleLineForCreate, lockingSessionId);
+        }
+
+        const saleLineForUpdate = lines.filter(el => el['id'] != null);
+        if (saleLineForUpdate.length > 0) {
+          await lineService.updateBulkSaleLine(saleLineForUpdate, lockingSessionId, locationId);
+        }
       }
 
       const updatedSaleHeader = await saleHeader.update({
@@ -674,17 +788,30 @@ exports.updateSaleHeaderV2 = async (req, res) => {
         total,
         exchangeRate,
         isActive,
-        lines,
         clientId,
         paymentId,
         currencyId,
-        userId
+        userId,
+        referenceNo,
+        qrRequestId
       }, { transaction: t });
+
+      // Sync salePayment
+      await syncSalePayment(id, {
+        paymentId: paymentId !== undefined ? paymentId : saleHeader.paymentId,
+        total: total !== undefined ? total : saleHeader.total,
+        referenceNo: referenceNo !== undefined ? referenceNo : saleHeader.referenceNo,
+        qrRequestId: qrRequestId !== undefined ? qrRequestId : saleHeader.qrRequestId,
+        isActive: isActive !== undefined ? isActive : saleHeader.isActive,
+        payments
+      }, t);
 
       logger.info(`Update transaction completed ${updatedSaleHeader}`);
 
       // ************* UPDATE PRODUCT STOCK COUNT *************//
-      updateProductStockCount(lines);
+      if (lines && Array.isArray(lines) && lines.length > 0) {
+        updateProductStockCount(lines);
+      }
 
       return { saleHeader: updatedSaleHeader };
     });
@@ -719,31 +846,45 @@ exports.updateSaleHeaderV2 = async (req, res) => {
 exports.updateSaleHeader = async (req, res) => {
   try {
     const { id } = req.params;
-    const { lines, locationId, ...headerData } = req.body;
+    const { lines, locationId, payments, ...headerData } = req.body;
     const saleHeader = await SaleHeader.findByPk(id);
 
     if (!saleHeader) return res.status(404).json({ success: false, message: 'Sale header not found' });
 
     const lockingSessionId = common.generateLockingSessionId();
 
-    // STEP 1: Assign header info and tag cards (Existing Logic)
-    await assignHeaderId(lines, id, lockingSessionId, true, locationId);
+    if (lines && Array.isArray(lines) && lines.length > 0) {
+      // STEP 1: Assign header info and tag cards (Existing Logic)
+      await assignHeaderId(lines, id, lockingSessionId, true, locationId);
 
-    // STEP 2: Handle NEW lines (Existing Logic)
-    const saleLineForCreate = lines.filter(el => el.id == null);
-    if (saleLineForCreate.length > 0) {
-      await lineService.createBulkSaleLineWithoutRes(saleLineForCreate, lockingSessionId);
-    }
+      // STEP 2: Handle NEW lines (Existing Logic)
+      const saleLineForCreate = lines.filter(el => el.id == null);
+      if (saleLineForCreate.length > 0) {
+        await lineService.createBulkSaleLineWithoutRes(saleLineForCreate, lockingSessionId);
+      }
 
-    // STEP 3: Handle EXISTING lines (The Missing Logic!)
-    const saleLineForUpdate = lines.filter(el => el.id != null);
-    if (saleLineForUpdate.length > 0) {
-      await lineService.updateBulkSaleLine(saleLineForUpdate, lockingSessionId, locationId);
+      // STEP 3: Handle EXISTING lines (The Missing Logic!)
+      const saleLineForUpdate = lines.filter(el => el.id != null);
+      if (saleLineForUpdate.length > 0) {
+        await lineService.updateBulkSaleLine(saleLineForUpdate, lockingSessionId, locationId);
+      }
     }
 
     // STEP 4: Update Header (Existing Logic)
     await saleHeader.update(headerData);
-    updateProductStockCount(lines);
+    if (lines && Array.isArray(lines) && lines.length > 0) {
+      updateProductStockCount(lines);
+    }
+
+    // STEP 5: Sync salePayment
+    await syncSalePayment(id, {
+      paymentId: headerData.paymentId !== undefined ? headerData.paymentId : saleHeader.paymentId,
+      total: headerData.total !== undefined ? headerData.total : saleHeader.total,
+      referenceNo: headerData.referenceNo !== undefined ? headerData.referenceNo : saleHeader.referenceNo,
+      qrRequestId: headerData.qrRequestId !== undefined ? headerData.qrRequestId : saleHeader.qrRequestId,
+      isActive: headerData.isActive !== undefined ? headerData.isActive : saleHeader.isActive,
+      payments
+    });
 
     res.status(200).json(saleHeader);
   } catch (error) {
@@ -763,6 +904,7 @@ exports.settlement = async (req, res) => {
     }
     logger.info("Updating header")
     await saleHeader.update({ paymentId, });
+    await syncSalePayment(id, { paymentId });
     logger.info(`Update transaction completed ${saleHeader}`)
     // ******* IF COD FEE IS THERE NEED TO UPDATE DY-CUS ********
     const customer = await Customer.findByPk(customerId)
@@ -816,6 +958,7 @@ exports.reverseSaleHeader = async (req, res) => {
     const lineIds = saleHeader['lines'].map(line => line.id)
     const result = await sequelize.transaction(async (t) => {
       const updatedRecord = await saleHeader.update({ isActive, remark }, { transaction: t });
+      await SalePayment.update({ isActive }, { where: { saleHeaderId: id }, transaction: t });
       const updatedSaleLineRecord = await SaleLine.update({ isActive }, { where: { 'id': { [Op.in]: lineIds } } }, { transaction: t });
       const [numUpdated] = await Card.update(
         {
@@ -964,6 +1107,10 @@ const reserveCard = async (line, lockingSessionId, qty, locationId) => {
   const spfStockVarParam = await spfService.getSPFByCode('STOCK.VAR');
   const checkVariant = spfStockVarParam && spfStockVarParam.value === 'Y';
 
+  // Fetch STOCK.FIFO parameter from SPF, default to FIFO (ASC) unless explicitly 'N' (LIFO)
+  const spfStockFifoParam = await spfService.getSPFByCode('STOCK.FIFO');
+  const consumeOrder = (spfStockFifoParam && spfStockFifoParam.value === 'N') ? 'DESC' : 'ASC';
+
   const whereCondition = {
     productId: line.productId,
     saleLineId: null,
@@ -982,7 +1129,7 @@ const reserveCard = async (line, lockingSessionId, qty, locationId) => {
 
   const cards = await Card.findAll({
     limit: qty,
-    order: [['createdAt', 'DESC']],
+    order: [['createdAt', consumeOrder]],
     where: whereCondition
   });
 
@@ -1282,6 +1429,15 @@ exports.getSaleHeaderById = async (req, res) => {
             as: "unit"
           },
         ]
+      }, {
+        model: SalePayment,
+        as: 'payments',
+        include: [
+          {
+            model: Payment,
+            as: 'paymentMethod'
+          }
+        ]
       }],
     });
 
@@ -1364,7 +1520,10 @@ exports.deleteSaleHeader = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Sale header not found' });
     }
 
-    await saleHeader.destroy();
+    await sequelize.transaction(async (t) => {
+      await SalePayment.destroy({ where: { saleHeaderId: id }, transaction: t });
+      await saleHeader.destroy({ transaction: t });
+    });
 
     res.status(200).json({ success: true, message: 'Sale header deleted successfully' });
   } catch (error) {
