@@ -471,7 +471,7 @@ const createHulkStockCardV3 = async (req, res) => {
                 card_isused, locking_session_id, card_input_date, inputter, update_user,
                 update_time, update_time_new, isActive, currencyId, exchangeRate,
                 locationId, colorId, sizeId, serialNo, lotNumber, expiryDate,
-                hasExpiry, hasLot, unitId, createdAt, updatedAt
+                hasExpiry, hasLot, unitId, createdAt, updateTimestamp
             ) VALUES ${placeholders.join(',')}`;
 
             await sequelize.query(sql, { replacements, transaction });
