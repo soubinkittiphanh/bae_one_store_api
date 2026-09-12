@@ -442,7 +442,7 @@ const createHulkStockCardV3 = async (req, res) => {
     const transaction = await sequelize.transaction();
 
     try {
-        const CHUNK_SIZE = 10000;
+        const CHUNK_SIZE = 2000;
         let insertedCount = 0;
         const now = new Date();
         const baseSequence = common.generateLockingSessionId(10); // Generate once to save time
@@ -456,13 +456,13 @@ const createHulkStockCardV3 = async (req, res) => {
                 const index = i + j;
                 const cardSequenceNumber = `${baseSequence}_${index}`;
 
-                placeholders.push('(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+                placeholders.push('(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
                 replacements.push(
                     10010, product_id || null, productId || null, costPerBaseUnit, costLCY, cardSequenceNumber,
                     0, lockingSessionId, now, inputter || 1, inputter || 1, now, now, 1,
                     currencyId ?? 1, rateLCY, srcLocationId || null, colorId || null, sizeId || null,
                     serialNo ? `${serialNo}_${index + 1}` : null, lotNumber || null, expiryDate || null,
-                    hasExpiry || !!expiryDate ? 1 : 0, hasLot || !!lotNumber ? 1 : 0, stockUnitId || null
+                    hasExpiry || !!expiryDate ? 1 : 0, hasLot || !!lotNumber ? 1 : 0, stockUnitId || null, now, now
                 );
             }
 
@@ -471,7 +471,7 @@ const createHulkStockCardV3 = async (req, res) => {
                 card_isused, locking_session_id, card_input_date, inputter, update_user,
                 update_time, update_time_new, isActive, currencyId, exchangeRate,
                 locationId, colorId, sizeId, serialNo, lotNumber, expiryDate,
-                hasExpiry, hasLot, unitId
+                hasExpiry, hasLot, unitId, createdAt, updatedAt
             ) VALUES ${placeholders.join(',')}`;
 
             await sequelize.query(sql, { replacements, transaction });
