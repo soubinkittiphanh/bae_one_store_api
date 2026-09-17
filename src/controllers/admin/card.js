@@ -69,8 +69,8 @@ const fetchCard = async (req, res) => {
             });
         }
         
-        let whereConditions = ['(c.productId = ? OR c.product_id = ?)'];
-        let queryParams = [proId, proId];
+        let whereConditions = ['c.product_id = ?'];
+        let queryParams = [proId];
         
         // Date range filter
         if (fDate && tDate) {
