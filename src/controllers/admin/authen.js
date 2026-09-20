@@ -7,7 +7,13 @@ const authenticate = async (req, res) => {
     logger.info("************* User auth  *****************");
     const { mem_id, mem_pwd } = body;
     const user = await userService.getUserById(mem_id,mem_pwd)
-    if(!user) return  res.send({ "accessToken": "", "error": "ລະຫັດຜ່ານ ຫລື ໄອດີບໍ່ຖືກຕ້ອງ" })
+        if(!user) return  res.send({ "accessToken": "", "error": "ລະຫັດຜ່ານ ຫລື ໄອດີບໍ່ຖືກຕ້ອງ" })
+    
+    // Check if user is deactivated or deleted
+    if (user.cus_active === false || user.isActive === false) {
+        logger.warn(`Deactivated user attempted login: ${user.cus_id}`);
+        return res.send({ "accessToken": "", "error": "ບັນຊີນີ້ຖືກປິດການໃຊ້ງານແລ້ວ / Account is deactivated or deleted" });
+    }
     const plainUser = user.get({ plain: true });
     logger.info(`**********${plainUser.cus_name}**********`)
     

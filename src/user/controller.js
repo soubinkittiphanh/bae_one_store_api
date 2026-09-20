@@ -337,7 +337,84 @@ const resetPassword = async (req, res) => {
   }
 };
 
-// NEW FUNCTION: Delete Own Account (Self-service deletion)
+// FUNCTION: Deactivate Own Account (Self-service deactivation)
+const deactivateOwnAccount = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    logger.info(`Self-deactivation request for user ID: ${userId}`);
+
+    const customer = await User.findByPk(userId);
+    if (!customer) {
+      logger.warn(`User not found for self-deactivation, ID: ${userId}`);
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    customer.cus_active = false;
+    customer.isActive = false;
+    customer.remark = `Account deactivated by user on ${new Date().toISOString()}`;
+    customer.updateTimestamp = new Date();
+    await customer.save();
+
+    logger.info(`User ID: ${userId} successfully deactivated their own account`);
+
+    res.status(200).json({
+      success: true,
+      message: 'Account deactivated successfully',
+      data: {
+        id: customer.id,
+        cus_id: customer.cus_id,
+        cus_active: customer.cus_active,
+        isActive: customer.isActive
+      }
+    });
+  } catch (error) {
+    logger.error(`Error deactivating own account: ${error.message}`);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error while deactivating account'
+    });
+  }
+};
+
+// FUNCTION: Deactivate Customer by ID (Admin control)
+const deactivateCustomer = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const customer = await User.findByPk(id);
+    if (!customer) {
+      return res.status(404).json({
+        success: false,
+        message: 'Customer not found'
+      });
+    }
+
+    const { active = false, remark } = req.body;
+    customer.cus_active = active;
+    customer.isActive = active;
+    if (remark) customer.remark = remark;
+    customer.updateTimestamp = new Date();
+    await customer.save();
+
+    logger.info(`Customer ID: ${id} active status updated to: ${active}`);
+
+    res.status(200).json({
+      success: true,
+      message: `Account ${active ? 'activated' : 'deactivated'} successfully`,
+      data: customer
+    });
+  } catch (error) {
+    logger.error(`Error updating customer active status: ${error.message}`);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+// FUNCTION: Delete Own Account (Self-service deletion with safe fallback)
 const deleteOwnAccount = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -352,8 +429,23 @@ const deleteOwnAccount = async (req, res) => {
       });
     }
 
-    await customer.destroy();
-    logger.info(`User ID: ${userId} successfully deleted their own account`);
+    try {
+      // Try hard delete first
+      await customer.destroy();
+      logger.info(`User ID: ${userId} permanently destroyed account record`);
+    } catch (destroyError) {
+      // If foreign keys prevent hard delete, perform soft-delete / deactivate + anonymize
+      logger.warn(`Could not hard delete user ${userId} due to DB constraints. Falling back to deactivation/anonymization: ${destroyError.message}`);
+      customer.cus_active = false;
+      customer.isActive = false;
+      customer.cus_pass = 'DELETED_' + Date.now();
+      customer.cus_tel = '';
+      customer.cus_email = '';
+      customer.remark = `Account deleted by user on ${new Date().toISOString()}`;
+      customer.updateTimestamp = new Date();
+      await customer.save();
+      logger.info(`User ID: ${userId} successfully anonymized & deactivated`);
+    }
 
     res.status(200).json({
       success: true,
@@ -407,6 +499,8 @@ module.exports = {
   unlinkTerminal,
   changePassword,
   resetPassword,
+  deactivateOwnAccount,
+  deactivateCustomer,
   deleteOwnAccount,
   validateChangePassword,
   validateResetPassword
