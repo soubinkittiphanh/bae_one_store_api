@@ -12,13 +12,12 @@ const ChartAccount = require('../../../models').chartAccount;
 class SettlementController {
 
   // GET /settlements - Get all settlements with pagination
-  // GET /settlements - Get all settlements with pagination
   static async getAll(req, res) {
     try {
       const {
         page = 1,
         limit = 10,
-        method='cash',
+        method,
         userId,
         moneyAdvanceId,
         bankAccountId,
@@ -26,21 +25,29 @@ class SettlementController {
         chartAccountId,
         bookingDate,
         fromDate,
-        toDate
+        toDate,
+        isActive
       } = req.query;
 
       const offset = (page - 1) * limit;
-      const { Op } = require('sequelize');
-
       const whereClause = {};
 
       // Handle existing filters
-      if (method) whereClause.method = method;
+      if (method && method !== 'all') whereClause.method = method;
       if (userId) whereClause.userId = userId;
       if (moneyAdvanceId) whereClause.moneyAdvanceId = moneyAdvanceId;
       if (bankAccountId) whereClause.bankAccountId = bankAccountId;
       if (ministryId) whereClause.ministryId = ministryId;
       if (chartAccountId) whereClause.chartAccountId = chartAccountId;
+
+      // Handle isActive filter
+      if (isActive !== undefined && isActive !== '' && isActive !== 'all') {
+        if (isActive === 'false' || isActive === false || isActive === '0') {
+          whereClause.isActive = false;
+        } else {
+          whereClause[Op.or] = [{ isActive: true }, { isActive: null }];
+        }
+      }
 
       // Handle date filtering - improved logic
       if (bookingDate) {
@@ -94,7 +101,7 @@ class SettlementController {
           {
             model: currency,
             as: 'currency',
-            required: false // Left join - settlement might not have ministry
+            required: false // Left join - settlement might not have currency
           },
           {
             model: ChartAccount,
@@ -205,11 +212,11 @@ class SettlementController {
         currencyId,
         bookingDate,
         exchangeRate,
-        // ✅ NEW FIELDS ADDED
         externalRef,
         externalRefNo,
         chequeNo,
-        fromPersonName
+        fromPersonName,
+        isActive
       } = req.body;
 
       // Validation
@@ -262,6 +269,7 @@ class SettlementController {
       }
 
       let moneyAdvance = null;
+      const isSettlementActive = isActive !== undefined ? isActive : true;
 
       // Check if money advance exists and is approved (only if provided)
       if (moneyAdvanceId) {
@@ -280,12 +288,15 @@ class SettlementController {
           });
         }
 
-        // Calculate total settled amount for this money advance
+        // Calculate total settled amount for this money advance (active settlements only)
         const existingSettlements = await Settlement.sum('amount', {
-          where: { moneyAdvanceId }
+          where: {
+            moneyAdvanceId,
+            [Op.or]: [{ isActive: true }, { isActive: null }]
+          }
         });
 
-        const totalSettled = (existingSettlements || 0) + parseFloat(amount);
+        const totalSettled = (existingSettlements || 0) + (isSettlementActive ? parseFloat(amount) : 0);
 
         if (totalSettled > parseFloat(moneyAdvance.amount)) {
           return res.status(400).json({
@@ -312,20 +323,23 @@ class SettlementController {
         bankAccountId: bankAccountId || null,
         ministryId: ministryId || null,
         chartAccountId: chartAccountId || null,
-        // ✅ NEW FIELDS INCLUDED IN CREATE
         externalRef: externalRef || null,
         externalRefNo: externalRefNo || null,
         chequeNo: chequeNo || null,
-        fromPersonName: fromPersonName || null
+        fromPersonName: fromPersonName || null,
+        isActive: isSettlementActive
       });
 
       // Check if fully settled and update money advance status (only if money advance exists)
       if (moneyAdvance) {
         const totalSettled = await Settlement.sum('amount', {
-          where: { moneyAdvanceId }
+          where: {
+            moneyAdvanceId,
+            [Op.or]: [{ isActive: true }, { isActive: null }]
+          }
         });
 
-        if (totalSettled >= parseFloat(moneyAdvance.amount)) {
+        if ((totalSettled || 0) >= parseFloat(moneyAdvance.amount)) {
           await moneyAdvance.update({ status: 'settled' });
         }
       }
@@ -399,11 +413,11 @@ class SettlementController {
         bookingDate,
         exchangeRate,
         updateUserId,
-        // ✅ NEW FIELDS ADDED TO UPDATE
         externalRef,
         externalRefNo,
         chequeNo,
-        fromPersonName
+        fromPersonName,
+        isActive
       } = req.body;
 
       const settlement = await Settlement.findByPk(id, {
@@ -480,16 +494,20 @@ class SettlementController {
         }
       }
 
-      // If amount is being updated and there's a money advance, validate total doesn't exceed advance amount
-      if (amount && amount !== settlement.amount && finalMoneyAdvanceId) {
+      const targetIsActive = isActive !== undefined ? isActive : settlement.isActive;
+      const targetAmount = amount !== undefined ? amount : settlement.amount;
+
+      // If amount or active status is being updated and there is a money advance, validate total doesn't exceed advance amount
+      if (finalMoneyAdvanceId && targetIsActive) {
         const existingSettlements = await Settlement.sum('amount', {
           where: {
             moneyAdvanceId: finalMoneyAdvanceId,
-            id: { [Op.ne]: settlement.id } // Exclude current settlement
+            id: { [Op.ne]: settlement.id }, // Exclude current settlement
+            [Op.or]: [{ isActive: true }, { isActive: null }]
           }
         });
 
-        const totalSettled = (existingSettlements || 0) + parseFloat(amount);
+        const totalSettled = (existingSettlements || 0) + parseFloat(targetAmount);
         const advanceAmount = newMoneyAdvance ? parseFloat(newMoneyAdvance.amount) : 0;
 
         if (totalSettled > advanceAmount) {
@@ -507,22 +525,22 @@ class SettlementController {
 
       // Update settlement
       await settlement.update({
-        bookingDate: bookingDate,
-        amount: amount !== undefined ? amount : settlement.amount,
+        bookingDate: bookingDate !== undefined ? bookingDate : settlement.bookingDate,
+        amount: targetAmount,
         method: method || settlement.method,
         notes: notes !== undefined ? notes : settlement.notes,
         bankAccountId: bankAccountId !== undefined ? bankAccountId : settlement.bankAccountId,
         currencyId: currencyId || null,
         updateUserId: updateUserId || null,
-        exchangeRate: exchangeRate || 1,
+        exchangeRate: exchangeRate || settlement.exchangeRate || 1,
         moneyAdvanceId: finalMoneyAdvanceId !== undefined ? finalMoneyAdvanceId : settlement.moneyAdvanceId,
         ministryId: ministryId !== undefined ? ministryId : settlement.ministryId,
         chartAccountId: chartAccountId !== undefined ? chartAccountId : settlement.chartAccountId,
-        // ✅ NEW FIELDS INCLUDED IN UPDATE
         externalRef: externalRef !== undefined ? externalRef : settlement.externalRef,
         externalRefNo: externalRefNo !== undefined ? externalRefNo : settlement.externalRefNo,
         chequeNo: chequeNo !== undefined ? chequeNo : settlement.chequeNo,
-        fromPersonName: fromPersonName !== undefined ? fromPersonName : settlement.fromPersonName
+        fromPersonName: fromPersonName !== undefined ? fromPersonName : settlement.fromPersonName,
+        isActive: targetIsActive
       });
 
       // Recalculate money advance status for old money advance (if it existed and is being changed)
@@ -530,10 +548,13 @@ class SettlementController {
         const oldMoneyAdvance = await MoneyAdvance.findByPk(settlement.moneyAdvanceId);
         if (oldMoneyAdvance) {
           const oldTotalSettled = await Settlement.sum('amount', {
-            where: { moneyAdvanceId: settlement.moneyAdvanceId }
+            where: {
+              moneyAdvanceId: settlement.moneyAdvanceId,
+              [Op.or]: [{ isActive: true }, { isActive: null }]
+            }
           });
 
-          const shouldBeSettled = oldTotalSettled >= parseFloat(oldMoneyAdvance.amount);
+          const shouldBeSettled = (oldTotalSettled || 0) >= parseFloat(oldMoneyAdvance.amount);
 
           if (shouldBeSettled && oldMoneyAdvance.status !== 'settled') {
             await oldMoneyAdvance.update({ status: 'settled' });
@@ -544,12 +565,15 @@ class SettlementController {
       }
 
       // Recalculate money advance status for new/current money advance (if it exists)
-      if (finalMoneyAdvanceId) {
+      if (finalMoneyAdvanceId && newMoneyAdvance) {
         const totalSettled = await Settlement.sum('amount', {
-          where: { moneyAdvanceId: finalMoneyAdvanceId }
+          where: {
+            moneyAdvanceId: finalMoneyAdvanceId,
+            [Op.or]: [{ isActive: true }, { isActive: null }]
+          }
         });
 
-        const shouldBeSettled = totalSettled >= parseFloat(newMoneyAdvance.amount);
+        const shouldBeSettled = (totalSettled || 0) >= parseFloat(newMoneyAdvance.amount);
         const currentStatus = newMoneyAdvance.status;
 
         if (shouldBeSettled && currentStatus !== 'settled') {
@@ -629,7 +653,10 @@ class SettlementController {
       // Recalculate money advance status after deletion (only if money advance exists)
       if (settlement.moneyAdvanceId && settlement.moneyAdvance) {
         const remainingSettlements = await Settlement.sum('amount', {
-          where: { moneyAdvanceId: settlement.moneyAdvanceId }
+          where: {
+            moneyAdvanceId: settlement.moneyAdvanceId,
+            [Op.or]: [{ isActive: true }, { isActive: null }]
+          }
         });
 
         const totalRemaining = remainingSettlements || 0;

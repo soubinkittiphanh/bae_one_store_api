@@ -51,6 +51,11 @@ module.exports = (sequelize, DataTypes) => {
     glBatchId: {
       type: DataTypes.STRING(100),
       allowNull: true
+    },
+    isActive: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: true
     }
   }, {
     sequelize,

@@ -142,30 +142,30 @@ module.exports = (sequelize, DataTypes) => {
 
             // Before update, save current state to audit table
             beforeUpdate: async (product, options) => {
-                try {
-                    const AuditModel = sequelize.models.ProductAudit;
-                    if (!AuditModel || typeof AuditModel.createAuditRecord !== 'function') return;
+                // try {
+                //     const AuditModel = sequelize.models.ProductAudit;
+                //     if (!AuditModel || typeof AuditModel.createAuditRecord !== 'function') return;
 
-                    // Fetch current state before update
-                    const currentRecord = await sequelize.models.product.findByPk(product.id, {
-                        transaction: options.transaction
-                    });
+                //     // Fetch current state before update
+                //     const currentRecord = await sequelize.models.product.findByPk(product.id, {
+                //         transaction: options.transaction
+                //     });
 
-                    if (currentRecord) {
-                        const userId = options.context?.userId || 1;
-                        const reason = options.context?.reason || 'Product updated';
+                //     if (currentRecord) {
+                //         const userId = options.context?.userId || 1;
+                //         const reason = options.context?.reason || 'Product updated';
 
-                        await AuditModel.createAuditRecord(
-                            currentRecord.toJSON(),
-                            userId,
-                            'UPDATE',
-                            reason,
-                            options.transaction
-                        );
-                    }
-                } catch (error) {
-                    console.error('Failed to create audit record before product update:', error);
-                }
+                //         await AuditModel.createAuditRecord(
+                //             currentRecord.toJSON(),
+                //             userId,
+                //             'UPDATE',
+                //             reason,
+                //             options.transaction
+                //         );
+                //     }
+                // } catch (error) {
+                //     console.error('Failed to create audit record before product update:', error);
+                // }
             },
 
             // Before delete, save the record being deleted

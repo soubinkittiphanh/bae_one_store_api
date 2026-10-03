@@ -134,7 +134,8 @@ class GLCashPostingService {
             const unposted = await db.moneySettlement.findAll({
                 where: {
                     bookingDate: { [Op.between]: [startDate, endDate] },
-                    glPostingStatus: 'unposted'
+                    glPostingStatus: 'unposted',
+                    [Op.or]: [{ isActive: true }, { isActive: null }]
                 },
                 include: [
                     { model: db.chartAccount, as: 'chartAccount' },
@@ -225,7 +226,8 @@ class GLCashPostingService {
                 documents = await db.moneySettlement.findAll({
                     where: {
                         bookingDate: { [Op.between]: [startDate, endDate] },
-                        glPostingStatus: 'unposted'
+                        glPostingStatus: 'unposted',
+                        [Op.or]: [{ isActive: true }, { isActive: null }]
                     },
                     include: [{ model: db.moneyAdvance, as: 'moneyAdvance' }],
                     transaction: t

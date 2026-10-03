@@ -193,6 +193,8 @@ const initializeModels = () => {
     moneySettlement: require("../PWT/moneySettlement/model")(sequelize, DataTypes),
     moneyAdvanceAudit: require("../PWT/moneyAdvanceAudit/model")(sequelize, DataTypes),
     moneyAdvance: require("../PWT/moneyAdvance/model")(sequelize, DataTypes),
+    ministryPeriodBalance: require("../PWT/ministryPeriodBalance/model")(sequelize, DataTypes),
+    bankPeriodBalance: require("../PWT/bankPeriodBalance/model")(sequelize, DataTypes),
     AccountStatement: require("../PWT/accountStatement/model")(sequelize, DataTypes),
     Project: require("../PWT/project/model")(sequelize, DataTypes),
     ProjectBudget: require("../PWT/projectBudget/model")(sequelize, DataTypes),

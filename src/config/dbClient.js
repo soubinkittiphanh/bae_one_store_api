@@ -207,6 +207,20 @@ const clientDB = {
         "database": 'dcommerce_pro_thipphachan',
         "port": 3306,
     },
+    "pt67": {
+        "host": "150.95.31.23",
+        "user": "root",
+        "password": "sdat@3480",
+        "database": 'dcommerce_pro_pt67',
+        "port": 3306,
+    },
+    "24h1": {
+        "host": "150.95.31.23",
+        "user": "root",
+        "password": "sdat@3480",
+        "database": 'dcommerce_pro_24h_min',
+        "port": 3306,
+    },
 
 }
 

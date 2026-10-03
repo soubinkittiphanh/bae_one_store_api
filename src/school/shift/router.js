@@ -4,6 +4,7 @@ const cashierShiftController = require('./controller');
 
 router.post('/open', cashierShiftController.open);
 router.post('/close/:id', cashierShiftController.close);
+router.put('/close/:id', cashierShiftController.close);
 router.get('/active', cashierShiftController.getActive);
 router.get('/report/:id', cashierShiftController.getShiftReport);
 

@@ -45,9 +45,12 @@ class SettlementSpecializedController {
         order: [['createdAt', 'DESC']]
       });
 
-      // Calculate settlement summary
+      // Calculate settlement summary (active only)
       const totalSettled = await Settlement.sum('amount', {
-        where: { moneyAdvanceId }
+        where: {
+          moneyAdvanceId,
+          [Op.or]: [{ isActive: true }, { isActive: null }]
+        }
       });
 
       const moneyAdvance = await MoneyAdvance.findByPk(moneyAdvanceId, {

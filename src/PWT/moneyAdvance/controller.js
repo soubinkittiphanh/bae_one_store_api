@@ -94,7 +94,10 @@ class MoneyAdvanceController {
           rows.map(async (advance) => {
             // Calculate total settlements for this advance
             const settlements = await settlement.findAll({
-              where: { moneyAdvanceId: advance.id }
+              where: {
+                moneyAdvanceId: advance.id,
+                [Op.or]: [{ isActive: true }, { isActive: null }]
+              }
             });
 
             const totalSettled = settlements.reduce((sum, s) =>
@@ -639,13 +642,40 @@ class MoneyAdvanceController {
   // GET /money-advances/dashboard - Dashboard statistics
   static async getDashboard(req, res) {
     try {
-      const { makerId, ministryId, bookingDate, method = 'cash' } = req.query;
+      const { makerId, ministryId, bookingDate, fromDate, toDate, method, search } = req.query;
+      const { Op } = require('sequelize');
 
       const whereClause = {};
       if (makerId) whereClause.makerId = makerId;
       if (ministryId) whereClause.ministryId = ministryId;
-      if (bookingDate) whereClause.bookingDate = bookingDate;
-      if (method) whereClause.method = method;
+      if (method && method !== 'all') whereClause.method = method;
+
+      // Handle date filtering
+      if (bookingDate) {
+        whereClause.bookingDate = bookingDate;
+      } else if (fromDate || toDate) {
+        const dateFilter = {};
+        if (fromDate && toDate) {
+          dateFilter[Op.between] = [fromDate, toDate];
+        } else if (fromDate) {
+          dateFilter[Op.gte] = fromDate;
+        } else if (toDate) {
+          dateFilter[Op.lte] = toDate;
+        }
+        whereClause.bookingDate = dateFilter;
+      }
+
+      // Handle search filter
+      if (search) {
+        whereClause[Op.or] = [
+          { purpose: { [Op.like]: `%${search}%` } },
+          { externalRef: { [Op.like]: `%${search}%` } },
+          { externalRefNo: { [Op.like]: `%${search}%` } },
+          { receiveName: { [Op.like]: `%${search}%` } },
+          { receiveIDNO: { [Op.like]: `%${search}%` } },
+          { chequeNo: { [Op.like]: `%${search}%` } }
+        ];
+      }
 
       const [total, pending, approved, settled] = await Promise.all([
         MoneyAdvance.count({ where: whereClause }),

@@ -9,7 +9,7 @@ module.exports = (sequelize, DataTypes) => {
             comment: 'Links the two legs of the double-entry together'
         },
         transactionType: {
-            type: DataTypes.ENUM('PURCHASE', 'TOPUP', 'REFUND', 'ADJUSTMENT'),
+            type: DataTypes.ENUM('PURCHASE', 'TOPUP', 'REFUND', 'ADJUSTMENT', 'TRANSFER', 'SWEEP'),
             allowNull: false
         },
         debit: {

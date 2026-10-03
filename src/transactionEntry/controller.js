@@ -16,6 +16,9 @@ function getLedgerEffect(type, debit, credit) {
         // Student debited (Out), Shop credited (In)
         if (debit > 0) amountOut = debit;
         if (credit > 0) amountIn = credit;
+    } else if (type === 'TRANSFER' || type === 'SWEEP') {
+        if (debit > 0) amountIn = debit;
+        if (credit > 0) amountOut = credit;
     } else {
         // Fallback
         amountIn = credit;
@@ -424,5 +427,101 @@ module.exports = {
             console.error("User Activity Error:", error);
             return res.status(500).json({ error: error.message });
         }
-    }
+    },
+
+    async processTransfer(req, res) {
+        const t = await sequelize.transaction();
+        try {
+            const { fromAccountId, toAccountId, amount, description, userId, receiverName } = req.body;
+            const refId = uuidv4();
+            const currentBD = await businessDate.findOne({ order: [['id', 'DESC']], transaction: t });
+            const bDate = currentBD ? currentBD.currentDate : new Date().toISOString().split('T')[0];
+
+            if (!fromAccountId || !toAccountId) {
+                return res.status(400).json({ message: "Both source (From) and destination (To) account IDs are required" });
+            }
+            if (fromAccountId == toAccountId) {
+                return res.status(400).json({ message: "Source and destination accounts must be different" });
+            }
+            if (!amount || amount <= 0) {
+                return res.status(400).json({ message: "Amount must be greater than 0" });
+            }
+
+            const sourceAccount = await bankAccount.findByPk(fromAccountId, { transaction: t });
+            const destAccount = await bankAccount.findByPk(toAccountId, { transaction: t });
+
+            if (!sourceAccount) {
+                return res.status(404).json({ message: "Source account not found" });
+            }
+            if (!destAccount) {
+                return res.status(404).json({ message: "Destination account not found" });
+            }
+            if (sourceAccount.balance < amount) {
+                return res.status(400).json({ 
+                    message: `Insufficient balance in source account (${sourceAccount.accountName}). Available: ${sourceAccount.balance} LAK, Requested: ${amount} LAK` 
+                });
+            }
+
+            const senderDesc = description || `End-of-day Cash Drop to ${destAccount.accountName}` + (receiverName ? ` (Received by: ${receiverName})` : '');
+            const receiverDesc = `Cash received from ${sourceAccount.accountName}` + (receiverName ? ` (Handed to: ${receiverName})` : '');
+
+            // 1. LEG 1: CREDIT the Sending Account (Cashier Drawer / Cash Till decreases)
+            await transactionEntry.create({
+                referenceId: refId,
+                bankAccountId: fromAccountId,
+                debit: 0,
+                credit: amount,
+                transactionType: 'TRANSFER',
+                description: senderDesc,
+                userId: userId || null,
+                businessDate: bDate
+            }, { transaction: t });
+
+            // 2. LEG 2: DEBIT the Receiving Account (Central Cash / Vault / Bank increases)
+            await transactionEntry.create({
+                referenceId: refId,
+                bankAccountId: toAccountId,
+                debit: amount,
+                credit: 0,
+                transactionType: 'TRANSFER',
+                description: receiverDesc,
+                userId: userId || null,
+                businessDate: bDate
+            }, { transaction: t });
+
+            // 3. Update account balances
+            await sourceAccount.decrement('balance', { by: amount, transaction: t });
+            await destAccount.increment('balance', { by: amount, transaction: t });
+
+            await t.commit();
+
+            return res.status(200).json({
+                success: true,
+                message: "Cash Transfer Successful",
+                referenceId: refId,
+                transfer: {
+                    referenceId: refId,
+                    amount,
+                    fromAccount: {
+                        id: sourceAccount.id,
+                        name: sourceAccount.accountName,
+                        number: sourceAccount.accountNumber,
+                        newBalance: sourceAccount.balance - amount
+                    },
+                    toAccount: {
+                        id: destAccount.id,
+                        name: destAccount.accountName,
+                        number: destAccount.accountNumber,
+                        newBalance: destAccount.balance + amount
+                    },
+                    receiverName,
+                    createdAt: new Date().toISOString()
+                }
+            });
+
+        } catch (error) {
+            await t.rollback();
+            return res.status(500).json({ message: "Transfer failed", error: error.message });
+        }
+    },
 };

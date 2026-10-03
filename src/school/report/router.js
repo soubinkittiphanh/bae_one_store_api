@@ -7,4 +7,6 @@ router.get('/overdue-balances', schoolReportController.getOverdueBalances);
 router.get('/class-room-summary', schoolReportController.getClassRoomSummary);
 router.get('/fee-item-summary', schoolReportController.getFeeItemSummary);
 
+router.get('/cash-position', schoolReportController.getCashPositionReport);
+
 module.exports = router;

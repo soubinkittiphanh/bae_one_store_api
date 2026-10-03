@@ -10,8 +10,8 @@ const validate = {
       .withMessage('Amount must be greater than 0'),
     
     body('method')
-      .isIn(['cash', 'bank_transfer', 'deduction'])
-      .withMessage('Method must be one of: cash, bank_transfer, deduction'),
+      .isIn(['cash', 'bank_transfer', 'deduction', 'cheque'])
+      .withMessage('Method must be one of: cash, bank_transfer, deduction, cheque'),
     
     body('userId')
       .isInt({ min: 1 })
@@ -41,6 +41,11 @@ const validate = {
       .optional()
       .isInt({ min: 1 })
       .withMessage('GLId must be a valid integer'),
+    
+    body('isActive')
+      .optional()
+      .isBoolean()
+      .withMessage('isActive must be a boolean'),
     
     // Custom validation: bank account required for bank transfers
     body('bankAccountId').custom((value, { req }) => {
@@ -79,8 +84,8 @@ const validate = {
     
     body('method')
       .optional()
-      .isIn(['cash', 'bank_transfer', 'deduction'])
-      .withMessage('Method must be one of: cash, bank_transfer, deduction'),
+      .isIn(['cash', 'bank_transfer', 'deduction', 'cheque'])
+      .withMessage('Method must be one of: cash, bank_transfer, deduction, cheque'),
     
     body('notes')
       .optional()
@@ -122,6 +127,11 @@ const validate = {
         }
         return true;
       }),
+    
+    body('isActive')
+      .optional()
+      .isBoolean()
+      .withMessage('isActive must be a boolean'),
 
     // Middleware to handle validation errors
     (req, res, next) => {
@@ -246,8 +256,8 @@ const validate = {
     
     query('method')
       .optional()
-      .isIn(['cash', 'bank_transfer', 'deduction'])
-      .withMessage('Method must be one of: cash, bank_transfer, deduction'),
+      .isIn(['cash', 'bank_transfer', 'deduction', 'cheque'])
+      .withMessage('Method must be one of: cash, bank_transfer, deduction, cheque'),
     
     query('userId')
       .optional()
@@ -278,6 +288,11 @@ const validate = {
       .optional()
       .isIn(['true', 'false'])
       .withMessage('hasMoneyAdvance must be either true or false'),
+    
+    query('isActive')
+      .optional()
+      .isIn(['true', 'false', 'all', '1', '0'])
+      .withMessage('isActive must be true, false, or all'),
 
     // Middleware to handle validation errors
     (req, res, next) => {

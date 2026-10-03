@@ -61,6 +61,11 @@ const validateCreateSettlement = [
     .optional()
     .isFloat({ min: 0.0001 })
     .withMessage('Exchange rate must be a positive number'),
+
+  body('isActive')
+    .optional()
+    .isBoolean()
+    .withMessage('isActive must be a boolean'),
   
   // Custom validation: bank account required for bank transfers
   body('bankAccountId').custom((value, { req }) => {
@@ -138,7 +143,12 @@ const validateUpdateSettlement = [
         throw new Error('ChartAccountId must be a valid integer or null');
       }
       return true;
-    })
+    }),
+
+  body('isActive')
+    .optional()
+    .isBoolean()
+    .withMessage('isActive must be a boolean')
 ];
 
 // Helper function to handle validation errors
