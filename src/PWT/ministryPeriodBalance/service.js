@@ -324,6 +324,47 @@ class MinistryPeriodBalanceService {
       });
 
       // 8. Closing Balances = Opening + Advances - Settlements
+      
+      // Bank Account Closing Balances
+      const closingBankAccountMap = new Map();
+      const allBankIds = new Set([...bfBankAccountMap.keys(), ...advBankAccountMap.keys(), ...setBankAccountMap.keys()]);
+
+      allBankIds.forEach(bId => {
+        const bf = bfBankAccountMap.get(bId);
+        const adv = advBankAccountMap.get(bId);
+        const st = setBankAccountMap.get(bId);
+
+        const accNo = bf?.accountNumber || adv?.accountNumber || st?.accountNumber || 'N/A';
+        const accName = bf?.accountName || adv?.accountName || st?.accountName || 'Cash';
+        const bName = bf?.bankName || adv?.bankName || st?.bankName || 'Cash Drawer';
+
+        const amounts = {};
+        const allCurrencies = new Set([
+          ...Object.keys(bf?.amounts || {}),
+          ...Object.keys(adv?.amounts || {}),
+          ...Object.keys(st?.amounts || {})
+        ]);
+
+        let lakEq = 0;
+        allCurrencies.forEach(curr => {
+          const bVal = bf?.amounts?.[curr] || 0;
+          const aVal = adv?.amounts?.[curr] || 0;
+          const sVal = st?.amounts?.[curr] || 0;
+          const net = bVal + aVal - sVal;
+          amounts[curr] = net;
+          lakEq += net * (exchangeRates[curr] || 1);
+        });
+
+        closingBankAccountMap.set(bId, {
+          bankAccountId: bId,
+          accountNumber: accNo,
+          accountName: accName,
+          bankName: bName,
+          amounts,
+          totalLakEquivalent: lakEq
+        });
+      });
+
       const closingMinistryMap = new Map();
       const allMinistryIds = new Set([...bfMinistryMap.keys(), ...advMinistryMap.keys(), ...setMinistryMap.keys()]);
 
@@ -404,6 +445,7 @@ class MinistryPeriodBalanceService {
         },
         closingBalance: {
           byMinistry: Array.from(closingMinistryMap.values()).filter(m => Math.abs(m.totalLakEquivalent) > 0.01 || Object.values(m.amounts).some(v => Math.abs(v) > 0.01)),
+          byBankAccount: Array.from(closingBankAccountMap.values()).filter(b => Math.abs(b.totalLakEquivalent) > 0.01 || Object.values(b.amounts).some(v => Math.abs(v) > 0.01)),
           totals: {
             currencyTotals: closingCurrencyTotals,
             totalLakEquivalent: closingTotalLak
@@ -568,6 +610,110 @@ class MinistryPeriodBalanceService {
       };
     } catch (error) {
       logger.error('Error in backfillAllHistory service:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get list of all 12 monthly periods for a given year with summary stats
+   */
+  static async getYearPeriodsList(branchId, year) {
+    try {
+      const bId = branchId ? parseInt(branchId) : 1;
+      const y = parseInt(year) || new Date().getFullYear();
+
+      const monthNames = [
+        'ມັງກອນ (Jan)', 'ກຸມພາ (Feb)', 'ມີນາ (Mar)', 'ເມສາ (Apr)',
+        'ພຶດສະພາ (May)', 'ມິຖຸນາ (Jun)', 'ກໍລະກົດ (Jul)', 'ສິງຫາ (Aug)',
+        'ກັນຍາ (Sep)', 'ຕຸລາ (Oct)', 'ພະຈິກ (Nov)', 'ທັນວາ (Dec)'
+      ];
+
+      const periods = [];
+      const today = new Date();
+      const currentYear = today.getFullYear();
+      const currentMonth = today.getMonth() + 1;
+
+      // Fetch all closed snapshot records for this year
+      const closedSnapshots = await MinistryPeriodBalance.findAll({
+        where: { branchId: bId, year: y, isClosed: true },
+        include: [{ model: User, as: 'closedByUser', attributes: ['id', 'cus_name'] }]
+      });
+
+      for (let m = 1; m <= 12; m++) {
+        const { startDate, endDate } = this.getMonthDateRange(y, m);
+        const monthSnapshots = closedSnapshots.filter(s => s.month === m);
+        const isClosed = monthSnapshots.length > 0;
+        const firstSnap = monthSnapshots[0];
+
+        let openingLak = 0;
+        let advancesLak = 0;
+        let settlementsLak = 0;
+        let closingLak = 0;
+
+        if (isClosed) {
+          monthSnapshots.forEach(s => {
+            const rate = parseFloat(s.exchangeRateLak) || 1;
+            openingLak += (parseFloat(s.openingBalance) || 0) * rate;
+            advancesLak += (parseFloat(s.totalAdvances) || 0) * rate;
+            settlementsLak += (parseFloat(s.totalSettlements) || 0) * rate;
+            closingLak += (parseFloat(s.closingBalance) || 0) * rate;
+          });
+        } else {
+          if (y < currentYear || (y === currentYear && m <= currentMonth)) {
+            const summary = await this.getMasterSummary(bId, y, m);
+            openingLak = summary.balanceForward?.totals?.totalLakEquivalent || 0;
+            advancesLak = summary.currentAdvances?.totals?.totalLakEquivalent || 0;
+            settlementsLak = summary.currentSettlements?.totals?.totalLakEquivalent || 0;
+            closingLak = summary.closingBalance?.totals?.totalLakEquivalent || 0;
+          }
+        }
+
+        const [advCount, setCount] = await Promise.all([
+          MoneyAdvance.count({ where: { bookingDate: { [Op.between]: [startDate, endDate] } } }),
+          MoneySettlement.count({ where: { bookingDate: { [Op.between]: [startDate, endDate] }, isActive: true } })
+        ]);
+
+        periods.push({
+          year: y,
+          month: m,
+          monthName: monthNames[m - 1],
+          startDate,
+          endDate,
+          isClosed,
+          closedAt: firstSnap?.closedAt || null,
+          closedBy: firstSnap?.closedByUser?.cus_name || null,
+          note: firstSnap?.note || '',
+          openingBalanceLak: openingLak,
+          advancesLak: advancesLak,
+          settlementsLak: settlementsLak,
+          closingBalanceLak: closingLak,
+          advancesCount: advCount,
+          settlementsCount: setCount,
+          isCurrent: y === currentYear && m === currentMonth,
+          isPast: y < currentYear || (y === currentYear && m < currentMonth),
+          isFuture: y > currentYear || (y === currentYear && m > currentMonth)
+        });
+      }
+
+      const closedCount = periods.filter(p => p.isClosed).length;
+      const openCount = periods.filter(p => !p.isClosed && (p.isPast || p.isCurrent)).length;
+
+      return {
+        success: true,
+        year: y,
+        branchId: bId,
+        stats: {
+          totalPeriods: 12,
+          closedCount,
+          openCount,
+          totalAdvancesYearLak: periods.reduce((sum, p) => sum + p.advancesLak, 0),
+          totalSettlementsYearLak: periods.reduce((sum, p) => sum + p.settlementsLak, 0),
+          netChangeYearLak: periods.reduce((sum, p) => sum + (p.advancesLak - p.settlementsLak), 0)
+        },
+        periods
+      };
+    } catch (error) {
+      logger.error('Error in getYearPeriodsList service:', error);
       throw error;
     }
   }
