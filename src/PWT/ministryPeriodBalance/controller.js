@@ -17,6 +17,18 @@ class MinistryPeriodBalanceController {
     }
   }
 
+  static async getPeriodList(req, res) {
+    try {
+      const { branchId, year } = req.query;
+      const targetYear = year ? parseInt(year) : new Date().getFullYear();
+      const result = await service.getYearPeriodsList(branchId, targetYear);
+      res.json(result);
+    } catch (error) {
+      logger.error('Error in getPeriodList controller:', error);
+      res.status(500).json({ success: false, message: error.message || 'Error fetching periods list' });
+    }
+  }
+
   static async closePeriod(req, res) {
     try {
       const { branchId, year, month, note } = req.body;
@@ -64,19 +76,5 @@ class MinistryPeriodBalanceController {
     }
   }
 }
-
-
-  static async getPeriodList(req, res) {
-    try {
-      const { branchId, year } = req.query;
-      const targetYear = year ? parseInt(year) : new Date().getFullYear();
-      const result = await service.getYearPeriodsList(branchId, targetYear);
-      res.json(result);
-    } catch (error) {
-      logger.error('Error in getPeriodList controller:', error);
-      res.status(500).json({ success: false, message: error.message || 'Error fetching periods list' });
-    }
-  }
-
 
 module.exports = MinistryPeriodBalanceController;
