@@ -1,62 +1,48 @@
-const logger = require('../../api/logger');
-const db = require('../../models');
 const { Sequelize, Op } = require('sequelize');
+const db = require('../../models');
+const logger = require('../../api/logger');
 
 const MinistryPeriodBalance = db.ministryPeriodBalance;
 const BankPeriodBalance = db.bankPeriodBalance;
 const MoneyAdvance = db.moneyAdvance;
 const MoneySettlement = db.moneySettlement;
 const Ministry = db.ministry;
-const Currency = db.currency;
 const BankAccount = db.bankAccount;
+const Currency = db.currency;
 const User = db.user;
 
 class MinistryPeriodBalanceService {
   /**
-   * Helper: format year & month into date range (YYYY-MM-01 to YYYY-MM-LastDay)
+   * Helper to get start and end dates for a year and month
    */
   static getMonthDateRange(year, month) {
     const y = parseInt(year);
     const m = parseInt(month);
-    const startDate = new Date(y, m - 1, 1);
-    const endDate = new Date(y, m, 0); // last day of month
-
-    const formatDate = (d) => {
-      const yearStr = d.getFullYear();
-      const monthStr = String(d.getMonth() + 1).padStart(2, '0');
-      const dayStr = String(d.getDate()).padStart(2, '0');
-      return `${yearStr}-${monthStr}-${dayStr}`;
-    };
-
-    return {
-      startDate: formatDate(startDate),
-      endDate: formatDate(endDate),
-      year: y,
-      month: m
-    };
+    const mStr = String(m).padStart(2, '0');
+    const startDate = `${y}-${mStr}-01`;
+    const lastDay = new Date(y, m, 0).getDate();
+    const endDate = `${y}-${mStr}-${String(lastDay).padStart(2, '0')}`;
+    return { startDate, endDate, y, m };
   }
 
   /**
-   * Get Master Analysis Summary for a period (e.g. year = 2026, month = 5)
+   * Unified Master Summary Engine
    */
   static async getMasterSummary(branchId, year, month) {
     try {
-      const { startDate, endDate, year: y, month: m } = this.getMonthDateRange(year, month);
+      const { startDate, endDate, y, m } = this.getMonthDateRange(year, month);
       const bId = branchId ? parseInt(branchId) : 1;
 
-      // 1. Fetch active ministries, currencies, and bank accounts
-      const [ministries, currencies, bankAccounts] = await Promise.all([
-        Ministry.findAll({ where: { isActive: true }, order: [['ministryCode', 'ASC']] }),
-        Currency.findAll({ where: { isActive: true }, order: [['id', 'ASC']] }),
-        BankAccount.findAll({ where: { isActive: true }, order: [['bankName', 'ASC'], ['accountName', 'ASC']] })
-      ]);
-
-      const currencyMap = {};
+      // 1. Fetch active currencies & exchange rates
+      const currencies = await Currency.findAll({ where: { isActive: true } });
+      const currencyMap = new Map();
+      const exchangeRates = { LAK: 1, THB: 670, USD: 21200, CNY: 3100 };
       currencies.forEach(c => {
-        currencyMap[c.id] = c;
+        currencyMap.set(c.id, c);
+        if (c.rate) exchangeRates[c.code] = parseFloat(c.rate);
       });
 
-      // 2. Check if period is closed in MinistryPeriodBalance
+      // 2. Check if period is closed
       const closedRecord = await MinistryPeriodBalance.findOne({
         where: { branchId: bId, year: y, month: m, isClosed: true },
         include: [{ model: User, as: 'closedByUser', attributes: ['id', 'cus_name'] }]
@@ -75,64 +61,53 @@ class MinistryPeriodBalanceService {
       };
 
       // 3. Compute Opening Balances (Balance Forward)
-      // All transactions strictly before startDate
-      const openingQuery = `
+      // Capture ALL advances & settlements before startDate (including NULL ministry)
+      const openingAdvQuery = `
         SELECT 
-          m.id AS ministryId,
-          m.ministryCode,
-          m.ministryName,
-          c.id AS currencyId,
-          c.code AS currencyCode,
-          COALESCE(SUM(CASE WHEN ma.bookingDate < :startDate THEN ma.amount ELSE 0 END), 0) AS totalAdvances,
-          COALESCE((
-            SELECT SUM(s.amount)
-            FROM Settlement s
-            WHERE s.ministryId = m.id 
-              AND s.currencyId = c.id 
-              AND (s.isActive IS NULL OR s.isActive = 1)
-              AND s.bookingDate < :startDate
-          ), 0) AS totalSettlements
-        FROM ministry m
-        CROSS JOIN currency c
-        LEFT JOIN MoneyAdvance ma ON ma.ministryId = m.id AND ma.currencyId = c.id
-        WHERE m.isActive = 1 AND c.isActive = 1
-        GROUP BY m.id, m.ministryCode, m.ministryName, c.id, c.code
+          COALESCE(ma.ministryId, 0) AS ministryId,
+          COALESCE(m.ministryCode, 'NO_MINISTRY') AS ministryCode,
+          COALESCE(m.ministryName, 'ລາຍການບໍ່ລະບຸກົມ (Unassigned)') AS ministryName,
+          COALESCE(ma.bankAccountId, 0) AS bankAccountId,
+          COALESCE(b.accountNumber, 'N/A') AS accountNumber,
+          COALESCE(b.accountName, 'Cash') AS accountName,
+          COALESCE(b.bankName, 'Cash Drawer') AS bankName,
+          COALESCE(ma.currencyId, 1) AS currencyId,
+          COALESCE(c.code, 'LAK') AS currencyCode,
+          SUM(ma.amount) AS totalAdvances,
+          SUM(ma.amount * COALESCE(NULLIF(ma.exchangeRate, 0), c.rate, 1)) AS totalAdvancesLak
+        FROM MoneyAdvance ma
+        LEFT JOIN ministry m ON m.id = ma.ministryId
+        LEFT JOIN bankAccount b ON b.id = ma.bankAccountId
+        LEFT JOIN currency c ON c.id = ma.currencyId
+        WHERE ma.bookingDate < :startDate
+        GROUP BY COALESCE(ma.ministryId, 0), COALESCE(ma.bankAccountId, 0), COALESCE(ma.currencyId, 1)
       `;
 
-      const openingRows = await db.sequelize.query(openingQuery, {
-        replacements: { startDate },
-        type: Sequelize.QueryTypes.SELECT
-      });
-
-      // Bank account opening query
-      const bankOpeningQuery = `
+      const openingSetQuery = `
         SELECT 
-          b.id AS bankAccountId,
-          b.accountNumber,
-          b.accountName,
-          b.bankName,
-          c.id AS currencyId,
-          c.code AS currencyCode,
-          COALESCE(SUM(CASE WHEN ma.bookingDate < :startDate THEN ma.amount ELSE 0 END), 0) AS totalAdvances,
-          COALESCE((
-            SELECT SUM(s.amount)
-            FROM Settlement s
-            WHERE s.bankAccountId = b.id 
-              AND s.currencyId = c.id 
-              AND (s.isActive IS NULL OR s.isActive = 1)
-              AND s.bookingDate < :startDate
-          ), 0) AS totalSettlements
-        FROM bankAccount b
-        CROSS JOIN currency c
-        LEFT JOIN MoneyAdvance ma ON ma.bankAccountId = b.id AND ma.currencyId = c.id
-        WHERE b.isActive = 1 AND c.isActive = 1
-        GROUP BY b.id, b.accountNumber, b.accountName, b.bankName, c.id, c.code
+          COALESCE(s.ministryId, 0) AS ministryId,
+          COALESCE(m.ministryCode, 'NO_MINISTRY') AS ministryCode,
+          COALESCE(m.ministryName, 'ລາຍການບໍ່ລະບຸກົມ (Unassigned)') AS ministryName,
+          COALESCE(s.bankAccountId, 0) AS bankAccountId,
+          COALESCE(b.accountNumber, 'N/A') AS accountNumber,
+          COALESCE(b.accountName, 'Cash') AS accountName,
+          COALESCE(b.bankName, 'Cash Drawer') AS bankName,
+          COALESCE(s.currencyId, 1) AS currencyId,
+          COALESCE(c.code, 'LAK') AS currencyCode,
+          SUM(s.amount) AS totalSettlements,
+          SUM(s.amount * COALESCE(NULLIF(s.exchangeRate, 0), c.rate, 1)) AS totalSettlementsLak
+        FROM Settlement s
+        LEFT JOIN ministry m ON m.id = s.ministryId
+        LEFT JOIN bankAccount b ON b.id = s.bankAccountId
+        LEFT JOIN currency c ON c.id = s.currencyId
+        WHERE s.bookingDate < :startDate AND (s.isActive IS NULL OR s.isActive = 1)
+        GROUP BY COALESCE(s.ministryId, 0), COALESCE(s.bankAccountId, 0), COALESCE(s.currencyId, 1)
       `;
 
-      const bankOpeningRows = await db.sequelize.query(bankOpeningQuery, {
-        replacements: { startDate },
-        type: Sequelize.QueryTypes.SELECT
-      });
+      const [openingAdvRows, openingSetRows] = await Promise.all([
+        db.sequelize.query(openingAdvQuery, { replacements: { startDate }, type: Sequelize.QueryTypes.SELECT }),
+        db.sequelize.query(openingSetQuery, { replacements: { startDate }, type: Sequelize.QueryTypes.SELECT })
+      ]);
 
       // 4. Fetch Current Period Transactions (startDate to endDate)
       const currentAdvances = await MoneyAdvance.findAll({
@@ -141,7 +116,7 @@ class MinistryPeriodBalanceService {
         },
         include: [
           { model: Ministry, as: 'ministry', attributes: ['id', 'ministryCode', 'ministryName'] },
-          { model: Currency, as: 'currency', attributes: ['id', 'code', 'name'] },
+          { model: Currency, as: 'currency', attributes: ['id', 'code', 'name', 'rate'] },
           { model: BankAccount, as: 'bankAccount', attributes: ['id', 'accountNumber', 'accountName', 'bankName'] }
         ],
         order: [['bookingDate', 'ASC']]
@@ -150,47 +125,47 @@ class MinistryPeriodBalanceService {
       const currentSettlements = await MoneySettlement.findAll({
         where: {
           bookingDate: { [Op.between]: [startDate, endDate] },
-          isActive: true
+          isActive: { [Op.or]: [true, null, 1] }
         },
         include: [
           { model: Ministry, as: 'ministry', attributes: ['id', 'ministryCode', 'ministryName'] },
-          { model: Currency, as: 'currency', attributes: ['id', 'code', 'name'] },
+          { model: Currency, as: 'currency', attributes: ['id', 'code', 'name', 'rate'] },
           { model: BankAccount, as: 'bankAccount', attributes: ['id', 'accountNumber', 'accountName', 'bankName'] }
         ],
         order: [['bookingDate', 'ASC']]
       });
 
-      // 5. Structure Balance Forward Data
+      // 5. Build Balance Forward Structures
       const bfMinistryMap = new Map();
+      const bfBankAccountMap = new Map();
       const bfCurrencyTotals = {};
+      let bfTotalLak = 0;
 
-      openingRows.forEach(row => {
-        const netOpening = (parseFloat(row.totalAdvances) || 0) - (parseFloat(row.totalSettlements) || 0);
+      openingAdvRows.forEach(row => {
+        const mId = row.ministryId;
+        const bId = row.bankAccountId;
         const cCode = row.currencyCode || 'LAK';
+        const amt = parseFloat(row.totalAdvances) || 0;
+        const lak = parseFloat(row.totalAdvancesLak) || (amt * (exchangeRates[cCode] || 1));
 
-        if (!bfMinistryMap.has(row.ministryId)) {
-          bfMinistryMap.set(row.ministryId, {
-            ministryId: row.ministryId,
+        // Ministry BF
+        if (!bfMinistryMap.has(mId)) {
+          bfMinistryMap.set(mId, {
+            ministryId: mId,
             ministryCode: row.ministryCode,
             ministryName: row.ministryName,
             amounts: {},
             totalLakEquivalent: 0
           });
         }
+        const mEntry = bfMinistryMap.get(mId);
+        mEntry.amounts[cCode] = (mEntry.amounts[cCode] || 0) + amt;
+        mEntry.totalLakEquivalent += lak;
 
-        const entry = bfMinistryMap.get(row.ministryId);
-        entry.amounts[cCode] = (entry.amounts[cCode] || 0) + netOpening;
-        bfCurrencyTotals[cCode] = (bfCurrencyTotals[cCode] || 0) + netOpening;
-      });
-
-      const bfBankAccountMap = new Map();
-      bankOpeningRows.forEach(row => {
-        const netOpening = (parseFloat(row.totalAdvances) || 0) - (parseFloat(row.totalSettlements) || 0);
-        const cCode = row.currencyCode || 'LAK';
-
-        if (!bfBankAccountMap.has(row.bankAccountId)) {
-          bfBankAccountMap.set(row.bankAccountId, {
-            bankAccountId: row.bankAccountId,
+        // Bank BF
+        if (!bfBankAccountMap.has(bId)) {
+          bfBankAccountMap.set(bId, {
+            bankAccountId: bId,
             accountNumber: row.accountNumber,
             accountName: row.accountName,
             bankName: row.bankName,
@@ -198,12 +173,55 @@ class MinistryPeriodBalanceService {
             totalLakEquivalent: 0
           });
         }
+        const bEntry = bfBankAccountMap.get(bId);
+        bEntry.amounts[cCode] = (bEntry.amounts[cCode] || 0) + amt;
+        bEntry.totalLakEquivalent += lak;
 
-        const entry = bfBankAccountMap.get(row.bankAccountId);
-        entry.amounts[cCode] = (entry.amounts[cCode] || 0) + netOpening;
+        bfCurrencyTotals[cCode] = (bfCurrencyTotals[cCode] || 0) + amt;
+        bfTotalLak += lak;
       });
 
-      // 6. Structure Current Advances Data
+      openingSetRows.forEach(row => {
+        const mId = row.ministryId;
+        const bId = row.bankAccountId;
+        const cCode = row.currencyCode || 'LAK';
+        const amt = parseFloat(row.totalSettlements) || 0;
+        const lak = parseFloat(row.totalSettlementsLak) || (amt * (exchangeRates[cCode] || 1));
+
+        // Ministry BF deduction
+        if (!bfMinistryMap.has(mId)) {
+          bfMinistryMap.set(mId, {
+            ministryId: mId,
+            ministryCode: row.ministryCode,
+            ministryName: row.ministryName,
+            amounts: {},
+            totalLakEquivalent: 0
+          });
+        }
+        const mEntry = bfMinistryMap.get(mId);
+        mEntry.amounts[cCode] = (mEntry.amounts[cCode] || 0) - amt;
+        mEntry.totalLakEquivalent -= lak;
+
+        // Bank BF deduction
+        if (!bfBankAccountMap.has(bId)) {
+          bfBankAccountMap.set(bId, {
+            bankAccountId: bId,
+            accountNumber: row.accountNumber,
+            accountName: row.accountName,
+            bankName: row.bankName,
+            amounts: {},
+            totalLakEquivalent: 0
+          });
+        }
+        const bEntry = bfBankAccountMap.get(bId);
+        bEntry.amounts[cCode] = (bEntry.amounts[cCode] || 0) - amt;
+        bEntry.totalLakEquivalent -= lak;
+
+        bfCurrencyTotals[cCode] = (bfCurrencyTotals[cCode] || 0) - amt;
+        bfTotalLak -= lak;
+      });
+
+      // 6. Build Current Advances Structures
       const advMinistryMap = new Map();
       const advBankAccountMap = new Map();
       const advCurrencyTotals = {};
@@ -213,16 +231,17 @@ class MinistryPeriodBalanceService {
         const m = item.ministry;
         const b = item.bankAccount;
         const cCode = item.currency?.code || 'LAK';
-        const rate = parseFloat(item.exchangeRate) || 1;
+        const officialRate = exchangeRates[cCode] || 1;
+        const rate = parseFloat(item.exchangeRate) || officialRate;
         const amt = parseFloat(item.amount) || 0;
         const lakEq = amt * rate;
 
-        const mId = m?.id || 'NO_MINISTRY';
+        const mId = m?.id || 0;
         if (!advMinistryMap.has(mId)) {
           advMinistryMap.set(mId, {
             ministryId: mId,
-            ministryCode: m?.ministryCode || 'N/A',
-            ministryName: m?.ministryName || 'No Ministry',
+            ministryCode: m?.ministryCode || 'NO_MINISTRY',
+            ministryName: m?.ministryName || 'ລາຍການບໍ່ລະບຸກົມ (Unassigned)',
             amounts: {},
             totalLakEquivalent: 0
           });
@@ -231,10 +250,10 @@ class MinistryPeriodBalanceService {
         mEntry.amounts[cCode] = (mEntry.amounts[cCode] || 0) + amt;
         mEntry.totalLakEquivalent += lakEq;
 
-        const bIdKey = b?.id || 'NO_BANK_ACCOUNT';
-        if (!advBankAccountMap.has(bIdKey)) {
-          advBankAccountMap.set(bIdKey, {
-            bankAccountId: bIdKey,
+        const bId = b?.id || 0;
+        if (!advBankAccountMap.has(bId)) {
+          advBankAccountMap.set(bId, {
+            bankAccountId: bId,
             accountNumber: b?.accountNumber || 'N/A',
             accountName: b?.accountName || 'Cash',
             bankName: b?.bankName || 'Cash Drawer',
@@ -242,7 +261,7 @@ class MinistryPeriodBalanceService {
             totalLakEquivalent: 0
           });
         }
-        const bEntry = advBankAccountMap.get(bIdKey);
+        const bEntry = advBankAccountMap.get(bId);
         bEntry.amounts[cCode] = (bEntry.amounts[cCode] || 0) + amt;
         bEntry.totalLakEquivalent += lakEq;
 
@@ -250,7 +269,7 @@ class MinistryPeriodBalanceService {
         advTotalLak += lakEq;
       });
 
-      // 7. Structure Current Settlements Data
+      // 7. Build Current Settlements Structures
       const setMinistryMap = new Map();
       const setBankAccountMap = new Map();
       const setCurrencyTotals = {};
@@ -260,16 +279,17 @@ class MinistryPeriodBalanceService {
         const m = item.ministry;
         const b = item.bankAccount;
         const cCode = item.currency?.code || 'LAK';
-        const rate = parseFloat(item.exchangeRate) || 1;
+        const officialRate = exchangeRates[cCode] || 1;
+        const rate = parseFloat(item.exchangeRate) || officialRate;
         const amt = parseFloat(item.amount) || 0;
         const lakEq = amt * rate;
 
-        const mId = m?.id || 'NO_MINISTRY';
+        const mId = m?.id || 0;
         if (!setMinistryMap.has(mId)) {
           setMinistryMap.set(mId, {
             ministryId: mId,
-            ministryCode: m?.ministryCode || 'N/A',
-            ministryName: m?.ministryName || 'No Ministry',
+            ministryCode: m?.ministryCode || 'NO_MINISTRY',
+            ministryName: m?.ministryName || 'ລາຍການບໍ່ລະບຸກົມ (Unassigned)',
             amounts: {},
             totalLakEquivalent: 0
           });
@@ -278,10 +298,10 @@ class MinistryPeriodBalanceService {
         mEntry.amounts[cCode] = (mEntry.amounts[cCode] || 0) + amt;
         mEntry.totalLakEquivalent += lakEq;
 
-        const bIdKey = b?.id || 'NO_BANK_ACCOUNT';
-        if (!setBankAccountMap.has(bIdKey)) {
-          setBankAccountMap.set(bIdKey, {
-            bankAccountId: bIdKey,
+        const bId = b?.id || 0;
+        if (!setBankAccountMap.has(bId)) {
+          setBankAccountMap.set(bId, {
+            bankAccountId: bId,
             accountNumber: b?.accountNumber || 'N/A',
             accountName: b?.accountName || 'Cash',
             bankName: b?.bankName || 'Cash Drawer',
@@ -289,7 +309,7 @@ class MinistryPeriodBalanceService {
             totalLakEquivalent: 0
           });
         }
-        const bEntry = setBankAccountMap.get(bIdKey);
+        const bEntry = setBankAccountMap.get(bId);
         bEntry.amounts[cCode] = (bEntry.amounts[cCode] || 0) + amt;
         bEntry.totalLakEquivalent += lakEq;
 
@@ -297,35 +317,43 @@ class MinistryPeriodBalanceService {
         setTotalLak += lakEq;
       });
 
-      // Compute LAK equivalents for Balance Forward using currency exchange rates
-      const exchangeRates = { LAK: 1, THB: 650, USD: 22000, CNY: 3100 };
-      currencies.forEach(c => {
-        if (c.exchangeRate) exchangeRates[c.code] = parseFloat(c.exchangeRate);
-      });
+      // 8. Build Closing Balances
+      const closingMinistryMap = new Map();
+      const allMinistryIds = new Set([...bfMinistryMap.keys(), ...advMinistryMap.keys(), ...setMinistryMap.keys()]);
 
-      let bfTotalLak = 0;
-      bfMinistryMap.forEach(m => {
-        let lakSum = 0;
-        Object.keys(m.amounts).forEach(curr => {
-          const rate = exchangeRates[curr] || 1;
-          lakSum += (m.amounts[curr] || 0) * rate;
+      allMinistryIds.forEach(mId => {
+        const bf = bfMinistryMap.get(mId);
+        const adv = advMinistryMap.get(mId);
+        const st = setMinistryMap.get(mId);
+
+        const code = bf?.ministryCode || adv?.ministryCode || st?.ministryCode || 'NO_MINISTRY';
+        const name = bf?.ministryName || adv?.ministryName || st?.ministryName || 'Unassigned';
+
+        const amounts = {};
+        const allCurrencies = new Set([
+          ...Object.keys(bf?.amounts || {}),
+          ...Object.keys(adv?.amounts || {}),
+          ...Object.keys(st?.amounts || {})
+        ]);
+
+        let lakEq = (bf?.totalLakEquivalent || 0) + (adv?.totalLakEquivalent || 0) - (st?.totalLakEquivalent || 0);
+
+        allCurrencies.forEach(curr => {
+          const bVal = bf?.amounts?.[curr] || 0;
+          const aVal = adv?.amounts?.[curr] || 0;
+          const sVal = st?.amounts?.[curr] || 0;
+          amounts[curr] = bVal + aVal - sVal;
         });
-        m.totalLakEquivalent = lakSum;
-        bfTotalLak += lakSum;
-      });
 
-      bfBankAccountMap.forEach(b => {
-        let lakSum = 0;
-        Object.keys(b.amounts).forEach(curr => {
-          const rate = exchangeRates[curr] || 1;
-          lakSum += (b.amounts[curr] || 0) * rate;
+        closingMinistryMap.set(mId, {
+          ministryId: mId,
+          ministryCode: code,
+          ministryName: name,
+          amounts,
+          totalLakEquivalent: lakEq
         });
-        b.totalLakEquivalent = lakSum;
       });
 
-      // 8. Closing Balances = Opening + Advances - Settlements
-      
-      // Bank Account Closing Balances
       const closingBankAccountMap = new Map();
       const allBankIds = new Set([...bfBankAccountMap.keys(), ...advBankAccountMap.keys(), ...setBankAccountMap.keys()]);
 
@@ -345,14 +373,13 @@ class MinistryPeriodBalanceService {
           ...Object.keys(st?.amounts || {})
         ]);
 
-        let lakEq = 0;
+        let lakEq = (bf?.totalLakEquivalent || 0) + (adv?.totalLakEquivalent || 0) - (st?.totalLakEquivalent || 0);
+
         allCurrencies.forEach(curr => {
           const bVal = bf?.amounts?.[curr] || 0;
           const aVal = adv?.amounts?.[curr] || 0;
           const sVal = st?.amounts?.[curr] || 0;
-          const net = bVal + aVal - sVal;
-          amounts[curr] = net;
-          lakEq += net * (exchangeRates[curr] || 1);
+          amounts[curr] = bVal + aVal - sVal;
         });
 
         closingBankAccountMap.set(bId, {
@@ -365,55 +392,16 @@ class MinistryPeriodBalanceService {
         });
       });
 
-      const closingMinistryMap = new Map();
-      const allMinistryIds = new Set([...bfMinistryMap.keys(), ...advMinistryMap.keys(), ...setMinistryMap.keys()]);
-
-      allMinistryIds.forEach(mId => {
-        const bf = bfMinistryMap.get(mId);
-        const adv = advMinistryMap.get(mId);
-        const st = setMinistryMap.get(mId);
-
-        const code = bf?.ministryCode || adv?.ministryCode || st?.ministryCode || 'N/A';
-        const name = bf?.ministryName || adv?.ministryName || st?.ministryName || 'Unknown';
-
-        const amounts = {};
-        const allCurrencies = new Set([
-          ...Object.keys(bf?.amounts || {}),
-          ...Object.keys(adv?.amounts || {}),
-          ...Object.keys(st?.amounts || {})
-        ]);
-
-        let lakEq = 0;
-        allCurrencies.forEach(curr => {
-          const bVal = bf?.amounts?.[curr] || 0;
-          const aVal = adv?.amounts?.[curr] || 0;
-          const sVal = st?.amounts?.[curr] || 0;
-          const net = bVal + aVal - sVal;
-          amounts[curr] = net;
-          lakEq += net * (exchangeRates[curr] || 1);
-        });
-
-        closingMinistryMap.set(mId, {
-          ministryId: mId,
-          ministryCode: code,
-          ministryName: name,
-          amounts,
-          totalLakEquivalent: lakEq
-        });
-      });
-
       const closingCurrencyTotals = {};
       const allCurrs = new Set([
         ...Object.keys(bfCurrencyTotals),
         ...Object.keys(advCurrencyTotals),
         ...Object.keys(setCurrencyTotals)
       ]);
-      let closingTotalLak = 0;
+      let closingTotalLak = bfTotalLak + advTotalLak - setTotalLak;
 
       allCurrs.forEach(curr => {
-        const net = (bfCurrencyTotals[curr] || 0) + (advCurrencyTotals[curr] || 0) - (setCurrencyTotals[curr] || 0);
-        closingCurrencyTotals[curr] = net;
-        closingTotalLak += net * (exchangeRates[curr] || 1);
+        closingCurrencyTotals[curr] = (bfCurrencyTotals[curr] || 0) + (advCurrencyTotals[curr] || 0) - (setCurrencyTotals[curr] || 0);
       });
 
       return {
@@ -473,8 +461,6 @@ class MinistryPeriodBalanceService {
       const currencies = await Currency.findAll({ where: { isActive: true } });
 
       for (const mItem of summary.closingBalance.byMinistry) {
-        if (mItem.ministryId === 'NO_MINISTRY') continue;
-
         for (const curr of currencies) {
           const opening = summary.balanceForward.byMinistry.find(b => b.ministryId === mItem.ministryId)?.amounts?.[curr.code] || 0;
           const advances = summary.currentAdvances.byMinistry.find(a => a.ministryId === mItem.ministryId)?.amounts?.[curr.code] || 0;
@@ -484,7 +470,7 @@ class MinistryPeriodBalanceService {
           if (opening !== 0 || advances !== 0 || settlements !== 0 || closing !== 0) {
             recordsToUpsert.push({
               branchId: bId,
-              ministryId: mItem.ministryId,
+              ministryId: mItem.ministryId || null,
               currencyId: curr.id,
               year: y,
               month: m,
@@ -503,16 +489,15 @@ class MinistryPeriodBalanceService {
       }
 
       for (const rec of recordsToUpsert) {
-        const existing = await MinistryPeriodBalance.findOne({
-          where: {
-            branchId: rec.branchId,
-            ministryId: rec.ministryId,
-            currencyId: rec.currencyId,
-            year: rec.year,
-            month: rec.month
-          }
-        });
+        const whereClause = {
+          branchId: rec.branchId,
+          currencyId: rec.currencyId,
+          year: rec.year,
+          month: rec.month
+        };
+        if (rec.ministryId) whereClause.ministryId = rec.ministryId;
 
+        const existing = await MinistryPeriodBalance.findOne({ where: whereClause });
         if (existing) {
           await existing.update(rec);
         } else {
@@ -557,7 +542,7 @@ class MinistryPeriodBalanceService {
   }
 
   /**
-   * Historical Backfill Utility
+   * Historical Backfill Utility (Sequential Multi-Year Engine)
    */
   static async backfillAllHistory(branchId, userId) {
     try {
@@ -569,7 +554,7 @@ class MinistryPeriodBalanceService {
       });
 
       const earliestSettlement = await MoneySettlement.findOne({
-        where: { isActive: true },
+        where: { isActive: { [Op.or]: [true, null, 1] } },
         order: [['bookingDate', 'ASC']],
         attributes: ['bookingDate']
       });
@@ -615,7 +600,7 @@ class MinistryPeriodBalanceService {
   }
 
   /**
-   * Get list of all 12 monthly periods for a given year with summary stats
+   * Get list of all 12 monthly periods for a given year with continuous strict chain
    */
   static async getYearPeriodsList(branchId, year) {
     try {
@@ -633,11 +618,16 @@ class MinistryPeriodBalanceService {
       const currentYear = today.getFullYear();
       const currentMonth = today.getMonth() + 1;
 
-      // Fetch all closed snapshot records for this year
+      // 1. Fetch closed snapshots
       const closedSnapshots = await MinistryPeriodBalance.findAll({
         where: { branchId: bId, year: y, isClosed: true },
         include: [{ model: User, as: 'closedByUser', attributes: ['id', 'cus_name'] }]
       });
+
+      // 2. Fetch initial year opening balance before Jan 1 of this year
+      const jan1 = `${y}-01-01`;
+      const summaryJan = await this.getMasterSummary(bId, y, 1);
+      let runningOpeningLak = summaryJan.balanceForward?.totals?.totalLakEquivalent || 0;
 
       for (let m = 1; m <= 12; m++) {
         const { startDate, endDate } = this.getMonthDateRange(y, m);
@@ -645,32 +635,18 @@ class MinistryPeriodBalanceService {
         const isClosed = monthSnapshots.length > 0;
         const firstSnap = monthSnapshots[0];
 
-        let openingLak = 0;
-        let advancesLak = 0;
-        let settlementsLak = 0;
-        let closingLak = 0;
-
-        if (isClosed) {
-          monthSnapshots.forEach(s => {
-            const rate = parseFloat(s.exchangeRateLak) || 1;
-            openingLak += (parseFloat(s.openingBalance) || 0) * rate;
-            advancesLak += (parseFloat(s.totalAdvances) || 0) * rate;
-            settlementsLak += (parseFloat(s.totalSettlements) || 0) * rate;
-            closingLak += (parseFloat(s.closingBalance) || 0) * rate;
-          });
-        } else {
-          if (y < currentYear || (y === currentYear && m <= currentMonth)) {
-            const summary = await this.getMasterSummary(bId, y, m);
-            openingLak = summary.balanceForward?.totals?.totalLakEquivalent || 0;
-            advancesLak = summary.currentAdvances?.totals?.totalLakEquivalent || 0;
-            settlementsLak = summary.currentSettlements?.totals?.totalLakEquivalent || 0;
-            closingLak = summary.closingBalance?.totals?.totalLakEquivalent || 0;
-          }
-        }
+        // Fetch actual period activity
+        const summary = await this.getMasterSummary(bId, y, m);
+        const advancesLak = summary.currentAdvances?.totals?.totalLakEquivalent || 0;
+        const settlementsLak = summary.currentSettlements?.totals?.totalLakEquivalent || 0;
+        
+        // Strict continuous balance chain
+        const openingLak = runningOpeningLak;
+        const closingLak = openingLak + advancesLak - settlementsLak;
 
         const [advCount, setCount] = await Promise.all([
           MoneyAdvance.count({ where: { bookingDate: { [Op.between]: [startDate, endDate] } } }),
-          MoneySettlement.count({ where: { bookingDate: { [Op.between]: [startDate, endDate] }, isActive: true } })
+          MoneySettlement.count({ where: { bookingDate: { [Op.between]: [startDate, endDate] }, isActive: { [Op.or]: [true, null, 1] } } })
         ]);
 
         periods.push({
@@ -693,6 +669,9 @@ class MinistryPeriodBalanceService {
           isPast: y < currentYear || (y === currentYear && m < currentMonth),
           isFuture: y > currentYear || (y === currentYear && m > currentMonth)
         });
+
+        // Pass this month's closing to next month's opening
+        runningOpeningLak = closingLak;
       }
 
       const closedCount = periods.filter(p => p.isClosed).length;
@@ -702,7 +681,7 @@ class MinistryPeriodBalanceService {
         success: true,
         year: y,
         branchId: bId,
-        stats: {
+        yearStats: {
           totalPeriods: 12,
           closedCount,
           openCount,
