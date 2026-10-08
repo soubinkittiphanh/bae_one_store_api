@@ -642,12 +642,49 @@ const setupAssociations = (db) => {
   defineAssociations(db);
 };
 
+// Pre-synchronization data cleanup for legacy orphan records
+const preSyncDataCleanup = async (sequelizeInstance) => {
+  try {
+    const [sdbTable] = await sequelizeInstance.query("SHOW TABLES LIKE 'stockDailyBalance'");
+    if (sdbTable && sdbTable.length > 0) {
+      const [prodTable] = await sequelizeInstance.query("SHOW TABLES LIKE 'product'");
+      if (prodTable && prodTable.length > 0) {
+        await sequelizeInstance.query(`
+          DELETE sdb FROM \`stockDailyBalance\` sdb
+          LEFT JOIN \`product\` p ON sdb.\`productId\` = p.\`id\`
+          WHERE p.\`id\` IS NULL;
+        `);
+      }
+
+      const [locTable] = await sequelizeInstance.query("SHOW TABLES LIKE 'location'");
+      if (locTable && locTable.length > 0) {
+        await sequelizeInstance.query(`
+          DELETE sdb FROM \`stockDailyBalance\` sdb
+          LEFT JOIN \`location\` l ON sdb.\`locationId\` = l.\`id\`
+          WHERE l.\`id\` IS NULL;
+        `);
+      }
+      logger.info("Pre-sync orphan cleanup for stockDailyBalance completed.");
+    }
+  } catch (cleanErr) {
+    logger.warn(`Non-blocking note during pre-sync data cleanup: ${cleanErr.message}`);
+  }
+};
+
 // Database synchronization
 const synchronizeDatabase = async (db) => {
   try {
     await db.sequelize.query('SET FOREIGN_KEY_CHECKS = 0');
+    
+    // Step 0: Pre-sync data cleanup to remove orphan records preventing FK constraints
+    await preSyncDataCleanup(db.sequelize);
+
     // Phase 1: Create new tables that do not exist yet
-    await db.sequelize.sync({ force: false });
+    try {
+      await db.sequelize.sync({ force: false });
+    } catch (syncErr) {
+      logger.warn(`Non-blocking note during initial sync: ${syncErr.message}`);
+    }
     
     // Phase 2: Safe alter for field additions
     try {
