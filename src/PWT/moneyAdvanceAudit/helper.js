@@ -10,10 +10,10 @@ class AuditHelper {
    */
   static getAuditContext(req) {
     return {
-      userId: req.user?.id || req.body.userId || req.query.userId,
-      ipAddress: req.ip || req.connection.remoteAddress,
-      userAgent: req.get('User-Agent'),
-      reason: req.body.reason || req.query.reason
+      userId: req.user?.id || req.body?.userId || req.query?.userId,
+      ipAddress: req.ip || req.connection?.remoteAddress,
+      userAgent: typeof req.get === 'function' ? req.get('User-Agent') : req.headers?.['user-agent'],
+      reason: req.body?.reason || req.query?.reason
     };
   }
 

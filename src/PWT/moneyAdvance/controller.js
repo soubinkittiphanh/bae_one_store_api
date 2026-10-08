@@ -161,15 +161,100 @@ class MoneyAdvanceController {
 
   // ADD THIS NEW METHOD TO MoneyAdvanceController for better performance
   // GET /money-advances/available-for-settlement - Optimized endpoint for settlement dialog
+  // GET /money-advances/available-for-settlement - Optimized endpoint for settlement dialog with advanced search criteria
   static async getAvailableForSettlement(req, res) {
     try {
-      const { status = ['pending', 'approved'], limit = 50 } = req.query;
+      const {
+        status = ['pending', 'approved'],
+        limit = 100,
+        ministryId,
+        currencyId,
+        makerId,
+        search,
+        fromDate,
+        toDate,
+        include_advance_id
+      } = req.query;
 
-      const whereClause = {
-        status: Array.isArray(status)
-          ? { [require('sequelize').Op.in]: status }
-          : { [require('sequelize').Op.in]: [status] }
-      };
+      const { Op } = require('sequelize');
+      const whereClause = {};
+
+      // Status filter
+      if (status && status !== 'all') {
+        if (Array.isArray(status)) {
+          whereClause.status = { [Op.in]: status };
+        } else {
+          whereClause.status = { [Op.in]: [status] };
+        }
+      }
+
+      // Ministry filter
+      if (ministryId && ministryId !== 'all' && ministryId !== '') {
+        whereClause.ministryId = parseInt(ministryId);
+      }
+
+      // Currency filter
+      if (currencyId && currencyId !== 'all' && currencyId !== '') {
+        whereClause.currencyId = parseInt(currencyId);
+      }
+
+      // Maker filter
+      if (makerId && makerId !== 'all' && makerId !== '') {
+        whereClause.makerId = parseInt(makerId);
+      }
+
+      // Date range filter
+      if (fromDate || toDate) {
+        const dateFilter = {};
+        if (fromDate && toDate) {
+          dateFilter[Op.between] = [fromDate, toDate];
+        } else if (fromDate) {
+          dateFilter[Op.gte] = fromDate;
+        } else if (toDate) {
+          dateFilter[Op.lte] = toDate;
+        }
+        whereClause.bookingDate = dateFilter;
+      }
+
+      // Text search query (searches ID, purpose, note, receiveName, externalRef, etc.)
+      if (search && search.trim()) {
+        const cleanSearch = search.trim();
+        const searchLike = `%${cleanSearch}%`;
+        const searchConditions = [
+          { purpose: { [Op.like]: searchLike } },
+          { note: { [Op.like]: searchLike } },
+          { receiveName: { [Op.like]: searchLike } },
+          { receiveIDNO: { [Op.like]: searchLike } },
+          { externalRef: { [Op.like]: searchLike } },
+          { externalRefNo: { [Op.like]: searchLike } },
+          { chequeNo: { [Op.like]: searchLike } }
+        ];
+
+        // If numeric, also search by ID
+        const numId = parseInt(cleanSearch.replace(/[^0-9]/g, ''));
+        if (!isNaN(numId) && numId > 0) {
+          searchConditions.push({ id: numId });
+        }
+
+        whereClause[Op.or] = searchConditions;
+      }
+
+      // If include_advance_id is provided, fetch it directly in case filters excluded it
+      let includedAdvance = null;
+      if (include_advance_id) {
+        includedAdvance = await MoneyAdvance.findByPk(include_advance_id, {
+          include: [
+            { model: user, as: 'maker' },
+            { model: currency, as: 'currency' },
+            { model: ministry, as: 'ministry' },
+            {
+              model: settlement,
+              as: 'settlementLine',
+              required: false
+            }
+          ]
+        });
+      }
 
       // Get advances with their settlements in one query for better performance
       const advances = await MoneyAdvance.findAll({
@@ -184,20 +269,28 @@ class MoneyAdvanceController {
             required: false // LEFT JOIN to include advances with no settlements
           }
         ],
-        limit: parseInt(limit),
-        order: [['createdAt', 'DESC']]
+        limit: parseInt(limit) || 100,
+        order: [['bookingDate', 'DESC'], ['id', 'DESC']]
       });
 
+      // Combine and deduplicate
+      const allAdvances = [...advances];
+      if (includedAdvance && !allAdvances.some(a => a.id === includedAdvance.id)) {
+        allAdvances.unshift(includedAdvance);
+      }
+
       // Process advances to calculate settlement info
-      const availableAdvances = advances
+      const availableAdvances = allAdvances
         .map(advance => {
-          const settlements = advance.settlementLine || [];
+          const settlements = (advance.settlementLine || []).filter(
+            s => s.isActive !== false && s.isActive !== 0
+          );
           const totalSettled = settlements.reduce((sum, s) =>
             sum + parseFloat(s.amount || 0), 0
           );
 
           const advanceAmount = parseFloat(advance.amount);
-          const outstandingAmount = advanceAmount - totalSettled;
+          const outstandingAmount = Math.max(0, advanceAmount - totalSettled);
 
           return {
             ...advance.toJSON(),
@@ -205,10 +298,10 @@ class MoneyAdvanceController {
             outstandingAmount,
             settlementPercentage: advanceAmount > 0 ?
               ((totalSettled / advanceAmount) * 100).toFixed(2) : 0,
-            canReceiveSettlement: outstandingAmount > 0.01
+            canReceiveSettlement: outstandingAmount > 0.01 || (include_advance_id && advance.id.toString() === include_advance_id.toString())
           };
         })
-        .filter(advance => advance.canReceiveSettlement); // Only return settleable advances
+        .filter(advance => advance.canReceiveSettlement);
 
       res.json({
         success: true,
@@ -343,6 +436,32 @@ class MoneyAdvanceController {
       const auditContext = AuditHelper.getAuditContext(req);
       await AuditHelper.auditCreate(advance.id, advance.toJSON(), auditContext);
 
+      // 🆕 CAPTURE OVERRIDE LOG IF DUPLICATE WAS ACKNOWLEDGED
+      if (req.body.isDuplicateOverride) {
+        try {
+          const MoneyAdvanceOverrideLog = require('../../models').moneyAdvanceOverrideLog;
+          if (MoneyAdvanceOverrideLog) {
+            const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.connection?.remoteAddress || null;
+            const userAgent = req.headers['user-agent'] || null;
+            await MoneyAdvanceOverrideLog.create({
+              moneyAdvanceId: advance.id,
+              matchedAdvanceIds: req.body.matchedAdvanceIds || [],
+              amount: advance.amount,
+              currencyId: advance.currencyId,
+              ministryId: advance.ministryId || null,
+              userId: makerId || (req.user && req.user.id) || null,
+              overrideReason: req.body.overrideReason || 'User acknowledged duplicate warning and confirmed saving',
+              overrideMessage: req.body.overrideMessage || `User confirmed duplicate payment creation with matching amount, currency, and ministry against existing advance IDs: ${(req.body.matchedAdvanceIds || []).join(', ')}`,
+              ipAddress: ipAddress,
+              userAgent: userAgent
+            });
+            logger.info(`Override log created for MoneyAdvance #${advance.id}`);
+          }
+        } catch (logErr) {
+          logger.error('Failed to create MoneyAdvanceOverrideLog on create:', logErr);
+        }
+      }
+
       // Fetch the created advance with associations
       const createdAdvance = await MoneyAdvance.findByPk(advance.id, {
         include: [
@@ -462,6 +581,32 @@ class MoneyAdvanceController {
       // 🆕 CREATE AUDIT RECORD
       const auditContext = AuditHelper.getAuditContext(req);
       await AuditHelper.auditUpdate(id, oldData, advance.toJSON(), auditContext);
+
+      // 🆕 CAPTURE OVERRIDE LOG IF DUPLICATE WAS ACKNOWLEDGED ON UPDATE
+      if (req.body.isDuplicateOverride) {
+        try {
+          const MoneyAdvanceOverrideLog = require('../../models').moneyAdvanceOverrideLog;
+          if (MoneyAdvanceOverrideLog) {
+            const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.connection?.remoteAddress || null;
+            const userAgent = req.headers['user-agent'] || null;
+            await MoneyAdvanceOverrideLog.create({
+              moneyAdvanceId: advance.id,
+              matchedAdvanceIds: req.body.matchedAdvanceIds || [],
+              amount: advance.amount,
+              currencyId: advance.currencyId,
+              ministryId: advance.ministryId || null,
+              userId: updateUserId || (req.user && req.user.id) || null,
+              overrideReason: req.body.overrideReason || 'User acknowledged duplicate warning and confirmed update',
+              overrideMessage: req.body.overrideMessage || `User confirmed duplicate payment update with matching amount, currency, and ministry against existing advance IDs: ${(req.body.matchedAdvanceIds || []).join(', ')}`,
+              ipAddress: ipAddress,
+              userAgent: userAgent
+            });
+            logger.info(`Override log created for MoneyAdvance update #${advance.id}`);
+          }
+        } catch (logErr) {
+          logger.error('Failed to create MoneyAdvanceOverrideLog on update:', logErr);
+        }
+      }
 
       const updatedAdvance = await MoneyAdvance.findByPk(id, {
         include: [
@@ -2959,6 +3104,189 @@ class MoneyAdvanceController {
     }
   }
 
+  // Calculate date range for current month and last month
+  static getCurrentAndLastMonthRange(referenceDate) {
+    const ref = referenceDate ? new Date(referenceDate) : new Date();
+    const dateObj = isNaN(ref.getTime()) ? new Date() : ref;
+
+    const year = dateObj.getFullYear();
+    const month = dateObj.getMonth(); // 0-indexed: 0 = Jan, 9 = Oct
+
+    // Start of last month: Month - 1, Day 1
+    const startOfLastMonth = new Date(year, month - 1, 1);
+    const startYear = startOfLastMonth.getFullYear();
+    const startMonth = String(startOfLastMonth.getMonth() + 1).padStart(2, '0');
+    const startDate = `${startYear}-${startMonth}-01`;
+
+    // End of current month: Month + 1, Day 0 (last day of current month)
+    const endOfCurrentMonth = new Date(year, month + 1, 0);
+    const endYear = endOfCurrentMonth.getFullYear();
+    const endMonth = String(endOfCurrentMonth.getMonth() + 1).padStart(2, '0');
+    const endDay = String(endOfCurrentMonth.getDate()).padStart(2, '0');
+    const endDate = `${endYear}-${endMonth}-${endDay}`;
+
+    return { startDate, endDate };
+  }
+
+  // GET /money-advances/check-duplicate - Check for duplicate money advance entries
+  static async checkDuplicate(req, res) {
+    try {
+      const {
+        amount,
+        currencyId,
+        ministryId,
+        bookingDate,
+        excludeId
+      } = req.query;
+
+      if (!amount || !currencyId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Amount and currencyId are required to check for duplicate entry'
+        });
+      }
+
+      const { Op } = require('sequelize');
+      const { startDate, endDate } = MoneyAdvanceController.getCurrentAndLastMonthRange(bookingDate);
+
+      const whereClause = {
+        amount: parseFloat(amount),
+        currencyId: parseInt(currencyId),
+        bookingDate: {
+          [Op.between]: [startDate, endDate]
+        }
+      };
+
+      if (ministryId) {
+        whereClause.ministryId = parseInt(ministryId);
+      }
+
+      if (excludeId) {
+        whereClause.id = {
+          [Op.ne]: parseInt(excludeId)
+        };
+      }
+
+      const duplicates = await MoneyAdvance.findAll({
+        where: whereClause,
+        include: [
+          { model: ministry, as: 'ministry' },
+          { model: currency, as: 'currency' },
+          { model: user, as: 'maker' },
+          { model: bankAccount, as: 'bankAccount' }
+        ],
+        order: [['bookingDate', 'DESC'], ['id', 'DESC']]
+      });
+
+      return res.json({
+        success: true,
+        isDuplicate: duplicates.length > 0,
+        count: duplicates.length,
+        dateRange: {
+          startDate,
+          endDate
+        },
+        duplicates: duplicates.map(d => ({
+          id: d.id,
+          bookingDate: d.bookingDate,
+          amount: parseFloat(d.amount),
+          currencyId: d.currencyId,
+          currencyCode: d.currency?.code || '',
+          ministryId: d.ministryId,
+          ministryName: d.ministry ? `${d.ministry.ministryCode ? d.ministry.ministryCode + ' ' : ''}${d.ministry.ministryName}` : '',
+          purpose: d.purpose || '',
+          note: d.note || '',
+          status: d.status,
+          method: d.method,
+          makerName: d.maker?.cus_name || d.maker?.name || '',
+          createdAt: d.createdAt
+        }))
+      });
+    } catch (error) {
+      logger.error('Error checking duplicate money advance:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error checking duplicate money advance',
+        error: error.message
+      });
+    }
+  }
+
+  // GET /money-advances/override-logs - Get all duplicate override logs
+  static async getAllOverrideLogs(req, res) {
+    try {
+      const { page = 1, limit = 50, moneyAdvanceId, userId } = req.query;
+      const offset = (page - 1) * limit;
+      const MoneyAdvanceOverrideLog = require('../../models').moneyAdvanceOverrideLog;
+
+      const whereClause = {};
+      if (moneyAdvanceId) whereClause.moneyAdvanceId = moneyAdvanceId;
+      if (userId) whereClause.userId = userId;
+
+      const { count, rows } = await MoneyAdvanceOverrideLog.findAndCountAll({
+        where: whereClause,
+        include: [
+          { model: MoneyAdvance, as: 'moneyAdvance' },
+          { model: user, as: 'user' },
+          { model: currency, as: 'currency' },
+          { model: ministry, as: 'ministry' }
+        ],
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+        order: [['createdAt', 'DESC']]
+      });
+
+      res.json({
+        success: true,
+        data: {
+          logs: rows,
+          pagination: {
+            currentPage: parseInt(page),
+            totalPages: Math.ceil(count / limit),
+            totalItems: count,
+            itemsPerPage: parseInt(limit)
+          }
+        }
+      });
+    } catch (error) {
+      logger.error('Error fetching override logs:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error fetching override logs',
+        error: error.message
+      });
+    }
+  }
+
+  // GET /money-advances/:id/override-logs - Get override logs for a specific advance
+  static async getOverrideLogsByAdvanceId(req, res) {
+    try {
+      const { id } = req.params;
+      const MoneyAdvanceOverrideLog = require('../../models').moneyAdvanceOverrideLog;
+
+      const logs = await MoneyAdvanceOverrideLog.findAll({
+        where: { moneyAdvanceId: id },
+        include: [
+          { model: user, as: 'user' },
+          { model: currency, as: 'currency' },
+          { model: ministry, as: 'ministry' }
+        ],
+        order: [['createdAt', 'DESC']]
+      });
+
+      res.json({
+        success: true,
+        data: logs
+      });
+    } catch (error) {
+      logger.error('Error fetching advance override logs:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error fetching advance override logs',
+        error: error.message
+      });
+    }
+  }
 
 }
 

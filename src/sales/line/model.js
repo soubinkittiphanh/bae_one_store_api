@@ -67,6 +67,18 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: true,
             comment: 'Reference to Size table'
         },
+        focQty: {
+            type: DataTypes.DOUBLE,
+            allowNull: false,
+            defaultValue: 0,
+            comment: 'Free promotional quantity (FOC) given to customer'
+        },
+        packagingAction: {
+            type: DataTypes.ENUM('EXCHANGED', 'DEPOSIT', 'DEBT', 'NONE'),
+            allowNull: false,
+            defaultValue: 'NONE',
+            comment: 'Packaging handling for returnable items (EXCHANGED: 1:1 swap, DEPOSIT: paid cash deposit, DEBT: wholesale packaging credit, NONE)'
+        },
     }, {
         sequelize,
         // don't forget to enable timestamps!

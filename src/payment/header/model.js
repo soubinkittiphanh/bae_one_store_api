@@ -30,6 +30,19 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING,
             allowNull: false,
         },
+        expenseSource: {
+            type: DataTypes.STRING,
+            allowNull: false,
+            defaultValue: 'POS_SALE'
+        },
+        budgetId: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+        },
+        budgetImpactYear: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+        },
         isActive: {
             type: DataTypes.BOOLEAN,
             allowNull: false,

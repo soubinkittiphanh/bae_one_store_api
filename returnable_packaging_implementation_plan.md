@@ -1,215 +1,253 @@
-# Beerlao Agency: Returnable Packaging & Bottle/Crate Management Implementation Plan
-**System**: Minimart POS, Wholesale Distribution & Inventory System (`dc_api` + `dc_web`)  
-**Client Type**: Official Beerlao Agency (ຕົວແທນຈຳໜ່າຍເບຍລາວ - ຂາຍສົ່ງ & ຂາຍຍ່ອຍ)  
-**Target Feature**: 2-Way Returnable Packaging Ecosystem (Beerlao Factory ↔ Agency ↔ Wholesale & Retail)
+# Beerlao Agency: Packaging & Promotion Management System
+## Technical Implementation Plan (Aligned with `dc_api` & `dc_web` Architecture)
 
 ---
 
-## 1. Executive Summary & Problem Statement
+## 1. System Context & Business Architecture
 
-As an official **Beerlao Agency**, the business handles both **Wholesale (ຂາຍສົ່ງ)** to sub-shops/restaurants and **Retail Minimart (ຂາຍຍ່ອຍ)** to walk-in consumers.
-
-### Key Pain Points:
-1. **Upstream (Beerlao Factory)**: Inability to track packaging quotas and truck return manifests when exchanging empty crates/bottles for new full stock with Lao Brewery Co.
-2. **Downstream (Wholesale Clients)**: Restaurants and sub-agents take hundreds of cases on credit, returning partial empties, leading to untracked **Customer Packaging Debt**.
-3. **Downstream (Retail POS)**: Cashiers need rapid 1:1 exchange at checkout or deposit receipt tracking.
-4. **Internal Loss**: Unrecorded bottle breakages (ແກ້ວແຕກ) and damaged crates (ລັງຊຳລຸດ) create inventory discrepancies with the brewery.
+As an **Official Beerlao Agency (ຕົວແທນຈຳໜ່າຍເບຍລາວ)**, the business handles:
+1. **Upstream (Beerlao Factory / Lao Brewery Co.)**:
+   - Receiving bulk beer shipments with **Free Promotional / FOC Cases (ເບຍແຖມ)**.
+   - Handing over empty crates/bottles to the delivery truck (Swap Manifest).
+   - Tracking the running packaging balance with Lao Brewery Co.
+2. **Downstream Wholesale (Restaurants, Sub-agents, Bars)**:
+   - Selling full cases + giving customer promotion cases.
+   - Collecting empties on route and maintaining **Customer Packaging Debt (ບັນຊີລັງ-ແກ້ວຕິດໜີ້)**.
+3. **Downstream Retail Minimart POS**:
+   - Fast 1:1 empties exchange at counter (ຍົກລັງປ່ຽນ).
+   - Deposit receipts with barcode for customers taking packaging home.
+   - Quick "Receive Empties" refund dialog.
+4. **Internal Warehouse & Loss Tracking**:
+   - Tracking glass breakages (ແກ້ວແຕກ) and damaged crates (ລັງຊຳລຸດ).
 
 ---
 
-## 2. 2-Way Packaging Ecosystem Architecture
+## 2. End-to-End System Architecture
 
 ```mermaid
 flowchart TD
-    subgraph Upstream["1. Upstream: Beerlao Factory"]
-        Factory["Lao Brewery Co. (Beerlao)"]
-        FactoryDelivery["Factory Truck Delivery (Full Cases)"]
-        FactoryReturn["Truck Empties Return Manifest"]
-        FactoryLedger["Supplier Packaging Ledger (Balance with Beerlao)"]
+    subgraph Upstream["Upstream (Beerlao Company)"]
+        PO["PO & Receiving with FOC Cases<br/>(dc_web/components/ReceivingFormCRUD.vue)"]
+        TruckManifest["Truck Empties Return Manifest<br/>(Signed by Driver & Storekeeper)"]
+        SupplierLedger["Supplier Packaging Ledger (Beerlao Factory)"]
     end
 
-    subgraph Agency["2. Beerlao Agency Core Engine (dc_api)"]
-        WhStock["Warehouse Stock: Full Cases & Empties"]
-        MasterMatrix["Master Packaging Balance & Loss Tracker"]
-        DamageLog["Damage & Breakage Log (ແກ້ວແຕກ/ລັງຊຳລຸດ)"]
+    subgraph CoreEngine["dc_api Core Services"]
+        CardStock["Card Inventory Engine (cardService)<br/>- Full Cases<br/>- Empty Crates<br/>- Empty Bottles"]
+        PkgService["Packaging & Deposit Engine (packagingService)"]
+        AuditMatrix["Master Packaging Equation & Loss Matrix"]
     end
 
-    subgraph Wholesale["3. Downstream: Wholesale Channel (dc_web)"]
-        WInvoice["Wholesale Sales & Delivery Note"]
-        CustLedger["Customer Packaging Debt Ledger (ລັງ-ແກ້ວ ຕິດໜີ້)"]
-        CustStatement["Customer Packaging Statement Printout"]
+    subgraph Wholesale["Downstream Wholesale"]
+        WOrder["Wholesale Order & Invoice<br/>(dc_web/components/OrderDetailPosCRUD.vue)"]
+        CustLedger["Customer Packaging Debt Ledger<br/>(dc_web/pages/admin/client/)"]
+        CustStmt["Customer Packaging Statement Printout"]
     end
 
-    subgraph Retail["4. Downstream: Retail Minimart POS (dc_web)"]
-        POSScan["POS Fast Scan (1:1 Swap / Deposit)"]
-        DepositSlip["Deposit Barcode & Refund Receipt"]
-        ReturnModal["'Return Empties' Quick POS Action"]
+    subgraph Retail["Downstream Retail Minimart"]
+        POS["Minimart POS Fast Lane (1:1 Swap / Deposit)<br/>(dc_web/pages/pos/minimart/index.vue)"]
+        DepositSlip["Deposit Barcode & Cash Refund Slip"]
+        ReturnModal["'Receive Empties' POS Modal"]
     end
 
-    FactoryDelivery --> WhStock
-    WhStock --> FactoryReturn
-    FactoryReturn --> FactoryLedger
-
-    WhStock --> WInvoice
-    WInvoice --> CustLedger
-    CustLedger --> CustStatement
-
-    WhStock --> POSScan
-    POSScan --> DepositSlip
-    ReturnModal --> WhStock
-
-    WhStock --> MasterMatrix
-    DamageLog --> MasterMatrix
+    PO --> CardStock
+    PO --> TruckManifest --> SupplierLedger
+    CardStock <--> PkgService
+    PkgService <--> CustLedger
+    WOrder --> PkgService
+    CustLedger --> CustStmt
+    POS --> PkgService
+    ReturnModal --> CardStock
+    PkgService --> AuditMatrix
 ```
 
 ---
 
-## 3. Core Functional Modules
+## 3. Database Schema & Models (`dc_api`)
 
-### Module A: Wholesale Delivery & Customer Packaging Debt (ບັນຊີລັງ-ແກ້ວຕິດໜີ້)
-1. **Invoice & Delivery Note Integration**:
-   - In Wholesale Order/Invoice:
-     - Full Cases Sent: `100 Cases` (100 Crates + 1,200 Bottles)
-     - Empties Collected on Delivery: `80 Crates` + `960 Bottles`
-     - **Net Packaging Debt on Bill**: `+20 Crates` + `240 Bottles`
-2. **Customer Packaging Statement**:
-   - A dedicated report for each restaurant/sub-shop showing:
-     - Monetary balance (LAK/THB/USD)
-     - Packaging balance (Crates & Bottles owed to the Agency)
-3. **Wholesale Empties Pickup Workflow**:
-   - Delivery drivers can record standalone empty crate pickups from restaurants, crediting the customer's packaging debt ledger.
-
----
-
-### Module B: Upstream Beerlao Factory Receiving & Truck Manifest
-1. **Purchase Order Receiving Screen**:
-   - Record **Full Stock Received** from Beerlao factory truck.
-   - Record **Empty Crates & Bottles Handed Over** to the driver.
-   - Generate & Print an official **Truck Return Manifest** for the driver to sign.
-2. **Beerlao Company Packaging Balance**:
-   - Real-time ledger of packaging quotas owed to or held by Lao Brewery.
-
----
-
-### Module C: Minimart POS Experience (`dc_web/pages/pos/minimart`)
-1. **Fast-Lane Checkout**:
-   - Scanning Beerlao Case defaults to **"1:1 Empties Exchanged" (ຍົກລັງປ່ຽນ)** for maximum cashier speed.
-   - Secondary toggle for **"New Sale with Deposit"** or **"Partial Empties"**.
-2. **Standalone POS Action: "Receive Empties / Return Deposit"**:
-   - Cashier scans deposit slip barcode or manually inputs crate/bottle count.
-   - Dispenses cash refund, updates drawer, and adds empties to stock.
-
----
-
-### Module D: Packaging Breakage, Loss & Master Audit Matrix
-1. **Damage / Breakage Logging**:
-   - Cashier/Warehouse manager logs broken bottles or cracked crates.
-   - Tagged as `DELIVERY_BREAKAGE`, `WAREHOUSE_DAMAGE`, or `FACTORY_DEFECT`.
-2. **Master Reconciliation Equation**:
-   $$\begin{aligned}
-   \text{Agency Packaging Assets} = & \;\; \text{Full Cases in Stock} \\
-   & + \text{Empty Crates in Warehouse} \\
-   & + \text{Crates with Wholesale Customers (Debt)} \\
-   & + \text{Crates with Retail Customers (Deposits)} \\
-   & + \text{Breakage / Awaiting Write-off} \\
-   & - \text{Crates Owed to Beerlao Factory}
-   \end{aligned}$$
-
----
-
-## 4. Database Schema Design (`dc_api`)
+### 3.1 Migration: `YYYYMMDD_create_beerlao_agency_packaging_tables.sql`
 
 ```sql
--- 1. Product Packaging Composition (BOM)
-CREATE TABLE `product_packagings` (
+-- 1. Product Packaging Definition (BOM for Returnable Items)
+CREATE TABLE IF NOT EXISTS `product_packagings` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
-  `product_id` INT NOT NULL,              -- Finished Beer Case ID
-  `packaging_product_id` INT NOT NULL,    -- Crate ID / Bottle ID
-  `quantity` INT NOT NULL DEFAULT 1,      -- 1 for crate, 12 for bottles
-  `deposit_price` DECIMAL(12,2) DEFAULT 0,
-  `company_id` INT NOT NULL,
-  FOREIGN KEY (`product_id`) REFERENCES `products`(`id`),
-  FOREIGN KEY (`packaging_product_id`) REFERENCES `products`(`id`)
-);
+  `productId` INT NOT NULL,                  -- Finished Beer Case ID
+  `packagingProductId` INT NOT NULL,         -- Empty Crate ID or Empty Bottle ID
+  `quantity` INT NOT NULL DEFAULT 1,         -- 1 for crate, 12 for bottles
+  `depositPrice` DECIMAL(12, 2) DEFAULT 0.00,
+  `companyId` INT NOT NULL,
+  `createdAt` DATETIME NOT NULL,
+  `updateTimestamp` DATETIME NOT NULL,
+  INDEX `idx_pkg_product` (`productId`),
+  INDEX `idx_pkg_packaging_product` (`packagingProductId`),
+  CONSTRAINT `fk_pkg_product` FOREIGN KEY (`productId`) REFERENCES `product` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_pkg_asset` FOREIGN KEY (`packagingProductId`) REFERENCES `product` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- 2. Customer Packaging Ledger (Wholesale & Retail)
-CREATE TABLE `customer_packaging_ledger` (
+-- 2. Customer Packaging Debt Ledger (Wholesale & Retail)
+CREATE TABLE IF NOT EXISTS `customer_packaging_ledger` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
-  `customer_id` INT NOT NULL,
-  `sale_id` INT NULL,
-  `transaction_type` ENUM('DELIVERED_OUT', 'RETURNED_IN', 'PAID_DEPOSIT', 'WRITE_OFF') NOT NULL,
-  `packaging_product_id` INT NOT NULL,
-  `qty_change` INT NOT NULL,              -- (+) Customer owes more, (-) Customer returned
-  `balance_after` INT NOT NULL,           -- Running packaging balance
-  `remarks` VARCHAR(255) NULL,
-  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  INDEX (`customer_id`),
-  INDEX (`packaging_product_id`)
-);
+  `clientId` INT NOT NULL,                   -- References `client` table
+  `saleHeaderId` INT NULL,                   -- References `saleHeader` table
+  `packagingProductId` INT NOT NULL,         -- Crate or Bottle
+  `transactionType` ENUM('DELIVERED_OUT', 'RETURNED_IN', 'PAID_DEPOSIT', 'REFUNDED_DEPOSIT', 'WRITE_OFF') NOT NULL,
+  `qtyChange` INT NOT NULL,                  -- (+) Customer owes more, (-) Customer returned
+  `balanceAfter` INT NOT NULL,               -- Running balance customer owes
+  `depositAmount` DECIMAL(12, 2) DEFAULT 0.00,
+  `notes` VARCHAR(255) NULL,
+  `userId` INT NOT NULL,
+  `companyId` INT NOT NULL,
+  `createdAt` DATETIME NOT NULL,
+  `updateTimestamp` DATETIME NOT NULL,
+  INDEX `idx_cpl_client` (`clientId`),
+  INDEX `idx_cpl_sale` (`saleHeaderId`),
+  CONSTRAINT `fk_cpl_client` FOREIGN KEY (`clientId`) REFERENCES `client` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- 3. Supplier (Beerlao Factory) Packaging Ledger
-CREATE TABLE `supplier_packaging_ledger` (
+CREATE TABLE IF NOT EXISTS `supplier_packaging_ledger` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
-  `supplier_id` INT NOT NULL,             -- Beerlao Company
-  `po_id` INT NULL,
-  `manifest_no` VARCHAR(50) NULL,
-  `transaction_type` ENUM('RECEIVED_FULL', 'RETURNED_EMPTY_TRUCK', 'FACTORY_ADJUSTMENT') NOT NULL,
-  `packaging_product_id` INT NOT NULL,
-  `qty_change` INT NOT NULL,
-  `balance_after` INT NOT NULL,           -- Running balance with factory
-  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  INDEX (`supplier_id`)
-);
+  `vendorId` INT NOT NULL,                   -- Lao Brewery Vendor ID
+  `receivingHeaderId` INT NULL,              -- References `receivingHeader` table
+  `manifestNo` VARCHAR(60) NULL,
+  `packagingProductId` INT NOT NULL,
+  `transactionType` ENUM('RECEIVED_FULL', 'RETURNED_EMPTY_TRUCK', 'FACTORY_ADJUSTMENT') NOT NULL,
+  `qtyChange` INT NOT NULL,                  -- (+) Received from factory, (-) Handed to truck
+  `balanceAfter` INT NOT NULL,               -- Running balance with Lao Brewery
+  `notes` VARCHAR(255) NULL,
+  `userId` INT NOT NULL,
+  `companyId` INT NOT NULL,
+  `createdAt` DATETIME NOT NULL,
+  `updateTimestamp` DATETIME NOT NULL,
+  INDEX `idx_spl_vendor` (`vendorId`),
+  INDEX `idx_spl_rec` (`receivingHeaderId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- 4. Packaging Damage & Loss Log
-CREATE TABLE `packaging_damage_logs` (
+CREATE TABLE IF NOT EXISTS `packaging_damage_logs` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
-  `packaging_product_id` INT NOT NULL,
+  `packagingProductId` INT NOT NULL,
   `quantity` INT NOT NULL,
   `reason` ENUM('DELIVERY_BREAKAGE', 'WAREHOUSE_DAMAGE', 'FACTORY_REJECT') NOT NULL,
-  `user_id` INT NOT NULL,
-  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+  `notes` VARCHAR(255) NULL,
+  `userId` INT NOT NULL,
+  `locationId` INT NOT NULL,
+  `companyId` INT NOT NULL,
+  `createdAt` DATETIME NOT NULL,
+  `updateTimestamp` DATETIME NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 5. Add FOC / Free Promotion support to Receiving Lines & PO Lines
+ALTER TABLE `poLine` ADD COLUMN `focQty` DOUBLE DEFAULT 0 AFTER `qty`;
+ALTER TABLE `receivingLine` ADD COLUMN `focQty` DOUBLE DEFAULT 0 AFTER `qty`;
+ALTER TABLE `saleLine` ADD COLUMN `focQty` DOUBLE DEFAULT 0 AFTER `quantity`;
+ALTER TABLE `saleLine` ADD COLUMN `packagingAction` ENUM('EXCHANGED', 'DEPOSIT', 'DEBT', 'NONE') DEFAULT 'NONE';
+
+-- 6. Add Returnable flags to Product
+ALTER TABLE `product` ADD COLUMN `isReturnablePackaging` TINYINT(1) DEFAULT 0;
+ALTER TABLE `product` ADD COLUMN `isPackagingAsset` TINYINT(1) DEFAULT 0;
 ```
 
 ---
 
-## 5. Phased Implementation Roadmap
+## 4. Step-by-Step Implementation Roadmap
 
-```mermaid
-gantt
-    title Beerlao Agency Packaging System Roadmap
-    dateFormat  YYYY-MM-DD
-    section Phase 1: Core DB & Services
-    DB Migrations & Sequelize Models      :p1_1, 2026-10-06, 2d
-    Customer & Supplier Ledger Services   :p1_2, after p1_1, 2d
-    section Phase 2: Wholesale & Factory
-    Wholesale Invoice Packaging Fields    :p2_1, after p1_2, 2d
-    Customer Packaging Statement Page     :p2_2, after p2_1, 1d
-    Supplier Receiving & Truck Manifest   :p2_3, after p2_2, 2d
-    section Phase 3: Retail Minimart POS
-    POS Scan Prompt (1:1 Swap / Deposit)  :p3_1, after p2_3, 2d
-    Standalone 'Return Empties' POS Modal :p3_2, after p3_1, 1d
-    Deposit Slip & Receipt Templates      :p3_3, after p3_2, 1d
-    section Phase 4: Reports & Audit
-    Master Packaging Balance Matrix       :p4_1, after p3_3, 2d
-    Damage / Breakage Log Module          :p4_2, after p4_1, 1d
-    section Phase 5: QA & Pilot Testing
-    End-to-end Agency Flow Verification   :p5_1, after p4_2, 2d
-```
+### 📦 Phase 1: Upstream PO, Receiving & FOC Cases (`dc_api` & `dc_web`)
+
+#### Goals:
+* Support entering **Free Promotion Cases (ເບຍແຖມ)** in PO and Receiving.
+* Record **Empties Handed to Beerlao Delivery Truck** during receiving.
+* Maintain **Supplier Packaging Ledger (Beerlao Company)**.
+* Generate printable **Truck Return Manifest**.
+
+#### Files to Create / Modify:
+1. **`dc_api/src/receiving/controller.js`**:
+   - Update `create` and `updateById` transactions:
+     - When receiving full cases: Total inventory `Card` count generated = `(line.qty + line.focQty)`.
+     - Landed cost calculation: `effectiveCost = line.total / (line.qty + line.focQty)`.
+     - Update `supplier_packaging_ledger` for both paid and FOC packaging items.
+     - Process empty crates/bottles handed back to the truck (`cardService` deducts empty cards).
+2. **`dc_web/components/ReceivingFormCRUD.vue`**:
+   - Add **FOC Qty (ແຖມ)** column in the line items table.
+   - Add **"ສົ່ງຄືນລັງ-ແກ້ວຂຶ້ນລົດໂຮງງານ (Truck Empties Return)"** section:
+     - Crate count handed over to driver.
+     - Bottle count handed over to driver.
+     - Net packaging balance update.
+3. **`dc_web/components/PDFReceiving/truckManifest.vue`**:
+   - Printable Truck Return Manifest with signature lines for driver and storekeeper.
 
 ---
 
-## 6. Deliverables & UI Specs
+### 🏢 Phase 2: Downstream Wholesale & Customer Packaging Debt (`dc_web` & `dc_api`)
 
-1. **Wholesale Invoice UI**:
-   - Adds "Empties Returned" input columns alongside ordered products.
-   - Shows live "Customer Packaging Debt" warning on checkout.
-2. **Customer Statement Report (`dc_web/pages/admin/report/customerPackaging.vue`)**:
-   - Shows date-wise packaging debt vs return history for any restaurant.
-3. **Beerlao Truck Manifest Printout**:
-   - Formal A4 / Receipt printout with signature lines for Agency Storekeeper & Beerlao Driver.
-4. **Minimart POS Quick Exchange Modal (`dc_web/pages/pos/minimart/index.vue`)**:
-   - Ultra-fast 1-click confirmation for 1:1 swap.
-5. **Master Packaging Audit Screen (`dc_web/pages/admin/report/masterPackagingMatrix.vue`)**:
-   - Total Crates Owned vs In Warehouse vs With Customers vs At Factory.
+#### Goals:
+* When selling to restaurants/sub-shops, record **Cases Delivered** vs **Empties Returned**.
+* Track **Customer Packaging Debt (ບັນຊີລັງ-ແກ້ວຕິດໜີ້)** separately from financial debt.
+* Support giving **Customer FOC Promo Cases** (e.g. Buy 50 cases get 1 free) while enforcing packaging return.
+
+#### Files to Create / Modify:
+1. **`dc_api/src/sales/controller.js` & `dc_api/src/sales/line/`**:
+   - When creating a wholesale sale for a customer (`clientId`):
+     - Calculate packaging out: `(qty + focQty) * crateRatio`.
+     - If customer returned partial empties: Record difference in `customer_packaging_ledger`.
+2. **`dc_web/components/OrderDetailPosCRUD.vue`**:
+   - Add **FOC (ແຖມ)** input field per line item.
+   - Add **"ຮັບລັງ-ແກ້ວຄືນຈາກລູກຄ້າ (Empties Returned by Customer)"** section on checkout.
+   - Display customer's current packaging balance badge (e.g. `ຕິດໜີ້ລັງ: 45 ລັງ / 540 ແກ້ວ`).
+3. **`dc_web/pages/admin/client/packagingStatement.vue`**:
+   - Dedicated statement showing history of beer delivered, empties returned, and current packaging debt for any wholesale client.
+
+---
+
+### 🛒 Phase 3: Retail Minimart POS (`dc_web/pages/pos/minimart`)
+
+#### Goals:
+* **Fast-Lane Checkout**: Default to 1:1 swap (ຍົກລັງປ່ຽນ) without slowing down counter cashiers.
+* **New Sale with Deposit**: Option to charge deposit fee and print deposit barcode.
+* **"Receive Empties" Quick Button**: Scan deposit slip barcode or enter returned empties for instant cash refund.
+
+#### Files to Create / Modify:
+1. **`dc_web/pages/pos/minimart/index.vue`**:
+   - Fast packaging dialog on scanning returnable items:
+     - `[1] Empties Exchanged (ປ່ຽນແກ້ວ)` -> (Default, 1 tap).
+     - `[2] Charge Deposit (ມັດຈຳລັງແກ້ວ)` -> (Adds deposit line to cart).
+     - `[3] Partial / Custom`.
+   - Add header button: `[ 📦 ຮັບຄືນລັງ-ແກ້ວ / Return Empties ]`.
+2. **`dc_api/src/pos/packagingReturn.controller.js`**:
+   - API endpoint `POST /api/v1/pos/packaging/return` to process returns and adjust cashier shift drawer balance.
+3. **Receipt Print Template**:
+   - Display deposit claim barcode on thermal receipt.
+
+---
+
+### 📊 Phase 4: Master Packaging Reconciliation & Breakage Matrix
+
+#### Goals:
+* Provide agency management with a single-screen **Master Packaging Balance Matrix**:
+  $$\text{Agency Crates Owned} = \text{Warehouse Crates} + \text{Wholesale Debt} + \text{Retail Deposits} + \text{Damaged} - \text{Beerlao Quota}$$
+* Track breakage logs for claiming damaged goods.
+
+#### Files to Create:
+1. **`dc_web/pages/admin/report/masterPackagingMatrix.vue`**:
+   - Real-time KPI cards:
+     - Full Cases in Stock.
+     - Empty Crates & Bottles in Warehouse.
+     - Crates with Wholesale Customers (Debt).
+     - Active Deposits with Walk-in Customers.
+     - Balance with Beerlao Factory.
+2. **`dc_web/pages/admin/report/supplierPromoSummary.vue`**:
+   - Summary of free promotional cases received vs expected quota from Lao Brewery.
+3. **`dc_web/pages/admin/inventory/damageLog.vue`**:
+   - Breakage & Damaged Crate logging form.
+
+---
+
+## 5. Technical Deliverables Summary Table
+
+| Module | Files Impacted | Key Changes |
+| :--- | :--- | :--- |
+| **Database** | `dc_api/migrations/` | 4 new tables (`product_packagings`, `customer_packaging_ledger`, `supplier_packaging_ledger`, `packaging_damage_logs`) + column alters. |
+| **PO & Receiving** | `dc_api/src/receiving/`, `dc_web/components/ReceivingFormCRUD.vue` | FOC promo cases handling, effective landed cost blending, truck empty crate swap. |
+| **Wholesale POS** | `dc_api/src/sales/`, `dc_web/components/OrderDetailPosCRUD.vue` | Customer packaging debt ledger, FOC line items, customer statement printout. |
+| **Retail POS** | `dc_web/pages/pos/minimart/index.vue` | 1-tap 1:1 exchange modal, deposit barcode printing, standalone "Receive Empties" dialog. |
+| **Reports** | `dc_web/pages/admin/report/` | Master Packaging Balance Matrix, Supplier Promo Rebate Reconciliation, Customer Statement. |

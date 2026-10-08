@@ -486,129 +486,199 @@ const fetchProductFromLocation = async (req, res) => {
 
 const fetchProductFromLocationV1 = async (req, res) => {
   const { locationId } = req.params;
-  const { companyId, include, grade } = req.query;
-
-  // Main product query - Updated to include tax fields
-  const sqlCom = `
-    SELECT DISTINCT
-      p.id,
-      p.pro_id,
-      p.barCode,
-      p.pro_name,
-      p.pro_price,
-      p.cost_price,
-      p.pro_status,
-      p.validateStockOnSale,
-      p.saleCurrencyId,
-      p.costCurrencyId,
-      p.receiveUnitId,
-      p.stockUnitId,
-      p.baseUnitId,
-      p.isActive,
-      p.pro_category,
-      p._category,
-      p.taxId,
-      p.product_code,
-      p.createdAt,
-      t.name AS tax_name,
-      t.rate AS tax_rate,
-      t.code AS tax_code,
-      t.taxType AS tax_type,
-      co.id as companyId,
-      IFNULL(i.img_name, 'No image') AS img_name,
-      i.img_path,
-      IFNULL(c.stock, 0) AS card_count
-    FROM product p
-    LEFT JOIN tax t ON p.taxId = t.id
-    LEFT JOIN company co ON co.id = p.companyId
-    LEFT JOIN (
-      SELECT 
-        COUNT(c.card_number) AS stock,
-        c.productId
-      FROM card c
-      WHERE c.card_isused = 0 AND c.locationId = ? AND c.isActive = 1
-      GROUP BY c.productId
-    ) c ON c.productId = p.id
-    LEFT JOIN image_path i ON i.pro_id = p.pro_id
-    WHERE p.isActive = true
-    ${companyId ? 'AND p.companyId = ?' : ''}
-    GROUP BY p.pro_id
-    ORDER BY p.id
-  `;
-
-  // Separate price list query (remains unchanged)
-  let priceListSql = '';
-  if (include && include.includes('priceList')) {
-    priceListSql = `
-      SELECT 
-        pl.productId,
-        pl.id as priceList_id,
-        pl.name as priceList_name,
-        pl.grade as priceList_grade,
-        pl.amount as priceList_amount,
-        pl.type as priceList_type,
-        pl.isActive as priceList_isActive,
-        pl.currencyId as priceList_currencyId,
-        pl.createdAt as priceList_createdAt,
-        pl.updateTimestamp as priceList_updateTimestamp
-      FROM priceList pl
-      INNER JOIN product p ON p.id = pl.productId
-      WHERE pl.isActive = true 
-        AND p.isActive = true
-        ${companyId ? 'AND p.companyId = ?' : ''}
-        ${grade ? 'AND pl.grade = ?' : ''}
-      ORDER BY pl.productId, pl.grade, pl.createdAt DESC
-    `;
-  }
+  const { companyId, include, grade, isActive } = req.query;
 
   try {
     const params = [locationId];
-    if (companyId) params.push(parseInt(companyId));
+    let whereClauses = [];
 
-    const productResults = await new Promise((resolve, reject) => {
+    // Filter isActive:
+    // If isActive is explicitly 'false' or false or '0' or 'all', return all products (active and inactive).
+    // Otherwise default to active only.
+    if (isActive === 'false' || isActive === false || isActive === '0' || isActive === 'all') {
+      // No isActive filter
+    } else {
+      whereClauses.push('p.isActive = 1');
+    }
+
+    if (companyId) {
+      whereClauses.push('p.companyId = ?');
+      params.push(parseInt(companyId));
+    }
+
+    const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
+    // Main product query - Updated to include minStock, vendorName, pro_desc, co_name, tax fields, and stock count
+    const sqlCom = `
+      SELECT DISTINCT
+        p.id,
+        p.pro_id,
+        p.barCode,
+        p.pro_name,
+        p.pro_price,
+        p.cost_price,
+        p.pro_status,
+        p.validateStockOnSale,
+        p.saleCurrencyId,
+        p.costCurrencyId,
+        p.receiveUnitId,
+        p.stockUnitId,
+        p.baseUnitId,
+        p.isActive,
+        p.pro_category,
+        p._category,
+        p.taxId,
+        p.product_code,
+        IFNULL(p.minStock, 0) AS minStock,
+        p.vendorName,
+        p.pro_desc,
+        p.createdAt,
+        t.name AS tax_name,
+        t.rate AS tax_rate,
+        t.code AS tax_code,
+        t.taxType AS tax_type,
+        co.id as companyId,
+        co.name as co_name,
+        IFNULL(i.img_name, 'No image') AS img_name,
+        i.img_path,
+        IFNULL(c.stock, 0) AS card_count
+      FROM product p
+      LEFT JOIN tax t ON p.taxId = t.id
+      LEFT JOIN company co ON co.id = p.companyId
+      LEFT JOIN (
+        SELECT 
+          COUNT(c.card_number) AS stock,
+          c.productId
+        FROM card c
+        WHERE c.card_isused = 0 AND c.locationId = ? AND c.isActive = 1
+        GROUP BY c.productId
+      ) c ON c.productId = p.id
+      LEFT JOIN image_path i ON i.pro_id = p.pro_id
+      ${whereSql}
+      GROUP BY p.pro_id
+      ORDER BY p.id
+    `;
+
+    // Main product query promise
+    const productPromise = new Promise((resolve, reject) => {
       Db.query(sqlCom, params, (er, results) => {
         if (er) reject(er);
-        else resolve(results);
+        else resolve(results || []);
       });
     });
 
-    let priceListData = {};
+    // Price list query promise (runs concurrently if requested)
+    let priceListPromise = Promise.resolve({});
+    if (include && include.includes('priceList')) {
+      const priceListSql = `
+        SELECT 
+          pl.productId,
+          pl.id as priceList_id,
+          pl.name as priceList_name,
+          pl.grade as priceList_grade,
+          pl.amount as priceList_amount,
+          pl.type as priceList_type,
+          pl.isActive as priceList_isActive,
+          pl.currencyId as priceList_currencyId,
+          pl.createdAt as priceList_createdAt,
+          pl.updateTimestamp as priceList_updateTimestamp
+        FROM priceList pl
+        INNER JOIN product p ON p.id = pl.productId
+        WHERE pl.isActive = 1
+          ${(isActive === 'false' || isActive === false || isActive === '0' || isActive === 'all') ? '' : 'AND p.isActive = 1'}
+          ${companyId ? 'AND p.companyId = ?' : ''}
+          ${grade ? 'AND pl.grade = ?' : ''}
+        ORDER BY pl.productId, pl.grade, pl.createdAt DESC
+      `;
+      const priceListParams = [];
+      if (companyId) priceListParams.push(parseInt(companyId));
+      if (grade) priceListParams.push(grade);
 
-    if (include && include.includes('priceList') && priceListSql) {
-      try {
-        const priceListParams = [];
-        if (companyId) priceListParams.push(parseInt(companyId));
-        if (grade) priceListParams.push(grade);
-
-        const priceListResults = await new Promise((resolve, reject) => {
-          Db.query(priceListSql, priceListParams, (err, results) => {
-            if (err) reject(err);
-            else resolve(results);
-          });
+      priceListPromise = new Promise((resolve) => {
+        Db.query(priceListSql, priceListParams, (err, results) => {
+          if (err) {
+            console.error('Price List Query Error:', err);
+            resolve({});
+          } else {
+            const priceListData = (results || []).reduce((acc, priceList) => {
+              const productId = priceList.productId;
+              if (!acc[productId]) acc[productId] = [];
+              acc[productId].push({
+                id: priceList.priceList_id,
+                name: priceList.priceList_name,
+                grade: priceList.priceList_grade,
+                amount: priceList.priceList_amount,
+                type: priceList.priceList_type,
+                isActive: priceList.priceList_isActive,
+                currencyId: priceList.priceList_currencyId,
+                createdAt: priceList.priceList_createdAt,
+                updateTimestamp: priceList.priceList_updateTimestamp
+              });
+              return acc;
+            }, {});
+            resolve(priceListData);
+          }
         });
-
-        priceListData = priceListResults.reduce((acc, priceList) => {
-          const productId = priceList.productId;
-          if (!acc[productId]) acc[productId] = [];
-          acc[productId].push({
-            id: priceList.priceList_id,
-            name: priceList.priceList_name,
-            grade: priceList.priceList_grade,
-            amount: priceList.priceList_amount,
-            type: priceList.priceList_type,
-            isActive: priceList.priceList_isActive,
-            currencyId: priceList.priceList_currencyId,
-            createdAt: priceList.priceList_createdAt,
-            updateTimestamp: priceList.priceList_updateTimestamp
-          });
-          return acc;
-        }, {});
-      } catch (priceListError) {
-        console.error('Price List Query Error:', priceListError);
-      }
+      });
     }
 
-    // Transform results to include nested tax object and priceLists
+    // Product units query promise (runs concurrently using fast raw SQL)
+    const productUnitsPromise = new Promise((resolve) => {
+      const productUnitsSql = `
+        SELECT 
+          pu.id,
+          pu.productId,
+          pu.unitId,
+          pu.price,
+          pu.barCode,
+          pu.isBaseUnit,
+          pu.isActive,
+          un.id as unit_id,
+          un.name as unit_name,
+          un.symbol as unit_symbol,
+          un.conversion_rate as unit_conversion_rate
+        FROM product_units pu
+        LEFT JOIN unitModel un ON un.id = pu.unitId
+        WHERE pu.isActive = 1
+      `;
+      Db.query(productUnitsSql, (err, results) => {
+        if (err) {
+          console.error('ProductUnits Query Error:', err);
+          resolve({});
+        } else {
+          const unitsByProductId = (results || []).reduce((acc, pu) => {
+            const pId = pu.productId;
+            if (!acc[pId]) acc[pId] = [];
+            acc[pId].push({
+              id: pu.id,
+              productId: pu.productId,
+              unitId: pu.unitId,
+              price: pu.price,
+              barCode: pu.barCode,
+              isBaseUnit: pu.isBaseUnit,
+              isActive: pu.isActive,
+              unit: pu.unit_id ? {
+                id: pu.unit_id,
+                name: pu.unit_name,
+                symbol: pu.unit_symbol,
+                conversionRate: pu.unit_conversion_rate
+              } : null
+            });
+            return acc;
+          }, {});
+          resolve(unitsByProductId);
+        }
+      });
+    });
+
+    // Execute all queries in parallel
+    const [productResults, priceListData, unitsByProductId] = await Promise.all([
+      productPromise,
+      priceListPromise,
+      productUnitsPromise
+    ]);
+
+    // Transform results to include nested tax object, priceLists, and productUnits
     const finalResults = productResults.map(product => {
       const p = {
         ...product,
@@ -624,8 +694,13 @@ const fetchProductFromLocationV1 = async (req, res) => {
         priceLists: (include && include.includes('priceList')) ? (priceListData[product.id] || []) : undefined,
         priceList: (include && include.includes('priceList'))
           ? (priceListData[product.id] && priceListData[product.id].length > 0 ? priceListData[product.id][0] : null)
-          : undefined
+          : undefined,
+        productUnits: unitsByProductId[product.id] || []
       };
+
+      if (include && include.includes('priceList') && p.priceLists) {
+        p.effectivePrice = calculateEffectivePrice(product.pro_price, p.priceLists, grade);
+      }
 
       // Remove flat tax fields from the root to keep it clean
       delete p.tax_name;
@@ -636,34 +711,15 @@ const fetchProductFromLocationV1 = async (req, res) => {
       return p;
     });
 
-    // Fetch all active product units and attach them
-    const ProductUnitModel = require('../../models').productUnit;
-    const UnitModel = require('../../models').unit;
-    const productUnits = await ProductUnitModel.findAll({
-      where: { isActive: true },
-      include: [{ model: UnitModel, as: 'unit', attributes: ['id', 'name', 'symbol', 'conversionRate'] }]
-    });
-
-    const unitsByProductId = productUnits.reduce((acc, pu) => {
-      const pId = pu.productId;
-      if (!acc[pId]) acc[pId] = [];
-      acc[pId].push(pu.toJSON());
-      return acc;
-    }, {});
-
-    const finalResultsWithUnits = finalResults.map(product => ({
-      ...product,
-      productUnits: unitsByProductId[product.id] || []
-    }));
-
     res.status(200).json({
       success: true,
-      data: finalResultsWithUnits,
-      count: finalResultsWithUnits.length,
+      data: finalResults,
+      count: finalResults.length,
       filters: {
         locationId: parseInt(locationId),
         companyId: companyId ? parseInt(companyId) : null,
         grade: grade || null,
+        isActive: isActive !== undefined ? isActive : true,
         include: include ? include.split(',') : []
       }
     });

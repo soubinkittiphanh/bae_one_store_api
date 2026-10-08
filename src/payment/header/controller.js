@@ -21,6 +21,13 @@ exports.createPaymentHeader = async (req, res) => {
       req.body.totalAmount = req.body.totalAmount.replace(/,/g, '');
     }
     req.body.locking_session_id = Date.now();
+    req.body.expenseSource = req.body.expenseSource || 'POS_SALE';
+    if (req.body.expenseSource === 'BUDGET' && req.body.budgetId && !req.body.budgetImpactYear) {
+      const budget = await require('../../models').annualExpenseBudget.findByPk(req.body.budgetId);
+      if (budget) {
+        req.body.budgetImpactYear = budget.year;
+      }
+    }
     const paymentHeader = await PaymentHeader.create(req.body);
     res.status(200).json(paymentHeader);
   } catch (error) {
@@ -42,6 +49,7 @@ exports.createPaymentHeaderApi = async (req, res) => {
       req.body.totalAmount = req.body.totalAmount.replace(/,/g, '');
     }
     req.body.locking_session_id = Date.now();
+    req.body.expenseSource = req.body.expenseSource || 'POS_SALE';
     // const dbAPHeader = await service.checkDupplicate(req.body.receivingId)
     const dbAPHeader = await PaymentHeader.findAll({
       where: {
@@ -80,7 +88,9 @@ exports.upload = async (req, res) => {
 // Get all Payment Headers
 exports.getAllPaymentHeaders = async (req, res) => {
   try {
-    const paymentHeaders = await PaymentHeader.findAll();
+    const paymentHeaders = await PaymentHeader.findAll({
+      include: ['payment', 'currency', 'drAccount', 'crAccount', 'budget']
+    });
     res.status(200).json(paymentHeaders);
   } catch (error) {
     console.log(error);
@@ -89,15 +99,24 @@ exports.getAllPaymentHeaders = async (req, res) => {
 };
 
 exports.getAllPaymentHeadersByDate = async (req, res) => {
-  const date = JSON.parse(req.query.date);
   try {
+    const date = typeof req.query.date === 'string' ? JSON.parse(req.query.date) : req.query.date;
+    const whereClause = {
+      bookingDate: {
+        [Op.between]: [date.startDate, date.endDate]
+      }
+    };
+
+    if (req.query.expenseSource) {
+      whereClause.expenseSource = req.query.expenseSource;
+    }
+    if (req.query.budgetId) {
+      whereClause.budgetId = parseInt(req.query.budgetId);
+    }
+
     const paymentHeaders = await PaymentHeader.findAll({
-      where: {
-        bookingDate: {
-          [Op.between]: [date.startDate, date.endDate]
-        },
-      },
-      include: ['payment', 'currency', 'drAccount', 'crAccount']
+      where: whereClause,
+      include: ['payment', 'currency', 'drAccount', 'crAccount', 'budget']
     });
     res.status(200).json(paymentHeaders);
   } catch (error) {
@@ -109,7 +128,9 @@ exports.getAllPaymentHeadersByDate = async (req, res) => {
 // Get Payment Header by ID
 exports.getPaymentHeaderById = async (req, res) => {
   try {
-    const paymentHeader = await PaymentHeader.findByPk(req.params.id);
+    const paymentHeader = await PaymentHeader.findByPk(req.params.id, {
+      include: ['payment', 'currency', 'drAccount', 'crAccount', 'budget']
+    });
     if (!paymentHeader) {
       return res.status(404).json({ message: "Payment Header not found" });
     }
@@ -135,8 +156,18 @@ exports.updatePaymentHeaderById = async (req, res) => {
       );
     }
 
+    if (req.body.expenseSource === 'BUDGET' && req.body.budgetId && !req.body.budgetImpactYear) {
+      const budget = await require('../../models').annualExpenseBudget.findByPk(req.body.budgetId);
+      if (budget) {
+        req.body.budgetImpactYear = budget.year;
+      }
+    }
+
     await paymentHeader.update(req.body);
-    res.status(200).json(paymentHeader);
+    const updated = await PaymentHeader.findByPk(req.params.id, {
+      include: ['payment', 'currency', 'drAccount', 'crAccount', 'budget']
+    });
+    res.status(200).json(updated);
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "Server Error" });

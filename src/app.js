@@ -180,6 +180,7 @@ const buildApp = async () => {
     app.use("/api/benefits", myRouter.benefit)
     app.use("/api/job-advertises", myRouter.jobAdvertise)
     app.use("/api/revenue-targets", myRouter.revenueTarget)
+    app.use("/api/expense-budget", myRouter.expenseBudget)
     app.use("/api/ar-invoices", myRouter.arInvoiceHeader)
     app.use("/api/ar-invoice-lines", myRouter.arInvoiceLine)
     app.use("/api/ar-receive-headers", myRouter.arReceiveHeader)
@@ -219,6 +220,7 @@ const buildApp = async () => {
     app.use('/api/database', myRouter.databaseBackup);
     app.use('/api/loyalty', myRouter.loyalty);
     app.use('/api/fixed-assets', myRouter.fixedAsset);
+    app.use('/api/packaging', myRouter.packaging);
 
     // Microfinance module routing
     app.use('/api/mf/cif', myRouter.mfCif);

@@ -112,6 +112,10 @@ module.exports = (sequelize, DataTypes) => {
             foreignKey: 'ministryId',
             as: 'ministry',
         });
+        MoneyAdvance.hasMany(models.moneyAdvanceOverrideLog, {
+            foreignKey: 'moneyAdvanceId',
+            as: 'overrideLogs',
+        });
 
     };
 

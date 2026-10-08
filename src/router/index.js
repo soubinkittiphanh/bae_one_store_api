@@ -68,6 +68,7 @@ const bank = require("../bank/router")
 const bankAccount = require("../bankAccount/router")
 const ministry = require("../ministry/router")
 const revenueTarget = require("../revenueTarget/router")
+const expenseBudget = require("../expenseBudget").router
 const apInvoice = require("../AP/invoice/router")
 const apInvoiceLine = require("../AP/invoiceLine/router")
 const apInvoiceSettlement = require("../AP/invoiceSettlement/router")
@@ -119,6 +120,7 @@ const mfJournal = require("../microfinance/journal").router
 const mfBatch = require("../microfinance/batch").router
 const productOptionGroup = require("../productOptionGroup").router
 const productOption = require("../productOption").router
+const packaging = require("../packaging").router
 
 module.exports = {
     orderRouter,
@@ -239,5 +241,7 @@ module.exports = {
     mfJournal,
     mfBatch,
     productOptionGroup,
-    productOption
+    productOption,
+    packaging,
+    expenseBudget
 }

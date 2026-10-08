@@ -106,6 +106,18 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING,
             allowNull: true,
         },
+        isReturnablePackaging: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false,
+            comment: 'Whether this product uses returnable packaging (e.g. Beerlao case)'
+        },
+        isPackagingAsset: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false,
+            comment: 'Whether this product is an empty crate/bottle packaging asset'
+        },
     }, {
         sequelize,
         // don't forget to enable timestamps!
@@ -315,6 +327,21 @@ module.exports = (sequelize, DataTypes) => {
             foreignKey: 'productId',
             sourceKey: 'id'
         });
+
+        // Packaging associations
+        if (models.productPackaging) {
+            Product.hasMany(models.productPackaging, {
+                as: 'packagings',
+                foreignKey: 'productId',
+                sourceKey: 'id'
+            });
+
+            Product.hasMany(models.productPackaging, {
+                as: 'usedInPackagings',
+                foreignKey: 'packagingProductId',
+                sourceKey: 'id'
+            });
+        }
 
         // Many-to-Many with WebGroup (if you have a junction table)
         // Uncomment and adjust if you have a many-to-many relationship

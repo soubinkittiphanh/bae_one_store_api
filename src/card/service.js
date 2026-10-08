@@ -626,8 +626,9 @@ const createCardFromReceiving = async (receivingLines, locationId, currencyId, t
     let serialIndex = 0; // Counter for serial numbers
 
     for (const iterator of receivingLines) {
-        const cardToInsertCount = iterator['rate'] * iterator['qty']
-        const cost = iterator['total'] / cardToInsertCount
+        const physicalQty = Number(iterator['qty'] || 0) + Number(iterator['focQty'] || 0);
+        const cardToInsertCount = Math.round(Number(iterator['rate'] || 1) * physicalQty);
+        const cost = cardToInsertCount > 0 ? (Number(iterator['total'] || 0) / cardToInsertCount) : 0;
         const productId = iterator['productId']
         const productCode = iterator['productCode']
 

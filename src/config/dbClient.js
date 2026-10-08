@@ -40,7 +40,7 @@ const clientDB = {
         "user": "root",
         "password": "SDAT@3480",
         // "database": "dcommerce_pro_carcare_sokpaluang",
-        "database": "dcommerce_dev",
+        "database": "dcommerce_mpwt",
         // "database": "dc_carcare_dev",
         "port": 3306,
     },
@@ -219,6 +219,13 @@ const clientDB = {
         "user": "root",
         "password": "sdat@3480",
         "database": 'dcommerce_pro_24h_min',
+        "port": 3306,
+    },
+    "swat_beerlao": {
+        "host": "150.95.31.23",
+        "user": "root",
+        "password": "sdat@3480",
+        "database": 'dcommerce_pro_swai_beerlao',
         "port": 3306,
     },
 

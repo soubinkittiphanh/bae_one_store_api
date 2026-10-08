@@ -87,4 +87,4 @@ const startApp = async () => {
     }).setTimeout(0)
 }
 startApp();
-
+// Server restarted after database column migration

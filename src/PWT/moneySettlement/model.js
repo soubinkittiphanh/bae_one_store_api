@@ -99,6 +99,10 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: 'chartAccountId',
       as: 'chartAccount',
     });
+    Settlement.hasMany(models.moneySettlementOverrideLog, {
+      foreignKey: 'settlementId',
+      as: 'overrideLogs',
+    });
   };
 
   return Settlement;

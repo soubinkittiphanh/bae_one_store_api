@@ -108,6 +108,11 @@ const initializeModels = () => {
     productTemp: require("../productTemp/model")(sequelize, DataTypes),
     productSize: require("../product_size/model")(sequelize, DataTypes),
     productUnit: require("../productUnit/model")(sequelize, DataTypes),
+    // Returnable Packaging models (Beerlao Agency)
+    productPackaging: require("../packaging/productPackaging/model")(sequelize, DataTypes),
+    customerPackagingLedger: require("../packaging/customerPackagingLedger/model")(sequelize, DataTypes),
+    supplierPackagingLedger: require("../packaging/supplierPackagingLedger/model")(sequelize, DataTypes),
+    packagingDamageLog: require("../packaging/packagingDamageLog/model")(sequelize, DataTypes),
     image: require("../image/model")(sequelize, DataTypes),
     priceList: require("../priceList/model")(sequelize, DataTypes),
     webProductGroup: require("../web_product_group/model")(sequelize, DataTypes),
@@ -191,7 +196,9 @@ const initializeModels = () => {
     bankAccount: require("../bankAccount/model")(sequelize, DataTypes),
     ministry: require("../ministry/model")(sequelize, DataTypes),
     moneySettlement: require("../PWT/moneySettlement/model")(sequelize, DataTypes),
+    moneySettlementOverrideLog: require("../PWT/moneySettlementOverrideLog/model")(sequelize, DataTypes),
     moneyAdvanceAudit: require("../PWT/moneyAdvanceAudit/model")(sequelize, DataTypes),
+    moneyAdvanceOverrideLog: require("../PWT/moneyAdvanceOverrideLog/model")(sequelize, DataTypes),
     moneyAdvance: require("../PWT/moneyAdvance/model")(sequelize, DataTypes),
     ministryPeriodBalance: require("../PWT/ministryPeriodBalance/model")(sequelize, DataTypes),
     bankPeriodBalance: require("../PWT/bankPeriodBalance/model")(sequelize, DataTypes),
@@ -202,6 +209,7 @@ const initializeModels = () => {
     ProjectInvoice: require("../PWT/projectInvoice/model")(sequelize, DataTypes),
     WithdrawalApplication: require("../PWT/withdrawalApplication/model")(sequelize, DataTypes),
     revenue_target: require("../revenueTarget/model")(sequelize, DataTypes),
+    annualExpenseBudget: require("../expenseBudget/model")(sequelize, DataTypes),
     apInvoice: require("../AP/invoice/model")(sequelize, DataTypes),
     apInvoiceAudit: require("../AP/invoiceAudit/model")(sequelize, DataTypes),
     invoiceLineItem: require("../AP/invoiceLine/model")(sequelize, DataTypes),
@@ -511,6 +519,13 @@ const defineFinancialAssociations = (db) => {
   db.apPaymentHeader.belongsTo(db.chartAccount, { foreignKey: 'drAccountId', as: 'drAccount' });
   db.apPaymentHeader.belongsTo(db.chartAccount, { foreignKey: 'crAccountId', as: 'crAccount' });
   db.apPaymentHeader.belongsTo(db.payment, { foreignKey: 'paymentId', as: 'payment' });
+  db.apPaymentHeader.belongsTo(db.annualExpenseBudget, { foreignKey: 'budgetId', as: 'budget' });
+
+  // Annual Expense Budget associations
+  db.annualExpenseBudget.hasMany(db.apPaymentHeader, { foreignKey: 'budgetId', as: 'payments' });
+  db.annualExpenseBudget.belongsTo(db.currency, { foreignKey: 'currencyId', as: 'currency' });
+  db.annualExpenseBudget.belongsTo(db.chartAccount, { foreignKey: 'drAccountId', as: 'expenseAccount' });
+  db.annualExpenseBudget.belongsTo(db.ministry, { foreignKey: 'ministryId', as: 'ministry' });
 
   // AR Receive associations
   db.arReceiveHeader.belongsTo(db.currency, { foreignKey: 'currencyId', as: 'currency' });
@@ -633,9 +648,14 @@ const synchronizeDatabase = async (db) => {
     await db.sequelize.query('SET FOREIGN_KEY_CHECKS = 0');
     // Phase 1: Create new tables that do not exist yet
     await db.sequelize.sync({ force: false });
-    // Phase 2: Alter existing tables to add fields and constraints
-    await db.sequelize.sync({ force: false, alter: { drop: false } });
-    await db.sequelize.query('SET FOREIGN_KEY_CHECKS = 1');
+    
+    // Phase 2: Safe alter for field additions
+    try {
+      await db.sequelize.sync({ force: false, alter: { drop: false } });
+    } catch (alterErr) {
+      logger.warn(`Non-blocking note during alter sync: ${alterErr.message}`);
+    }
+
     logger.info("Database client is synchronized");
 
     const userService = require('../user/service');
@@ -662,21 +682,25 @@ const synchronizeDatabase = async (db) => {
       logger.error("Error seeding USE_BUSINESS_DATE system parameter:", spfError);
     }
   } catch (error) {
-    try { await db.sequelize.query('SET FOREIGN_KEY_CHECKS = 1'); } catch (e) {}
     logger.error("Error synchronizing database:", error);
+  } finally {
+    try { await db.sequelize.query('SET FOREIGN_KEY_CHECKS = 1'); } catch (e) {}
   }
 
   try {
     await db.centralSequelize.query('SET FOREIGN_KEY_CHECKS = 0');
     // Phase 1: Create new tables that do not exist yet
     await db.centralSequelize.sync({ force: false });
-    // Phase 2: Alter existing tables to add fields and constraints
-    await db.centralSequelize.sync({ force: false, alter: { drop: false } });
-    await db.centralSequelize.query('SET FOREIGN_KEY_CHECKS = 1');
+    try {
+      await db.centralSequelize.sync({ force: false, alter: { drop: false } });
+    } catch (alterErr) {
+      logger.warn(`Non-blocking note during central alter sync: ${alterErr.message}`);
+    }
     logger.info("Database central is synchronized");
   } catch (error) {
-    try { await db.centralSequelize.query('SET FOREIGN_KEY_CHECKS = 1'); } catch (e) {}
     logger.error("Error synchronizing central database:", error);
+  } finally {
+    try { await db.centralSequelize.query('SET FOREIGN_KEY_CHECKS = 1'); } catch (e) {}
   }
 };
 

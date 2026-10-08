@@ -10,6 +10,12 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.DOUBLE,
             defaultValue: 1,
         },
+        focQty: {
+            type: DataTypes.DOUBLE,
+            allowNull: false,
+            defaultValue: 0,
+            comment: 'Free promotional quantity (FOC)'
+        },
         price: {
             type: DataTypes.DOUBLE,
             allowNull: false,

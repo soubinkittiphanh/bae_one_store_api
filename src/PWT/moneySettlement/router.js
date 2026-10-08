@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { validateToken } = require('../../api').jwtApi;
-const { body } = require('express-validator');
+const { body, query } = require('express-validator');
 
 // Import all controller modules
 const SettlementController = require('./controller/SettlementController'); // Main CRUD controller
@@ -151,6 +151,32 @@ const validateUpdateSettlement = [
     .withMessage('isActive must be a boolean')
 ];
 
+// Validation middleware for checking duplicate settlements
+const validateCheckDuplicateSettlement = [
+  query('amount')
+    .notEmpty()
+    .withMessage('Amount is required')
+    .isNumeric()
+    .withMessage('Amount must be a number'),
+  query('currencyId')
+    .notEmpty()
+    .withMessage('Currency ID is required')
+    .isInt({ min: 1 })
+    .withMessage('Valid currencyId is required'),
+  query('ministryId')
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage('Valid ministryId is required when provided'),
+  query('bookingDate')
+    .optional()
+    .isISO8601()
+    .withMessage('Booking date must be a valid date'),
+  query('excludeId')
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage('Valid excludeId is required when provided')
+];
+
 // Helper function to handle validation errors
 const handleValidationErrors = (req, res, next) => {
   const { validationResult } = require('express-validator');
@@ -169,6 +195,11 @@ const handleValidationErrors = (req, res, next) => {
 // ROUTES DEFINITION
 // =============================================
 
+// Duplicate check route (must come before /:id route)
+router.get('/check-duplicate', validateCheckDuplicateSettlement, handleValidationErrors, SettlementController.checkDuplicate);
+// Override logs route (must come before /:id route)
+router.get('/override-logs', SettlementController.getAllOverrideLogs);
+
 // Dashboard and Analytics routes (must come before general routes)
 router.get('/dashboard', SettlementDashboardController.getDashboard);
 router.get('/stats', SettlementDashboardController.getStats); // ← ADD THIS LINE
@@ -186,6 +217,7 @@ router.get('/standalone', SettlementSpecializedController.getStandalone);
 
 // Basic CRUD routes
 router.get('/', SettlementController.getAll);
+router.get('/:id/override-logs', SettlementController.getOverrideLogsBySettlementId);
 router.get('/:id', SettlementController.getById);
 
 // POST routes with validation

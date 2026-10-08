@@ -144,6 +144,39 @@ const validateQuery = [
     .withMessage('Booking date must be a valid date')
 ];
 
+// Validation for available-for-settlement endpoint
+const validateAvailableForSettlementQuery = [
+  query('limit')
+    .optional()
+    .isInt({ min: 1, max: 500 })
+    .withMessage('Limit must be between 1 and 500'),
+  query('status')
+    .optional(),
+  query('makerId')
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage('Valid makerId is required when provided'),
+  query('ministryId')
+    .optional(),
+  query('currencyId')
+    .optional(),
+  query('search')
+    .optional()
+    .isString(),
+  query('fromDate')
+    .optional()
+    .isISO8601()
+    .withMessage('From date must be a valid date'),
+  query('toDate')
+    .optional()
+    .isISO8601()
+    .withMessage('To date must be a valid date'),
+  query('include_advance_id')
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage('Valid include_advance_id is required when provided')
+];
+
 // Report validation middleware
 const validateReportQuery = [
   query('fromDate')
@@ -271,6 +304,32 @@ const validateDateRangeAuditQuery = [
     .withMessage('Offset must be a non-negative integer')
 ];
 
+// 🆕 NEW: Validate check duplicate query parameters
+const validateCheckDuplicate = [
+  query('amount')
+    .notEmpty()
+    .withMessage('Amount is required')
+    .isNumeric()
+    .withMessage('Amount must be a number'),
+  query('currencyId')
+    .notEmpty()
+    .withMessage('Currency ID is required')
+    .isInt({ min: 1 })
+    .withMessage('Valid currencyId is required'),
+  query('ministryId')
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage('Valid ministryId is required when provided'),
+  query('bookingDate')
+    .optional()
+    .isISO8601()
+    .withMessage('Booking date must be a valid date'),
+  query('excludeId')
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage('Valid excludeId is required when provided')
+];
+
 const validateDeleteWithReason = [
   param('id')
     .isInt({ min: 1 })
@@ -297,7 +356,12 @@ const validateSettleWithReason = [
 // GET routes - Specific endpoints first
 router.get('/', validateQuery, MoneyAdvanceController.getAll);
 // 🆕 NEW: Settlement support route - MUST come before other specific routes
-router.get('/available-for-settlement', validateQuery, MoneyAdvanceController.getAvailableForSettlement);
+router.get('/available-for-settlement', validateAvailableForSettlementQuery, MoneyAdvanceController.getAvailableForSettlement);
+
+// 🆕 NEW: Duplicate check route - MUST come before parameterized routes
+router.get('/check-duplicate', validateCheckDuplicate, MoneyAdvanceController.checkDuplicate);
+// 🆕 NEW: Override logs route - MUST come before parameterized routes
+router.get('/override-logs', MoneyAdvanceController.getAllOverrideLogs);
 
 router.get('/dashboard', validateQuery, MoneyAdvanceController.getDashboard);
 router.get('/by-ministry', validateQuery, MoneyAdvanceController.getByMinistry);
@@ -328,6 +392,8 @@ router.get('/:id', validateParams, MoneyAdvanceController.getById);
 router.get('/:id/settlements', validateParams, MoneyAdvanceController.getSettlements);
 // 🆕 NEW: Individual record audit trail
 router.get('/:id/audit', validateParams, validateAuditQuery, MoneyAdvanceController.getAuditTrail);
+// 🆕 NEW: Individual record override logs
+router.get('/:id/override-logs', validateParams, MoneyAdvanceController.getOverrideLogsByAdvanceId);
 
 // POST routes
 router.post('/', validateCreate, MoneyAdvanceController.create);

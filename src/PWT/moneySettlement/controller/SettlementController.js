@@ -344,6 +344,32 @@ class SettlementController {
         }
       }
 
+      // 🆕 CAPTURE OVERRIDE LOG IF DUPLICATE WAS ACKNOWLEDGED
+      if (req.body.isDuplicateOverride) {
+        try {
+          const MoneySettlementOverrideLog = require('../../../models').moneySettlementOverrideLog;
+          if (MoneySettlementOverrideLog) {
+            const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.connection?.remoteAddress || null;
+            const userAgent = typeof req.get === 'function' ? req.get('User-Agent') : req.headers?.['user-agent'] || null;
+            await MoneySettlementOverrideLog.create({
+              settlementId: settlement.id,
+              matchedSettlementIds: req.body.matchedSettlementIds || [],
+              amount: settlement.amount,
+              currencyId: settlement.currencyId,
+              ministryId: settlement.ministryId || null,
+              userId: userId || (req.user && req.user.id) || null,
+              overrideReason: req.body.overrideReason || 'User acknowledged duplicate warning and confirmed settlement saving',
+              overrideMessage: req.body.overrideMessage || `User confirmed duplicate settlement creation with matching amount, currency, and ministry against existing settlement IDs: ${(req.body.matchedSettlementIds || []).join(', ')}`,
+              ipAddress: ipAddress,
+              userAgent: userAgent
+            });
+            logger.info(`Override log created for Settlement #${settlement.id}`);
+          }
+        } catch (logErr) {
+          logger.error('Failed to create MoneySettlementOverrideLog on create:', logErr);
+        }
+      }
+
       // Fetch the created settlement with associations
       const createdSettlement = await Settlement.findByPk(settlement.id, {
         include: [
@@ -530,7 +556,7 @@ class SettlementController {
         method: method || settlement.method,
         notes: notes !== undefined ? notes : settlement.notes,
         bankAccountId: bankAccountId !== undefined ? bankAccountId : settlement.bankAccountId,
-        currencyId: currencyId || null,
+        currencyId: currencyId !== undefined ? currencyId : settlement.currencyId,
         updateUserId: updateUserId || null,
         exchangeRate: exchangeRate || settlement.exchangeRate || 1,
         moneyAdvanceId: finalMoneyAdvanceId !== undefined ? finalMoneyAdvanceId : settlement.moneyAdvanceId,
@@ -580,6 +606,32 @@ class SettlementController {
           await newMoneyAdvance.update({ status: 'settled' });
         } else if (!shouldBeSettled && currentStatus === 'settled') {
           await newMoneyAdvance.update({ status: 'approved' });
+        }
+      }
+
+      // 🆕 CAPTURE OVERRIDE LOG IF DUPLICATE WAS ACKNOWLEDGED ON UPDATE
+      if (req.body.isDuplicateOverride) {
+        try {
+          const MoneySettlementOverrideLog = require('../../../models').moneySettlementOverrideLog;
+          if (MoneySettlementOverrideLog) {
+            const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.connection?.remoteAddress || null;
+            const userAgent = typeof req.get === 'function' ? req.get('User-Agent') : req.headers?.['user-agent'] || null;
+            await MoneySettlementOverrideLog.create({
+              settlementId: settlement.id,
+              matchedSettlementIds: req.body.matchedSettlementIds || [],
+              amount: settlement.amount,
+              currencyId: settlement.currencyId,
+              ministryId: settlement.ministryId || null,
+              userId: updateUserId || (req.user && req.user.id) || null,
+              overrideReason: req.body.overrideReason || 'User acknowledged duplicate warning and confirmed settlement update',
+              overrideMessage: req.body.overrideMessage || `User confirmed duplicate settlement update with matching amount, currency, and ministry against existing settlement IDs: ${(req.body.matchedSettlementIds || []).join(', ')}`,
+              ipAddress: ipAddress,
+              userAgent: userAgent
+            });
+            logger.info(`Override log created for Settlement update #${settlement.id}`);
+          }
+        } catch (logErr) {
+          logger.error('Failed to create MoneySettlementOverrideLog on update:', logErr);
         }
       }
 
@@ -675,6 +727,190 @@ class SettlementController {
       res.status(500).json({
         success: false,
         message: 'Error deleting settlement',
+        error: error.message
+      });
+    }
+  }
+
+  // Calculate date range for current month and last month
+  static getCurrentAndLastMonthRange(referenceDate) {
+    const ref = referenceDate ? new Date(referenceDate) : new Date();
+    const dateObj = isNaN(ref.getTime()) ? new Date() : ref;
+
+    const year = dateObj.getFullYear();
+    const month = dateObj.getMonth();
+
+    const startOfLastMonth = new Date(year, month - 1, 1);
+    const startYear = startOfLastMonth.getFullYear();
+    const startMonth = String(startOfLastMonth.getMonth() + 1).padStart(2, '0');
+    const startDate = `${startYear}-${startMonth}-01`;
+
+    const endOfCurrentMonth = new Date(year, month + 1, 0);
+    const endYear = endOfCurrentMonth.getFullYear();
+    const endMonth = String(endOfCurrentMonth.getMonth() + 1).padStart(2, '0');
+    const endDay = String(endOfCurrentMonth.getDate()).padStart(2, '0');
+    const endDate = `${endYear}-${endMonth}-${endDay}`;
+
+    return { startDate, endDate };
+  }
+
+  // GET /settlements/check-duplicate - Check for duplicate settlement entries
+  static async checkDuplicate(req, res) {
+    try {
+      const {
+        amount,
+        currencyId,
+        ministryId,
+        bookingDate,
+        excludeId
+      } = req.query;
+
+      if (!amount || !currencyId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Amount and currencyId are required to check for duplicate settlement'
+        });
+      }
+
+      const { startDate, endDate } = SettlementController.getCurrentAndLastMonthRange(bookingDate);
+
+      const whereClause = {
+        amount: parseFloat(amount),
+        currencyId: parseInt(currencyId),
+        bookingDate: {
+          [Op.between]: [startDate, endDate]
+        },
+        [Op.or]: [{ isActive: true }, { isActive: null }]
+      };
+
+      if (ministryId) {
+        whereClause.ministryId = parseInt(ministryId);
+      }
+
+      if (excludeId) {
+        whereClause.id = {
+          [Op.ne]: parseInt(excludeId)
+        };
+      }
+
+      const duplicates = await Settlement.findAll({
+        where: whereClause,
+        include: [
+          { model: Ministry, as: 'ministry' },
+          { model: currency, as: 'currency' },
+          { model: user, as: 'proceeder' },
+          { model: MoneyAdvance, as: 'moneyAdvance' },
+          { model: BankAccount, as: 'bankAccount' },
+          { model: ChartAccount, as: 'chartAccount' }
+        ],
+        order: [['bookingDate', 'DESC'], ['id', 'DESC']]
+      });
+
+      return res.json({
+        success: true,
+        isDuplicate: duplicates.length > 0,
+        count: duplicates.length,
+        dateRange: {
+          startDate,
+          endDate
+        },
+        duplicates: duplicates.map(d => ({
+          id: d.id,
+          bookingDate: d.bookingDate,
+          amount: parseFloat(d.amount),
+          currencyId: d.currencyId,
+          currencyCode: d.currency?.code || '',
+          ministryId: d.ministryId,
+          ministryName: d.ministry ? `${d.ministry.ministryCode ? d.ministry.ministryCode + ' ' : ''}${d.ministry.ministryName}` : '',
+          moneyAdvanceId: d.moneyAdvanceId,
+          notes: d.notes || '',
+          method: d.method,
+          isActive: d.isActive,
+          proceederName: d.proceeder?.cus_name || d.proceeder?.name || '',
+          createdAt: d.createdAt
+        }))
+      });
+    } catch (error) {
+      logger.error('Error checking duplicate settlement:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error checking duplicate settlement',
+        error: error.message
+      });
+    }
+  }
+
+  // GET /settlements/override-logs - Get all duplicate override logs for settlements
+  static async getAllOverrideLogs(req, res) {
+    try {
+      const { page = 1, limit = 50, settlementId, userId } = req.query;
+      const offset = (page - 1) * limit;
+      const MoneySettlementOverrideLog = require('../../../models').moneySettlementOverrideLog;
+
+      const whereClause = {};
+      if (settlementId) whereClause.settlementId = settlementId;
+      if (userId) whereClause.userId = userId;
+
+      const { count, rows } = await MoneySettlementOverrideLog.findAndCountAll({
+        where: whereClause,
+        include: [
+          { model: Settlement, as: 'settlement' },
+          { model: user, as: 'user' },
+          { model: currency, as: 'currency' },
+          { model: Ministry, as: 'ministry' }
+        ],
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+        order: [['createdAt', 'DESC']]
+      });
+
+      res.json({
+        success: true,
+        data: {
+          logs: rows,
+          pagination: {
+            currentPage: parseInt(page),
+            totalPages: Math.ceil(count / limit),
+            totalItems: count,
+            itemsPerPage: parseInt(limit)
+          }
+        }
+      });
+    } catch (error) {
+      logger.error('Error fetching settlement override logs:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error fetching settlement override logs',
+        error: error.message
+      });
+    }
+  }
+
+  // GET /settlements/:id/override-logs - Get override logs for a specific settlement
+  static async getOverrideLogsBySettlementId(req, res) {
+    try {
+      const { id } = req.params;
+      const MoneySettlementOverrideLog = require('../../../models').moneySettlementOverrideLog;
+
+      const logs = await MoneySettlementOverrideLog.findAll({
+        where: { settlementId: id },
+        include: [
+          { model: user, as: 'user' },
+          { model: currency, as: 'currency' },
+          { model: Ministry, as: 'ministry' }
+        ],
+        order: [['createdAt', 'DESC']]
+      });
+
+      res.json({
+        success: true,
+        data: logs
+      });
+    } catch (error) {
+      logger.error('Error fetching settlement override logs:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error fetching settlement override logs',
         error: error.message
       });
     }
