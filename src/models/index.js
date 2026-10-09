@@ -699,6 +699,14 @@ const synchronizeDatabase = async (db) => {
     const brandNewDB = await userService.ensureDefaultUserExists();
     logger.info("Default user check complete.");
 
+    // Ensure standard chart of accounts and GL SPF mappings exist
+    try {
+      const { seedAccounts } = require('../../seedAccounts');
+      await seedAccounts(db);
+    } catch (seedAccErr) {
+      logger.error("Error seeding standard accounts / GL mapping:", seedAccErr);
+    }
+
     // Seed USE_BUSINESS_DATE SPF Configuration if it doesn't exist
     try {
       const spfModel = db.spf;

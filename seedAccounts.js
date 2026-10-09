@@ -1,10 +1,16 @@
-const db = require('./src/models');
+const defaultDb = require('./src/models');
 const logger = require('./src/api/logger');
 
-async function seed() {
-  logger.info('Starting standard accounts and GL mapping seed...');
+async function seedAccounts(database) {
+  const db = database || defaultDb;
+  logger.info('Checking standard accounts and GL mapping seeds...');
 
   try {
+    if (!db.chartAccount || !db.spf) {
+      logger.warn('chartAccount or spf model not ready, skipping seedAccounts');
+      return false;
+    }
+
     // 1. Define standard accounts
     const standardAccounts = [
       { accountNumber: 1101, accountName: 'Cash on Hand (ເງິນສົດໃນມື)', accountType: 'Asset' },
@@ -16,19 +22,20 @@ async function seed() {
       { accountNumber: 5101, accountName: 'Cost of Goods Sold (ຕົ້ນທຶນສິນຄ້າຂາຍ COGS)', accountType: 'Expense' }
     ];
 
-    const accountMap = {};
-
-    // 2. Insert or update accounts
+    // 2. Insert missing accounts
     for (const acc of standardAccounts) {
-      let account = await db.chartAccount.findOne({ where: { accountNumber: acc.accountNumber } });
-      if (!account) {
-        account = await db.chartAccount.create(acc);
-        logger.info(`Seeded account: ${acc.accountNumber} - ${acc.accountName}`);
-      } else {
-        await account.update({ accountName: acc.accountName, accountType: acc.accountType });
-        logger.info(`Updated existing account: ${acc.accountNumber}`);
+      const [account, created] = await db.chartAccount.findOrCreate({
+        where: { accountNumber: acc.accountNumber },
+        defaults: {
+          accountNumber: acc.accountNumber,
+          accountName: acc.accountName,
+          accountType: acc.accountType,
+          isActive: true
+        }
+      });
+      if (created) {
+        logger.info(`Seeded missing chart account: ${acc.accountNumber} - ${acc.accountName}`);
       }
-      accountMap[acc.accountNumber] = account.id;
     }
 
     // 3. Define GL mapping parameters
@@ -42,24 +49,37 @@ async function seed() {
       { code: 'GL_MAP_COGS_ACC', value: '5101', remark: 'GL account code for Cost of Goods Sold (COGS)' }
     ];
 
-    // 4. Insert or update SPF mappings
+    // 4. Insert missing SPF mappings
     for (const map of glMappings) {
-      let param = await db.spf.findOne({ where: { code: map.code } });
-      if (!param) {
-        await db.spf.create(map);
-        logger.info(`Seeded parameter mapping: ${map.code} -> ${map.value}`);
-      } else {
-        await param.update({ value: map.value, remark: map.remark });
-        logger.info(`Updated parameter mapping: ${map.code} -> ${map.value}`);
+      const [param, created] = await db.spf.findOrCreate({
+        where: { code: map.code },
+        defaults: {
+          code: map.code,
+          value: map.value,
+          remark: map.remark,
+          isActive: true
+        }
+      });
+      if (created) {
+        logger.info(`Seeded missing GL parameter mapping: ${map.code} -> ${map.value}`);
       }
     }
 
-    logger.info('GL Seeding completed successfully.');
-    process.exit(0);
+    logger.info('Standard accounts and GL mapping check completed.');
+    return true;
   } catch (error) {
-    logger.error('Failed to run GL seeding:', error);
-    process.exit(1);
+    logger.error('Failed to run standard accounts/GL seeding:', error);
+    return false;
   }
 }
 
-seed();
+if (require.main === module) {
+  seedAccounts().then((success) => {
+    process.exit(success ? 0 : 1);
+  });
+}
+
+module.exports = {
+  seedAccounts,
+  seed: seedAccounts
+};
