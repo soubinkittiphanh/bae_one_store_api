@@ -162,7 +162,7 @@ async function seed() {
         const [callbackRecord, callbackCreated] = await db.spf.findOrCreate({
             where: { code: 'DYN_CallbackUrl' },
             defaults: {
-                value: 'http://150.95.31.23:8011/api/v1/direct/callback',
+                value: 'http://localhost:8888/api/v1/direct/callback',
                 remark: 'Dynamic QR payment status callback URL override',
                 isActive: true
             }
