@@ -23,6 +23,12 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: false,
             defaultValue: true,
         },
+        isPackaging: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false,
+            comment: 'Whether this category represents packaging/empties (crates, bottles)',
+        },
     }, {
         sequelize,
         // don't forget to enable timestamps!

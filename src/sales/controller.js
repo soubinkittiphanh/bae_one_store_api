@@ -9,6 +9,8 @@ const Line = require('../models').saleLine;
 const Product = require('../models').product;
 const Card = require('../models').card;
 const Unit = require('../models').unit;
+const User = require('../models').user;
+const Group = require('../models').group;
 const { body, validationResult } = require('express-validator');
 const logger = require('../api/logger');
 const lineService = require("./line/service");
@@ -57,7 +59,8 @@ const validateStockForLines = async (lines, locationId) => {
   for (const line of lines) {
     // Check if this line requires stock validation
     const isRedeem = line.productId === 999;
-    const shouldValidate = !isRedeem && (
+    const isReturn = line.isReturn === true || line.isReturn === 1 || line.packagingAction === 'RETURNED';
+    const shouldValidate = !isRedeem && !isReturn && (
       line.validateStockOnSale === true ||
       line.validateStockOnSale === 1 ||
       (line.validateStockOnSale !== false && line.validateStockOnSale !== 0 && line.product && line.product.validateStockOnSale)
@@ -1102,6 +1105,55 @@ exports.reverseSaleHeader = async (req, res) => {
   try {
     const { id } = req.params;
     const { isActive, remark, cancel_fee, customerId } = req.body;
+
+    // Check user group permission before allowing reverse
+    const userId = req.user?.id || req.body.userId;
+    if (!userId) {
+      logger.warn(`Reverse sale header failed: User not identified for sale ${id}`);
+      return res.status(401).json({ success: false, message: 'User authentication required' });
+    }
+
+    const user = await User.findByPk(userId, {
+      include: [{
+        model: Group,
+        as: 'userGroup',
+        attributes: ['id', 'name', 'code', 'ticketCancel', 'isActive']
+      }]
+    });
+
+    if (!user) {
+      logger.warn(`Reverse sale header failed: User ID ${userId} not found`);
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    if (user.isActive === false || user.cus_active === false) {
+      logger.warn(`Reverse sale header failed: User ID ${userId} is inactive`);
+      return res.status(403).json({ success: false, message: 'User account is inactive or deactivated' });
+    }
+
+    const userGroup = user.userGroup;
+    if (!userGroup) {
+      logger.warn(`Reverse sale header failed: User ${user.cus_name} (ID: ${user.id}) has no user group assigned`);
+      return res.status(403).json({ success: false, message: 'User does not belong to any user group' });
+    }
+
+    if (userGroup.isActive === false) {
+      logger.warn(`Reverse sale header failed: User group ${userGroup.name} (ID: ${userGroup.id}) is inactive`);
+      return res.status(403).json({ success: false, message: 'User group is deactivated' });
+    }
+
+    const isAllowedToReverse = Boolean(
+      userGroup.ticketCancel === true || userGroup.ticketCancel == 1
+    );
+
+    if (!isAllowedToReverse) {
+      logger.warn(`Reverse sale header forbidden: User ${user.cus_name} (Group: ${userGroup.name}, Code: ${userGroup.code}) does not have ticketCancel permission`);
+      return res.status(403).json({
+        success: false,
+        message: 'User group is not authorized to reverse transactions / ທ່ານບໍ່ມີສິດໃນການຍົກເລີກລາຍການຂາຍ'
+      });
+    }
+
     const saleHeader = await SaleHeader.findByPk(id, {
       include: [{
         model: Line,
@@ -1115,19 +1167,23 @@ exports.reverseSaleHeader = async (req, res) => {
         ]
       }]
     });
+
+    if (!saleHeader) {
+      logger.error("Order Id " + id + ' is not found')
+      return res.status(404).json({ success: false, message: 'Sale header not found' });
+    }
+
     logger.info(`Sale header ${JSON.stringify(saleHeader)}`)
     // Reverse external transaction 
     if (saleHeader.washJobId) {
       logger.info(`Reversing the washJob ${saleHeader.washJobId}`)
       const washJob = await WashJob.findByPk(saleHeader.washJobId)
-      await washJob.update({
-        status: 'CANCELLED',
-      });
-      logger.info(`Currency wash job version ${JSON.stringify(washJob)}`)
-    }
-    if (!saleHeader) {
-      logger.error("Order Id " + id + ' is not found')
-      return res.status(404).json({ success: false, message: 'Sale header not found' });
+      if (washJob) {
+        await washJob.update({
+          status: 'CANCELLED',
+        });
+        logger.info(`Currency wash job version ${JSON.stringify(washJob)}`)
+      }
     }
     logger.info(`SaleLine len: ${saleHeader['lines'].length}`)
     logger.info(`SaleLine product len: ${saleHeader['lines'].length}`)
@@ -1207,7 +1263,8 @@ const assignHeaderId = async (lines, id, lockingSessionId, isUpdate, locationId)
 
     // Use iterator.product.validateStockOnSale if it's nested, or directly
     const isRedeem = iterator.productId === 999;
-    const shouldValidate = !isRedeem && (
+    const isReturn = iterator.isReturn === true || iterator.isReturn === 1 || iterator.packagingAction === 'RETURNED';
+    const shouldValidate = !isRedeem && !isReturn && (
       iterator.validateStockOnSale === true ||
       iterator.validateStockOnSale === 1 ||
       (iterator.validateStockOnSale !== false && iterator.validateStockOnSale !== 0 && iterator.product && iterator.product.validateStockOnSale)
@@ -1346,7 +1403,7 @@ exports.getSaleHeadersByDate = async (req, res) => {
   logger.warn(`Request date ${date.startDate} userId ${req.user.id}`)
   try {
     const saleHeaders = await SaleHeader.findAll({
-      include: ['user', 'client', 'payment', 'currency', 'location',
+      include: ['user', 'client', 'payment', 'currency', 'location', 'arInvoice',
         {
           model: Line,
           as: "lines",
@@ -1437,7 +1494,7 @@ exports.getSaleHeadersByDateAndUser = async (req, res) => {
   logger.warn(`Request date ${date.startDate} userId ${date.userId}`)
   try {
     const saleHeaders = await SaleHeader.findAll({
-      include: ['user', 'client', 'payment', 'currency', Customer,
+      include: ['user', 'client', 'payment', 'currency', 'arInvoice', Customer,
         {
           model: Line,
           as: "lines",
@@ -1598,7 +1655,7 @@ exports.getSaleHeaderById = async (req, res) => {
   try {
     const { id } = req.params;
     const saleHeader = await SaleHeader.findByPk(id, {
-      include: ['user', 'location', 'client', 'payment', 'currency', Customer, {
+      include: ['user', 'location', 'client', 'payment', 'currency', 'arInvoice', Customer, {
         model: Line,
         as: "lines",
         include: [
@@ -2362,7 +2419,8 @@ const validateStockForLinesV2 = async (lines, locationId) => {
 
   for (const line of lines) {
     const isRedeem = line.productId === 999;
-    const shouldValidate = !isRedeem && (
+    const isReturn = line.isReturn === true || line.isReturn === 1 || line.packagingAction === 'RETURNED';
+    const shouldValidate = !isRedeem && !isReturn && (
       line.validateStockOnSale === true ||
       line.validateStockOnSale === 1 ||
       (line.validateStockOnSale !== false && line.validateStockOnSale !== 0 && line.product && line.product.validateStockOnSale)
@@ -2473,7 +2531,8 @@ const assignHeaderIdV2 = async (lines, id, lockingSessionId, isUpdate, locationI
     iterator.saleHeaderId = id;
 
     const isRedeem = iterator.productId === 999;
-    const shouldValidate = !isRedeem && (
+    const isReturn = iterator.isReturn === true || iterator.isReturn === 1 || iterator.packagingAction === 'RETURNED';
+    const shouldValidate = !isRedeem && !isReturn && (
       iterator.validateStockOnSale === true ||
       iterator.validateStockOnSale === 1 ||
       (iterator.validateStockOnSale !== false && iterator.validateStockOnSale !== 0 && iterator.product && iterator.product.validateStockOnSale)

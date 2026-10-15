@@ -58,13 +58,14 @@ const createCategory = async (req, res) => {
     return res.status(400).json({ errors: errors.array() });
   }
 
-  const { categ_name, categ_desc, isActive, mainCategoryId } = req.body;
+  const { categ_name, categ_desc, isActive, isPackaging, mainCategoryId } = req.body;
   try {
     const newCategory = await Category.create({
       // categ_id,
       categ_name,
       categ_desc,
       isActive,
+      isPackaging: isPackaging !== undefined ? Boolean(isPackaging) : false,
       mainCategoryId,
     });
     res.status(200).json(newCategory);
@@ -127,7 +128,7 @@ const updateCategoryById = async (req, res) => {
   }
 
   const { categ_id } = req.params;
-  const { categ_name, categ_desc, isActive, mainCategoryId } = req.body;
+  const { categ_name, categ_desc, isActive, isPackaging, mainCategoryId } = req.body;
   try {
     const category = await Category.findOne({ where: { categ_id } });
     if (!category) {
@@ -138,6 +139,7 @@ const updateCategoryById = async (req, res) => {
         categ_name,
         categ_desc,
         isActive,
+        isPackaging: isPackaging !== undefined ? Boolean(isPackaging) : category.isPackaging,
         mainCategoryId,
       },
       { where: { categ_id } }

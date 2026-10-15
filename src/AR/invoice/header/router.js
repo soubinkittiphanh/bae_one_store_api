@@ -22,6 +22,9 @@ router.get('/audit/:id', InvoiceHeaderController.findAuditByHeaderId);
 
 const { uploadFiles } = require('../../../middleware/multerConfig');
 
+// POST /api/ar-invoices/from-order/:saleHeaderId - Create AR invoice directly from POS Order
+router.post('/from-order/:saleHeaderId', InvoiceHeaderController.createFromOrder);
+
 // POST /api/invoices - Create new invoice
 router.post('/', uploadFiles, InvoiceHeaderController.create);
 

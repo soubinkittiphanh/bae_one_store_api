@@ -198,9 +198,12 @@ const fetchProductFromLocation = async (req, res) => {
     p.retail_cost_percent,
     p.locking_session_id,
     p.isActive,
+    p.isPackagingAsset,
+    p.isReturnablePackaging,
     p.product_code,
     p.createdAt,
     t.categ_name,
+    IFNULL(t.isPackaging, 0) AS categoryIsPackaging,
     co.name as co_name,
     co.id as companyId,
     IFNULL(i.img_name, 'No image') AS img_name,
@@ -236,7 +239,11 @@ const fetchProductFromLocation = async (req, res) => {
       c.productId
   ) c ON c.productId = p.id
   LEFT JOIN category t ON t.categ_id = p.pro_category
-  LEFT JOIN image_path i ON i.pro_id = p.pro_id`;
+  LEFT JOIN (
+    SELECT pro_id, MIN(img_name) AS img_name, MIN(img_path) AS img_path 
+    FROM image_path 
+    GROUP BY pro_id
+  ) i ON i.pro_id = p.pro_id`;
 
   // Add tax join if tax is included
   if (include && include.includes('tax')) {
@@ -258,7 +265,6 @@ const fetchProductFromLocation = async (req, res) => {
   }
 
   sqlCom += `
-  GROUP BY p.pro_id
   ORDER BY p.id`;
 
   // Separate SQL for price lists (to handle multiple price lists per product)
@@ -508,9 +514,9 @@ const fetchProductFromLocationV1 = async (req, res) => {
 
     const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
 
-    // Main product query - Updated to include minStock, vendorName, pro_desc, co_name, tax fields, and stock count
+    // Main product query - Optimized: Deduplicate image subquery to eliminate outer GROUP BY / filesort
     const sqlCom = `
-      SELECT DISTINCT
+      SELECT
         p.id,
         p.pro_id,
         p.barCode,
@@ -525,7 +531,11 @@ const fetchProductFromLocationV1 = async (req, res) => {
         p.stockUnitId,
         p.baseUnitId,
         p.isActive,
+        p.isPackagingAsset,
+        p.isReturnablePackaging,
         p.pro_category,
+        cat.categ_name,
+        IFNULL(cat.isPackaging, 0) AS categoryIsPackaging,
         p._category,
         p.taxId,
         p.product_code,
@@ -543,6 +553,7 @@ const fetchProductFromLocationV1 = async (req, res) => {
         i.img_path,
         IFNULL(c.stock, 0) AS card_count
       FROM product p
+      LEFT JOIN category cat ON cat.categ_id = p.pro_category
       LEFT JOIN tax t ON p.taxId = t.id
       LEFT JOIN company co ON co.id = p.companyId
       LEFT JOIN (
@@ -553,9 +564,12 @@ const fetchProductFromLocationV1 = async (req, res) => {
         WHERE c.card_isused = 0 AND c.locationId = ? AND c.isActive = 1
         GROUP BY c.productId
       ) c ON c.productId = p.id
-      LEFT JOIN image_path i ON i.pro_id = p.pro_id
+      LEFT JOIN (
+        SELECT pro_id, MIN(img_name) AS img_name, MIN(img_path) AS img_path
+        FROM image_path
+        GROUP BY pro_id
+      ) i ON i.pro_id = p.pro_id
       ${whereSql}
-      GROUP BY p.pro_id
       ORDER BY p.id
     `;
 
@@ -729,6 +743,366 @@ const fetchProductFromLocationV1 = async (req, res) => {
     res.status(500).json({ success: false, message: 'Database error', error: error.message });
   }
 };
+
+/**
+ * Optimized V2 product fetch with server-side pagination, search, sorting, and scoped stock calculation.
+ */
+const fetchProductFromLocationV2 = async (req, res) => {
+  const { locationId } = req.params;
+  const { companyId, include, grade, isActive, search, sortBy, sortDesc } = req.query;
+
+  const page = Math.max(1, parseInt(req.query.page) || 1);
+  const limitParam = parseInt(req.query.limit);
+  const isUnpaginated = limitParam === -1 || req.query.limit === 'all';
+  const limit = isUnpaginated ? -1 : Math.max(1, limitParam || 30);
+  const offset = (page - 1) * (isUnpaginated ? 0 : limit);
+
+  try {
+    const whereClauses = [];
+    const countParams = [];
+    const mainParams = [];
+
+    // Filter isActive:
+    // If isActive is explicitly 'false' or false or 'all', return all products (active and inactive).
+    // If isActive is '0' or 0 or 'inactive', return inactive only.
+    // Otherwise default to active only (isActive = 1).
+    if (isActive === 'false' || isActive === false || isActive === 'all') {
+      // No isActive filter
+    } else if (isActive === '0' || isActive === 0 || isActive === 'inactive') {
+      whereClauses.push('p.isActive = 0');
+    } else {
+      whereClauses.push('p.isActive = 1');
+    }
+
+    if (companyId) {
+      whereClauses.push('p.companyId = ?');
+      countParams.push(parseInt(companyId));
+      mainParams.push(parseInt(companyId));
+    }
+
+    if (search && String(search).trim() !== '') {
+      const searchPattern = `%${String(search).trim()}%`;
+      whereClauses.push('(p.pro_name LIKE ? OR p.barCode LIKE ? OR p.pro_id LIKE ? OR p.product_code LIKE ? OR cat.categ_name LIKE ? OR p.vendorName LIKE ? OR EXISTS (SELECT 1 FROM product_units pu WHERE pu.productId = p.id AND pu.barCode LIKE ?))');
+      for (let i = 0; i < 7; i++) {
+        countParams.push(searchPattern);
+        mainParams.push(searchPattern);
+      }
+    }
+
+    const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
+    // 1. Count total matching products
+    const countSql = `
+      SELECT COUNT(DISTINCT p.id) AS total
+      FROM product p
+      LEFT JOIN category cat ON cat.categ_id = p.pro_category
+      ${whereSql}
+    `;
+
+    const totalCount = await new Promise((resolve, reject) => {
+      Db.query(countSql, countParams, (err, results) => {
+        if (err) reject(err);
+        else resolve(results?.[0]?.total || 0);
+      });
+    });
+
+    if (totalCount === 0) {
+      return res.status(200).json({
+        success: true,
+        data: [],
+        total: 0,
+        page,
+        limit: isUnpaginated ? 0 : limit,
+        totalPages: 0,
+        filters: {
+          locationId: parseInt(locationId),
+          companyId: companyId ? parseInt(companyId) : null,
+          grade: grade || null,
+          isActive: isActive !== undefined ? isActive : true,
+          search: search || '',
+          page,
+          limit: isUnpaginated ? 0 : limit
+        }
+      });
+    }
+
+    // 2. Sorting and pagination clauses
+    const allowedSort = {
+      id: 'p.id',
+      pro_id: 'p.pro_id',
+      pro_name: 'p.pro_name',
+      pro_price: 'p.pro_price',
+      pro_cost_price: 'p.cost_price',
+      createdAt: 'p.createdAt'
+    };
+    const sortCol = allowedSort[sortBy] || 'p.id';
+    const isDesc = sortDesc === 'true' || sortDesc === true;
+    const sortOrder = isDesc ? 'DESC' : 'ASC';
+
+    let paginationClause = '';
+    if (!isUnpaginated) {
+      paginationClause = 'LIMIT ? OFFSET ?';
+      mainParams.push(limit, offset);
+    }
+
+    const productSql = `
+      SELECT
+        p.id,
+        p.pro_id,
+        p.barCode,
+        p.pro_name,
+        p.pro_price,
+        p.cost_price,
+        p.pro_status,
+        p.validateStockOnSale,
+        p.saleCurrencyId,
+        p.costCurrencyId,
+        p.receiveUnitId,
+        p.stockUnitId,
+        p.baseUnitId,
+        p.isActive,
+        p.isPackagingAsset,
+        p.isReturnablePackaging,
+        p.pro_category,
+        cat.categ_name,
+        IFNULL(cat.isPackaging, 0) AS categoryIsPackaging,
+        p._category,
+        p.taxId,
+        p.product_code,
+        IFNULL(p.minStock, 0) AS minStock,
+        p.vendorName,
+        p.pro_desc,
+        p.createdAt,
+        t.name AS tax_name,
+        t.rate AS tax_rate,
+        t.code AS tax_code,
+        t.taxType AS tax_type,
+        co.id as companyId,
+        co.name as co_name,
+        IFNULL(i.img_name, 'No image') AS img_name,
+        i.img_path
+      FROM product p
+      LEFT JOIN category cat ON cat.categ_id = p.pro_category
+      LEFT JOIN tax t ON p.taxId = t.id
+      LEFT JOIN company co ON co.id = p.companyId
+      LEFT JOIN (
+        SELECT pro_id, MIN(img_name) AS img_name, MIN(img_path) AS img_path
+        FROM image_path
+        GROUP BY pro_id
+      ) i ON i.pro_id = p.pro_id
+      ${whereSql}
+      ORDER BY ${sortCol} ${sortOrder}
+      ${paginationClause}
+    `;
+
+    const productResults = await new Promise((resolve, reject) => {
+      Db.query(productSql, mainParams, (err, results) => {
+        if (err) reject(err);
+        else resolve(results || []);
+      });
+    });
+
+    const pageProductIds = productResults.map(p => p.id).filter(Boolean);
+
+    // 3. Subqueries scoped strictly to the current page's product IDs
+    let stockPromise = Promise.resolve({});
+    let priceListPromise = Promise.resolve({});
+    let productUnitsPromise = Promise.resolve({});
+
+    if (pageProductIds.length > 0) {
+      // Stock query strictly scoped to this page's products
+      stockPromise = new Promise((resolve) => {
+        const stockSql = `
+          SELECT 
+            COUNT(c.card_number) AS stock,
+            c.productId
+          FROM card c
+          WHERE c.card_isused = 0 
+            AND c.locationId = ? 
+            AND c.isActive = 1 
+            AND c.productId IN (?)
+          GROUP BY c.productId
+        `;
+        Db.query(stockSql, [parseInt(locationId), pageProductIds], (err, results) => {
+          if (err) {
+            console.error('Stock Query Error in fetchProductFromLocationV2:', err);
+            resolve({});
+          } else {
+            const stockMap = {};
+            (results || []).forEach(r => {
+              stockMap[r.productId] = r.stock;
+            });
+            resolve(stockMap);
+          }
+        });
+      });
+
+      // Price list query scoped to this page's products
+      if (include && include.includes('priceList')) {
+        priceListPromise = new Promise((resolve) => {
+          let priceListSql = `
+            SELECT 
+              pl.productId,
+              pl.id as priceList_id,
+              pl.name as priceList_name,
+              pl.grade as priceList_grade,
+              pl.amount as priceList_amount,
+              pl.type as priceList_type,
+              pl.isActive as priceList_isActive,
+              pl.currencyId as priceList_currencyId,
+              pl.createdAt as priceList_createdAt,
+              pl.updateTimestamp as priceList_updateTimestamp
+            FROM priceList pl
+            WHERE pl.isActive = 1
+              AND pl.productId IN (?)
+          `;
+          const plParams = [pageProductIds];
+          if (grade) {
+            priceListSql += ' AND pl.grade = ?';
+            plParams.push(grade);
+          }
+          priceListSql += ' ORDER BY pl.productId, pl.grade, pl.createdAt DESC';
+
+          Db.query(priceListSql, plParams, (err, results) => {
+            if (err) {
+              console.error('Price List Query Error in fetchProductFromLocationV2:', err);
+              resolve({});
+            } else {
+              const priceListData = (results || []).reduce((acc, pl) => {
+                const productId = pl.productId;
+                if (!acc[productId]) acc[productId] = [];
+                acc[productId].push({
+                  id: pl.priceList_id,
+                  name: pl.priceList_name,
+                  grade: pl.priceList_grade,
+                  amount: pl.priceList_amount,
+                  type: pl.priceList_type,
+                  isActive: pl.priceList_isActive,
+                  currencyId: pl.priceList_currencyId,
+                  createdAt: pl.priceList_createdAt,
+                  updateTimestamp: pl.priceList_updateTimestamp
+                });
+                return acc;
+              }, {});
+              resolve(priceListData);
+            }
+          });
+        });
+      }
+
+      // Product units query scoped to this page's products
+      productUnitsPromise = new Promise((resolve) => {
+        const unitsSql = `
+          SELECT 
+            pu.id,
+            pu.productId,
+            pu.unitId,
+            pu.price,
+            pu.barCode,
+            pu.isBaseUnit,
+            pu.isActive,
+            un.id as unit_id,
+            un.name as unit_name,
+            un.symbol as unit_symbol,
+            un.conversion_rate as unit_conversion_rate
+          FROM product_units pu
+          LEFT JOIN unitModel un ON un.id = pu.unitId
+          WHERE pu.isActive = 1 AND pu.productId IN (?)
+        `;
+        Db.query(unitsSql, [pageProductIds], (err, results) => {
+          if (err) {
+            console.error('ProductUnits Query Error in fetchProductFromLocationV2:', err);
+            resolve({});
+          } else {
+            const unitsByProductId = (results || []).reduce((acc, pu) => {
+              const pId = pu.productId;
+              if (!acc[pId]) acc[pId] = [];
+              acc[pId].push({
+                id: pu.id,
+                productId: pu.productId,
+                unitId: pu.unitId,
+                price: pu.price,
+                barCode: pu.barCode,
+                isBaseUnit: pu.isBaseUnit,
+                isActive: pu.isActive,
+                unit: pu.unit_id ? {
+                  id: pu.unit_id,
+                  name: pu.unit_name,
+                  symbol: pu.unit_symbol,
+                  conversionRate: pu.unit_conversion_rate
+                } : null
+              });
+              return acc;
+            }, {});
+            resolve(unitsByProductId);
+          }
+        });
+      });
+    }
+
+    const [stockMap, priceListData, unitsByProductId] = await Promise.all([
+      stockPromise,
+      priceListPromise,
+      productUnitsPromise
+    ]);
+
+    // Transform results to match exact v1 format expected by frontend
+    const finalResults = productResults.map(product => {
+      const p = {
+        ...product,
+        card_count: stockMap[product.id] || 0,
+        tax: product.taxId ? {
+          id: product.taxId,
+          name: product.tax_name,
+          rate: product.tax_rate,
+          code: product.tax_code,
+          taxType: product.tax_type
+        } : null,
+        priceLists: (include && include.includes('priceList')) ? (priceListData[product.id] || []) : undefined,
+        priceList: (include && include.includes('priceList'))
+          ? (priceListData[product.id] && priceListData[product.id].length > 0 ? priceListData[product.id][0] : null)
+          : undefined,
+        productUnits: unitsByProductId[product.id] || []
+      };
+
+      if (include && include.includes('priceList') && p.priceLists) {
+        p.effectivePrice = calculateEffectivePrice(product.pro_price, p.priceLists, grade);
+      }
+
+      delete p.tax_name;
+      delete p.tax_rate;
+      delete p.tax_code;
+      delete p.tax_type;
+
+      return p;
+    });
+
+    const totalPages = isUnpaginated ? 1 : Math.ceil(totalCount / limit);
+
+    res.status(200).json({
+      success: true,
+      data: finalResults,
+      total: totalCount,
+      page: isUnpaginated ? 1 : page,
+      limit: isUnpaginated ? totalCount : limit,
+      totalPages,
+      filters: {
+        locationId: parseInt(locationId),
+        companyId: companyId ? parseInt(companyId) : null,
+        grade: grade || null,
+        isActive: isActive !== undefined ? isActive : true,
+        search: search || '',
+        page: isUnpaginated ? 1 : page,
+        limit: isUnpaginated ? totalCount : limit
+      }
+    });
+
+  } catch (error) {
+    console.error('Error in fetchProductFromLocationV2:', error);
+    res.status(500).json({ success: false, message: 'Database error', error: error.message });
+  }
+};
+
 
 
 // Helper function to calculate effective price based on price lists
@@ -989,4 +1363,5 @@ module.exports = {
   fetchProductFromLocation,
   fetchTaxes,
   fetchProductFromLocationV1,
+  fetchProductFromLocationV2,
 }

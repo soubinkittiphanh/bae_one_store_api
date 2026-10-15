@@ -40,8 +40,8 @@ const clientDB = {
         "user": "root",
         "password": "SDAT@3480",
         // "database": "dcommerce_pro_carcare_sokpaluang",
-        "database": "dcommerce_mpwt",
-        // "database": "dc_carcare_dev",
+        // "database": "dcommerce_mpwt",
+        "database": "dcommerce_dev",
         "port": 3306,
     },
     "payment_1": {

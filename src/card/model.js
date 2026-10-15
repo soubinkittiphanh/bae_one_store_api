@@ -201,6 +201,10 @@ module.exports = (sequelize, DataTypes) => {
         // Add indexes for better performance
         indexes: [
             {
+                name: 'idx_card_location_stock',
+                fields: ['locationId', 'card_isused', 'isActive', 'productId']
+            },
+            {
                 name: 'idx_card_expiry_date',
                 fields: ['expiryDate']
             },

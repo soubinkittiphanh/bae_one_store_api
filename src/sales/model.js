@@ -42,6 +42,22 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: false,
             defaultValue: true,
         },
+        arInvoiceId: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            comment: 'Linked AR Invoice ID if posted to AR'
+        },
+        isPostedToAR: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false,
+            comment: 'Whether this credit order has been posted to Accounts Receivable'
+        },
+        arPostedAt: {
+            type: DataTypes.DATE,
+            allowNull: true,
+            comment: 'Timestamp when posted to Accounts Receivable'
+        },
     }, {
         sequelize,
         // don't forget to enable timestamps!
@@ -84,6 +100,10 @@ module.exports = (sequelize, DataTypes) => {
         SaleHeader.hasMany(models.salePayment, {
             foreignKey: 'saleHeaderId',
             as: 'payments',
+        });
+        SaleHeader.belongsTo(models.arInvoiceHeader, {
+            foreignKey: 'arInvoiceId',
+            as: 'arInvoice',
         });
 
         // Optional: Link back to ticket for reference

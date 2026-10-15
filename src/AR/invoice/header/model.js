@@ -64,6 +64,17 @@ module.exports = (sequelize, DataTypes) => {
     documents: {
       type: DataTypes.JSON,
       allowNull: true
+    },
+    saleHeaderId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      comment: 'Linked POS Sale Header ID if created from POS Order'
+    },
+    sourceType: {
+      type: DataTypes.ENUM('POS_ORDER', 'JOB_BATCH', 'MANUAL'),
+      allowNull: false,
+      defaultValue: 'MANUAL',
+      comment: 'Origin source of the AR invoice'
     }
   }, {
     sequelize,
@@ -352,6 +363,11 @@ module.exports = (sequelize, DataTypes) => {
     InvoiceHeader.belongsTo(models.JobBatch, {
       foreignKey: 'jobBatchId',
       as: 'jobbatch',
+    });
+    
+    InvoiceHeader.belongsTo(models.saleHeader, {
+      foreignKey: 'saleHeaderId',
+      as: 'saleOrder',
     });
     
     InvoiceHeader.belongsTo(models.user, {

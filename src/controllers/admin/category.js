@@ -4,9 +4,9 @@ const createCate = async (req, res) => {
     const cat_id = req.body.cat_id;
     console.log("*************** CREATE CATE ***************");
     console.log(`*************Payload: ${cat_id} *****************`);
-    const { cat_name, cat_desc, createAt } = req.body;
+    const { cat_name, cat_desc, isPackaging, createAt } = req.body;
     logger.info(req.body);
-    Db.query("INSERT INTO `category`(`categ_name`,`categ_desc`,`createAt`)VALUES(?,?,?)", [cat_name, cat_desc, createAt], (er, re) => {
+    Db.query("INSERT INTO `category`(`categ_name`,`categ_desc`,`isPackaging`,`createAt`)VALUES(?,?,?,?)", [cat_name, cat_desc, isPackaging ? 1 : 0, createAt], (er, re) => {
         if (er) {
             res.status(503).send('Error: ' + er);
         } else if (re) {
@@ -19,10 +19,11 @@ const updateCate = async (req, res) => {
     console.log("*************** UPDATE CATEG ***************");
     const cat_id = req.body.cat_id;
     console.log(`*************Payload: ${cat_id} *****************`);
-    const { cat_name, cat_desc } = req.body;
+    const { cat_name, cat_desc, isPackaging } = req.body;
     console.log(req.body);
-    const sqlCom = `UPDATE category SET categ_name='${cat_name}', categ_desc='${cat_desc}' WHERE categ_id=${cat_id}`;
-    Db.query(sqlCom, (er, re) => {
+    const isPkgVal = isPackaging ? 1 : 0;
+    const sqlCom = `UPDATE category SET categ_name=?, categ_desc=?, isPackaging=? WHERE categ_id=?`;
+    Db.query(sqlCom, [cat_name, cat_desc, isPkgVal, cat_id], (er, re) => {
         if (er) {
             res.status(503).send("Error: " + er)
         } else if (re) {
@@ -33,7 +34,7 @@ const updateCate = async (req, res) => {
 const fetchCate = async (req, res) => {
     console.log("*************** FETCH CATEG ***************");
     console.log(`*************Payload:*****************`);
-    Db.query("SELECT categ_id, categ_name,categ_desc,isActive FROM category", (er, re) => {
+    Db.query("SELECT categ_id, categ_name,categ_desc,isActive,isPackaging FROM category", (er, re) => {
         if (er) return res.send("Error: " + er)
         res.send(re);
     })

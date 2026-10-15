@@ -73,11 +73,17 @@ module.exports = (sequelize, DataTypes) => {
             defaultValue: 0,
             comment: 'Free promotional quantity (FOC) given to customer'
         },
+        isReturn: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false,
+            comment: 'Whether this line represents a returned item / empty packaging inflow'
+        },
         packagingAction: {
-            type: DataTypes.ENUM('EXCHANGED', 'DEPOSIT', 'DEBT', 'NONE'),
+            type: DataTypes.ENUM('EXCHANGED', 'DEPOSIT', 'DEBT', 'SOLD', 'RETURNED', 'NONE'),
             allowNull: false,
             defaultValue: 'NONE',
-            comment: 'Packaging handling for returnable items (EXCHANGED: 1:1 swap, DEPOSIT: paid cash deposit, DEBT: wholesale packaging credit, NONE)'
+            comment: 'Packaging handling for returnable items (EXCHANGED: 1:1 swap, DEPOSIT: paid cash deposit, DEBT: wholesale packaging credit, SOLD: packaging asset sold, RETURNED: packaging asset received/bought back, NONE)'
         },
     }, {
         sequelize,

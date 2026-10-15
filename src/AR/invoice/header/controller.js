@@ -3,7 +3,7 @@
 // ===============================================================
 
 const logger = require('../../../api/logger');
-const { Agency, user, JobBatch, client, currency, arInvoiceLine,arReceiveLine, arReceiveHeaderV2, arInvoiceHeaderAudit, sequelize } = require('../../../models');
+const { Agency, user, JobBatch, client, currency, arInvoiceLine, arReceiveLine, arReceiveHeaderV2, arInvoiceHeaderAudit, saleHeader, saleLine, chartAccount, spf, sequelize } = require('../../../models');
 const InvoiceHeader = require('../../../models').arInvoiceHeader;
 const { Op, where } = require('sequelize');
 class InvoiceHeaderController {
@@ -101,6 +101,11 @@ class InvoiceHeaderController {
                         as: 'invoiceLines'
                     },
                     {
+                        model: saleHeader,
+                        as: 'saleOrder',
+                        attributes: ['id', 'bookingDate', 'referenceNo', 'total']
+                    },
+                    {
                         model: arReceiveHeaderV2,
                         as: 'receiveHeaders',
                         include: [
@@ -174,6 +179,11 @@ class InvoiceHeaderController {
                     {
                         model: arInvoiceLine,
                         as: 'invoiceLines'
+                    },
+                    {
+                        model: saleHeader,
+                        as: 'saleOrder',
+                        attributes: ['id', 'bookingDate', 'referenceNo', 'total']
                     },
                     {
                         model: arReceiveHeaderV2,
@@ -261,6 +271,9 @@ class InvoiceHeaderController {
                 invoiceDate,
                 dueDate,
                 agencyId,
+                clientId,
+                saleHeaderId,
+                sourceType,
                 currencyId,
                 jobBatchId,
                 exchangeRate = 1,
@@ -283,11 +296,11 @@ class InvoiceHeaderController {
             }
 
             // Validate required fields
-            if (!invoiceNumber || !invoiceDate || !agencyId) {
+            if (!invoiceNumber || !invoiceDate || (!agencyId && !clientId)) {
                 await InvoiceHeaderController.cleanupUploadedFiles(req.files);
                 return res.status(400).json({
                     success: false,
-                    message: 'Invoice number, invoice date, and customer ID are required'
+                    message: 'Invoice number, invoice date, and customer ID (agency or client) are required'
                 });
             }
 
@@ -315,14 +328,26 @@ class InvoiceHeaderController {
             }
 
             // Verify customer exists
-            const customerExists = await Agency.findByPk(agencyId);
-            if (!customerExists) {
-                await transaction.rollback();
-                await InvoiceHeaderController.cleanupUploadedFiles(req.files);
-                return res.status(400).json({
-                    success: false,
-                    message: 'Customer not found'
-                });
+            if (agencyId) {
+                const customerExists = await Agency.findByPk(agencyId);
+                if (!customerExists) {
+                    await transaction.rollback();
+                    await InvoiceHeaderController.cleanupUploadedFiles(req.files);
+                    return res.status(400).json({
+                        success: false,
+                        message: 'Customer (agency) not found'
+                    });
+                }
+            } else if (clientId) {
+                const clientExists = await client.findByPk(clientId);
+                if (!clientExists) {
+                    await transaction.rollback();
+                    await InvoiceHeaderController.cleanupUploadedFiles(req.files);
+                    return res.status(400).json({
+                        success: false,
+                        message: 'Customer (client) not found'
+                    });
+                }
             }
 
             // Verify currency exists if provided
@@ -365,9 +390,12 @@ class InvoiceHeaderController {
             const invoice = await InvoiceHeader.create({
                 invoiceNumber,
                 jobBatchId,
+                saleHeaderId: saleHeaderId || null,
+                sourceType: sourceType || (saleHeaderId ? 'POS_ORDER' : 'MANUAL'),
                 invoiceDate,
                 dueDate,
-                agencyId,
+                agencyId: agencyId || null,
+                clientId: clientId || null,
                 currencyId,
                 exchangeRate,
                 totalAmount,
@@ -397,6 +425,15 @@ class InvoiceHeaderController {
 
             await arInvoiceLine.bulkCreate(lineItemsData, { transaction });
 
+            // If linked to saleHeader, update saleHeader flags
+            if (saleHeaderId) {
+                await saleHeader.update({
+                    arInvoiceId: invoice.id,
+                    isPostedToAR: true,
+                    arPostedAt: new Date()
+                }, { where: { id: saleHeaderId }, transaction });
+            }
+
             // Commit the transaction
             await transaction.commit();
 
@@ -421,7 +458,12 @@ class InvoiceHeaderController {
                     },
                     {
                         model: arInvoiceLine,
-                        as: 'invoiceLines' // Make sure this association is defined in your model
+                        as: 'invoiceLines'
+                    },
+                    {
+                        model: saleHeader,
+                        as: 'saleOrder',
+                        attributes: ['id', 'bookingDate', 'referenceNo', 'total']
                     }
                 ]
             });
@@ -434,14 +476,222 @@ class InvoiceHeaderController {
 
         } catch (error) {
             await transaction.rollback();
-            if (req.files) {
-                await InvoiceHeaderController.cleanupUploadedFiles(req.files);
-            }
+            await InvoiceHeaderController.cleanupUploadedFiles(req.files);
             logger.error('Error creating invoice:', error);
             res.status(500).json({
                 success: false,
                 message: 'Error creating invoice',
                 error: error.message
+            });
+        }
+    }
+
+    // POST /api/ar-invoices/from-order/:saleHeaderId
+    static async createFromOrder(req, res) {
+        const transaction = await sequelize.transaction();
+        try {
+            const { saleHeaderId } = req.params;
+            const {
+                dueDate: customDueDate,
+                invoiceDate: customInvoiceDate,
+                description: customDescription,
+                DRglAccountId: customDR,
+                CRglAccountId: customCR,
+                status = 'sent'
+            } = req.body || {};
+
+            const order = await saleHeader.findByPk(saleHeaderId, {
+                include: [
+                    { model: client, as: 'client' },
+                    { model: currency, as: 'currency' },
+                    { model: user, as: 'user' },
+                    {
+                        model: saleLine,
+                        as: 'lines',
+                        include: ['product']
+                    }
+                ]
+            });
+
+            if (!order) {
+                await transaction.rollback();
+                return res.status(404).json({
+                    success: false,
+                    message: `Sale order #${saleHeaderId} not found`
+                });
+            }
+
+            if (!order.isActive) {
+                await transaction.rollback();
+                return res.status(400).json({
+                    success: false,
+                    message: 'Cannot post an inactive or cancelled order to AR'
+                });
+            }
+
+            if (order.isPostedToAR || order.arInvoiceId) {
+                await transaction.rollback();
+                return res.status(400).json({
+                    success: false,
+                    message: `Order #${saleHeaderId} has already been posted to AR Invoice #${order.arInvoiceId}`
+                });
+            }
+
+            if (!order.clientId) {
+                await transaction.rollback();
+                return res.status(400).json({
+                    success: false,
+                    message: 'Order must be assigned to a customer (client) to generate an AR Invoice'
+                });
+            }
+
+            // 1. Resolve Due Date
+            let dueDate = customDueDate;
+            const invoiceDate = customInvoiceDate || order.bookingDate || new Date().toISOString().slice(0, 10);
+            if (!dueDate) {
+                const creditDays = (order.client && order.client.credit > 0) ? parseInt(order.client.credit, 10) : 30;
+                const d = new Date(invoiceDate);
+                d.setDate(d.getDate() + creditDays);
+                dueDate = d.toISOString().slice(0, 10);
+            }
+
+            // 2. Resolve GL Accounts (Default AR Asset 1131, Revenue 4111)
+            let drAccountId = customDR || null;
+            let crAccountId = customCR || null;
+
+            if (!drAccountId) {
+                try {
+                    const arSpf = await spf.findOne({ where: { code: 'GL_MAP_AR_ACC' } });
+                    if (arSpf && arSpf.value) {
+                        const acc = await chartAccount.findOne({ where: { accountNumber: parseInt(arSpf.value, 10) } });
+                        if (acc) drAccountId = acc.id;
+                    }
+                } catch (e) {
+                    logger.warn('Failed resolving default AR Debit GL account:', e.message);
+                }
+            }
+
+            if (!crAccountId) {
+                try {
+                    const revSpf = await spf.findOne({ where: { code: 'GL_MAP_REV_ACC' } });
+                    if (revSpf && revSpf.value) {
+                        const acc = await chartAccount.findOne({ where: { accountNumber: parseInt(revSpf.value, 10) } });
+                        if (acc) crAccountId = acc.id;
+                    }
+                } catch (e) {
+                    logger.warn('Failed resolving default Revenue Credit GL account:', e.message);
+                }
+            }
+
+            // 3. Generate Next Invoice Number
+            const nextInvoiceResult = await InvoiceHeader.getNextInvoiceNumber('AR-INV');
+            const invoiceNumber = (nextInvoiceResult && typeof nextInvoiceResult === 'object')
+                ? nextInvoiceResult.invoiceNumber
+                : nextInvoiceResult;
+
+            // 4. Calculate amounts
+            const totalAmount = parseFloat(order.total || 0);
+            let taxAmount = 0;
+            if (order.lines && order.lines.length > 0) {
+                taxAmount = order.lines.reduce((sum, l) => sum + (parseFloat(l.taxAmount) || 0), 0);
+            }
+            const netAmount = totalAmount - taxAmount;
+
+            const description = customDescription || `Created from POS Credit Order #${order.id}${order.referenceNo ? ` (${order.referenceNo})` : ''}`;
+
+            // 5. Create ARInvoiceHeader
+            const invoice = await InvoiceHeader.create({
+                invoiceNumber,
+                invoiceDate,
+                dueDate,
+                exchangeRate: parseFloat(order.exchangeRate || 1.0),
+                totalAmount,
+                taxAmount,
+                netAmount,
+                status,
+                description,
+                glPostingStatus: 'unposted',
+                clientId: order.clientId,
+                agencyId: null,
+                saleHeaderId: order.id,
+                sourceType: 'POS_ORDER',
+                currencyId: order.currencyId || 1,
+                makerId: req.user?.id || order.userId || 1
+            }, { transaction });
+
+            // 6. Create ARInvoiceLine items
+            let lineItemsData = [];
+            if (order.lines && order.lines.length > 0) {
+                lineItemsData = order.lines.map((line, idx) => ({
+                    invoiceHeaderId: invoice.id,
+                    lineNumber: idx + 1,
+                    description: line.product?.pro_name || `Item #${line.productId || idx + 1}`,
+                    quantity: parseFloat(line.quantity || 1),
+                    unitPrice: parseFloat(line.price || 0),
+                    lineTotal: parseFloat(line.total || 0),
+                    taxRate: parseFloat(line.taxRate || 0),
+                    taxAmount: parseFloat(line.taxAmount || 0),
+                    DRglAccountId: drAccountId,
+                    CRglAccountId: crAccountId,
+                    makerId: req.user?.id || order.userId || 1
+                }));
+            } else {
+                lineItemsData = [{
+                    invoiceHeaderId: invoice.id,
+                    lineNumber: 1,
+                    description: `POS Credit Order #${order.id}`,
+                    quantity: 1,
+                    unitPrice: totalAmount,
+                    lineTotal: totalAmount,
+                    taxRate: 0,
+                    taxAmount: 0,
+                    DRglAccountId: drAccountId,
+                    CRglAccountId: crAccountId,
+                    makerId: req.user?.id || order.userId || 1
+                }];
+            }
+
+            await arInvoiceLine.bulkCreate(lineItemsData, { transaction });
+
+            // 7. Update saleHeader link
+            await order.update({
+                arInvoiceId: invoice.id,
+                isPostedToAR: true,
+                arPostedAt: new Date()
+            }, { transaction });
+
+            await transaction.commit();
+
+            // Fetch created invoice with associations
+            const createdInvoice = await InvoiceHeader.findByPk(invoice.id, {
+                include: [
+                    { model: client, as: 'client' },
+                    { model: currency, as: 'currency' },
+                    { model: user, as: 'maker' },
+                    { model: arInvoiceLine, as: 'invoiceLines' },
+                    {
+                        model: saleHeader,
+                        as: 'saleOrder',
+                        attributes: ['id', 'bookingDate', 'referenceNo', 'total']
+                    }
+                ]
+            });
+
+            return res.status(201).json({
+                success: true,
+                message: `Order #${order.id} posted to AR Invoice ${invoiceNumber} successfully`,
+                data: {
+                    invoice: createdInvoice,
+                    orderId: order.id
+                }
+            });
+
+        } catch (error) {
+            await transaction.rollback();
+            logger.error('Error in createFromOrder:', error);
+            return res.status(500).json({
+                success: false,
+                message: 'Failed to post order to AR Invoice: ' + error.message
             });
         }
     }

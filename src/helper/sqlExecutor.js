@@ -178,6 +178,84 @@ const cleanOrphanedSchoolPayments = async () => {
 };
 
 /**
+ * Automatically checks and creates critical performance indexes across client databases.
+ * Runs on API startup to ensure fast inventory and product queries without manual DB migrations.
+ */
+const ensurePerformanceIndexes = async () => {
+  try {
+    const dbName = sequelize.config.database;
+    logger.info(`Checking performance indexes in database: ${dbName}`);
+
+    // Helper to check if an index exists on a table
+    const indexExists = async (tableName, indexName) => {
+      const result = await sequelize.query(`
+        SELECT INDEX_NAME 
+        FROM INFORMATION_SCHEMA.STATISTICS 
+        WHERE TABLE_SCHEMA = :dbName 
+          AND LOWER(TABLE_NAME) = :tableName 
+          AND LOWER(INDEX_NAME) = :indexName
+      `, {
+        replacements: { 
+          dbName, 
+          tableName: tableName.toLowerCase(), 
+          indexName: indexName.toLowerCase() 
+        },
+        type: QueryTypes.SELECT
+      });
+      return result.length > 0;
+    };
+
+    // Helper to check if a table exists
+    const tableExists = async (tableName) => {
+      const result = await sequelize.query(`
+        SELECT TABLE_NAME 
+        FROM INFORMATION_SCHEMA.TABLES 
+        WHERE TABLE_SCHEMA = :dbName 
+          AND LOWER(TABLE_NAME) = :tableName
+      `, {
+        replacements: { dbName, tableName: tableName.toLowerCase() },
+        type: QueryTypes.SELECT
+      });
+      return result.length > 0;
+    };
+
+    // 1. Check & create composite stock lookup index on card table
+    // Covers: WHERE card_isused = 0 AND locationId = ? AND isActive = 1 GROUP BY productId
+    if (await tableExists('card')) {
+      const hasStockIndex = await indexExists('card', 'idx_card_location_stock');
+      if (!hasStockIndex) {
+        logger.info("Index idx_card_location_stock not found on card table. Creating...");
+        await sequelize.query(
+          "CREATE INDEX idx_card_location_stock ON card (locationId, card_isused, isActive, productId)",
+          { type: QueryTypes.BULKUPDATE }
+        );
+        logger.info("Successfully created index idx_card_location_stock on card table.");
+      } else {
+        logger.info("Index idx_card_location_stock already exists on card table.");
+      }
+    }
+
+    // 2. Check & create index on image_path (pro_id) for fast product joins
+    if (await tableExists('image_path')) {
+      const hasImageIndex = await indexExists('image_path', 'idx_image_path_pro_id');
+      if (!hasImageIndex) {
+        logger.info("Index idx_image_path_pro_id not found on image_path table. Creating...");
+        await sequelize.query(
+          "CREATE INDEX idx_image_path_pro_id ON image_path (pro_id)",
+          { type: QueryTypes.BULKUPDATE }
+        );
+        logger.info("Successfully created index idx_image_path_pro_id on image_path table.");
+      } else {
+        logger.info("Index idx_image_path_pro_id already exists on image_path table.");
+      }
+    }
+
+  } catch (error) {
+    logger.error("Error executing performance indexes check:", error);
+  }
+};
+
+/**
  * Reads and executes the SQL cleanup script (toomanykey.sql)
  * to drop redundant indexes before Sequelize synchronization runs.
  */
@@ -188,6 +266,9 @@ const executeSqlScript = async () => {
 
     // Clean up orphaned schoolInvoiceId references in schoolPayment
     await cleanOrphanedSchoolPayments();
+
+    // Automatically check and create performance indexes on startup
+    await ensurePerformanceIndexes();
 
     const filePath = path.join(__dirname, '../../toomanykey.sql');
     if (!fs.existsSync(filePath)) {

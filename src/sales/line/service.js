@@ -7,6 +7,72 @@ const saleHeaderService = require("../service");
 const spfService = require('../../spf/service');
 const { Op } = require('sequelize');
 
+const handleLinePackagingMovement = async (iterator) => {
+  const isReturn = iterator.isReturn === true || iterator.isReturn === 1 || iterator.packagingAction === 'RETURNED';
+  const isSoldPackaging = iterator.packagingAction === 'SOLD';
+
+  if (!isReturn && !isSoldPackaging) return false;
+
+  try {
+    const saleHeader = await db.saleHeader.findByPk(iterator.headerId || iterator.saleHeaderId);
+    const locationId = (saleHeader && saleHeader.locationId) || 1;
+    const currencyId = (saleHeader && saleHeader.currencyId) || 1;
+    const qty = Math.max(1, Math.round((iterator.unitRate || 1) * Math.abs(iterator.quantity)));
+
+    if (isReturn) {
+      // 1. Inflow stock cards for returned packaging item
+      const cardService = require('../../card/service');
+      await cardService.cardUtility([
+        {
+          productId: iterator.productId,
+          quantity: qty,
+          qty: qty,
+          rate: 1,
+          price: iterator.price || 0
+        }
+      ], locationId, currencyId, null);
+      logger.info(`Inflowed ${qty} packaging stock cards for returned line ${iterator.id} (product: ${iterator.productId})`);
+
+      // 2. Record in customer packaging ledger if client is attached
+      if (saleHeader && saleHeader.clientId) {
+        const packagingService = require('../../packaging/service');
+        await packagingService.recordCustomerPackaging({
+          clientId: saleHeader.clientId,
+          saleHeaderId: saleHeader.id,
+          packagingProductId: iterator.productId,
+          transactionType: 'RETURNED_IN',
+          qtyChange: -qty,
+          depositAmount: Math.abs(iterator.total || (iterator.price * qty)),
+          notes: `POS Sale #${saleHeader.id} - Packaging Returned/Bought Back`,
+          userId: saleHeader.userId || 1,
+          companyId: (saleHeader && saleHeader.companyId) || 1
+        });
+      }
+      return true; // Handled return
+    } else if (isSoldPackaging) {
+      // Record sold packaging in customer packaging ledger if client is attached
+      if (saleHeader && saleHeader.clientId) {
+        const packagingService = require('../../packaging/service');
+        await packagingService.recordCustomerPackaging({
+          clientId: saleHeader.clientId,
+          saleHeaderId: saleHeader.id,
+          packagingProductId: iterator.productId,
+          transactionType: 'DELIVERED_OUT',
+          qtyChange: qty,
+          depositAmount: Math.abs(iterator.total || (iterator.price * qty)),
+          notes: `POS Sale #${saleHeader.id} - Packaging Sold/Delivered Out`,
+          userId: saleHeader.userId || 1,
+          companyId: (saleHeader && saleHeader.companyId) || 1
+        });
+      }
+      return false; // Normal card consumption continues for sold packaging
+    }
+  } catch (err) {
+    logger.error(`Error in handleLinePackagingMovement for line ${iterator.id}: ` + err.message);
+  }
+  return false;
+};
+
 const createBulkSaleLine = async (res, lines, lockingSessionId) => {
   try {
     const linesCreated = await SaleLine.bulkCreate(lines);
@@ -16,6 +82,11 @@ const createBulkSaleLine = async (res, lines, lockingSessionId) => {
     const checkVariant = spfStockVarParam && spfStockVarParam.value === 'Y';
 
     for (const iterator of linesCreated) {
+      const isHandledReturn = await handleLinePackagingMovement(iterator);
+      if (isHandledReturn) {
+        continue;
+      }
+
       const whereCondition = {
         locking_session_id: lockingSessionId,
         productId: iterator.productId,
@@ -90,6 +161,11 @@ const createBulkSaleLineWithoutRes = async (lines, lockingSessionId) => {
     const checkVariant = spfStockVarParam && spfStockVarParam.value === 'Y';
 
     for (const iterator of linesCreated) {
+      const isHandledReturn = await handleLinePackagingMovement(iterator);
+      if (isHandledReturn) {
+        continue;
+      }
+
       logger.info("===> Updating card saleLineId in card model");
       try {
         const whereCondition = {
@@ -249,6 +325,11 @@ const createBulkSaleLineV2 = async (res, lines, lockingSessionId) => {
     const checkVariant = spfStockVarParam && spfStockVarParam.value === 'Y';
 
     for (const iterator of linesCreated) {
+      const isHandledReturn = await handleLinePackagingMovement(iterator);
+      if (isHandledReturn) {
+        continue;
+      }
+
       let limit = Math.max(1, Math.round((iterator.unitRate || 1) * iterator.quantity));
       
       let sql = `UPDATE card SET saleLineId = :saleLineId, card_isused = 1, locking_session_id = '' 
@@ -308,6 +389,11 @@ const createBulkSaleLineWithoutResV2 = async (lines, lockingSessionId) => {
     const checkVariant = spfStockVarParam && spfStockVarParam.value === 'Y';
 
     for (const iterator of linesCreated) {
+      const isHandledReturn = await handleLinePackagingMovement(iterator);
+      if (isHandledReturn) {
+        continue;
+      }
+
       try {
         let limit = Math.max(1, Math.round((iterator.unitRate || 1) * iterator.quantity));
         
