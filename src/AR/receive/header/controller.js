@@ -2,11 +2,28 @@
 // AR RECEIVE HEADER CONTROLLER
 // ===============================================================
 const logger = require("../../../api/logger");
-const { user, MOU, JobBatch, Agency, arReceiveHeaderV2, arInvoiceLine, arReceiveLine, sequelize, arInvoiceHeader, currency,Transaction } = require('../../../models');
+const { user, MOU, JobBatch, Agency, arReceiveHeaderV2, arInvoiceLine, arReceiveLine, sequelize, arInvoiceHeader, currency, Transaction, payment } = require('../../../models');
 const ReceiveHeader = require('../../../models').arReceiveHeaderV2;
 const { Op } = require('sequelize');
 
 class ReceiveHeaderController {
+  static async resolvePaymentMethodEnum(paymentId, providedMethod, transaction = null) {
+    if (providedMethod && ['cash', 'check', 'bank_transfer', 'credit_card', 'other'].includes(providedMethod)) {
+      return providedMethod;
+    }
+    if (paymentId) {
+      const pm = await payment.findByPk(paymentId, { transaction });
+      if (pm) {
+        const code = (pm.payment_code || '').toUpperCase();
+        if (code === 'CASH' || code === 'COD') return 'cash';
+        if (code.includes('TRANSFER') || code.includes('BCEL') || code.includes('JDB') || code.includes('LDB') || code.includes('LVB') || code.includes('QR') || code.includes('BANK')) return 'bank_transfer';
+        if (code.includes('CHECK')) return 'check';
+        if (code.includes('CREDIT') || code.includes('CARD') || code.includes('NFC')) return 'credit_card';
+        return 'other';
+      }
+    }
+    return providedMethod || 'cash';
+  }
   static async getNextReceiveNumber(req, res) {
     try {
       const { prefix, year } = req.query;
@@ -129,6 +146,11 @@ class ReceiveHeaderController {
           {
             model: currency,
             as: 'currency'
+          },
+          {
+            model: payment,
+            as: 'payment',
+            attributes: ['id', 'payment_code', 'payment_name', 'payment_desc']
           },
           {
             model: user,
@@ -264,6 +286,11 @@ class ReceiveHeaderController {
           as: 'currency'
         },
         {
+          model: payment,
+          as: 'payment',
+          attributes: ['id', 'payment_code', 'payment_name', 'payment_desc']
+        },
+        {
           model: user,
           as: 'updateUser'
         },
@@ -316,6 +343,11 @@ class ReceiveHeaderController {
           {
             model: user,
             as: 'maker'
+          },
+          {
+            model: payment,
+            as: 'payment',
+            attributes: ['id', 'payment_code', 'payment_name', 'payment_desc']
           },
           {
             model: user,
@@ -383,6 +415,7 @@ class ReceiveHeaderController {
         invoiceHeaderId, // NOW OPTIONAL
         totalReceivedAmount = 0.00,
         paymentId,
+        paymentMethod,
         exchangeRate = 1,
         currencyId,
         referenceNumber,
@@ -533,6 +566,8 @@ class ReceiveHeaderController {
       }
       const documents = [...initialDocs, ...documentsData];
 
+      const resolvedPaymentMethod = await ReceiveHeaderController.resolvePaymentMethodEnum(paymentId, paymentMethod, transaction);
+
       // Create receive header with optional invoiceHeaderId
       const receiveHeader = await ReceiveHeader.create({
         receiptNumber,
@@ -541,6 +576,7 @@ class ReceiveHeaderController {
         invoiceHeaderId: invoiceHeaderId || null, // Allow null
         totalReceivedAmount,
         paymentId,
+        paymentMethod: resolvedPaymentMethod,
         exchangeRate,
         currencyId,
         referenceNumber,
@@ -767,6 +803,14 @@ class ReceiveHeaderController {
 
       // Add update user info
       updateData.updateUserId = req.user?.id;
+
+      if (updateData.paymentId !== undefined) {
+        updateData.paymentMethod = await ReceiveHeaderController.resolvePaymentMethodEnum(
+          updateData.paymentId,
+          updateData.paymentMethod,
+          transaction
+        );
+      }
 
       // Update receive header
       await receiveHeader.update(updateData, { transaction });
