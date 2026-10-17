@@ -144,6 +144,7 @@ module.exports = (sequelize, DataTypes) => {
           // Get the current complete record from database BEFORE update
           const ARInvoiceHeaderModel = sequelize.models.ARInvoiceHeader;
           const currentRecord = await ARInvoiceHeaderModel.findByPk(invoice.id, {
+            transaction: options?.transaction,
             include: [
               {
                 model: sequelize.models.client,
@@ -423,11 +424,14 @@ module.exports = (sequelize, DataTypes) => {
     };
   // Instance methods
   InvoiceHeader.prototype.getOutstandingAmount = function() {
-    const totalPaid = this.receiveHeaders?.reduce((sum, receive) => {
+    const activeReceipts = (this.receiveHeaders || []).filter(receive => 
+      receive.status === 'active' || (!receive.status && receive.status !== 'cancelled' && receive.status !== 'voided')
+    );
+    const totalPaid = activeReceipts.reduce((sum, receive) => {
       return sum + parseFloat(receive.totalReceivedAmount || 0);
-    }, 0) || 0;
+    }, 0);
     
-    return parseFloat(this.totalAmount) - totalPaid;
+    return Math.max(0, parseFloat(this.totalAmount || 0) - totalPaid);
   };
 
   InvoiceHeader.prototype.isOverdue = function() {

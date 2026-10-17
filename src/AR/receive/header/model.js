@@ -132,6 +132,7 @@ module.exports = (sequelize, DataTypes) => {
           // Get the current complete record from database BEFORE update
           const ARReceiveHeaderModel = sequelize.models.ARReceiveHeader;
           const currentRecord = await ARReceiveHeaderModel.findByPk(receipt.id, {
+            transaction: options?.transaction,
             include: [
               {
                 model: sequelize.models.arInvoiceHeader,
@@ -450,6 +451,128 @@ module.exports = (sequelize, DataTypes) => {
     return ['voided', 'cancelled'].includes(this.status);
   };
 
+  // Get all affected invoice IDs linked to this receipt
+  ReceiveHeader.prototype.getAffectedInvoiceIds = async function (transaction = null) {
+    const invoiceIds = new Set();
+    if (this.invoiceHeaderId) {
+      invoiceIds.add(this.invoiceHeaderId);
+    }
+
+    try {
+      const arReceiveLineModel = sequelize.models.arReceiveLine;
+      const arInvoiceLineModel = sequelize.models.arInvoiceLine;
+
+      if (arReceiveLineModel && arInvoiceLineModel) {
+        const lines = await arReceiveLineModel.findAll({
+          where: { receiveHeaderId: this.id },
+          include: [
+            {
+              model: arInvoiceLineModel,
+              as: 'invoiceLine',
+              attributes: ['invoiceHeaderId'],
+              required: false
+            }
+          ],
+          transaction
+        });
+
+        for (const line of lines) {
+          if (line.invoiceLine?.invoiceHeaderId) {
+            invoiceIds.add(line.invoiceLine.invoiceHeaderId);
+          }
+        }
+      }
+    } catch (err) {
+      logger.error('Error fetching affected invoice IDs for receive header:', err);
+    }
+
+    return Array.from(invoiceIds);
+  };
+
+  // Static helper to synchronize invoice status based on active settlements
+  ReceiveHeader.syncInvoiceStatus = async function (invoiceHeaderId, options = {}) {
+    if (!invoiceHeaderId) return null;
+    const transaction = options.transaction || null;
+    const userId = options.userId || 1;
+
+    try {
+      const ARInvoiceHeader = sequelize.models.arInvoiceHeader;
+      const ARReceiveHeader = this;
+
+      if (!ARInvoiceHeader) {
+        logger.warn('arInvoiceHeader model not found for status sync');
+        return null;
+      }
+
+      const invoice = await ARInvoiceHeader.findByPk(invoiceHeaderId, {
+        transaction,
+        include: [
+          {
+            model: ARReceiveHeader,
+            as: 'receiveHeaders',
+            attributes: ['id', 'totalReceivedAmount', 'status'],
+            required: false
+          }
+        ]
+      });
+
+      if (!invoice) {
+        logger.warn(`Invoice ${invoiceHeaderId} not found during status sync`);
+        return null;
+      }
+
+      // If the invoice is explicitly cancelled, do not auto-modify
+      if (invoice.status === 'cancelled') {
+        return invoice;
+      }
+
+      // Filter only active receipts
+      const activeReceipts = (invoice.receiveHeaders || []).filter(r => 
+        r.status === 'active' || (!r.status && r.status !== 'cancelled' && r.status !== 'voided')
+      );
+
+      const totalPaid = activeReceipts.reduce((sum, r) => {
+        return sum + parseFloat(r.totalReceivedAmount || 0);
+      }, 0);
+
+      const totalAmount = parseFloat(invoice.totalAmount || 0);
+      const isOverdue = invoice.dueDate && new Date() > new Date(invoice.dueDate);
+
+      let newStatus = invoice.status;
+
+      if (totalPaid >= totalAmount && totalAmount > 0) {
+        newStatus = 'paid';
+      } else {
+        if (invoice.status === 'paid') {
+          newStatus = isOverdue ? 'overdue' : 'sent';
+        } else if (invoice.status === 'draft') {
+          newStatus = totalPaid > 0 ? 'sent' : 'draft';
+        } else if (isOverdue && invoice.status !== 'overdue') {
+          newStatus = 'overdue';
+        } else if (!isOverdue && invoice.status === 'overdue') {
+          newStatus = 'sent';
+        }
+      }
+
+      if (newStatus !== invoice.status) {
+        logger.info(`Auto-updating invoice ${invoice.id} status: ${invoice.status} -> ${newStatus} (total: ${totalAmount}, active paid: ${totalPaid})`);
+        await invoice.update({
+          status: newStatus,
+          updateUserId: userId
+        }, {
+          transaction,
+          userId,
+          reason: options.reason || `Status synced to ${newStatus} based on settlement balance`
+        });
+      }
+
+      return invoice;
+    } catch (error) {
+      logger.error(`Error syncing status for invoice ${invoiceHeaderId}:`, error);
+      return null;
+    }
+  };
+
   // Enhanced methods with consistent audit pattern
   ReceiveHeader.prototype.voidReceipt = async function (userId, reason = null) {
     if (!this.canBeVoided()) {
@@ -468,6 +591,16 @@ module.exports = (sequelize, DataTypes) => {
         userId: userId,
         reason: reason || 'Payment receipt voided'
       });
+
+      // Synchronize affected invoice(s)
+      const affectedInvoiceIds = await this.getAffectedInvoiceIds(transaction);
+      for (const invoiceId of affectedInvoiceIds) {
+        await ReceiveHeader.syncInvoiceStatus(invoiceId, {
+          transaction,
+          userId,
+          reason: reason || `Payment receipt ${this.receiptNumber} voided`
+        });
+      }
 
       await transaction.commit();
       return this;
@@ -495,6 +628,16 @@ module.exports = (sequelize, DataTypes) => {
         reason: reason || 'Payment receipt cancelled'
       });
 
+      // Synchronize affected invoice(s)
+      const affectedInvoiceIds = await this.getAffectedInvoiceIds(transaction);
+      for (const invoiceId of affectedInvoiceIds) {
+        await ReceiveHeader.syncInvoiceStatus(invoiceId, {
+          transaction,
+          userId,
+          reason: reason || `Payment receipt ${this.receiptNumber} cancelled`
+        });
+      }
+
       await transaction.commit();
       return this;
     } catch (error) {
@@ -520,6 +663,16 @@ module.exports = (sequelize, DataTypes) => {
         userId: userId,
         reason: reason || 'Payment receipt reactivated'
       });
+
+      // Synchronize affected invoice(s)
+      const affectedInvoiceIds = await this.getAffectedInvoiceIds(transaction);
+      for (const invoiceId of affectedInvoiceIds) {
+        await ReceiveHeader.syncInvoiceStatus(invoiceId, {
+          transaction,
+          userId,
+          reason: reason || `Payment receipt ${this.receiptNumber} reactivated`
+        });
+      }
 
       await transaction.commit();
       return this;

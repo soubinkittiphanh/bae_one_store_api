@@ -582,7 +582,7 @@ class ReceiveHeaderController {
         referenceNumber,
         notes,
         documents: documents.length > 0 ? documents : null,
-        inputterId: validInputterId,
+        inputterId: validInputterId || req.user?.id,
         makerId: req.user?.id
       }, { transaction });
 
@@ -607,6 +607,28 @@ class ReceiveHeaderController {
       const createdReceiveLines = await arReceiveLine.bulkCreate(allocationLinesData, { transaction });
 
       logger.info('Receive lines created:', { count: createdReceiveLines.length });
+
+      // Synchronize affected invoice(s)
+      const affectedInvoices = new Set();
+      if (receiveHeader.invoiceHeaderId) {
+        affectedInvoices.add(receiveHeader.invoiceHeaderId);
+      }
+      for (const alloc of parsedAllocationLines) {
+        if (alloc.invoiceLineId) {
+          const invLine = await arInvoiceLine.findByPk(alloc.invoiceLineId, { transaction });
+          if (invLine?.invoiceHeaderId) {
+            affectedInvoices.add(invLine.invoiceHeaderId);
+          }
+        }
+      }
+
+      for (const invId of affectedInvoices) {
+        await ReceiveHeader.syncInvoiceStatus(invId, {
+          transaction,
+          userId: req.user?.id || validInputterId,
+          reason: `AR receipt ${receiveHeader.receiptNumber} created`
+        });
+      }
 
       await transaction.commit();
 
@@ -695,6 +717,8 @@ class ReceiveHeaderController {
           message: 'Receive header not found'
         });
       }
+
+      const previousInvoiceHeaderId = receiveHeader.invoiceHeaderId;
 
       // Remove fields that shouldn't be updated directly
       delete updateData.id;
@@ -883,6 +907,30 @@ class ReceiveHeaderController {
         }
       }
 
+      // Synchronize affected invoices
+      const affectedInvoices = new Set();
+      if (previousInvoiceHeaderId) {
+        affectedInvoices.add(previousInvoiceHeaderId);
+      }
+      if (receiveHeader.invoiceHeaderId) {
+        affectedInvoices.add(receiveHeader.invoiceHeaderId);
+      }
+      if (updateData.invoiceHeaderId) {
+        affectedInvoices.add(updateData.invoiceHeaderId);
+      }
+      const lineInvoiceIds = await receiveHeader.getAffectedInvoiceIds(transaction);
+      for (const invId of lineInvoiceIds) {
+        affectedInvoices.add(invId);
+      }
+
+      for (const invId of affectedInvoices) {
+        await ReceiveHeader.syncInvoiceStatus(invId, {
+          transaction,
+          userId: req.user?.id,
+          reason: `AR receipt ${receiveHeader.receiptNumber} updated`
+        });
+      }
+
       await transaction.commit();
 
       // Fetch updated receive header with allocations
@@ -967,7 +1015,21 @@ class ReceiveHeaderController {
         });
       }
 
+      const previousInvoiceHeaderId = receiveHeader.invoiceHeaderId;
+      const affectedInvoiceIds = await receiveHeader.getAffectedInvoiceIds();
+
       await receiveHeader.destroy();
+
+      if (previousInvoiceHeaderId && !affectedInvoiceIds.includes(previousInvoiceHeaderId)) {
+        affectedInvoiceIds.push(previousInvoiceHeaderId);
+      }
+
+      for (const invId of affectedInvoiceIds) {
+        await ReceiveHeader.syncInvoiceStatus(invId, {
+          userId: req.user?.id,
+          reason: `AR receipt ${receiveHeader.receiptNumber} deleted`
+        });
+      }
 
       res.status(200).json({
         success: true,
@@ -1188,7 +1250,10 @@ class ReceiveHeaderController {
   // HELPER: Calculate total received for an invoice
   static async calculateInvoiceReceivedTotal(invoiceHeaderId) {
     const [total] = await ReceiveHeader.findAll({
-      where: { invoiceHeaderId },
+      where: {
+        invoiceHeaderId,
+        status: 'active'
+      },
       attributes: [
         [sequelize.fn('SUM', sequelize.col('totalReceivedAmount')), 'totalReceived'],
         [sequelize.fn('COUNT', '*'), 'receiptCount']
