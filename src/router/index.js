@@ -25,6 +25,7 @@ const sale = require("../sales").router
 const salePayment = require("../salePayment").router
 const menuHeader = require("../menu").router
 const menuLine = require("../menu/line").router
+const dashboardMenu = require("../dashboardMenu").router
 const product = require("../product").router
 const productTemp = require("../productTemp").router
 const saleLine = require("../sales/line").router
@@ -165,6 +166,7 @@ module.exports = {
     vendor,
     menuHeader,
     menuLine,
+    dashboardMenu,
     reservation,
     receiving,
     receivingLine,

@@ -171,6 +171,7 @@ const initializeModels = () => {
     menuLine: require("../menu/line/model")(sequelize, DataTypes),
     MenuHeaderLines: require("../menuHeaderLine/model")(sequelize, DataTypes),
     webMenuHeader: require("../web_menu_header/model")(sequelize, DataTypes),
+    dashboardMenu: require("../dashboardMenu/model")(sequelize, DataTypes),
 
 
 

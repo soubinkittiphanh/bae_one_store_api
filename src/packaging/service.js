@@ -808,6 +808,384 @@ const packagingService = {
             logger.error(`Error calculating master packaging matrix: ${error.message}`);
             throw error;
         }
+    },
+
+    // =========================================================================
+    // 7. OWNER'S PACKAGING & PACKING PRODUCT SALES EXECUTIVE REPORT
+    // =========================================================================
+    /**
+     * Executive sales & buy-back report for Agency Owner:
+     * - How much selling for packing products (Finished beer cases, FOC promos, revenue, implicit containers)
+     * - How much selling/buying for packaging products directly (Crates/bottles sold vs bought back/refunded)
+     * - Customer-specific filtering (all clients, walk-in retail POS, or specific wholesale restaurant)
+     */
+    getOwnerPackagingSalesReport: async ({
+        startDate,
+        endDate,
+        companyId = 1,
+        locationId = 'all',
+        clientId = 'all'
+    }) => {
+        try {
+            const startDateTime = startDate ? `${startDate} 00:00:00` : '1970-01-01 00:00:00';
+            const endDateTime = endDate ? `${endDate} 23:59:59` : '2099-12-31 23:59:59';
+
+            const baseReplacements = {
+                startDateTime,
+                endDateTime,
+                companyId: parseInt(companyId, 10) || 1
+            };
+
+            // Common WHERE clauses for sales
+            let saleLocationClause = '';
+            if (locationId && locationId !== 'all') {
+                saleLocationClause = 'AND sh.locationId = :locationId';
+                baseReplacements.locationId = parseInt(locationId, 10);
+            }
+
+            let saleClientClause = '';
+            let ledgerClientClause = '';
+            if (clientId === 'retail') {
+                saleClientClause = 'AND sh.clientId IS NULL';
+                ledgerClientClause = 'AND 1 = 0'; // Retail cash returns handled via saleLine
+            } else if (clientId && clientId !== 'all') {
+                const parsedClientId = parseInt(clientId, 10);
+                saleClientClause = 'AND sh.clientId = :clientId';
+                ledgerClientClause = 'AND cpl.clientId = :clientId';
+                baseReplacements.clientId = parsedClientId;
+            }
+
+            // 1. QUERY PACKING PRODUCTS SALES (Full beer cases with returnable packaging)
+            const packingQuery = `
+                SELECT 
+                    p.id AS productId,
+                    p.pro_name AS productName,
+                    p.barCode,
+                    COALESCE(p.pro_image_path, '') AS imagePath,
+                    COALESCE(curr.code, 'LAK') AS currencyCode,
+                    COALESCE(curr.symbol, '₭') AS currencySymbol,
+                    COALESCE(SUM(sl.quantity), 0) AS paidQty,
+                    COALESCE(SUM(sl.focQty), 0) AS focQty,
+                    COALESCE(SUM(sl.quantity + sl.focQty), 0) AS totalCases,
+                    COALESCE(SUM(sl.total), 0) AS totalSales
+                FROM saleLine sl
+                INNER JOIN saleHeader sh ON sl.headerId = sh.id
+                INNER JOIN product p ON sl.productId = p.id
+                LEFT JOIN currency curr ON sh.currencyId = curr.id
+                LEFT JOIN location loc ON sh.locationId = loc.id
+                WHERE sh.createdAt BETWEEN :startDateTime AND :endDateTime
+                  AND (loc.companyId = :companyId OR loc.companyId IS NULL)
+                  AND sh.isActive = 1
+                  AND sl.isActive = 1
+                  AND p.isReturnablePackaging = 1
+                  AND (p.isPackagingAsset = 0 OR p.isPackagingAsset IS NULL)
+                  AND sl.packagingAction NOT IN ('SOLD', 'RETURNED')
+                  AND sl.isReturn = 0
+                  ${saleLocationClause}
+                  ${saleClientClause}
+                GROUP BY p.id, p.pro_name, p.barCode, p.pro_image_path, curr.code, curr.symbol
+                ORDER BY totalSales DESC
+            `;
+
+            const packingRows = await sequelize.query(packingQuery, {
+                replacements: baseReplacements,
+                type: sequelize.QueryTypes.SELECT
+            });
+
+            // Calculate implicit packaging dispatched via BOM (product_packagings)
+            const productIds = packingRows.map(r => r.productId);
+            let packagingBOMs = [];
+            if (productIds.length > 0) {
+                packagingBOMs = await productPackaging.findAll({
+                    where: {
+                        productId: { [Op.in]: productIds },
+                        isActive: true
+                    },
+                    include: [
+                        {
+                            model: product,
+                            as: 'packagingProduct',
+                            attributes: ['id', 'pro_name', 'barCode', 'isPackagingAsset']
+                        }
+                    ]
+                });
+            }
+
+            // Map BOM ratios to packing rows
+            let totalDispatchedCrates = 0;
+            let totalDispatchedBottles = 0;
+
+            const packingProducts = packingRows.map(row => {
+                const boms = packagingBOMs.filter(b => b.productId === row.productId);
+                let cratesPerCase = 0;
+                let bottlesPerCase = 0;
+
+                for (const bom of boms) {
+                    const name = (bom.packagingProduct?.pro_name || '').toLowerCase();
+                    if (name.includes('ລັງ') || name.includes('crate')) {
+                        cratesPerCase += bom.quantity;
+                    } else if (name.includes('ແກ້ວ') || name.includes('ຂວດ') || name.includes('bottle')) {
+                        bottlesPerCase += bom.quantity;
+                    }
+                }
+
+                // If not explicitly configured, fallback to standard: 1 Crate, 24 Bottles
+                if (cratesPerCase === 0 && bottlesPerCase === 0) {
+                    cratesPerCase = 1;
+                    bottlesPerCase = 24;
+                }
+
+                const totalCases = parseFloat(row.totalCases) || 0;
+                const dispatchedCrates = Math.round(totalCases * cratesPerCase);
+                const dispatchedBottles = Math.round(totalCases * bottlesPerCase);
+
+                totalDispatchedCrates += dispatchedCrates;
+                totalDispatchedBottles += dispatchedBottles;
+
+                return {
+                    productId: row.productId,
+                    productName: row.productName,
+                    barCode: row.barCode,
+                    imagePath: row.imagePath,
+                    currencyCode: row.currencyCode,
+                    currencySymbol: row.currencySymbol,
+                    paidQty: parseFloat(row.paidQty) || 0,
+                    focQty: parseFloat(row.focQty) || 0,
+                    totalCases: totalCases,
+                    totalSales: parseFloat(row.totalSales) || 0,
+                    cratesPerCase,
+                    bottlesPerCase,
+                    dispatchedCrates,
+                    dispatchedBottles
+                };
+            });
+
+            // 2. QUERY PACKAGING ASSETS ACTIVITY (Crates/Bottles sold vs bought back/refunded)
+            const packagingAssetsQuery = `
+                SELECT 
+                    p.id AS productId,
+                    p.pro_name AS productName,
+                    p.barCode,
+                    COALESCE(curr.code, 'LAK') AS currencyCode,
+                    COALESCE(curr.symbol, '₭') AS currencySymbol,
+                    -- SOLD / DEPOSITED
+                    COALESCE(SUM(CASE 
+                        WHEN sl.packagingAction = 'SOLD' OR (p.isPackagingAsset = 1 AND sl.isReturn = 0 AND sl.packagingAction != 'RETURNED')
+                        THEN sl.quantity ELSE 0 END), 0) AS soldQty,
+                    COALESCE(SUM(CASE 
+                        WHEN sl.packagingAction = 'SOLD' OR (p.isPackagingAsset = 1 AND sl.isReturn = 0 AND sl.packagingAction != 'RETURNED')
+                        THEN sl.total ELSE 0 END), 0) AS soldAmount,
+                    -- BOUGHT / REFUNDED
+                    COALESCE(SUM(CASE 
+                        WHEN sl.packagingAction = 'RETURNED' OR sl.isReturn = 1
+                        THEN sl.quantity ELSE 0 END), 0) AS boughtQty,
+                    COALESCE(SUM(CASE 
+                        WHEN sl.packagingAction = 'RETURNED' OR sl.isReturn = 1
+                        THEN ABS(sl.total) ELSE 0 END), 0) AS boughtAmount
+                FROM saleLine sl
+                INNER JOIN saleHeader sh ON sl.headerId = sh.id
+                INNER JOIN product p ON sl.productId = p.id
+                LEFT JOIN currency curr ON sh.currencyId = curr.id
+                LEFT JOIN location loc ON sh.locationId = loc.id
+                WHERE sh.createdAt BETWEEN :startDateTime AND :endDateTime
+                  AND (loc.companyId = :companyId OR loc.companyId IS NULL)
+                  AND sh.isActive = 1
+                  AND sl.isActive = 1
+                  AND (p.isPackagingAsset = 1 OR sl.packagingAction IN ('SOLD', 'RETURNED') OR sl.isReturn = 1)
+                  ${saleLocationClause}
+                  ${saleClientClause}
+                GROUP BY p.id, p.pro_name, p.barCode, curr.code, curr.symbol
+                ORDER BY p.pro_name ASC
+            `;
+
+            const packagingAssetRows = await sequelize.query(packagingAssetsQuery, {
+                replacements: baseReplacements,
+                type: sequelize.QueryTypes.SELECT
+            });
+
+            let totalPackagingSoldAmount = 0;
+            let totalPackagingBoughtAmount = 0;
+            let totalPackagingSoldQty = 0;
+            let totalPackagingBoughtQty = 0;
+
+            const packagingProducts = packagingAssetRows.map(row => {
+                const soldQty = parseFloat(row.soldQty) || 0;
+                const soldAmount = parseFloat(row.soldAmount) || 0;
+                const boughtQty = parseFloat(row.boughtQty) || 0;
+                const boughtAmount = parseFloat(row.boughtAmount) || 0;
+                const netQty = soldQty - boughtQty;
+                const netAmount = soldAmount - boughtAmount;
+
+                totalPackagingSoldQty += soldQty;
+                totalPackagingSoldAmount += soldAmount;
+                totalPackagingBoughtQty += boughtQty;
+                totalPackagingBoughtAmount += boughtAmount;
+
+                return {
+                    productId: row.productId,
+                    productName: row.productName,
+                    barCode: row.barCode,
+                    currencyCode: row.currencyCode,
+                    currencySymbol: row.currencySymbol,
+                    soldQty,
+                    soldAmount,
+                    boughtQty,
+                    boughtAmount,
+                    netQty,
+                    netAmount
+                };
+            });
+
+            // 3. WHOLESALE ROUTE PACKAGING LEDGER (Customer debt & empties return events)
+            let customerMovements = [];
+            let wholesaleReturnedCrates = 0;
+            let wholesaleReturnedBottles = 0;
+
+            if (clientId !== 'retail') {
+                const ledgerQuery = `
+                    SELECT 
+                        cpl.id,
+                        cpl.createdAt,
+                        cpl.clientId,
+                        cl.name AS clientName,
+                        cl.company AS clientCompany,
+                        cl.telephone AS clientTelephone,
+                        cpl.saleHeaderId,
+                        cpl.packagingProductId,
+                        p.pro_name AS packagingName,
+                        p.barCode,
+                        cpl.transactionType,
+                        cpl.qtyChange,
+                        cpl.balanceAfter,
+                        cpl.depositAmount,
+                        cpl.notes
+                    FROM customer_packaging_ledger cpl
+                    INNER JOIN product p ON cpl.packagingProductId = p.id
+                    INNER JOIN client cl ON cpl.clientId = cl.id
+                    WHERE cpl.createdAt BETWEEN :startDateTime AND :endDateTime
+                      AND cpl.companyId = :companyId
+                      ${ledgerClientClause}
+                    ORDER BY cpl.id DESC
+                    LIMIT 200
+                `;
+
+                customerMovements = await sequelize.query(ledgerQuery, {
+                    replacements: baseReplacements,
+                    type: sequelize.QueryTypes.SELECT
+                });
+
+                for (const mov of customerMovements) {
+                    if (mov.transactionType === 'RETURNED_IN' && mov.qtyChange < 0) {
+                        const name = (mov.packagingName || '').toLowerCase();
+                        const qty = Math.abs(mov.qtyChange);
+                        if (name.includes('ລັງ') || name.includes('crate')) {
+                            wholesaleReturnedCrates += qty;
+                        } else if (name.includes('ແກ້ວ') || name.includes('bottle')) {
+                            wholesaleReturnedBottles += qty;
+                        }
+                    }
+                }
+            }
+
+            // 4. CUSTOMER PROFILE SUMMARY (When specific client selected)
+            let customerProfile = null;
+            if (clientId && clientId !== 'all' && clientId !== 'retail') {
+                const parsedClientId = parseInt(clientId, 10);
+                const clientRecord = await client.findByPk(parsedClientId, {
+                    attributes: ['id', 'name', 'company', 'telephone', 'address']
+                });
+
+                if (clientRecord) {
+                    const balances = await packagingService.getCustomerPackagingBalance(parsedClientId);
+                    let currentCratesOwed = 0;
+                    let currentBottlesOwed = 0;
+
+                    for (const b of balances) {
+                        const name = (b.packagingName || '').toLowerCase();
+                        const bal = parseInt(b.balanceOwed, 10) || 0;
+                        if (name.includes('ລັງ') || name.includes('crate')) {
+                            currentCratesOwed += bal;
+                        } else if (name.includes('ແກ້ວ') || name.includes('bottle')) {
+                            currentBottlesOwed += bal;
+                        }
+                    }
+
+                    customerProfile = {
+                        id: clientRecord.id,
+                        name: clientRecord.name,
+                        company: clientRecord.company,
+                        telephone: clientRecord.telephone,
+                        address: clientRecord.address,
+                        currentCratesOwed,
+                        currentBottlesOwed,
+                        balances
+                    };
+                }
+            }
+
+            // 5. EXECUTIVE SUMMARY AGGREGATIONS
+            // Group sales revenue by currency
+            const revenueByCurrencyMap = {};
+            for (const item of packingProducts) {
+                const ccy = item.currencyCode || 'LAK';
+                if (!revenueByCurrencyMap[ccy]) {
+                    revenueByCurrencyMap[ccy] = {
+                        currencyCode: ccy,
+                        currencySymbol: item.currencySymbol || '₭',
+                        totalAmount: 0
+                    };
+                }
+                revenueByCurrencyMap[ccy].totalAmount += item.totalSales;
+            }
+            const revenueByCurrency = Object.values(revenueByCurrencyMap);
+
+            const totalPaidCases = packingProducts.reduce((sum, p) => sum + p.paidQty, 0);
+            const totalFocCases = packingProducts.reduce((sum, p) => sum + p.focQty, 0);
+            const totalCasesSold = totalPaidCases + totalFocCases;
+
+            const netPackagingCash = totalPackagingSoldAmount - totalPackagingBoughtAmount;
+
+            // Total empties recovered in the period = (Retail POS buy-backs + Wholesale route returns)
+            const totalEmptiesRecoveredUnits = totalPackagingBoughtQty + wholesaleReturnedCrates + wholesaleReturnedBottles;
+            const totalDispatchedPackagingUnits = totalDispatchedCrates + totalDispatchedBottles;
+
+            const recoveryRatePercent = totalDispatchedPackagingUnits > 0
+                ? Math.min(100, Math.round((totalEmptiesRecoveredUnits / totalDispatchedPackagingUnits) * 1000) / 10)
+                : (totalEmptiesRecoveredUnits > 0 ? 100 : 0);
+
+            return {
+                filter: {
+                    startDate,
+                    endDate,
+                    locationId,
+                    clientId
+                },
+                customerProfile,
+                kpi: {
+                    revenueByCurrency,
+                    totalPaidCases,
+                    totalFocCases,
+                    totalCasesSold,
+                    totalDispatchedCrates,
+                    totalDispatchedBottles,
+                    totalPackagingSoldAmount,
+                    totalPackagingSoldQty,
+                    totalPackagingBoughtAmount,
+                    totalPackagingBoughtQty,
+                    netPackagingCash,
+                    wholesaleReturnedCrates,
+                    wholesaleReturnedBottles,
+                    totalEmptiesRecoveredUnits,
+                    recoveryRatePercent
+                },
+                packingProducts,
+                packagingProducts,
+                customerMovements
+            };
+        } catch (error) {
+            logger.error(`Error in getOwnerPackagingSalesReport: ${error.message}`);
+            throw error;
+        }
     }
 };
 

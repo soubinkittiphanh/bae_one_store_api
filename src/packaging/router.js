@@ -34,4 +34,7 @@ router.get('/damage', controller.getDamageLogs);
 // 6. Master Packaging Matrix route
 router.get('/matrix', controller.getMasterPackagingMatrix);
 
+// 7. Owner's Packaging & Packing Product Sales Summary Report route
+router.get('/reports/owner-sales-summary', controller.getOwnerPackagingSalesReport);
+
 module.exports = router;

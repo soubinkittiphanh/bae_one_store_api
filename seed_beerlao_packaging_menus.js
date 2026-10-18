@@ -41,6 +41,14 @@ async function seedBeerlaoPackagingMenus() {
         // ---------------------------------------------------------------------
         const packagingLines = [
             {
+                name: 'Owner Packaging & Packing Sales',
+                llname: 'ສະຫຼຸບການຂາຍສິນຄ້າ ແລະ ບັນຈຸພັນ',
+                icon: 'mdi-chart-line',
+                path: '/admin/report/packagingOwnerSummary',
+                target_systems: 'ALL',
+                isActive: true
+            },
+            {
                 name: 'Master Packaging Matrix',
                 llname: 'ຕາຕະລາງດຸນດ່ຽງບັນຈຸພັນລວມ',
                 icon: 'mdi-scale-balance',
@@ -107,6 +115,7 @@ async function seedBeerlaoPackagingMenus() {
 
         if (reportsHeader) {
             const reportPaths = [
+                '/admin/report/packagingOwnerSummary',
                 '/admin/report/masterPackagingMatrix',
                 '/admin/report/customerPackaging'
             ];

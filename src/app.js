@@ -153,6 +153,7 @@ const buildApp = async () => {
     app.use("/api/vendor", myRouter.vendor)
     app.use("/api/menuHeader", myRouter.menuHeader)
     app.use("/api/menuLine", myRouter.menuLine)
+    app.use("/api/dashboardMenu", myRouter.dashboardMenu)
     app.use("/api/reservation", myRouter.reservation)
     app.use("/api/receiving", myRouter.receiving)
     app.use("/api/receiving/line", myRouter.receivingLine)

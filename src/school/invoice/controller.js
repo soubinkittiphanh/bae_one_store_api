@@ -135,7 +135,7 @@ module.exports = {
     async createBulk(req, res) {
         const t = await sequelize.transaction();
         try {
-            let { classId, academicYearId, dueDate, billingMonth } = req.body;
+            let { classId, roomId, academicYearId, dueDate, billingMonth } = req.body;
             if (billingMonth) {
                 billingMonth = billingMonth.substring(0, 7);
             }
@@ -144,15 +144,22 @@ module.exports = {
                 return res.status(400).json({ message: "classId and academicYearId are required" });
             }
 
-            // Find all active students in the class
+            // Find all active students in the class (and room if specified)
+            const studentWhere = { classId, isActive: true };
+            if (roomId) studentWhere.roomId = roomId;
+
             const studentsList = await student.findAll({
-                where: { classId, isActive: true },
+                where: studentWhere,
                 transaction: t
             });
 
             if (studentsList.length === 0) {
                 await t.rollback();
-                return res.status(400).json({ message: "No active students found in the specified class" });
+                return res.status(400).json({
+                    message: roomId
+                        ? "ບໍ່ພົບນັກຮຽນໃນຫ້ອງຮຽນທີ່ເລືອກ (No active students found in the specified room)"
+                        : "ບໍ່ພົບນັກຮຽນໃນຊັ້ນຮຽນທີ່ເລືອກ (No active students found in the specified class)"
+                });
             }
 
             // Find fee structures for this class or globally for this academic year
@@ -276,7 +283,7 @@ module.exports = {
     // 3. Get All Invoices (with filters)
     async getAll(req, res) {
         try {
-            let { status, studentId, classId, academicYearId, billingMonth } = req.query;
+            let { status, studentId, classId, roomId, academicYearId, billingMonth } = req.query;
             const whereClause = { isActive: true };
 
             if (status) whereClause.status = status;
@@ -286,7 +293,7 @@ module.exports = {
                 whereClause.billingMonth = billingMonth.substring(0, 7);
             }
 
-            // Include Student info and SchoolClass if filter by classId
+            // Include Student info and SchoolClass if filter by classId or roomId
             const studentInclude = {
                 model: student,
                 as: 'student',
@@ -296,8 +303,11 @@ module.exports = {
                 ]
             };
 
-            if (classId) {
-                studentInclude.where = { classId };
+            const studentWhere = {};
+            if (classId) studentWhere.classId = classId;
+            if (roomId) studentWhere.roomId = roomId;
+            if (Object.keys(studentWhere).length > 0) {
+                studentInclude.where = studentWhere;
             }
 
             const list = await schoolInvoice.findAll({

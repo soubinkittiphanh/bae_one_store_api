@@ -218,6 +218,30 @@ const packagingController = {
             logger.error(`Error in getMasterPackagingMatrix: ${error.message}`);
             return res.status(500).json({ success: false, message: error.message });
         }
+    },
+
+    // 7. Owner's Packaging & Packing Product Sales Summary Report
+    getOwnerPackagingSalesReport: async (req, res) => {
+        try {
+            const { startDate, endDate, locationId, clientId } = req.query;
+            const companyId = req.user?.companyId || 1;
+
+            const report = await packagingService.getOwnerPackagingSalesReport({
+                startDate,
+                endDate,
+                companyId,
+                locationId: locationId || 'all',
+                clientId: clientId || 'all'
+            });
+
+            return res.status(200).json({
+                success: true,
+                data: report
+            });
+        } catch (error) {
+            logger.error(`Error in getOwnerPackagingSalesReport: ${error.message}`);
+            return res.status(500).json({ success: false, message: error.message });
+        }
     }
 };
 
