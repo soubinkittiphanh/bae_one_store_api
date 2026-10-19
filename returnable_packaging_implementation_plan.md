@@ -141,7 +141,7 @@ CREATE TABLE IF NOT EXISTS `packaging_damage_logs` (
 ALTER TABLE `poLine` ADD COLUMN `focQty` DOUBLE DEFAULT 0 AFTER `qty`;
 ALTER TABLE `receivingLine` ADD COLUMN `focQty` DOUBLE DEFAULT 0 AFTER `qty`;
 ALTER TABLE `saleLine` ADD COLUMN `focQty` DOUBLE DEFAULT 0 AFTER `quantity`;
-ALTER TABLE `saleLine` ADD COLUMN `packagingAction` ENUM('EXCHANGED', 'DEPOSIT', 'DEBT', 'NONE') DEFAULT 'NONE';
+ALTER TABLE `saleLine` ADD COLUMN `packagingAction` ENUM('EXCHANGED', 'DEPOSIT', 'DEBT', 'SOLD', 'RETURNED', 'NONE') DEFAULT 'NONE';
 
 -- 6. Add Returnable flags to Product
 ALTER TABLE `product` ADD COLUMN `isReturnablePackaging` TINYINT(1) DEFAULT 0;

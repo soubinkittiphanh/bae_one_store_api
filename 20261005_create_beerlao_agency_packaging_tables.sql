@@ -101,4 +101,8 @@ ALTER TABLE `receivingLine`
 -- 7. Alter Sale lines to add FOC and packagingAction
 ALTER TABLE `saleLine` 
   ADD COLUMN IF NOT EXISTS `focQty` DOUBLE NOT NULL DEFAULT 0,
-  ADD COLUMN IF NOT EXISTS `packagingAction` ENUM('EXCHANGED', 'DEPOSIT', 'DEBT', 'NONE') NOT NULL DEFAULT 'NONE';
+  ADD COLUMN IF NOT EXISTS `packagingAction` ENUM('EXCHANGED', 'DEPOSIT', 'DEBT', 'SOLD', 'RETURNED', 'NONE') NOT NULL DEFAULT 'NONE';
+
+-- Update packagingAction ENUM for existing installations
+ALTER TABLE `saleLine`
+  MODIFY COLUMN `packagingAction` ENUM('EXCHANGED', 'DEPOSIT', 'DEBT', 'SOLD', 'RETURNED', 'NONE') NOT NULL DEFAULT 'NONE';

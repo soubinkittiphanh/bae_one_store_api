@@ -256,6 +256,104 @@ const ensurePerformanceIndexes = async () => {
 };
 
 /**
+ * Automatically checks and ensures returnable packaging columns and enum values
+ * are properly defined on saleLine, poLine, receivingLine, and product tables.
+ */
+const ensurePackagingColumns = async () => {
+  try {
+    const dbName = sequelize.config.database;
+    logger.info(`Checking packaging columns and enums in database: ${dbName}`);
+
+    // Helper to check if a table exists
+    const tableExists = async (tableName) => {
+      const result = await sequelize.query(`
+        SELECT TABLE_NAME 
+        FROM INFORMATION_SCHEMA.TABLES 
+        WHERE TABLE_SCHEMA = :dbName 
+          AND LOWER(TABLE_NAME) = :tableName
+      `, {
+        replacements: { dbName, tableName: tableName.toLowerCase() },
+        type: QueryTypes.SELECT
+      });
+      return result.length > 0;
+    };
+
+    // Helper to check if a table has a specific column
+    const hasColumn = async (tableName, colName) => {
+      const result = await sequelize.query(`
+        SELECT COLUMN_NAME 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_SCHEMA = :dbName 
+          AND LOWER(TABLE_NAME) = :tableName
+          AND LOWER(COLUMN_NAME) = :colName
+      `, {
+        replacements: { dbName, tableName: tableName.toLowerCase(), colName: colName.toLowerCase() },
+        type: QueryTypes.SELECT
+      });
+      return result.length > 0;
+    };
+
+    // 1. Ensure saleLine.packagingAction ENUM includes 'SOLD' and 'RETURNED'
+    if (await tableExists('saleLine')) {
+      const hasPkgAction = await hasColumn('saleLine', 'packagingAction');
+      if (hasPkgAction) {
+        logger.info("Updating saleLine.packagingAction ENUM to ensure all actions ('EXCHANGED', 'DEPOSIT', 'DEBT', 'SOLD', 'RETURNED', 'NONE') are allowed...");
+        await sequelize.query(
+          "ALTER TABLE `saleLine` MODIFY COLUMN `packagingAction` ENUM('EXCHANGED', 'DEPOSIT', 'DEBT', 'SOLD', 'RETURNED', 'NONE') NOT NULL DEFAULT 'NONE'",
+          { type: QueryTypes.BULKUPDATE }
+        );
+      } else {
+        logger.info("Adding saleLine.packagingAction ENUM column...");
+        await sequelize.query(
+          "ALTER TABLE `saleLine` ADD COLUMN `packagingAction` ENUM('EXCHANGED', 'DEPOSIT', 'DEBT', 'SOLD', 'RETURNED', 'NONE') NOT NULL DEFAULT 'NONE'",
+          { type: QueryTypes.BULKUPDATE }
+        );
+      }
+
+      if (!(await hasColumn('saleLine', 'focQty'))) {
+        logger.info("Adding saleLine.focQty column...");
+        await sequelize.query(
+          "ALTER TABLE `saleLine` ADD COLUMN `focQty` DOUBLE NOT NULL DEFAULT 0",
+          { type: QueryTypes.BULKUPDATE }
+        );
+      }
+    }
+
+    // 2. Ensure poLine & receivingLine focQty
+    if (await tableExists('poLine') && !(await hasColumn('poLine', 'focQty'))) {
+      await sequelize.query(
+        "ALTER TABLE `poLine` ADD COLUMN `focQty` DOUBLE NOT NULL DEFAULT 0",
+        { type: QueryTypes.BULKUPDATE }
+      );
+    }
+    if (await tableExists('receivingLine') && !(await hasColumn('receivingLine', 'focQty'))) {
+      await sequelize.query(
+        "ALTER TABLE `receivingLine` ADD COLUMN `focQty` DOUBLE NOT NULL DEFAULT 0",
+        { type: QueryTypes.BULKUPDATE }
+      );
+    }
+
+    // 3. Ensure product returnable packaging flags
+    if (await tableExists('product')) {
+      if (!(await hasColumn('product', 'isReturnablePackaging'))) {
+        await sequelize.query(
+          "ALTER TABLE `product` ADD COLUMN `isReturnablePackaging` TINYINT(1) NOT NULL DEFAULT 0",
+          { type: QueryTypes.BULKUPDATE }
+        );
+      }
+      if (!(await hasColumn('product', 'isPackagingAsset'))) {
+        await sequelize.query(
+          "ALTER TABLE `product` ADD COLUMN `isPackagingAsset` TINYINT(1) NOT NULL DEFAULT 0",
+          { type: QueryTypes.BULKUPDATE }
+        );
+      }
+    }
+  } catch (error) {
+    logger.warn("Could not ensure packaging columns/enums:", error.message);
+  }
+};
+
+/**
  * Reads and executes the SQL cleanup script (toomanykey.sql)
  * to drop redundant indexes before Sequelize synchronization runs.
  */
@@ -269,6 +367,9 @@ const executeSqlScript = async () => {
 
     // Automatically check and create performance indexes on startup
     await ensurePerformanceIndexes();
+
+    // Automatically ensure returnable packaging columns and ENUM values (SOLD, RETURNED) are present
+    await ensurePackagingColumns();
 
     const filePath = path.join(__dirname, '../../toomanykey.sql');
     if (!fs.existsSync(filePath)) {
