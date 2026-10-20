@@ -27,6 +27,17 @@ const productService = require('../../product/service');
 const spfService = require('../../spf/service');
 const Recipe = require('../../models').recipe;
 
+// Helper function for safe transaction rollback without unhandled rejections
+const safeRollback = async (t) => {
+    if (t && !t.finished) {
+        try {
+            await t.rollback();
+        } catch (err) {
+            console.error('Error during safeRollback:', err.message);
+        }
+    }
+};
+
 // Helper function to reserve ingredient stock cards for a product's recipe
 const reserveIngredientCardsForRecipe = async (ticketLine, product, lineQuantity, locationId, currencyMap, lockingSessionId, inputterId, transaction) => {
     // 1. Fetch recipes for this product
@@ -191,6 +202,7 @@ const reserveIngredientCardsForOptions = async (ticketLine, selectedOptions, loc
                     const currency = currencyMap.get(currencyId);
                     const exchangeRate = currency ? currency.rate : 1;
                     const cost = ingredient.cost_price || 0;
+                    const costLCY = cost * exchangeRate;
                     
                     const ingredientCardRows = [];
                     for (let i = 0; i < qtyNeeded; i++) {
@@ -199,24 +211,27 @@ const reserveIngredientCardsForOptions = async (ticketLine, selectedOptions, loc
                             card_type_code: 10010,
                             product_id: ingredient.pro_id,
                             productId: ingredient.id,
-                            card_number: cardSequenceNumber,
-                            card_password: '',
-                            card_isused: 1,
-                            price: 0,
                             cost: cost,
-                            cost_lcy: cost * exchangeRate,
-                            ticketLineId: ticketLine.id,
-                            locationId,
+                            costLCY: costLCY,
+                            exchangeRate: exchangeRate,
+                            card_number: cardSequenceNumber,
+                            card_isused: 1,
                             locking_session_id: lockingSessionId,
                             card_input_date: new Date(),
                             inputter: inputterId || 1,
                             update_user: inputterId || 1,
                             update_time: new Date(),
                             update_time_new: new Date(),
-                            isActive: true
+                            isActive: true,
+                            currencyId: currencyId,
+                            locationId: locationId,
+                            ticketLineId: ticketLine.id
                         });
                     }
-                    await Card.bulkCreate(ingredientCardRows, { transaction });
+                    if (ingredientCardRows.length > 0) {
+                        await Card.bulkCreate(ingredientCardRows, { transaction });
+                        console.log(`[Options Inventory] Created and linked ${ingredientCardRows.length} fresh cards for ingredient ${ingredient.id}`);
+                    }
                 }
                 
                 // Trigger stock count update for the ingredient product
@@ -759,6 +774,8 @@ const ticketController = {
                 locationId,
                 paymentId,
                 ticketNumber,
+                createUserId,
+                userId,
                 sort = 'createdAt:desc'
             } = req.query;
 
@@ -769,6 +786,7 @@ const ticketController = {
             if (clientId) whereCondition.clientId = clientId;
             if (locationId) whereCondition.locationId = locationId;
             if (paymentId) whereCondition.paymentId = paymentId;
+            if (createUserId || userId) whereCondition.createUserId = createUserId || userId;
             if (ticketNumber) {
                 whereCondition.ticketNumber = {
                     [Op.like]: `%${ticketNumber}%`
@@ -854,7 +872,7 @@ const ticketController = {
                 include: [{ model: Payment, as: 'paymentMethod', required: false }]
             });
 
-            if (includeParams.includes('ticketLines')) {
+            if (includeParams.length === 0 || includeParams.includes('ticketLines')) {
                 includeArray.push({
                     model: TicketLine,
                     as: 'ticketLines',
@@ -1106,7 +1124,7 @@ const ticketController = {
 
                 if (!table) {
                     console.error(`Table not found: ${tableId}`);
-                    await transaction.rollback();
+                    await safeRollback(transaction);
                     return res.status(404).json({
                         success: false,
                         message: 'Table not found'
@@ -1167,7 +1185,7 @@ const ticketController = {
             for (const line of ticketLines) {
                 const product = productMap.get(line.productId);
                 if (!product) {
-                    await transaction.rollback();
+                    await safeRollback(transaction);
                     return res.status(404).json({
                         success: false,
                         message: `Product with ID ${line.productId} not found`
@@ -1222,7 +1240,7 @@ const ticketController = {
             }
             
             if (stockValidationErrors.length > 0) {
-                await transaction.rollback();
+                await safeRollback(transaction);
                 console.error(`=== STOCK VALIDATION FAILED ===`);
                 const errorDetails = stockValidationErrors.map(err => {
                     const variantStr = checkVariant ? ` (Color: ${err.colorId}, Size: ${err.sizeId})` : '';
@@ -1425,8 +1443,32 @@ const ticketController = {
                 }
             }
 
+            // Record sale payment if created as paid (e.g. split bill ticket or instant checkout)
+            if (paymentStatus === 'paid') {
+                const multiPayments = req.body.payments;
+                if (multiPayments && Array.isArray(multiPayments) && multiPayments.length > 0) {
+                    const paymentRows = multiPayments.map(p => ({
+                        ticketId: newTicket.id,
+                        paymentId: p.paymentId,
+                        amount: parseFloat(p.amount || 0),
+                        referenceNo: p.referenceNo || 'Split Multi-Payment',
+                        isActive: true
+                    }));
+                    await SalePayment.bulkCreate(paymentRows, { transaction });
+                } else {
+                    const finalPaymentId = paymentId || 1;
+                    await SalePayment.create({
+                        ticketId: newTicket.id,
+                        paymentId: finalPaymentId,
+                        amount: parseFloat(newTicket.total || 0),
+                        referenceNo: 'POS Split Ticket Payment',
+                        isActive: true
+                    }, { transaction });
+                }
+            }
+
             // Update table status
-            if (tableId && table && status !== 'paid' && status !== 'served' && status !== 'cancel') {
+            if (tableId && table && status !== 'paid' && status !== 'cancel') {
                 console.log(`Updating table ${tableId} status...`);
 
                 await table.update({
@@ -1480,12 +1522,18 @@ const ticketController = {
                 data: createdTicket
             });
         } catch (error) {
-            await transaction.rollback();
-
             console.error('=== TICKET CREATION FAILED ===');
             console.error('Error name:', error.name);
             console.error('Error message:', error.message);
+            if (error.original) {
+                console.error('Original SQL error:', error.original.message || error.original);
+            }
+            if (error.parent) {
+                console.error('Parent error:', error.parent.message || error.parent);
+            }
             console.error('Full error:', error);
+
+            await safeRollback(transaction);
 
             if (error.name === 'SequelizeValidationError') {
                 console.error('Validation errors:');
@@ -1552,7 +1600,7 @@ const ticketController = {
             });
 
             if (!ticket) {
-                await transaction.rollback();
+                await safeRollback(transaction);
                 return res.status(404).json({
                     success: false,
                     message: 'Ticket not found'
@@ -1591,7 +1639,7 @@ const ticketController = {
                 for (const line of ticketLines) {
                     const product = productMap.get(line.productId);
                     if (!product) {
-                        await transaction.rollback();
+                        await safeRollback(transaction);
                         return res.status(404).json({
                             success: false,
                             message: `Product with ID ${line.productId} not found`
@@ -1646,7 +1694,7 @@ const ticketController = {
                 }
 
                 if (stockValidationErrors.length > 0) {
-                    await transaction.rollback();
+                    await safeRollback(transaction);
                     console.error(`=== STOCK VALIDATION FAILED ON UPDATE ===`);
                     const errorDetails = stockValidationErrors.map(err => {
                         const variantStr = checkVariant ? ` (Color: ${err.colorId}, Size: ${err.sizeId})` : '';
@@ -1836,7 +1884,7 @@ const ticketController = {
                         const newTable = await Table.findByPk(newTableId, { transaction });
 
                         if (!newTable) {
-                            await transaction.rollback();
+                            await safeRollback(transaction);
                             return res.status(404).json({
                                 success: false,
                                 message: 'New table not found'
@@ -1854,27 +1902,47 @@ const ticketController = {
                 }
             }
 
-            // If status is updated to paid/served/cancel/void, ensure the active table status is updated
-            const finalStatus = updateData.status || (updateData.paymentStatus === 'paid' ? 'paid' : null);
-            if (finalStatus === 'paid' || finalStatus === 'served' || finalStatus === 'cancel' || finalStatus === 'void') {
+            // If status/paymentStatus is updated to paid/cancel/void, ensure the active table status is updated
+            if (updateData.paymentStatus === 'paid' || updateData.status === 'paid') {
                 const activeTableId = 'tableId' in updateData ? updateData.tableId : ticket.tableId;
                 if (activeTableId) {
                     const table = await Table.findByPk(activeTableId, { transaction });
                     if (table) {
-                        let tableStatus = 'occupied';
-                        if (finalStatus === 'paid' || finalStatus === 'served') {
-                            tableStatus = 'cleaning';
-                        } else if (finalStatus === 'cancel' || finalStatus === 'void') {
-                            tableStatus = 'available';
-                        }
-
                         await table.update({
-                            status: tableStatus,
+                            status: 'cleaning',
                             currentOrderId: null,
                             timeOccupied: null
                         }, { transaction });
 
-                        logger.info(`✓ Table ${table.id} status updated to ${tableStatus} and order cleared via updateTicket (status: ${finalStatus})`);
+                        logger.info(`✓ Table ${table.id} status updated to cleaning and order cleared via updateTicket (paid)`);
+                    }
+                }
+            } else if (updateData.status === 'cancel' || updateData.status === 'void') {
+                const activeTableId = 'tableId' in updateData ? updateData.tableId : ticket.tableId;
+                if (activeTableId) {
+                    const table = await Table.findByPk(activeTableId, { transaction });
+                    if (table) {
+                        await table.update({
+                            status: 'available',
+                            currentOrderId: null,
+                            timeOccupied: null
+                        }, { transaction });
+
+                        logger.info(`✓ Table ${table.id} status updated to available and order cleared via updateTicket (${updateData.status})`);
+                    }
+                }
+            } else if (updateData.paymentStatus === 'pending') {
+                // Ticket remains unpaid; ensure active table remains occupied with this ticket
+                const activeTableId = 'tableId' in updateData ? updateData.tableId : ticket.tableId;
+                if (activeTableId) {
+                    const table = await Table.findByPk(activeTableId, { transaction });
+                    if (table) {
+                        await table.update({
+                            status: 'occupied',
+                            currentOrderId: ticket.id
+                        }, { transaction });
+
+                        logger.info(`✓ Table ${table.id} status ensured occupied with ticket ${ticket.id}`);
                     }
                 }
             }
@@ -1918,7 +1986,18 @@ const ticketController = {
                 data: updatedTicket
             });
         } catch (error) {
-            await transaction.rollback();
+            console.error('=== TICKET UPDATE FAILED ===');
+            console.error('Error name:', error.name);
+            console.error('Error message:', error.message);
+            if (error.original) {
+                console.error('Original SQL error:', error.original.message || error.original);
+            }
+            if (error.parent) {
+                console.error('Parent error:', error.parent.message || error.parent);
+            }
+            console.error('Full error:', error);
+
+            await safeRollback(transaction);
 
             logger.error(`Error updating ticket: ${error.message}`);
 
@@ -1939,7 +2018,7 @@ const ticketController = {
             const { status, cancelReason, updateUserId } = req.body;
 
             if (!status) {
-                await transaction.rollback();
+                await safeRollback(transaction);
                 return res.status(400).json({
                     success: false,
                     message: 'Status is required'
@@ -1948,7 +2027,7 @@ const ticketController = {
 
             const validStatuses = ['pending', 'preparing', 'ready', 'served', 'paid', 'cancel', 'void'];
             if (!validStatuses.includes(status)) {
-                await transaction.rollback();
+                await safeRollback(transaction);
                 return res.status(400).json({
                     success: false,
                     message: 'Invalid status. Must be one of: ' + validStatuses.join(', ')
@@ -1959,7 +2038,7 @@ const ticketController = {
             if (status === 'cancel') {
                 cancelUserId = updateUserId;
                 if (!cancelReason || cancelReason.trim() === '') {
-                    await transaction.rollback();
+                    await safeRollback(transaction);
                     return res.status(400).json({
                         success: false,
                         message: 'Cancel reason is required when cancelling a ticket'
@@ -1973,7 +2052,7 @@ const ticketController = {
             });
 
             if (!ticket) {
-                await transaction.rollback();
+                await safeRollback(transaction);
                 return res.status(404).json({
                     success: false,
                     message: 'Ticket not found'
@@ -1999,7 +2078,7 @@ const ticketController = {
                     logger.info(`✓ Cards released successfully for ticket ${id}`);
                 } catch (reversalError) {
                     logger.error(`Error releasing cards: ${reversalError.message}`);
-                    await transaction.rollback();
+                    await safeRollback(transaction);
                     return res.status(500).json({
                         success: false,
                         message: `Error releasing cards during ticket ${status}`,
@@ -2014,7 +2093,7 @@ const ticketController = {
                 let tableStatus = 'occupied';
                 let currentOrderId = ticket.id;
 
-                if (status === 'paid' || status === 'served') {
+                if (status === 'paid') {
                     tableStatus = 'cleaning';
                     currentOrderId = null;
                 } else if (status === 'cancel' || status === 'void') {
@@ -2045,7 +2124,18 @@ const ticketController = {
                 }
             });
         } catch (error) {
-            await transaction.rollback();
+            console.error('=== TICKET STATUS UPDATE FAILED ===');
+            console.error('Error name:', error.name);
+            console.error('Error message:', error.message);
+            if (error.original) {
+                console.error('Original SQL error:', error.original.message || error.original);
+            }
+            if (error.parent) {
+                console.error('Parent error:', error.parent.message || error.parent);
+            }
+            console.error('Full error:', error);
+
+            await safeRollback(transaction);
             logger.error(`Error updating ticket status: ${error.message}`);
 
             res.status(500).json({
@@ -2065,7 +2155,7 @@ const ticketController = {
             const { payments, paymentStatus, paymentId } = req.body;
 
             if (!paymentStatus) {
-                await t.rollback();
+                await safeRollback(t);
                 return res.status(400).json({
                     success: false,
                     message: 'Payment status is required'
@@ -2074,7 +2164,7 @@ const ticketController = {
 
             const validPaymentStatuses = ['pending', 'paid', 'refunded'];
             if (!validPaymentStatuses.includes(paymentStatus)) {
-                await t.rollback();
+                await safeRollback(t);
                 return res.status(400).json({
                     success: false,
                     message: 'Invalid payment status'
@@ -2083,7 +2173,7 @@ const ticketController = {
 
             const ticket = await Ticket.findByPk(id, { transaction: t });
             if (!ticket) {
-                await t.rollback();
+                await safeRollback(t);
                 return res.status(404).json({
                     success: false,
                     message: 'Ticket not found'
@@ -2186,11 +2276,8 @@ const ticketController = {
             });
 
         } catch (error) {
-            try {
-                await t.rollback();
-            } catch (rollbackError) {
-                // Ignore rollback error if already finished
-            }
+            console.error('=== UPDATE PAYMENT STATUS FAILED ===', error);
+            await safeRollback(t);
             res.status(500).json({
                 success: false,
                 message: 'Error updating payment status',
@@ -2217,7 +2304,7 @@ const ticketController = {
             });
 
             if (!ticket) {
-                await transaction.rollback();
+                await safeRollback(transaction);
                 return res.status(404).json({
                     success: false,
                     message: 'Ticket not found'
@@ -2226,7 +2313,7 @@ const ticketController = {
 
             const promotion = await Promotion.findByPk(promotionId, { transaction });
             if (!promotion) {
-                await transaction.rollback();
+                await safeRollback(transaction);
                 return res.status(404).json({
                     success: false,
                     message: 'Promotion not found'
@@ -2245,7 +2332,8 @@ const ticketController = {
             });
 
         } catch (error) {
-            await transaction.rollback();
+            console.error('=== APPLY PROMOTION FAILED ===', error);
+            await safeRollback(transaction);
             res.status(500).json({
                 success: false,
                 message: 'Error applying promotion',
@@ -2272,7 +2360,8 @@ const ticketController = {
             });
 
         } catch (error) {
-            await transaction.rollback();
+            console.error('=== REMOVE PROMOTION FAILED ===', error);
+            await safeRollback(transaction);
             res.status(500).json({
                 success: false,
                 message: 'Error removing promotion',
@@ -2294,7 +2383,7 @@ const ticketController = {
             });
 
             if (!ticket) {
-                await transaction.rollback();
+                await safeRollback(transaction);
                 return res.status(404).json({
                     success: false,
                     message: 'Ticket not found'
@@ -2302,7 +2391,7 @@ const ticketController = {
             }
 
             if (ticket.paymentStatus === 'paid' && ticket.status === 'served') {
-                await transaction.rollback();
+                await safeRollback(transaction);
                 return res.status(400).json({
                     success: false,
                     message: 'Cannot delete completed and paid ticket'
@@ -2333,7 +2422,8 @@ const ticketController = {
                 message: 'Ticket deleted successfully'
             });
         } catch (error) {
-            await transaction.rollback();
+            console.error('=== DELETE TICKET FAILED ===', error);
+            await safeRollback(transaction);
 
             res.status(500).json({
                 success: false,
@@ -2384,21 +2474,43 @@ const ticketController = {
     // Get pending tickets (for kitchen)
     getPendingTickets: async (req, res) => {
         try {
+            const { status, locationId } = req.query;
+
+            let statusList = ['pending', 'preparing', 'ready'];
+            if (status) {
+                statusList = typeof status === 'string' ? status.split(',') : status;
+            }
+
+            const whereCondition = {
+                status: {
+                    [Op.in]: statusList
+                }
+            };
+
+            if (locationId) {
+                whereCondition.locationId = locationId;
+            }
+
             const tickets = await Ticket.findAll({
-                where: {
-                    status: {
-                        [Op.in]: ['pending', 'preparing']
-                    }
-                },
+                where: whereCondition,
                 include: [
-                    { model: Table, as: 'table', attributes: ['id', 'name', 'number'] },
+                    { model: Table, as: 'table', attributes: ['id', 'name', 'number', 'capacity'] },
                     {
                         model: TicketLine,
                         as: 'ticketLines',
                         include: [
+                            {
+                                model: Product,
+                                as: 'product',
+                                attributes: ['id', 'pro_id', 'pro_name', 'pro_price', 'pro_image_path', 'pro_category'],
+                                include: [
+                                    { model: Category, as: 'category', required: false }
+                                ]
+                            },
                             { model: Promotion, as: 'promotion', required: false }
                         ]
-                    }
+                    },
+                    { model: User, as: 'createUser', attributes: ['id', 'cus_name'], required: false }
                 ],
                 order: [['createdAt', 'ASC']]
             });
@@ -2409,6 +2521,7 @@ const ticketController = {
                 count: tickets.length
             });
         } catch (error) {
+            console.error('Error fetching pending tickets for kitchen:', error);
             res.status(500).json({
                 success: false,
                 message: 'Error fetching pending tickets',
@@ -2806,8 +2919,12 @@ const ticketController = {
             const tickets = await Ticket.findAll({
                 where: {
                     tableId: tableId,
-                    status: 'pending'
+                    paymentStatus: 'pending',
+                    status: {
+                        [Op.notIn]: ['cancel', 'void', 'paid']
+                    }
                 },
+                order: [['createdAt', 'DESC']],
                 include: [
                     {
                         model: SalePayment,

@@ -9,7 +9,7 @@ const tableController = {
   // Get all tables (existing method - no changes needed)
   getAllTables: async (req, res) => {
     try {
-      const { status, capacity, page = 1, limit = 10 } = req.query;
+      const { status, capacity, page = 1, limit = 100 } = req.query;
       
       // Build where condition
       const whereCondition = {};

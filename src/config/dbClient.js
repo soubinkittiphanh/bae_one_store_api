@@ -64,7 +64,7 @@ const clientDB = {
         "host": "150.95.31.23",
         "user": "root",
         "password": "sdat@3480",
-        "database": "dcommerce_pro_bbs",
+        "database": "dcommerce_demo",
         "port": 3306,
     },
     "ksouk": {

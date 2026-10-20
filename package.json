@@ -8,7 +8,8 @@
     "predev": "npm install && npm install bcrypt",
     "dev": "cross-env TZ=Asia/Vientiane nodemon src/index.js",
     "prestart": "npm install && npm install bcrypt",
-    "start": "cross-env TZ=Asia/Vientiane node src/index.js"
+    "start": "cross-env TZ=Asia/Vientiane node src/index.js",
+    "seed:restaurant": "node seed_restaurant_pos_menus.js"
   },
   "author": "what the dev",
   "license": "ISC",
