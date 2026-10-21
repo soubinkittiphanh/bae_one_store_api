@@ -34,9 +34,9 @@ const sequelize = createSequelizeInstance(env.database, {
 });
 
 // Tutorial database connection
-const tutorialDB = createSequelizeInstance('tutorial_db', {
-  pool: { max: 5, min: 0, acquire: 30000, idle: 10000, }
-});
+// const tutorialDB = createSequelizeInstance('tutorial_db', {
+//   pool: { max: 5, min: 0, acquire: 30000, idle: 10000, }
+// });
 
 // Database authentication
 const authenticateDatabase = async (instance, name) => {
@@ -50,7 +50,7 @@ const authenticateDatabase = async (instance, name) => {
 
 // Initialize database connections
 authenticateDatabase(sequelize, 'client_db');
-authenticateDatabase(tutorialDB, 'tutorial_db');
+// authenticateDatabase(tutorialDB, 'tutorial_db');
 
 // Model definitions
 const initializeModels = () => {
@@ -59,7 +59,7 @@ const initializeModels = () => {
   // Core Sequelize instances
   db.sequelize = sequelize;
   db.Sequelize = Sequelize;
-  db.centralSequelize = tutorialDB;
+  // db.centralSequelize = tutorialDB;
 
   // Import all models
   const models = {
@@ -256,7 +256,7 @@ const initializeModels = () => {
     mfJournalEntry: require("../microfinance/journal/model")(sequelize, DataTypes),
 
     // Tutorial model (uses different DB)
-    tuturial: require("../tutorial/model")(tutorialDB, DataTypes),
+    // tuturial: require("../tutorial/model")(tutorialDB, DataTypes),
   };
 
   // Add all models to db object

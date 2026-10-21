@@ -130,6 +130,12 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: false,
             defaultValue: false,
         },
+        ticket_logo_size: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            defaultValue: 65,
+            comment: 'Logo width in pixels on POS ticket (30-220px)'
+        },
         term_condition: {
             type: DataTypes.TEXT,
             allowNull: true,
