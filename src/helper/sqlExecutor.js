@@ -354,6 +354,79 @@ const ensurePackagingColumns = async () => {
 };
 
 /**
+ * Automatically checks and ensures company table columns exist across all client databases.
+ */
+const ensureCompanyColumns = async () => {
+  try {
+    const dbName = sequelize.config.database;
+    logger.info(`Checking company table columns in database: ${dbName}`);
+
+    const tableExists = async (tableName) => {
+      const result = await sequelize.query(`
+        SELECT TABLE_NAME 
+        FROM INFORMATION_SCHEMA.TABLES 
+        WHERE TABLE_SCHEMA = :dbName 
+          AND LOWER(TABLE_NAME) = :tableName
+      `, {
+        replacements: { dbName, tableName: tableName.toLowerCase() },
+        type: QueryTypes.SELECT
+      });
+      return result.length > 0;
+    };
+
+    const hasColumn = async (tableName, colName) => {
+      const result = await sequelize.query(`
+        SELECT COLUMN_NAME 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_SCHEMA = :dbName 
+          AND LOWER(TABLE_NAME) = :tableName
+          AND LOWER(COLUMN_NAME) = :colName
+      `, {
+        replacements: { dbName, tableName: tableName.toLowerCase(), colName: colName.toLowerCase() },
+        type: QueryTypes.SELECT
+      });
+      return result.length > 0;
+    };
+
+    if (await tableExists('company')) {
+      if (!(await hasColumn('company', 'ticket_logo_size'))) {
+        logger.info("Adding ticket_logo_size column to company table...");
+        await sequelize.query(
+          "ALTER TABLE `company` ADD COLUMN `ticket_logo_size` INT DEFAULT 65 COMMENT 'Logo width in pixels on POS ticket (30-220px)'",
+          { type: QueryTypes.BULKUPDATE }
+        );
+      }
+      if (!(await hasColumn('company', 'customer_welcome_text'))) {
+        await sequelize.query(
+          "ALTER TABLE `company` ADD COLUMN `customer_welcome_text` TEXT NULL",
+          { type: QueryTypes.BULKUPDATE }
+        );
+      }
+      if (!(await hasColumn('company', 'term_condition'))) {
+        await sequelize.query(
+          "ALTER TABLE `company` ADD COLUMN `term_condition` TEXT NULL",
+          { type: QueryTypes.BULKUPDATE }
+        );
+      }
+      if (!(await hasColumn('company', 'showLogoOnTicket'))) {
+        await sequelize.query(
+          "ALTER TABLE `company` ADD COLUMN `showLogoOnTicket` TINYINT(1) NOT NULL DEFAULT 0",
+          { type: QueryTypes.BULKUPDATE }
+        );
+      }
+      if (!(await hasColumn('company', 'ticketLayout'))) {
+        await sequelize.query(
+          "ALTER TABLE `company` ADD COLUMN `ticketLayout` ENUM('classic', 'modern') NOT NULL DEFAULT 'classic'",
+          { type: QueryTypes.BULKUPDATE }
+        );
+      }
+    }
+  } catch (error) {
+    logger.warn("Could not ensure company columns:", error.message);
+  }
+};
+
+/**
  * Reads and executes the SQL cleanup script (toomanykey.sql)
  * to drop redundant indexes before Sequelize synchronization runs.
  */
@@ -370,6 +443,9 @@ const executeSqlScript = async () => {
 
     // Automatically ensure returnable packaging columns and ENUM values (SOLD, RETURNED) are present
     await ensurePackagingColumns();
+
+    // Automatically ensure company table columns (ticket_logo_size, etc.) are present
+    await ensureCompanyColumns();
 
     const filePath = path.join(__dirname, '../../toomanykey.sql');
     if (!fs.existsSync(filePath)) {

@@ -24,8 +24,8 @@ const startApp = async () => {
             logger.info("Seeding REDEEM product (ID 999)");
             
             // Find first available unit and company IDs
-            const firstUnit = await unit.findOne();
-            const firstCompany = await company.findOne();
+            const firstUnit = await unit.findOne({ attributes: ['id'] });
+            const firstCompany = await company.findOne({ attributes: ['id'] });
             const unitId = firstUnit ? firstUnit.id : 1;
             const companyId = firstCompany ? firstCompany.id : 1;
 
@@ -45,8 +45,8 @@ const startApp = async () => {
             logger.info(`REDEEM product seeded successfully with unitId: ${unitId}, companyId: ${companyId}`);
         } else {
             // Ensure existing REDEEM product has unitId and companyId populated if they are null
-            const firstUnit = await unit.findOne();
-            const firstCompany = await company.findOne();
+            const firstUnit = await unit.findOne({ attributes: ['id'] });
+            const firstCompany = await company.findOne({ attributes: ['id'] });
             const unitId = firstUnit ? firstUnit.id : 1;
             const companyId = firstCompany ? firstCompany.id : 1;
 
