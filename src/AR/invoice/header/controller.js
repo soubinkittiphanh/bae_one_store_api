@@ -141,6 +141,87 @@ class InvoiceHeaderController {
 
         } catch (error) {
             logger.error('Error fetching invoices:', error);
+            if (error.original?.errno === 1054 || error.message?.includes('Unknown column')) {
+                try {
+                    const { QueryTypes } = require('sequelize');
+                    await sequelize.query("ALTER TABLE `ARReceiveHeader` ADD COLUMN IF NOT EXISTS `documents` JSON DEFAULT NULL", { type: QueryTypes.BULKUPDATE }).catch(() => {});
+                    await sequelize.query("ALTER TABLE `ARInvoiceHeader` ADD COLUMN IF NOT EXISTS `documents` JSON DEFAULT NULL", { type: QueryTypes.BULKUPDATE }).catch(() => {});
+                    await sequelize.query("ALTER TABLE `ARInvoiceHeader` ADD COLUMN IF NOT EXISTS `saleHeaderId` INT(11) DEFAULT NULL", { type: QueryTypes.BULKUPDATE }).catch(() => {});
+                    await sequelize.query("ALTER TABLE `ARInvoiceHeader` ADD COLUMN IF NOT EXISTS `sourceType` ENUM('POS_ORDER', 'JOB_BATCH', 'MANUAL') NOT NULL DEFAULT 'MANUAL'", { type: QueryTypes.BULKUPDATE }).catch(() => {});
+
+                    const retryResult = await InvoiceHeader.findAndCountAll({
+                        where: whereClause,
+                        include: [
+                            {
+                                model: client,
+                                as: 'client'
+                            },
+                            {
+                                model: Agency,
+                                as: 'agency'
+                            },
+                            {
+                                model: JobBatch,
+                                as: 'jobbatch'
+                            },
+                            {
+                                model: currency,
+                                as: 'currency'
+                            },
+                            {
+                                model: user,
+                                as: 'maker'
+                            },
+                            {
+                                model: user,
+                                as: 'updateUser'
+                            },
+                            {
+                                model: arInvoiceLine,
+                                as: 'invoiceLines'
+                            },
+                            {
+                                model: saleHeader,
+                                as: 'saleOrder',
+                                attributes: ['id', 'bookingDate', 'referenceNo', 'total']
+                            },
+                            {
+                                model: arReceiveHeaderV2,
+                                as: 'receiveHeaders',
+                                include: [
+                                    {
+                                        model: arReceiveLine,
+                                        as: 'receiveLines'
+                                    }
+                                ]
+                            }
+                        ],
+                        order: [[sortBy, sortOrder.toUpperCase()]],
+                        limit: parseInt(limit),
+                        offset: parseInt(offset),
+                        distinct: true
+                    });
+
+                    const totalPages = Math.ceil(retryResult.count / limit);
+                    return res.status(200).json({
+                        success: true,
+                        data: {
+                            invoices: retryResult.rows,
+                            pagination: {
+                                currentPage: parseInt(page),
+                                totalPages,
+                                totalItems: retryResult.count,
+                                itemsPerPage: parseInt(limit),
+                                hasNextPage: page < totalPages,
+                                hasPrevPage: page > 1
+                            }
+                        }
+                    });
+                } catch (retryErr) {
+                    logger.error('Retry after column recovery failed in invoice findAll:', retryErr);
+                }
+            }
+
             res.status(500).json({
                 success: false,
                 message: 'Error fetching invoices',

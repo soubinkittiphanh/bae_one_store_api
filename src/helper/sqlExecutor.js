@@ -387,6 +387,57 @@ const ensurePackagingColumns = async () => {
             { type: QueryTypes.BULKUPDATE }
           );
         }
+
+        if (!(await hasColumn('saleLine', 'isReturn'))) {
+          logger.info("Adding saleLine.isReturn column...");
+          await sequelize.query(
+            "ALTER TABLE `saleLine` ADD COLUMN `isReturn` TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Whether this line represents a returned item / empty packaging inflow'",
+            { type: QueryTypes.BULKUPDATE }
+          );
+          logger.info("Successfully added isReturn to saleLine table.");
+        }
+
+        if (!(await hasColumn('saleLine', 'isGift'))) {
+          await sequelize.query(
+            "ALTER TABLE `saleLine` ADD COLUMN `isGift` TINYINT(1) NOT NULL DEFAULT 0",
+            { type: QueryTypes.BULKUPDATE }
+          );
+        }
+
+        if (!(await hasColumn('saleLine', 'colorId'))) {
+          await sequelize.query(
+            "ALTER TABLE `saleLine` ADD COLUMN `colorId` INT(11) DEFAULT NULL",
+            { type: QueryTypes.BULKUPDATE }
+          );
+        }
+
+        if (!(await hasColumn('saleLine', 'sizeId'))) {
+          await sequelize.query(
+            "ALTER TABLE `saleLine` ADD COLUMN `sizeId` INT(11) DEFAULT NULL",
+            { type: QueryTypes.BULKUPDATE }
+          );
+        }
+
+        if (!(await hasColumn('saleLine', 'taxType'))) {
+          await sequelize.query(
+            "ALTER TABLE `saleLine` ADD COLUMN `taxType` ENUM('INC', 'EXC') NOT NULL DEFAULT 'INC'",
+            { type: QueryTypes.BULKUPDATE }
+          );
+        }
+
+        if (!(await hasColumn('saleLine', 'taxRate'))) {
+          await sequelize.query(
+            "ALTER TABLE `saleLine` ADD COLUMN `taxRate` DOUBLE NOT NULL DEFAULT 0",
+            { type: QueryTypes.BULKUPDATE }
+          );
+        }
+
+        if (!(await hasColumn('saleLine', 'taxAmount'))) {
+          await sequelize.query(
+            "ALTER TABLE `saleLine` ADD COLUMN `taxAmount` DOUBLE NOT NULL DEFAULT 0",
+            { type: QueryTypes.BULKUPDATE }
+          );
+        }
       }
     } catch (saleLineErr) {
       logger.warn("Could not ensure saleLine packaging columns:", saleLineErr.message);
@@ -609,6 +660,362 @@ const ensureDashboardMenuTable = async () => {
 };
 
 /**
+ * Automatically checks and ensures AR and AP tables and columns (documents, glPostingStatus, etc.)
+ * exist across all client databases on API startup.
+ */
+const ensureARAndAPColumns = async () => {
+  try {
+    const dbName = sequelize.config.database;
+    logger.info(`Checking AR and AP tables and columns in database: ${dbName}`);
+
+    // Helper to get real table name (case-insensitive)
+    const getActualTableName = async (tableName) => {
+      const result = await sequelize.query(`
+        SELECT TABLE_NAME 
+        FROM INFORMATION_SCHEMA.TABLES 
+        WHERE TABLE_SCHEMA = DATABASE() 
+          AND LOWER(TABLE_NAME) = :tableName
+      `, {
+        replacements: { tableName: tableName.toLowerCase() },
+        type: QueryTypes.SELECT
+      });
+      return result.length > 0 ? result[0].TABLE_NAME : null;
+    };
+
+    // Helper to check if column exists (case-insensitive)
+    const hasColumn = async (actualTableName, colName) => {
+      const result = await sequelize.query(`
+        SELECT COLUMN_NAME 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_SCHEMA = DATABASE() 
+          AND LOWER(TABLE_NAME) = :tableName
+          AND LOWER(COLUMN_NAME) = :colName
+      `, {
+        replacements: { tableName: actualTableName.toLowerCase(), colName: colName.toLowerCase() },
+        type: QueryTypes.SELECT
+      });
+      return result.length > 0;
+    };
+
+    const addColumnIfMissing = async (actualTableName, colName, colDefinition) => {
+      try {
+        if (!(await hasColumn(actualTableName, colName))) {
+          logger.info(`Adding column ${colName} to ${actualTableName}...`);
+          await sequelize.query(
+            `ALTER TABLE \`${actualTableName}\` ADD COLUMN \`${colName}\` ${colDefinition}`,
+            { type: QueryTypes.BULKUPDATE }
+          );
+          logger.info(`Successfully added ${colName} to ${actualTableName}.`);
+        }
+      } catch (err) {
+        logger.warn(`Could not add column ${colName} to ${actualTableName}: ${err.message}`);
+      }
+    };
+
+    // 1. ARReceiveHeader
+    let arReceiveHeaderTable = await getActualTableName('ARReceiveHeader');
+    if (!arReceiveHeaderTable) {
+      logger.info("Creating ARReceiveHeader table...");
+      await sequelize.query(`
+        CREATE TABLE IF NOT EXISTS \`ARReceiveHeader\` (
+          \`id\` int(11) NOT NULL AUTO_INCREMENT,
+          \`receiptNumber\` varchar(255) NOT NULL,
+          \`bookingDate\` date NOT NULL,
+          \`receivedDate\` date NOT NULL,
+          \`totalReceivedAmount\` decimal(15,2) NOT NULL DEFAULT 0.00,
+          \`exchangeRate\` decimal(15,2) NOT NULL DEFAULT 1.00,
+          \`paymentMethod\` enum('cash','check','bank_transfer','credit_card','other') NOT NULL DEFAULT 'cash',
+          \`referenceNumber\` varchar(255) DEFAULT NULL,
+          \`notes\` text DEFAULT NULL,
+          \`status\` enum('active','voided','cancelled') NOT NULL DEFAULT 'active',
+          \`glPostingStatus\` enum('unposted','posted') NOT NULL DEFAULT 'unposted',
+          \`glPostingDate\` datetime DEFAULT NULL,
+          \`glBatchId\` varchar(100) DEFAULT NULL,
+          \`documents\` json DEFAULT NULL,
+          \`invoiceHeaderId\` int(11) DEFAULT NULL,
+          \`inputterId\` int(11) DEFAULT NULL,
+          \`makerId\` int(11) DEFAULT NULL,
+          \`updateUserId\` int(11) DEFAULT NULL,
+          \`currencyId\` int(11) DEFAULT NULL,
+          \`paymentId\` int(11) DEFAULT NULL,
+          \`createdAt\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          \`updateTimestamp\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          PRIMARY KEY (\`id\`),
+          UNIQUE KEY \`receiptNumber\` (\`receiptNumber\`),
+          KEY \`bookingDate\` (\`bookingDate\`),
+          KEY \`invoiceHeaderId\` (\`invoiceHeaderId\`),
+          KEY \`status\` (\`status\`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+      `, { type: QueryTypes.BULKUPDATE });
+      arReceiveHeaderTable = await getActualTableName('ARReceiveHeader');
+    }
+
+    if (arReceiveHeaderTable) {
+      await addColumnIfMissing(arReceiveHeaderTable, 'documents', "JSON DEFAULT NULL COMMENT 'Attached receipt documents/files'");
+      await addColumnIfMissing(arReceiveHeaderTable, 'glPostingStatus', "ENUM('unposted', 'posted') NOT NULL DEFAULT 'unposted'");
+      await addColumnIfMissing(arReceiveHeaderTable, 'glPostingDate', "DATETIME DEFAULT NULL");
+      await addColumnIfMissing(arReceiveHeaderTable, 'glBatchId', "VARCHAR(100) DEFAULT NULL");
+      await addColumnIfMissing(arReceiveHeaderTable, 'status', "ENUM('active', 'voided', 'cancelled') NOT NULL DEFAULT 'active'");
+      await addColumnIfMissing(arReceiveHeaderTable, 'paymentMethod', "ENUM('cash', 'check', 'bank_transfer', 'credit_card', 'other') NOT NULL DEFAULT 'cash'");
+      await addColumnIfMissing(arReceiveHeaderTable, 'exchangeRate', "DECIMAL(15, 2) NOT NULL DEFAULT 1.00");
+      await addColumnIfMissing(arReceiveHeaderTable, 'referenceNumber', "VARCHAR(255) DEFAULT NULL");
+      await addColumnIfMissing(arReceiveHeaderTable, 'notes', "TEXT DEFAULT NULL");
+      await addColumnIfMissing(arReceiveHeaderTable, 'invoiceHeaderId', "INT(11) DEFAULT NULL");
+      await addColumnIfMissing(arReceiveHeaderTable, 'inputterId', "INT(11) DEFAULT NULL");
+      await addColumnIfMissing(arReceiveHeaderTable, 'makerId', "INT(11) DEFAULT NULL");
+      await addColumnIfMissing(arReceiveHeaderTable, 'updateUserId', "INT(11) DEFAULT NULL");
+      await addColumnIfMissing(arReceiveHeaderTable, 'currencyId', "INT(11) DEFAULT NULL");
+      await addColumnIfMissing(arReceiveHeaderTable, 'paymentId', "INT(11) DEFAULT NULL");
+    }
+
+    // 2. ARInvoiceHeader
+    let arInvoiceHeaderTable = await getActualTableName('ARInvoiceHeader');
+    if (!arInvoiceHeaderTable) {
+      logger.info("Creating ARInvoiceHeader table...");
+      await sequelize.query(`
+        CREATE TABLE IF NOT EXISTS \`ARInvoiceHeader\` (
+          \`id\` int(11) NOT NULL AUTO_INCREMENT,
+          \`invoiceNumber\` varchar(255) NOT NULL,
+          \`invoiceDate\` date NOT NULL,
+          \`dueDate\` date DEFAULT NULL,
+          \`exchangeRate\` decimal(15,2) NOT NULL DEFAULT 1.00,
+          \`totalAmount\` decimal(15,2) NOT NULL DEFAULT 0.00,
+          \`taxAmount\` decimal(15,2) NOT NULL DEFAULT 0.00,
+          \`netAmount\` decimal(15,2) NOT NULL DEFAULT 0.00,
+          \`status\` enum('draft','sent','paid','overdue','cancelled') NOT NULL DEFAULT 'draft',
+          \`description\` text DEFAULT NULL,
+          \`glPostingStatus\` enum('unposted','posted') NOT NULL DEFAULT 'unposted',
+          \`glPostingDate\` datetime DEFAULT NULL,
+          \`glBatchId\` varchar(100) DEFAULT NULL,
+          \`documents\` json DEFAULT NULL,
+          \`saleHeaderId\` int(11) DEFAULT NULL,
+          \`sourceType\` enum('POS_ORDER','JOB_BATCH','MANUAL') NOT NULL DEFAULT 'MANUAL',
+          \`clientId\` int(11) DEFAULT NULL,
+          \`currencyId\` int(11) DEFAULT NULL,
+          \`agencyId\` int(11) DEFAULT NULL,
+          \`jobBatchId\` int(11) DEFAULT NULL,
+          \`makerId\` int(11) DEFAULT NULL,
+          \`updateUserId\` int(11) DEFAULT NULL,
+          \`createdAt\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          \`updateTimestamp\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          PRIMARY KEY (\`id\`),
+          UNIQUE KEY \`invoiceNumber\` (\`invoiceNumber\`),
+          KEY \`invoiceDate\` (\`invoiceDate\`),
+          KEY \`status\` (\`status\`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+      `, { type: QueryTypes.BULKUPDATE });
+      arInvoiceHeaderTable = await getActualTableName('ARInvoiceHeader');
+    }
+
+    if (arInvoiceHeaderTable) {
+      await addColumnIfMissing(arInvoiceHeaderTable, 'documents', "JSON DEFAULT NULL COMMENT 'Attached invoice documents/files'");
+      await addColumnIfMissing(arInvoiceHeaderTable, 'saleHeaderId', "INT(11) DEFAULT NULL COMMENT 'Linked POS Sale Header ID if created from POS Order'");
+      await addColumnIfMissing(arInvoiceHeaderTable, 'sourceType', "ENUM('POS_ORDER', 'JOB_BATCH', 'MANUAL') NOT NULL DEFAULT 'MANUAL'");
+      await addColumnIfMissing(arInvoiceHeaderTable, 'glPostingStatus', "ENUM('unposted', 'posted') NOT NULL DEFAULT 'unposted'");
+      await addColumnIfMissing(arInvoiceHeaderTable, 'glPostingDate', "DATETIME DEFAULT NULL");
+      await addColumnIfMissing(arInvoiceHeaderTable, 'glBatchId', "VARCHAR(100) DEFAULT NULL");
+      await addColumnIfMissing(arInvoiceHeaderTable, 'agencyId', "INT(11) DEFAULT NULL");
+      await addColumnIfMissing(arInvoiceHeaderTable, 'jobBatchId', "INT(11) DEFAULT NULL");
+      await addColumnIfMissing(arInvoiceHeaderTable, 'taxAmount', "DECIMAL(15, 2) NOT NULL DEFAULT 0.00");
+      await addColumnIfMissing(arInvoiceHeaderTable, 'netAmount', "DECIMAL(15, 2) NOT NULL DEFAULT 0.00");
+      await addColumnIfMissing(arInvoiceHeaderTable, 'clientId', "INT(11) DEFAULT NULL");
+      await addColumnIfMissing(arInvoiceHeaderTable, 'currencyId', "INT(11) DEFAULT NULL");
+      await addColumnIfMissing(arInvoiceHeaderTable, 'makerId', "INT(11) DEFAULT NULL");
+      await addColumnIfMissing(arInvoiceHeaderTable, 'updateUserId', "INT(11) DEFAULT NULL");
+    }
+
+    // 3. APInvoice
+    let apInvoiceTable = await getActualTableName('APInvoice');
+    if (!apInvoiceTable) {
+      logger.info("Creating APInvoice table...");
+      await sequelize.query(`
+        CREATE TABLE IF NOT EXISTS \`APInvoice\` (
+          \`id\` int(11) NOT NULL AUTO_INCREMENT,
+          \`invoiceNumber\` varchar(255) NOT NULL,
+          \`vendorInvoiceNumber\` varchar(255) DEFAULT NULL,
+          \`invoiceDate\` date NOT NULL,
+          \`dueDate\` date DEFAULT NULL,
+          \`description\` text DEFAULT NULL,
+          \`totalAmount\` decimal(15,2) NOT NULL DEFAULT 0.00,
+          \`paidAmount\` decimal(15,2) NOT NULL DEFAULT 0.00,
+          \`exchangeRate\` decimal(15,6) NOT NULL DEFAULT 1.000000,
+          \`status\` enum('draft','submitted','approved','partially_paid','paid','voided') NOT NULL DEFAULT 'draft',
+          \`approvedAt\` datetime DEFAULT NULL,
+          \`note\` text DEFAULT NULL,
+          \`vendorId\` int(11) DEFAULT NULL,
+          \`currencyId\` int(11) DEFAULT NULL,
+          \`makerId\` int(11) DEFAULT NULL,
+          \`checkerId\` int(11) DEFAULT NULL,
+          \`agencyId\` int(11) DEFAULT NULL,
+          \`glPostingStatus\` enum('unposted','posted') NOT NULL DEFAULT 'unposted',
+          \`glPostingDate\` datetime DEFAULT NULL,
+          \`glBatchId\` varchar(100) DEFAULT NULL,
+          \`documents\` json DEFAULT NULL,
+          \`createdAt\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          \`updateTimestamp\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          PRIMARY KEY (\`id\`),
+          UNIQUE KEY \`invoiceNumber\` (\`invoiceNumber\`),
+          KEY \`invoiceDate\` (\`invoiceDate\`),
+          KEY \`status\` (\`status\`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+      `, { type: QueryTypes.BULKUPDATE });
+      apInvoiceTable = await getActualTableName('APInvoice');
+    }
+
+    if (apInvoiceTable) {
+      await addColumnIfMissing(apInvoiceTable, 'documents', "JSON DEFAULT NULL");
+      await addColumnIfMissing(apInvoiceTable, 'glPostingStatus', "ENUM('unposted', 'posted') NOT NULL DEFAULT 'unposted'");
+      await addColumnIfMissing(apInvoiceTable, 'glPostingDate', "DATETIME DEFAULT NULL");
+      await addColumnIfMissing(apInvoiceTable, 'glBatchId', "VARCHAR(100) DEFAULT NULL");
+      await addColumnIfMissing(apInvoiceTable, 'agencyId', "INT(11) DEFAULT NULL");
+    }
+
+    // 4. APInvoiceSettlement
+    let apInvoiceSettlementTable = await getActualTableName('APInvoiceSettlement');
+    if (!apInvoiceSettlementTable) {
+      logger.info("Creating APInvoiceSettlement table...");
+      await sequelize.query(`
+        CREATE TABLE IF NOT EXISTS \`APInvoiceSettlement\` (
+          \`id\` int(11) NOT NULL AUTO_INCREMENT,
+          \`settlementDate\` date NOT NULL,
+          \`paymentAmount\` decimal(15,2) NOT NULL DEFAULT 0.00,
+          \`baseAmount\` decimal(15,2) NOT NULL DEFAULT 0.00,
+          \`status\` enum('draft','completed','cancelled') NOT NULL DEFAULT 'completed',
+          \`reference\` varchar(255) DEFAULT NULL,
+          \`description\` text DEFAULT NULL,
+          \`note\` text DEFAULT NULL,
+          \`invoiceId\` int(11) DEFAULT NULL,
+          \`paymentMethodId\` int(11) DEFAULT NULL,
+          \`bankAccountId\` int(11) DEFAULT NULL,
+          \`makerId\` int(11) DEFAULT NULL,
+          \`checkerId\` int(11) DEFAULT NULL,
+          \`exchangeRate\` decimal(15,6) NOT NULL DEFAULT 1.000000,
+          \`currencyId\` int(11) DEFAULT NULL,
+          \`glPostingStatus\` enum('unposted','posted') NOT NULL DEFAULT 'unposted',
+          \`glPostingDate\` datetime DEFAULT NULL,
+          \`glBatchId\` varchar(100) DEFAULT NULL,
+          \`documents\` json DEFAULT NULL,
+          \`createdAt\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          \`updateTimestamp\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          PRIMARY KEY (\`id\`),
+          KEY \`settlementDate\` (\`settlementDate\`),
+          KEY \`status\` (\`status\`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+      `, { type: QueryTypes.BULKUPDATE });
+      apInvoiceSettlementTable = await getActualTableName('APInvoiceSettlement');
+    }
+
+    if (apInvoiceSettlementTable) {
+      await addColumnIfMissing(apInvoiceSettlementTable, 'documents', "JSON DEFAULT NULL");
+      await addColumnIfMissing(apInvoiceSettlementTable, 'glPostingStatus', "ENUM('unposted', 'posted') NOT NULL DEFAULT 'unposted'");
+      await addColumnIfMissing(apInvoiceSettlementTable, 'glPostingDate', "DATETIME DEFAULT NULL");
+      await addColumnIfMissing(apInvoiceSettlementTable, 'glBatchId', "VARCHAR(100) DEFAULT NULL");
+      await addColumnIfMissing(apInvoiceSettlementTable, 'exchangeRate', "DECIMAL(15, 6) NOT NULL DEFAULT 1.000000");
+      await addColumnIfMissing(apInvoiceSettlementTable, 'currencyId', "INT(11) DEFAULT NULL");
+    }
+
+    // 5. Audit Tables
+    if (!(await getActualTableName('ARReceiveHeaderAudit'))) {
+      await sequelize.query(`
+        CREATE TABLE IF NOT EXISTS \`ARReceiveHeaderAudit\` (
+          \`id\` int(11) NOT NULL AUTO_INCREMENT,
+          \`action\` enum('CREATE','UPDATE','DELETE','VOID','CANCEL','APPROVE') NOT NULL DEFAULT 'UPDATE',
+          \`recordData\` json NOT NULL,
+          \`reason\` text DEFAULT NULL,
+          \`userId\` int(11) NOT NULL,
+          \`auditDate\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          \`receiveHeaderId\` int(11) NOT NULL,
+          PRIMARY KEY (\`id\`),
+          KEY \`receiveHeaderId_auditDate\` (\`receiveHeaderId\`, \`auditDate\`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+      `, { type: QueryTypes.BULKUPDATE });
+    }
+
+    if (!(await getActualTableName('ARInvoiceHeaderAudit'))) {
+      await sequelize.query(`
+        CREATE TABLE IF NOT EXISTS \`ARInvoiceHeaderAudit\` (
+          \`id\` int(11) NOT NULL AUTO_INCREMENT,
+          \`action\` enum('CREATE','UPDATE','DELETE','POST','CANCEL') NOT NULL DEFAULT 'UPDATE',
+          \`recordData\` json NOT NULL,
+          \`reason\` text DEFAULT NULL,
+          \`userId\` int(11) NOT NULL,
+          \`auditDate\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          \`invoiceHeaderId\` int(11) NOT NULL,
+          PRIMARY KEY (\`id\`),
+          KEY \`invoiceHeaderId_auditDate\` (\`invoiceHeaderId\`, \`auditDate\`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+      `, { type: QueryTypes.BULKUPDATE });
+    }
+
+    if (!(await getActualTableName('APInvoiceAudit'))) {
+      await sequelize.query(`
+        CREATE TABLE IF NOT EXISTS \`APInvoiceAudit\` (
+          \`id\` int(11) NOT NULL AUTO_INCREMENT,
+          \`action\` enum('CREATE','UPDATE','DELETE','APPROVE','VOID') NOT NULL DEFAULT 'UPDATE',
+          \`recordData\` json NOT NULL,
+          \`reason\` text DEFAULT NULL,
+          \`userId\` int(11) NOT NULL,
+          \`auditDate\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          \`invoiceId\` int(11) NOT NULL,
+          PRIMARY KEY (\`id\`),
+          KEY \`invoiceId_auditDate\` (\`invoiceId\`, \`auditDate\`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+      `, { type: QueryTypes.BULKUPDATE });
+    }
+
+    if (!(await getActualTableName('APSettlementAudit'))) {
+      await sequelize.query(`
+        CREATE TABLE IF NOT EXISTS \`APSettlementAudit\` (
+          \`id\` int(11) NOT NULL AUTO_INCREMENT,
+          \`action\` enum('CREATE','UPDATE','DELETE','CANCEL') NOT NULL DEFAULT 'UPDATE',
+          \`recordData\` json NOT NULL,
+          \`reason\` text DEFAULT NULL,
+          \`userId\` int(11) NOT NULL,
+          \`auditDate\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          \`settlementId\` int(11) NOT NULL,
+          PRIMARY KEY (\`id\`),
+          KEY \`settlementId_auditDate\` (\`settlementId\`, \`auditDate\`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+      `, { type: QueryTypes.BULKUPDATE });
+    }
+
+    // 6. saleHeader AR & Loyalty columns
+    const saleHeaderTable = await getActualTableName('saleHeader');
+    if (saleHeaderTable) {
+      await addColumnIfMissing(saleHeaderTable, 'arInvoiceId', "INT(11) DEFAULT NULL COMMENT 'Linked AR Invoice ID if posted to AR'");
+      await addColumnIfMissing(saleHeaderTable, 'isPostedToAR', "TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Whether this credit order has been posted to AR'");
+      await addColumnIfMissing(saleHeaderTable, 'arPostedAt', "DATETIME DEFAULT NULL COMMENT 'Timestamp when posted to AR'");
+      await addColumnIfMissing(saleHeaderTable, 'loyaltyDiscount', "DOUBLE NOT NULL DEFAULT 0");
+      await addColumnIfMissing(saleHeaderTable, 'redeemedPoints', "INT(11) NOT NULL DEFAULT 0");
+    }
+
+    // 7. payment_header budget columns
+    const paymentHeaderTable = await getActualTableName('payment_header');
+    if (paymentHeaderTable) {
+      await addColumnIfMissing(paymentHeaderTable, 'expenseSource', "VARCHAR(255) NOT NULL DEFAULT 'POS_SALE'");
+      await addColumnIfMissing(paymentHeaderTable, 'budgetId', "INT(11) DEFAULT NULL");
+      await addColumnIfMissing(paymentHeaderTable, 'budgetImpactYear', "INT(11) DEFAULT NULL");
+    }
+
+    // 8. ar_receive_header (legacy simple basic income) columns
+    const legacyArTable = await getActualTableName('ar_receive_header');
+    if (legacyArTable) {
+      await addColumnIfMissing(legacyArTable, 'locking_session_id', "VARCHAR(255) DEFAULT NULL");
+      await addColumnIfMissing(legacyArTable, 'update_user', "INT(11) DEFAULT NULL");
+      await addColumnIfMissing(legacyArTable, 'isActive', "TINYINT(1) NOT NULL DEFAULT 1");
+      await addColumnIfMissing(legacyArTable, 'currencyId', "INT(11) DEFAULT NULL");
+      await addColumnIfMissing(legacyArTable, 'paymentId', "INT(11) DEFAULT NULL");
+      await addColumnIfMissing(legacyArTable, 'drAccountId', "INT(11) DEFAULT NULL");
+      await addColumnIfMissing(legacyArTable, 'crAccountId', "INT(11) DEFAULT NULL");
+    }
+
+    logger.info("AR and AP tables and columns check completed.");
+  } catch (error) {
+    logger.warn("Could not ensure AR and AP columns:", error.message);
+  }
+};
+
+/**
  * Reads and executes the SQL cleanup script (toomanykey.sql)
  * to drop redundant indexes before Sequelize synchronization runs.
  */
@@ -631,6 +1038,9 @@ const executeSqlScript = async () => {
 
     // Automatically ensure dashboard_menus table and default shortcuts exist
     await ensureDashboardMenuTable();
+
+    // Automatically ensure AR and AP tables and columns (documents, glPostingStatus, etc.) exist
+    await ensureARAndAPColumns();
 
     const filePath = path.join(__dirname, '../../toomanykey.sql');
     if (!fs.existsSync(filePath)) {

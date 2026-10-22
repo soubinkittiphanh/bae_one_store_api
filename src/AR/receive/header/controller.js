@@ -182,6 +182,85 @@ class ReceiveHeaderController {
 
     } catch (error) {
       logger.error('Error fetching receive headers:', error);
+      if (error.original?.errno === 1054 || error.message?.includes('Unknown column')) {
+        try {
+          const { QueryTypes } = require('sequelize');
+          await sequelize.query("ALTER TABLE `ARReceiveHeader` ADD COLUMN IF NOT EXISTS `documents` JSON DEFAULT NULL COMMENT 'Attached receipt documents/files'", { type: QueryTypes.BULKUPDATE }).catch(() => {});
+          await sequelize.query("ALTER TABLE `ARReceiveHeader` ADD COLUMN IF NOT EXISTS `glPostingStatus` ENUM('unposted', 'posted') NOT NULL DEFAULT 'unposted'", { type: QueryTypes.BULKUPDATE }).catch(() => {});
+          await sequelize.query("ALTER TABLE `ARReceiveHeader` ADD COLUMN IF NOT EXISTS `glPostingDate` DATETIME DEFAULT NULL", { type: QueryTypes.BULKUPDATE }).catch(() => {});
+          await sequelize.query("ALTER TABLE `ARReceiveHeader` ADD COLUMN IF NOT EXISTS `glBatchId` VARCHAR(100) DEFAULT NULL", { type: QueryTypes.BULKUPDATE }).catch(() => {});
+          await sequelize.query("ALTER TABLE `ARReceiveHeader` ADD COLUMN IF NOT EXISTS `status` ENUM('active', 'voided', 'cancelled') NOT NULL DEFAULT 'active'", { type: QueryTypes.BULKUPDATE }).catch(() => {});
+
+          const retryResult = await ReceiveHeader.findAndCountAll({
+            where: whereClause,
+            include: [
+              {
+                model: arInvoiceHeader,
+                as: 'invoiceHeader',
+                attributes: ['id', 'invoiceNumber', 'invoiceDate', 'status'],
+                include: [
+                  {
+                    model: JobBatch,
+                    as: 'jobbatch',
+                    include: [
+                      {
+                        model: MOU,
+                        as: 'mou',
+                        include: [
+                          {
+                            model: Agency,
+                            as: 'agency',
+                          }
+                        ],
+                      }
+                    ],
+                  }
+                ],
+              },
+              {
+                model: user,
+                as: 'inputter'
+              },
+              {
+                model: user,
+                as: 'maker'
+              },
+              {
+                model: payment,
+                as: 'payment',
+                attributes: ['id', 'payment_code', 'payment_name', 'payment_desc']
+              },
+              {
+                model: user,
+                as: 'updateUser'
+              }
+            ],
+            order: [[sortBy, sortOrder.toUpperCase()]],
+            limit: parseInt(limit),
+            offset: parseInt(offset),
+            distinct: true
+          });
+
+          const totalPages = Math.ceil(retryResult.count / limit);
+          return res.status(200).json({
+            success: true,
+            data: {
+              receiveHeaders: retryResult.rows,
+              pagination: {
+                currentPage: parseInt(page),
+                totalPages,
+                totalItems: retryResult.count,
+                itemsPerPage: parseInt(limit),
+                hasNextPage: page < totalPages,
+                hasPrevPage: page > 1
+              }
+            }
+          });
+        } catch (retryErr) {
+          logger.error('Retry after column recovery failed:', retryErr);
+        }
+      }
+
       res.status(500).json({
         success: false,
         message: 'Error fetching receive headers',
@@ -318,6 +397,89 @@ class ReceiveHeaderController {
     });
   } catch (error) {
     logger.error('Error fetching receive headers:', error);
+    if (error.original?.errno === 1054 || error.message?.includes('Unknown column')) {
+      try {
+        const { QueryTypes } = require('sequelize');
+        await sequelize.query("ALTER TABLE `ARReceiveHeader` ADD COLUMN IF NOT EXISTS `documents` JSON DEFAULT NULL COMMENT 'Attached receipt documents/files'", { type: QueryTypes.BULKUPDATE }).catch(() => {});
+        await sequelize.query("ALTER TABLE `ARReceiveHeader` ADD COLUMN IF NOT EXISTS `glPostingStatus` ENUM('unposted', 'posted') NOT NULL DEFAULT 'unposted'", { type: QueryTypes.BULKUPDATE }).catch(() => {});
+        await sequelize.query("ALTER TABLE `ARReceiveHeader` ADD COLUMN IF NOT EXISTS `glPostingDate` DATETIME DEFAULT NULL", { type: QueryTypes.BULKUPDATE }).catch(() => {});
+        await sequelize.query("ALTER TABLE `ARReceiveHeader` ADD COLUMN IF NOT EXISTS `glBatchId` VARCHAR(100) DEFAULT NULL", { type: QueryTypes.BULKUPDATE }).catch(() => {});
+        await sequelize.query("ALTER TABLE `ARReceiveHeader` ADD COLUMN IF NOT EXISTS `status` ENUM('active', 'voided', 'cancelled') NOT NULL DEFAULT 'active'", { type: QueryTypes.BULKUPDATE }).catch(() => {});
+
+        const retryResult = await ReceiveHeader.findAndCountAll({
+          where: whereClause,
+          include: [
+            {
+              model: arInvoiceHeader,
+              as: 'invoiceHeader',
+              attributes: ['id', 'invoiceNumber', 'invoiceDate', 'status'],
+              include: [
+                {
+                  model: JobBatch,
+                  as: 'jobbatch',
+                  include: [
+                    {
+                      model: MOU,
+                      as: 'mou',
+                      include: [
+                        {
+                          model: Agency,
+                          as: 'agency',
+                        }
+                      ],
+                    }
+                  ],
+                }
+              ],
+            },
+            {
+              model: user,
+              as: 'inputter'
+            },
+            {
+              model: user,
+              as: 'maker'
+            },
+            {
+              model: payment,
+              as: 'payment',
+              attributes: ['id', 'payment_code', 'payment_name', 'payment_desc']
+            },
+            {
+              model: user,
+              as: 'updateUser'
+            },
+            {
+              model: arReceiveLine,
+              as: 'receiveLines',
+              include: [
+                {
+                  model: arInvoiceLine,
+                  as: 'invoiceLine'
+                },
+                {
+                  model: Transaction,
+                  as: 'transaction'
+                }
+              ]
+            }
+          ],
+          order: [[sortBy, sortOrder.toUpperCase()]],
+          distinct: true
+        });
+
+        return res.status(200).json({
+          success: true,
+          data: {
+            receiveHeaders: retryResult.rows,
+            totalItems: retryResult.count
+          }
+        });
+      } catch (retryErr) {
+        logger.error('Retry after column recovery failed in findAllForPL:', retryErr);
+      }
+    }
+
     res.status(500).json({
       success: false,
       message: 'Error fetching receive headers',
@@ -380,6 +542,67 @@ class ReceiveHeaderController {
 
     } catch (error) {
       logger.error('Error fetching receive header:', error);
+      if (error.original?.errno === 1054 || error.message?.includes('Unknown column')) {
+        try {
+          const { QueryTypes } = require('sequelize');
+          await sequelize.query("ALTER TABLE `ARReceiveHeader` ADD COLUMN IF NOT EXISTS `documents` JSON DEFAULT NULL COMMENT 'Attached receipt documents/files'", { type: QueryTypes.BULKUPDATE }).catch(() => {});
+          await sequelize.query("ALTER TABLE `ARReceiveHeader` ADD COLUMN IF NOT EXISTS `glPostingStatus` ENUM('unposted', 'posted') NOT NULL DEFAULT 'unposted'", { type: QueryTypes.BULKUPDATE }).catch(() => {});
+          await sequelize.query("ALTER TABLE `ARReceiveHeader` ADD COLUMN IF NOT EXISTS `glPostingDate` DATETIME DEFAULT NULL", { type: QueryTypes.BULKUPDATE }).catch(() => {});
+          await sequelize.query("ALTER TABLE `ARReceiveHeader` ADD COLUMN IF NOT EXISTS `glBatchId` VARCHAR(100) DEFAULT NULL", { type: QueryTypes.BULKUPDATE }).catch(() => {});
+          await sequelize.query("ALTER TABLE `ARReceiveHeader` ADD COLUMN IF NOT EXISTS `status` ENUM('active', 'voided', 'cancelled') NOT NULL DEFAULT 'active'", { type: QueryTypes.BULKUPDATE }).catch(() => {});
+
+          const retryHeader = await ReceiveHeader.findByPk(id, {
+            include: [
+              {
+                model: arInvoiceHeader,
+                as: 'invoiceHeader'
+              },
+              {
+                model: user,
+                as: 'inputter'
+              },
+              {
+                model: user,
+                as: 'maker'
+              },
+              {
+                model: payment,
+                as: 'payment',
+                attributes: ['id', 'payment_code', 'payment_name', 'payment_desc']
+              },
+              {
+                model: user,
+                as: 'updateUser'
+              },
+              {
+                model: arReceiveLine,
+                as: 'receiveLines',
+                include: [
+                  {
+                    model: arInvoiceLine,
+                    as: 'invoiceLine'
+                  }
+                ]
+              }
+            ]
+          });
+
+          if (!retryHeader) {
+            return res.status(404).json({
+              success: false,
+              message: 'Receive header not found'
+            });
+          }
+
+          return res.status(200).json({
+            success: true,
+            data: retryHeader
+          });
+        } catch (retryErr) {
+          logger.error('Retry after column recovery failed in findById:', retryErr);
+        }
+      }
+
       res.status(500).json({
         success: false,
         message: 'Error fetching receive header',

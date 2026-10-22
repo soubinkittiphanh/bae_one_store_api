@@ -784,6 +784,62 @@ const ensureCriticalColumns = async (sequelizeInstance) => {
       logger.warn(`Could not ensure product packaging columns: ${err.message}`);
     }
 
+    // 3. Ensure AR & AP critical columns across all client databases
+    const addColIfMissing = async (tbl, col, def) => {
+      try {
+        if (await tableExists(tbl)) {
+          if (!(await hasColumn(tbl, col))) {
+            logger.info(`Adding ${col} to ${tbl} table...`);
+            await sequelizeInstance.query(`ALTER TABLE \`${tbl}\` ADD COLUMN \`${col}\` ${def}`, { type: QueryTypes.BULKUPDATE });
+            logger.info(`Successfully added ${col} to ${tbl} table.`);
+          }
+        }
+      } catch (e) {
+        logger.warn(`Could not add ${col} to ${tbl}: ${e.message}`);
+      }
+    };
+
+    // ARReceiveHeader columns
+    await addColIfMissing('ARReceiveHeader', 'documents', "JSON DEFAULT NULL COMMENT 'Attached receipt documents/files'");
+    await addColIfMissing('ARReceiveHeader', 'glPostingStatus', "ENUM('unposted', 'posted') NOT NULL DEFAULT 'unposted'");
+    await addColIfMissing('ARReceiveHeader', 'glPostingDate', "DATETIME DEFAULT NULL");
+    await addColIfMissing('ARReceiveHeader', 'glBatchId', "VARCHAR(100) DEFAULT NULL");
+    await addColIfMissing('ARReceiveHeader', 'status', "ENUM('active', 'voided', 'cancelled') NOT NULL DEFAULT 'active'");
+    await addColIfMissing('ARReceiveHeader', 'paymentMethod', "ENUM('cash', 'check', 'bank_transfer', 'credit_card', 'other') NOT NULL DEFAULT 'cash'");
+    await addColIfMissing('ARReceiveHeader', 'exchangeRate', "DECIMAL(15, 2) NOT NULL DEFAULT 1.00");
+
+    // ARInvoiceHeader columns
+    await addColIfMissing('ARInvoiceHeader', 'documents', "JSON DEFAULT NULL COMMENT 'Attached invoice documents/files'");
+    await addColIfMissing('ARInvoiceHeader', 'saleHeaderId', "INT(11) DEFAULT NULL COMMENT 'Linked POS Sale Header ID'");
+    await addColIfMissing('ARInvoiceHeader', 'sourceType', "ENUM('POS_ORDER', 'JOB_BATCH', 'MANUAL') NOT NULL DEFAULT 'MANUAL'");
+    await addColIfMissing('ARInvoiceHeader', 'glPostingStatus', "ENUM('unposted', 'posted') NOT NULL DEFAULT 'unposted'");
+    await addColIfMissing('ARInvoiceHeader', 'glPostingDate', "DATETIME DEFAULT NULL");
+    await addColIfMissing('ARInvoiceHeader', 'glBatchId', "VARCHAR(100) DEFAULT NULL");
+
+    // APInvoice & Settlement columns
+    await addColIfMissing('APInvoice', 'documents', "JSON DEFAULT NULL");
+    await addColIfMissing('APInvoice', 'glPostingStatus', "ENUM('unposted', 'posted') NOT NULL DEFAULT 'unposted'");
+    await addColIfMissing('APInvoiceSettlement', 'documents', "JSON DEFAULT NULL");
+    await addColIfMissing('APInvoiceSettlement', 'glPostingStatus', "ENUM('unposted', 'posted') NOT NULL DEFAULT 'unposted'");
+
+    // saleHeader columns
+    await addColIfMissing('saleHeader', 'arInvoiceId', "INT(11) DEFAULT NULL");
+    await addColIfMissing('saleHeader', 'isPostedToAR', "TINYINT(1) NOT NULL DEFAULT 0");
+    await addColIfMissing('saleHeader', 'arPostedAt', "DATETIME DEFAULT NULL");
+    await addColIfMissing('saleHeader', 'loyaltyDiscount', "DOUBLE NOT NULL DEFAULT 0");
+    await addColIfMissing('saleHeader', 'redeemedPoints', "INT(11) NOT NULL DEFAULT 0");
+
+    // saleLine columns
+    await addColIfMissing('saleLine', 'isReturn', "TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Whether this line represents a returned item / empty packaging inflow'");
+    await addColIfMissing('saleLine', 'focQty', "DOUBLE NOT NULL DEFAULT 0");
+    await addColIfMissing('saleLine', 'packagingAction', "ENUM('EXCHANGED', 'DEPOSIT', 'DEBT', 'SOLD', 'RETURNED', 'NONE') NOT NULL DEFAULT 'NONE'");
+    await addColIfMissing('saleLine', 'isGift', "TINYINT(1) NOT NULL DEFAULT 0");
+    await addColIfMissing('saleLine', 'colorId', "INT(11) DEFAULT NULL");
+    await addColIfMissing('saleLine', 'sizeId', "INT(11) DEFAULT NULL");
+    await addColIfMissing('saleLine', 'taxType', "ENUM('INC', 'EXC') NOT NULL DEFAULT 'INC'");
+    await addColIfMissing('saleLine', 'taxRate', "DOUBLE NOT NULL DEFAULT 0");
+    await addColIfMissing('saleLine', 'taxAmount', "DOUBLE NOT NULL DEFAULT 0");
+
   } catch (error) {
     logger.warn(`Could not ensure critical columns: ${error.message}`);
   }

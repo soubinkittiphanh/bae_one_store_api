@@ -1942,6 +1942,36 @@ exports.sumSaleCurrentYear = async (req, res) => {
     res.send(saleHeader)
   } catch (error) {
     logger.error(`Something went wrong with error ${error}`)
+    if (error.original?.errno === 1054 || error.message?.includes('Unknown column')) {
+      try {
+        const { QueryTypes } = require('sequelize');
+        await sequelize.query("ALTER TABLE `saleLine` ADD COLUMN IF NOT EXISTS `isReturn` TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Whether this line represents a returned item / empty packaging inflow'", { type: QueryTypes.BULKUPDATE }).catch(() => {});
+        await sequelize.query("ALTER TABLE `saleLine` ADD COLUMN IF NOT EXISTS `focQty` DOUBLE NOT NULL DEFAULT 0", { type: QueryTypes.BULKUPDATE }).catch(() => {});
+        await sequelize.query("ALTER TABLE `saleLine` ADD COLUMN IF NOT EXISTS `packagingAction` ENUM('EXCHANGED', 'DEPOSIT', 'DEBT', 'SOLD', 'RETURNED', 'NONE') NOT NULL DEFAULT 'NONE'", { type: QueryTypes.BULKUPDATE }).catch(() => {});
+        await sequelize.query("ALTER TABLE `saleLine` ADD COLUMN IF NOT EXISTS `isGift` TINYINT(1) NOT NULL DEFAULT 0", { type: QueryTypes.BULKUPDATE }).catch(() => {});
+
+        const retrySaleHeader = await SaleHeader.findAll({
+          include: [
+            Customer,
+            'payment',
+            'payments',
+            'qrRequest',
+            linesInclude
+          ],
+          attributes: ['id', 'discount', 'total', 'bookingDate', 'currencyId'],
+          where: {
+            bookingDate: {
+              [Op.between]: [startDate, endDate],
+            },
+            locationId: locationId,
+            isActive: true,
+          }
+        });
+        return res.send(retrySaleHeader);
+      } catch (retryErr) {
+        logger.error(`Retry in sumSaleCurrentYear failed: ${retryErr.message}`);
+      }
+    }
     res.send(`Something went wrong with error ${error}`)
   }
 };
