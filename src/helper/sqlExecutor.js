@@ -489,6 +489,126 @@ const ensureCompanyColumns = async () => {
 };
 
 /**
+ * Automatically checks and ensures dashboard_menus table and default shortcuts exist.
+ * Runs on startup so any new or existing customer DB has dashboard shortcuts ready.
+ */
+const ensureDashboardMenuTable = async () => {
+  try {
+    const tableExists = async (tableName) => {
+      const result = await sequelize.query(`
+        SELECT TABLE_NAME 
+        FROM INFORMATION_SCHEMA.TABLES 
+        WHERE TABLE_SCHEMA = DATABASE() 
+          AND LOWER(TABLE_NAME) = :tableName
+      `, {
+        replacements: { tableName: tableName.toLowerCase() },
+        type: QueryTypes.SELECT
+      });
+      return result.length > 0;
+    };
+
+    if (!(await tableExists('dashboard_menus'))) {
+      logger.info("Creating dashboard_menus table...");
+      await sequelize.query(`
+        CREATE TABLE IF NOT EXISTS \`dashboard_menus\` (
+          \`id\` int(11) NOT NULL AUTO_INCREMENT,
+          \`name\` varchar(255) NOT NULL,
+          \`llname\` varchar(255) DEFAULT NULL,
+          \`path\` varchar(255) NOT NULL,
+          \`icon\` varchar(255) NOT NULL DEFAULT 'cashier_2.svg',
+          \`iconType\` enum('svg','mdi') NOT NULL DEFAULT 'svg',
+          \`color\` varchar(255) DEFAULT NULL,
+          \`badge\` varchar(255) DEFAULT NULL,
+          \`order\` int(11) NOT NULL DEFAULT 0,
+          \`target_systems\` varchar(255) DEFAULT 'ALL',
+          \`userGroupId\` int(11) DEFAULT NULL,
+          \`userId\` int(11) DEFAULT NULL,
+          \`isActive\` tinyint(1) NOT NULL DEFAULT 1,
+          \`createdAt\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          \`updateTimestamp\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          PRIMARY KEY (\`id\`),
+          KEY \`idx_dashboard_menus_user\` (\`userId\`, \`isActive\`),
+          KEY \`idx_dashboard_menus_group\` (\`userGroupId\`, \`isActive\`),
+          KEY \`idx_dashboard_menus_order\` (\`order\`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+      `, { type: QueryTypes.BULKUPDATE });
+      logger.info("Successfully created dashboard_menus table.");
+    }
+
+    // Check if default shortcuts exist; if empty, seed defaults
+    const [countResult] = await sequelize.query(`
+      SELECT COUNT(*) as count 
+      FROM \`dashboard_menus\` 
+      WHERE \`userId\` IS NULL AND \`userGroupId\` IS NULL
+    `, { type: QueryTypes.SELECT });
+
+    if (!countResult || countResult.count === 0) {
+      logger.info("Seeding initial 10 default dashboard shortcuts...");
+      const defaultShortcuts = [
+        ['POS Minimart', 'ຂາຍສິນຄ້າ (POS)', '/pos/minimart', 'cashier_2.svg', 'svg', 0, 1],
+        ['Invoice', 'ໃບບິນ (Invoice)', '/admin/ordersFromPos', 'invoice.svg', 'svg', 1, 1],
+        ['Receivables', 'ລູກໜີ້', '/admin/ordersFromPosCredit', 'pay-card.svg', 'svg', 2, 1],
+        ['Inventory Stock', 'ສາງສິນຄ້າ', '/admin/product/productlist', 'stock.svg', 'svg', 3, 1],
+        ['Restaurant Menu', 'ເມນູອາຫານ (Menu)', '/admin/restaurant/menu', 'coffee.svg', 'svg', 4, 1],
+        ['Customers', 'ລູກຄ້າ', '/admin/client', 'patient.svg', 'svg', 5, 1],
+        ['Sale by Main Category', 'ລາຍງານຕາມໝວດຫຼັກ', '/admin/saleByMainCategory', 'invoice.svg', 'svg', 6, 1],
+        ['Sale by Category', 'ລາຍງານຕາມປະເພດສິນຄ້າ', '/admin/saleByCategory', 'invoice.svg', 'svg', 7, 1],
+        ['Daily Sale Summary', 'ສະຫຼຸບຍອດຂາຍລາຍວັນ', '/admin/saleReportSummary', 'invoice.svg', 'svg', 8, 1],
+        ['Loyalty Points Report', 'ລາຍງານຄະແນນສະສົມ', '/admin/report/loyalty', 'overview.svg', 'svg', 9, 1]
+      ];
+
+      for (const item of defaultShortcuts) {
+        await sequelize.query(`
+          INSERT INTO \`dashboard_menus\` (\`name\`, \`llname\`, \`path\`, \`icon\`, \`iconType\`, \`order\`, \`isActive\`, \`createdAt\`, \`updateTimestamp\`)
+          VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+        `, {
+          replacements: item,
+          type: QueryTypes.INSERT
+        });
+      }
+      logger.info("Successfully seeded default dashboard shortcuts.");
+    }
+
+    // Register /admin/dashboardMenu in menuLine if menuLine table exists
+    if (await tableExists('menuLine')) {
+      const [menuLine] = await sequelize.query(`
+        SELECT id FROM \`menuLine\` WHERE \`path\` = '/admin/dashboardMenu' LIMIT 1
+      `, { type: QueryTypes.SELECT });
+
+      let lineId = menuLine ? menuLine.id : null;
+      if (!lineId) {
+        const [insertRes] = await sequelize.query(`
+          INSERT INTO \`menuLine\` (\`name\`, \`llname\`, \`icon\`, \`path\`, \`remark\`, \`target_systems\`, \`isActive\`, \`createdAt\`, \`updateTimestamp\`)
+          VALUES ('Dashboard Shortcuts', 'ຈັດການເມນູດ່ວນ', 'mdi-view-dashboard-edit-outline', '/admin/dashboardMenu', 'Manage and configure dashboard shortcut menu cards', 'ALL', 1, NOW(), NOW())
+        `, { type: QueryTypes.INSERT });
+        lineId = insertRes;
+      }
+
+      if (lineId && await tableExists('menuHeader') && await tableExists('GroupMenuHeader')) {
+        const [header] = await sequelize.query(`
+          SELECT id, code FROM \`menuHeader\` WHERE \`code\` IN ('BRANCH', 'MODULES') ORDER BY FIELD(\`code\`, 'BRANCH', 'MODULES') LIMIT 1
+        `, { type: QueryTypes.SELECT });
+
+        if (header) {
+          const [exists] = await sequelize.query(`
+            SELECT id FROM \`MenuHeaderLines\` WHERE \`menuHeaderId\` = :headerId AND \`menuLineId\` = :lineId LIMIT 1
+          `, { replacements: { headerId: header.id, lineId }, type: QueryTypes.SELECT });
+
+          if (!exists) {
+            await sequelize.query(`
+              INSERT INTO \`MenuHeaderLines\` (\`menuHeaderId\`, \`menuLineId\`, \`order\`, \`createdAt\`, \`updateTimestamp\`)
+              VALUES (:headerId, :lineId, 99, NOW(), NOW())
+            `, { replacements: { headerId: header.id, lineId }, type: QueryTypes.INSERT });
+          }
+        }
+      }
+    }
+  } catch (err) {
+    logger.warn("Could not ensure dashboardMenu table:", err.message);
+  }
+};
+
+/**
  * Reads and executes the SQL cleanup script (toomanykey.sql)
  * to drop redundant indexes before Sequelize synchronization runs.
  */
@@ -508,6 +628,9 @@ const executeSqlScript = async () => {
 
     // Automatically ensure company table columns (ticket_logo_size, etc.) are present
     await ensureCompanyColumns();
+
+    // Automatically ensure dashboard_menus table and default shortcuts exist
+    await ensureDashboardMenuTable();
 
     const filePath = path.join(__dirname, '../../toomanykey.sql');
     if (!fs.existsSync(filePath)) {

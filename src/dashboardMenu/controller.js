@@ -76,6 +76,21 @@ const getDashboardMenus = async (req, res) => {
         });
     } catch (error) {
         logger.error('Error fetching dashboard shortcuts:', error);
+        // Self-healing: If dashboard_menus table does not exist yet on a customer DB,
+        // sync the table, seed default shortcuts, and return them without breaking the UI.
+        if (error.original?.errno === 1146 || error.message?.includes("doesn't exist") || error.message?.includes("no such table")) {
+            try {
+                await DashboardMenu.sync({ force: false });
+                await DashboardMenu.bulkCreate(DEFAULT_SHORTCUTS);
+                logger.info("Auto-created and seeded dashboard_menus table on request.");
+            } catch (syncErr) {
+                logger.warn("Could not auto-sync dashboard_menus table:", syncErr.message);
+            }
+            return res.status(200).json({
+                source: 'default',
+                shortcuts: DEFAULT_SHORTCUTS
+            });
+        }
         return res.status(500).json({ message: 'Internal Server Error', error: error.message });
     }
 };
@@ -116,6 +131,13 @@ const getAllDashboardMenus = async (req, res) => {
         return res.status(200).json(shortcuts);
     } catch (error) {
         logger.error('Error fetching all dashboard shortcuts:', error);
+        if (error.original?.errno === 1146 || error.message?.includes("doesn't exist") || error.message?.includes("no such table")) {
+            try {
+                await DashboardMenu.sync({ force: false });
+                await DashboardMenu.bulkCreate(DEFAULT_SHORTCUTS);
+            } catch (syncErr) { }
+            return res.status(200).json(DEFAULT_SHORTCUTS);
+        }
         return res.status(500).json({ message: 'Internal Server Error', error: error.message });
     }
 };
