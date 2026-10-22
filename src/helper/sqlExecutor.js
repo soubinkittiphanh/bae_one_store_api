@@ -250,6 +250,35 @@ const ensurePerformanceIndexes = async () => {
       }
     }
 
+    // 3. Check & create composite index on saleHeader (locationId, bookingDate)
+    // Covers: WHERE bookingDate BETWEEN ... AND locationId = ?
+    if (await tableExists('saleHeader')) {
+      const hasLocBookingIndex = await indexExists('saleHeader', 'idx_saleHeader_location_bookingDate');
+      if (!hasLocBookingIndex) {
+        logger.info("Index idx_saleHeader_location_bookingDate not found on saleHeader table. Creating...");
+        await sequelize.query(
+          "CREATE INDEX idx_saleHeader_location_bookingDate ON saleHeader (locationId, bookingDate)",
+          { type: QueryTypes.BULKUPDATE }
+        );
+        logger.info("Successfully created index idx_saleHeader_location_bookingDate on saleHeader table.");
+      } else {
+        logger.info("Index idx_saleHeader_location_bookingDate already exists on saleHeader table.");
+      }
+
+      // 4. Check & create index on saleHeader (bookingDate) for date-only range queries
+      const hasBookingIndex = await indexExists('saleHeader', 'idx_saleHeader_bookingDate');
+      if (!hasBookingIndex) {
+        logger.info("Index idx_saleHeader_bookingDate not found on saleHeader table. Creating...");
+        await sequelize.query(
+          "CREATE INDEX idx_saleHeader_bookingDate ON saleHeader (bookingDate)",
+          { type: QueryTypes.BULKUPDATE }
+        );
+        logger.info("Successfully created index idx_saleHeader_bookingDate on saleHeader table.");
+      } else {
+        logger.info("Index idx_saleHeader_bookingDate already exists on saleHeader table.");
+      }
+    }
+
   } catch (error) {
     logger.error("Error executing performance indexes check:", error);
   }

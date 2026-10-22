@@ -70,6 +70,16 @@ module.exports = (sequelize, DataTypes) => {
         // transform all passed model names (first parameter of define) into plural.
         // if you don't want that, set the following
         freezeTableName: true,
+        indexes: [
+            {
+                name: 'idx_saleHeader_location_bookingDate',
+                fields: ['locationId', 'bookingDate']
+            },
+            {
+                name: 'idx_saleHeader_bookingDate',
+                fields: ['bookingDate']
+            }
+        ],
         sync: {
             alter: false,
             force: false

@@ -10,6 +10,9 @@ const Product = require('../models').product;
 const Card = require('../models').card;
 const Unit = require('../models').unit;
 const User = require('../models').user;
+const Client = require('../models').client;
+const Currency = require('../models').currency;
+const Location = require('../models').location;
 const Group = require('../models').group;
 const { body, validationResult } = require('express-validator');
 const logger = require('../api/logger');
@@ -1450,28 +1453,89 @@ exports.getSaleHeadersDetailByDate = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Invalid or missing date parameter' });
     }
     const date = JSON.parse(req.query.date);
-    logger.warn("Date " + date.startDate + " " + date.endDate)
+    logger.warn("Date " + date.startDate + " " + date.endDate);
     if (req.user && req.user.id) {
-      logger.warn(`Request date ${date.startDate} userId ${req.user.id}`)
+      logger.warn(`Request date ${date.startDate} userId ${req.user.id}`);
     }
     const saleHeaders = await SaleHeader.findAll({
-      include: ['user', 'client', 'payment', 'currency', 'location',
+      attributes: [
+        'id', 'bookingDate', 'referenceNo', 'remark', 'discount', 
+        'total', 'loyaltyDiscount', 'redeemedPoints', 'exchangeRate', 
+        'isActive', 'arInvoiceId', 'isPostedToAR', 'arPostedAt', 
+        'createdAt', 'updateTimestamp', 'paymentId', 'clientId', 
+        'currencyId', 'userId', 'locationId', 'orderTableId', 
+        'washJobId', 'customerId', 'qrRequestId', 'ticketId'
+      ],
+      include: [
+        {
+          model: User,
+          as: 'user',
+          attributes: ['id', 'cus_id', 'cus_name', 'cus_tel', 'cus_email', 'isActive', 'groupId', 'roleId']
+        },
+        {
+          model: Client,
+          as: 'client',
+          attributes: ['id', 'name', 'company', 'email', 'address', 'telephone', 'credit', 'isActive', 'loyaltyPoints']
+        },
+        {
+          model: Payment,
+          as: 'payment',
+          attributes: ['id', 'payment_code', 'payment_name', 'payment_desc', 'isActive']
+        },
+        {
+          model: Currency,
+          as: 'currency',
+          attributes: ['id', 'code', 'name', 'rate', 'isActive', 'isLocalCCY', 'exchangeDirection', 'symbol']
+        },
+        {
+          model: Location,
+          as: 'location',
+          attributes: ['id', 'name', 'description', 'isActive', 'companyId']
+        },
         {
           model: Line,
           as: "lines",
+          separate: true,
+          attributes: [
+            'id', 'quantity', 'unitRate', 'taxRate', 'taxAmount', 'taxType',
+            'exchangeRate', 'price', 'discount', 'total', 'isActive', 'isGift',
+            'colorId', 'sizeId', 'focQty', 'isReturn', 'packagingAction',
+            'saleHeaderId', 'headerId', 'currencyId', 'productId', 'unitId', 'priceListId'
+          ],
           include: [
             {
               model: Product,
-              as: "product"
+              as: "product",
+              attributes: [
+                'id', 'pro_id', 'pro_name', 'pro_price', 'duration_minutes',
+                'pro_desc', 'pro_status', 'validateStockOnSale', 'cost_price',
+                'stock_count', 'minStock', 'barCode', 'vendorName', 'isActive',
+                'receiveUnitId', 'stockUnitId', 'baseUnitId', 'product_code',
+                'isReturnablePackaging', 'isPackagingAsset'
+              ]
             },
-            'cards'
+            {
+              model: Card,
+              as: 'cards',
+              separate: true,
+              attributes: [
+                'id', 'card_type_code', 'product_id', 'cost', 'costLCY',
+                'exchangeRate', 'card_number', 'card_isused', 'card_input_date',
+                'isActive', 'lotNumber', 'serialNo', 'expiryDate', 'costPerUnit',
+                'totalCost', 'costType', 'stockCardQty', 'currencyId', 'saleLineId'
+              ]
+            }
           ]
         },
         {
           model: Customer,
+          attributes: [
+            'id', 'name', 'tel', 'address', 'cod_fee', 'cancel_fee',
+            'rider_fee', 'shipping_fee_by', 'txn_date', 'isActive',
+            'saleHeaderId', 'riderId', 'geoId', 'shippingId'
+          ],
           include: ['geography', 'shipping', 'rider']
         }
-
       ],
       where: {
         bookingDate: {
@@ -1483,7 +1547,7 @@ exports.getSaleHeadersDetailByDate = async (req, res) => {
 
     res.status(200).send(saleHeaders);
   } catch (error) {
-    logger.error("===> Filter by date error: " + error)
+    logger.error("===> Filter by date error: " + error);
     res.status(500).send(error);
   }
 };
