@@ -257,7 +257,7 @@ const ensurePerformanceIndexes = async () => {
 
 /**
  * Automatically checks and ensures returnable packaging columns and enum values
- * are properly defined on saleLine, poLine, receivingLine, and product tables.
+ * are properly defined on category, product, saleLine, poLine, and receivingLine tables.
  */
 const ensurePackagingColumns = async () => {
   try {
@@ -269,10 +269,10 @@ const ensurePackagingColumns = async () => {
       const result = await sequelize.query(`
         SELECT TABLE_NAME 
         FROM INFORMATION_SCHEMA.TABLES 
-        WHERE TABLE_SCHEMA = :dbName 
+        WHERE TABLE_SCHEMA = DATABASE() 
           AND LOWER(TABLE_NAME) = :tableName
       `, {
-        replacements: { dbName, tableName: tableName.toLowerCase() },
+        replacements: { tableName: tableName.toLowerCase() },
         type: QueryTypes.SELECT
       });
       return result.length > 0;
@@ -283,71 +283,104 @@ const ensurePackagingColumns = async () => {
       const result = await sequelize.query(`
         SELECT COLUMN_NAME 
         FROM INFORMATION_SCHEMA.COLUMNS 
-        WHERE TABLE_SCHEMA = :dbName 
+        WHERE TABLE_SCHEMA = DATABASE() 
           AND LOWER(TABLE_NAME) = :tableName
           AND LOWER(COLUMN_NAME) = :colName
       `, {
-        replacements: { dbName, tableName: tableName.toLowerCase(), colName: colName.toLowerCase() },
+        replacements: { tableName: tableName.toLowerCase(), colName: colName.toLowerCase() },
         type: QueryTypes.SELECT
       });
       return result.length > 0;
     };
 
-    // 1. Ensure saleLine.packagingAction ENUM includes 'SOLD' and 'RETURNED'
-    if (await tableExists('saleLine')) {
-      const hasPkgAction = await hasColumn('saleLine', 'packagingAction');
-      if (hasPkgAction) {
-        logger.info("Updating saleLine.packagingAction ENUM to ensure all actions ('EXCHANGED', 'DEPOSIT', 'DEBT', 'SOLD', 'RETURNED', 'NONE') are allowed...");
-        await sequelize.query(
-          "ALTER TABLE `saleLine` MODIFY COLUMN `packagingAction` ENUM('EXCHANGED', 'DEPOSIT', 'DEBT', 'SOLD', 'RETURNED', 'NONE') NOT NULL DEFAULT 'NONE'",
-          { type: QueryTypes.BULKUPDATE }
-        );
-      } else {
-        logger.info("Adding saleLine.packagingAction ENUM column...");
-        await sequelize.query(
-          "ALTER TABLE `saleLine` ADD COLUMN `packagingAction` ENUM('EXCHANGED', 'DEPOSIT', 'DEBT', 'SOLD', 'RETURNED', 'NONE') NOT NULL DEFAULT 'NONE'",
-          { type: QueryTypes.BULKUPDATE }
-        );
+    // 1. Ensure category packaging flags
+    try {
+      if (await tableExists('category')) {
+        if (!(await hasColumn('category', 'isPackaging'))) {
+          logger.info("Adding isPackaging column to category table...");
+          await sequelize.query(
+            "ALTER TABLE `category` ADD COLUMN `isPackaging` TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Whether this category represents packaging/empties (crates, bottles)'",
+            { type: QueryTypes.BULKUPDATE }
+          );
+          logger.info("Successfully added isPackaging to category table.");
+        }
       }
-
-      if (!(await hasColumn('saleLine', 'focQty'))) {
-        logger.info("Adding saleLine.focQty column...");
-        await sequelize.query(
-          "ALTER TABLE `saleLine` ADD COLUMN `focQty` DOUBLE NOT NULL DEFAULT 0",
-          { type: QueryTypes.BULKUPDATE }
-        );
-      }
+    } catch (catErr) {
+      logger.warn("Could not ensure category packaging column:", catErr.message);
     }
 
-    // 2. Ensure poLine & receivingLine focQty
-    if (await tableExists('poLine') && !(await hasColumn('poLine', 'focQty'))) {
-      await sequelize.query(
-        "ALTER TABLE `poLine` ADD COLUMN `focQty` DOUBLE NOT NULL DEFAULT 0",
-        { type: QueryTypes.BULKUPDATE }
-      );
-    }
-    if (await tableExists('receivingLine') && !(await hasColumn('receivingLine', 'focQty'))) {
-      await sequelize.query(
-        "ALTER TABLE `receivingLine` ADD COLUMN `focQty` DOUBLE NOT NULL DEFAULT 0",
-        { type: QueryTypes.BULKUPDATE }
-      );
+    // 2. Ensure product returnable packaging flags
+    try {
+      if (await tableExists('product')) {
+        if (!(await hasColumn('product', 'isReturnablePackaging'))) {
+          logger.info("Adding isReturnablePackaging column to product table...");
+          await sequelize.query(
+            "ALTER TABLE `product` ADD COLUMN `isReturnablePackaging` TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Whether this product uses returnable packaging'",
+            { type: QueryTypes.BULKUPDATE }
+          );
+          logger.info("Successfully added isReturnablePackaging to product table.");
+        }
+        if (!(await hasColumn('product', 'isPackagingAsset'))) {
+          logger.info("Adding isPackagingAsset column to product table...");
+          await sequelize.query(
+            "ALTER TABLE `product` ADD COLUMN `isPackagingAsset` TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Whether this product is an empty crate/bottle packaging asset'",
+            { type: QueryTypes.BULKUPDATE }
+          );
+          logger.info("Successfully added isPackagingAsset to product table.");
+        }
+      }
+    } catch (prodErr) {
+      logger.warn("Could not ensure product packaging columns:", prodErr.message);
     }
 
-    // 3. Ensure product returnable packaging flags
-    if (await tableExists('product')) {
-      if (!(await hasColumn('product', 'isReturnablePackaging'))) {
-        await sequelize.query(
-          "ALTER TABLE `product` ADD COLUMN `isReturnablePackaging` TINYINT(1) NOT NULL DEFAULT 0",
-          { type: QueryTypes.BULKUPDATE }
-        );
+    // 3. Ensure saleLine.packagingAction ENUM includes 'SOLD' and 'RETURNED'
+    try {
+      if (await tableExists('saleLine')) {
+        const hasPkgAction = await hasColumn('saleLine', 'packagingAction');
+        if (hasPkgAction) {
+          logger.info("Updating saleLine.packagingAction ENUM to ensure all actions ('EXCHANGED', 'DEPOSIT', 'DEBT', 'SOLD', 'RETURNED', 'NONE') are allowed...");
+          await sequelize.query(
+            "ALTER TABLE `saleLine` MODIFY COLUMN `packagingAction` ENUM('EXCHANGED', 'DEPOSIT', 'DEBT', 'SOLD', 'RETURNED', 'NONE') NOT NULL DEFAULT 'NONE'",
+            { type: QueryTypes.BULKUPDATE }
+          );
+        } else {
+          logger.info("Adding saleLine.packagingAction ENUM column...");
+          await sequelize.query(
+            "ALTER TABLE `saleLine` ADD COLUMN `packagingAction` ENUM('EXCHANGED', 'DEPOSIT', 'DEBT', 'SOLD', 'RETURNED', 'NONE') NOT NULL DEFAULT 'NONE'",
+            { type: QueryTypes.BULKUPDATE }
+          );
+        }
+
+        if (!(await hasColumn('saleLine', 'focQty'))) {
+          logger.info("Adding saleLine.focQty column...");
+          await sequelize.query(
+            "ALTER TABLE `saleLine` ADD COLUMN `focQty` DOUBLE NOT NULL DEFAULT 0",
+            { type: QueryTypes.BULKUPDATE }
+          );
+        }
       }
-      if (!(await hasColumn('product', 'isPackagingAsset'))) {
-        await sequelize.query(
-          "ALTER TABLE `product` ADD COLUMN `isPackagingAsset` TINYINT(1) NOT NULL DEFAULT 0",
-          { type: QueryTypes.BULKUPDATE }
-        );
-      }
+    } catch (saleLineErr) {
+      logger.warn("Could not ensure saleLine packaging columns:", saleLineErr.message);
     }
+
+    // 4. Ensure poLine & receivingLine focQty
+    try {
+      if (await tableExists('poLine') && !(await hasColumn('poLine', 'focQty'))) {
+        await sequelize.query(
+          "ALTER TABLE `poLine` ADD COLUMN `focQty` DOUBLE NOT NULL DEFAULT 0",
+          { type: QueryTypes.BULKUPDATE }
+        );
+      }
+      if (await tableExists('receivingLine') && !(await hasColumn('receivingLine', 'focQty'))) {
+        await sequelize.query(
+          "ALTER TABLE `receivingLine` ADD COLUMN `focQty` DOUBLE NOT NULL DEFAULT 0",
+          { type: QueryTypes.BULKUPDATE }
+        );
+      }
+    } catch (lineErr) {
+      logger.warn("Could not ensure poLine/receivingLine focQty:", lineErr.message);
+    }
+
   } catch (error) {
     logger.warn("Could not ensure packaging columns/enums:", error.message);
   }
@@ -365,10 +398,10 @@ const ensureCompanyColumns = async () => {
       const result = await sequelize.query(`
         SELECT TABLE_NAME 
         FROM INFORMATION_SCHEMA.TABLES 
-        WHERE TABLE_SCHEMA = :dbName 
+        WHERE TABLE_SCHEMA = DATABASE() 
           AND LOWER(TABLE_NAME) = :tableName
       `, {
-        replacements: { dbName, tableName: tableName.toLowerCase() },
+        replacements: { tableName: tableName.toLowerCase() },
         type: QueryTypes.SELECT
       });
       return result.length > 0;
@@ -378,11 +411,11 @@ const ensureCompanyColumns = async () => {
       const result = await sequelize.query(`
         SELECT COLUMN_NAME 
         FROM INFORMATION_SCHEMA.COLUMNS 
-        WHERE TABLE_SCHEMA = :dbName 
+        WHERE TABLE_SCHEMA = DATABASE() 
           AND LOWER(TABLE_NAME) = :tableName
           AND LOWER(COLUMN_NAME) = :colName
       `, {
-        replacements: { dbName, tableName: tableName.toLowerCase(), colName: colName.toLowerCase() },
+        replacements: { tableName: tableName.toLowerCase(), colName: colName.toLowerCase() },
         type: QueryTypes.SELECT
       });
       return result.length > 0;

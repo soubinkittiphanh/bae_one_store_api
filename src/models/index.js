@@ -684,29 +684,108 @@ const setupAssociations = (db) => {
 // Pre-synchronization data cleanup for legacy orphan records
 const preSyncDataCleanup = async (sequelizeInstance) => {
   try {
-    const [sdbTable] = await sequelizeInstance.query("SHOW TABLES LIKE 'stockDailyBalance'");
+    const { QueryTypes } = require('sequelize');
+    const sdbTable = await sequelizeInstance.query("SHOW TABLES LIKE 'stockDailyBalance'", { type: QueryTypes.SELECT });
     if (sdbTable && sdbTable.length > 0) {
-      const [prodTable] = await sequelizeInstance.query("SHOW TABLES LIKE 'product'");
+      const prodTable = await sequelizeInstance.query("SHOW TABLES LIKE 'product'", { type: QueryTypes.SELECT });
       if (prodTable && prodTable.length > 0) {
         await sequelizeInstance.query(`
           DELETE sdb FROM \`stockDailyBalance\` sdb
           LEFT JOIN \`product\` p ON sdb.\`productId\` = p.\`id\`
           WHERE p.\`id\` IS NULL;
-        `);
+        `, { type: QueryTypes.BULKUPDATE });
       }
 
-      const [locTable] = await sequelizeInstance.query("SHOW TABLES LIKE 'location'");
+      const locTable = await sequelizeInstance.query("SHOW TABLES LIKE 'location'", { type: QueryTypes.SELECT });
       if (locTable && locTable.length > 0) {
         await sequelizeInstance.query(`
           DELETE sdb FROM \`stockDailyBalance\` sdb
           LEFT JOIN \`location\` l ON sdb.\`locationId\` = l.\`id\`
           WHERE l.\`id\` IS NULL;
-        `);
+        `, { type: QueryTypes.BULKUPDATE });
       }
       logger.info("Pre-sync orphan cleanup for stockDailyBalance completed.");
     }
   } catch (cleanErr) {
     logger.warn(`Non-blocking note during pre-sync data cleanup: ${cleanErr.message}`);
+  }
+};
+
+// Automatically ensure critical columns exist across all client databases
+// even if Sequelize alter sync encounters legacy constraint or index errors.
+const ensureCriticalColumns = async (sequelizeInstance) => {
+  try {
+    const { QueryTypes } = require('sequelize');
+
+    const tableExists = async (tableName) => {
+      const result = await sequelizeInstance.query(`
+        SELECT TABLE_NAME 
+        FROM INFORMATION_SCHEMA.TABLES 
+        WHERE TABLE_SCHEMA = DATABASE() 
+          AND LOWER(TABLE_NAME) = :tableName
+      `, {
+        replacements: { tableName: tableName.toLowerCase() },
+        type: QueryTypes.SELECT
+      });
+      return result.length > 0;
+    };
+
+    const hasColumn = async (tableName, colName) => {
+      const result = await sequelizeInstance.query(`
+        SELECT COLUMN_NAME 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_SCHEMA = DATABASE() 
+          AND LOWER(TABLE_NAME) = :tableName
+          AND LOWER(COLUMN_NAME) = :colName
+      `, {
+        replacements: { tableName: tableName.toLowerCase(), colName: colName.toLowerCase() },
+        type: QueryTypes.SELECT
+      });
+      return result.length > 0;
+    };
+
+    // 1. Ensure category.isPackaging
+    try {
+      if (await tableExists('category')) {
+        if (!(await hasColumn('category', 'isPackaging'))) {
+          logger.info("Adding isPackaging column to category table...");
+          await sequelizeInstance.query(
+            "ALTER TABLE `category` ADD COLUMN `isPackaging` TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Whether this category represents packaging/empties (crates, bottles)'",
+            { type: QueryTypes.BULKUPDATE }
+          );
+          logger.info("Successfully added isPackaging to category table.");
+        }
+      }
+    } catch (err) {
+      logger.warn(`Could not ensure category.isPackaging: ${err.message}`);
+    }
+
+    // 2. Ensure product returnable packaging flags (isReturnablePackaging, isPackagingAsset)
+    try {
+      if (await tableExists('product')) {
+        if (!(await hasColumn('product', 'isReturnablePackaging'))) {
+          logger.info("Adding isReturnablePackaging column to product table...");
+          await sequelizeInstance.query(
+            "ALTER TABLE `product` ADD COLUMN `isReturnablePackaging` TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Whether this product uses returnable packaging'",
+            { type: QueryTypes.BULKUPDATE }
+          );
+          logger.info("Successfully added isReturnablePackaging to product table.");
+        }
+        if (!(await hasColumn('product', 'isPackagingAsset'))) {
+          logger.info("Adding isPackagingAsset column to product table...");
+          await sequelizeInstance.query(
+            "ALTER TABLE `product` ADD COLUMN `isPackagingAsset` TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Whether this product is an empty crate/bottle packaging asset'",
+            { type: QueryTypes.BULKUPDATE }
+          );
+          logger.info("Successfully added isPackagingAsset to product table.");
+        }
+      }
+    } catch (err) {
+      logger.warn(`Could not ensure product packaging columns: ${err.message}`);
+    }
+
+  } catch (error) {
+    logger.warn(`Could not ensure critical columns: ${error.message}`);
   }
 };
 
@@ -732,10 +811,13 @@ const synchronizeDatabase = async (db) => {
       logger.warn(`Non-blocking note during alter sync: ${alterErr.message}`);
     }
 
+    // Phase 3: Ensure critical columns for category & product exist on client DB
+    await ensureCriticalColumns(db.sequelize);
+
     logger.info("Database client is synchronized");
 
     const userService = require('../user/service');
-    const brandNewDB = await userService.ensureDefaultUserExists();
+    // const brandNewDB = await userService.ensureDefaultUserExists();
     logger.info("Default user check complete.");
 
     // Ensure standard chart of accounts and GL SPF mappings exist
@@ -771,20 +853,22 @@ const synchronizeDatabase = async (db) => {
     try { await db.sequelize.query('SET FOREIGN_KEY_CHECKS = 1'); } catch (e) { }
   }
 
-  try {
-    await db.centralSequelize.query('SET FOREIGN_KEY_CHECKS = 0');
-    // Phase 1: Create new tables that do not exist yet
-    await db.centralSequelize.sync({ force: false });
+  if (db.centralSequelize) {
     try {
-      await db.centralSequelize.sync({ force: false, alter: { drop: false } });
-    } catch (alterErr) {
-      logger.warn(`Non-blocking note during central alter sync: ${alterErr.message}`);
+      await db.centralSequelize.query('SET FOREIGN_KEY_CHECKS = 0');
+      // Phase 1: Create new tables that do not exist yet
+      await db.centralSequelize.sync({ force: false });
+      try {
+        await db.centralSequelize.sync({ force: false, alter: { drop: false } });
+      } catch (alterErr) {
+        logger.warn(`Non-blocking note during central alter sync: ${alterErr.message}`);
+      }
+      logger.info("Database central is synchronized");
+    } catch (error) {
+      logger.error("Error synchronizing central database:", error);
+    } finally {
+      try { await db.centralSequelize.query('SET FOREIGN_KEY_CHECKS = 1'); } catch (e) { }
     }
-    logger.info("Database central is synchronized");
-  } catch (error) {
-    logger.error("Error synchronizing central database:", error);
-  } finally {
-    try { await db.centralSequelize.query('SET FOREIGN_KEY_CHECKS = 1'); } catch (e) { }
   }
 };
 

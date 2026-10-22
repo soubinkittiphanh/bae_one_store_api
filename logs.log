@@ -341506,3 +341506,715 @@
 {"level":"info","message":"Checking company table columns in database: dcommerce_pro_kaison","timestamp":"2026-10-22T06:52:06.042Z"}
 {"level":"info","message":"Starting execution of SQL script: /Users/soubinkittiphanh/Desktop/Pro/dcommerce/dc_api/toomanykey.sql","timestamp":"2026-10-22T06:52:06.541Z"}
 {"level":"info","message":"Found 3328 SQL statements to execute.","timestamp":"2026-10-22T06:52:06.547Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2026-10-22T09:38:39.977Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2026-10-22T09:38:39.982Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2026-10-22T09:38:39.983Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2026-10-22T09:38:39.983Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2026-10-22T09:38:39.985Z","username":"johndoe"}
+{"level":"info","message":"Model name sequelize","timestamp":"2026-10-22T09:38:40.756Z"}
+{"level":"info","message":"Model name Sequelize","timestamp":"2026-10-22T09:38:40.757Z"}
+{"level":"info","message":"Model name spf","timestamp":"2026-10-22T09:38:40.758Z"}
+{"level":"info","message":"Model name client","timestamp":"2026-10-22T09:38:40.758Z"}
+{"level":"info","message":"Model name clientAudit","timestamp":"2026-10-22T09:38:40.764Z"}
+{"level":"info","message":"Associating table ClientAudit with models","timestamp":"2026-10-22T09:38:40.766Z"}
+{"level":"info","message":"Model name group","timestamp":"2026-10-22T09:38:40.771Z"}
+{"level":"info","message":"Model name GroupMenuHeader","timestamp":"2026-10-22T09:38:40.774Z"}
+{"level":"info","message":"Model name role","timestamp":"2026-10-22T09:38:40.776Z"}
+{"level":"info","message":"Model name user","timestamp":"2026-10-22T09:38:40.782Z"}
+{"level":"info","message":"Model name Agency","timestamp":"2026-10-22T09:38:40.784Z"}
+{"level":"info","message":"Associating table Agency with models","timestamp":"2026-10-22T09:38:40.786Z"}
+{"level":"info","message":"Model name Applicant","timestamp":"2026-10-22T09:38:40.792Z"}
+{"level":"info","message":"Associating table Applicant with models","timestamp":"2026-10-22T09:38:40.794Z"}
+{"level":"info","message":"Model name MOU","timestamp":"2026-10-22T09:38:40.820Z"}
+{"level":"info","message":"Associating table Job with models","timestamp":"2026-10-22T09:38:40.823Z"}
+{"level":"info","message":"Model name jobAdvertise","timestamp":"2026-10-22T09:38:40.836Z"}
+{"level":"info","message":"Associating table JobAdvertise with models","timestamp":"2026-10-22T09:38:40.840Z"}
+{"level":"info","message":"Model name JobBatch","timestamp":"2026-10-22T09:38:40.841Z"}
+{"level":"info","message":"Associating table JobBatch with models","timestamp":"2026-10-22T09:38:40.841Z"}
+{"level":"info","message":"Model name benefit","timestamp":"2026-10-22T09:38:40.853Z"}
+{"level":"info","message":"Associating table Benefit with models","timestamp":"2026-10-22T09:38:40.857Z"}
+{"level":"info","message":"Model name company","timestamp":"2026-10-22T09:38:40.862Z"}
+{"level":"info","message":"Model name location","timestamp":"2026-10-22T09:38:40.862Z"}
+{"level":"info","message":"Model name currency","timestamp":"2026-10-22T09:38:40.862Z"}
+{"level":"info","message":"Model name currencyAudit","timestamp":"2026-10-22T09:38:40.865Z"}
+{"level":"info","message":"Associating table CurrencyAudit with models","timestamp":"2026-10-22T09:38:40.865Z"}
+{"level":"info","message":"Model name unit","timestamp":"2026-10-22T09:38:40.866Z"}
+{"level":"info","message":"Model name printerModel","timestamp":"2026-10-22T09:38:40.869Z"}
+{"level":"info","message":"Model name stockTransactionModel","timestamp":"2026-10-22T09:38:40.869Z"}
+{"level":"info","message":"Model name stockDailyBalance","timestamp":"2026-10-22T09:38:40.871Z"}
+{"level":"info","message":"Model name mainCategory","timestamp":"2026-10-22T09:38:40.872Z"}
+{"level":"info","message":"Model name category","timestamp":"2026-10-22T09:38:40.872Z"}
+{"level":"info","message":"Associating table Color with models","timestamp":"2026-10-22T09:38:40.872Z"}
+{"level":"info","message":"Model name student","timestamp":"2026-10-22T09:38:40.872Z"}
+{"level":"info","message":"Associating table Student with models","timestamp":"2026-10-22T09:38:40.872Z"}
+{"level":"info","message":"Model name nfcCard","timestamp":"2026-10-22T09:38:40.875Z"}
+{"level":"info","message":"Associating table NfcCard with models","timestamp":"2026-10-22T09:38:40.875Z"}
+{"level":"info","message":"Model name academicYear","timestamp":"2026-10-22T09:38:40.876Z"}
+{"level":"info","message":"Model name schoolClass","timestamp":"2026-10-22T09:38:40.876Z"}
+{"level":"info","message":"Model name schoolRoom","timestamp":"2026-10-22T09:38:40.877Z"}
+{"level":"info","message":"Model name feeItem","timestamp":"2026-10-22T09:38:40.878Z"}
+{"level":"info","message":"Model name feeStructure","timestamp":"2026-10-22T09:38:40.878Z"}
+{"level":"info","message":"Model name schoolInvoice","timestamp":"2026-10-22T09:38:40.878Z"}
+{"level":"info","message":"Model name schoolInvoiceLine","timestamp":"2026-10-22T09:38:40.880Z"}
+{"level":"info","message":"Model name schoolPayment","timestamp":"2026-10-22T09:38:40.880Z"}
+{"level":"info","message":"Model name cashierShift","timestamp":"2026-10-22T09:38:40.881Z"}
+{"level":"info","message":"Model name studentFeeItem","timestamp":"2026-10-22T09:38:40.882Z"}
+{"level":"info","message":"Model name transactionEntry","timestamp":"2026-10-22T09:38:40.882Z"}
+{"level":"info","message":"Associating table TransactionEntry","timestamp":"2026-10-22T09:38:40.882Z"}
+{"level":"info","message":"Model name tax","timestamp":"2026-10-22T09:38:40.883Z"}
+{"level":"info","message":"Model name product","timestamp":"2026-10-22T09:38:40.883Z"}
+{"level":"info","message":"Model name productAudit","timestamp":"2026-10-22T09:38:40.906Z"}
+{"level":"info","message":"Associating table ProductAudit with models","timestamp":"2026-10-22T09:38:40.909Z"}
+{"level":"info","message":"Model name productTemp","timestamp":"2026-10-22T09:38:40.910Z"}
+{"level":"info","message":"Model name productSize","timestamp":"2026-10-22T09:38:40.910Z"}
+{"level":"info","message":"Model name productUnit","timestamp":"2026-10-22T09:38:40.911Z"}
+{"level":"info","message":"Model name productPackaging","timestamp":"2026-10-22T09:38:40.912Z"}
+{"level":"info","message":"Model name customerPackagingLedger","timestamp":"2026-10-22T09:38:40.913Z"}
+{"level":"info","message":"Model name supplierPackagingLedger","timestamp":"2026-10-22T09:38:40.913Z"}
+{"level":"info","message":"Model name packagingDamageLog","timestamp":"2026-10-22T09:38:40.915Z"}
+{"level":"info","message":"Model name image","timestamp":"2026-10-22T09:38:40.916Z"}
+{"level":"info","message":"Associating table IMAGE with models","timestamp":"2026-10-22T09:38:40.916Z"}
+{"level":"info","message":"Model name priceList","timestamp":"2026-10-22T09:38:40.916Z"}
+{"level":"info","message":"Model name webProductGroup","timestamp":"2026-10-22T09:38:40.916Z"}
+{"level":"info","message":"Model name ProductOptionGroup","timestamp":"2026-10-22T09:38:40.916Z"}
+{"level":"info","message":"Model name ProductOption","timestamp":"2026-10-22T09:38:40.917Z"}
+{"level":"info","message":"Model name customer","timestamp":"2026-10-22T09:38:40.918Z"}
+{"level":"info","message":"Model name order","timestamp":"2026-10-22T09:38:40.918Z"}
+{"level":"info","message":"Model name orderHIS","timestamp":"2026-10-22T09:38:40.918Z"}
+{"level":"info","message":"Model name orderTable","timestamp":"2026-10-22T09:38:40.918Z"}
+{"level":"info","message":"Model name recipe","timestamp":"2026-10-22T09:38:40.918Z"}
+{"level":"info","message":"Model name table","timestamp":"2026-10-22T09:38:40.918Z"}
+{"level":"info","message":"Model name ticket","timestamp":"2026-10-22T09:38:40.919Z"}
+{"level":"info","message":"Model name promotion","timestamp":"2026-10-22T09:38:40.927Z"}
+{"level":"info","message":"Model name ticketLine","timestamp":"2026-10-22T09:38:40.928Z"}
+{"level":"info","message":"Model name MemberOffer","timestamp":"2026-10-22T09:38:40.931Z"}
+{"level":"info","message":"Model name loyaltyTransaction","timestamp":"2026-10-22T09:38:40.932Z"}
+{"level":"info","message":"Model name washjob","timestamp":"2026-10-22T09:38:40.933Z"}
+{"level":"info","message":"Model name washjobHis","timestamp":"2026-10-22T09:38:40.933Z"}
+{"level":"info","message":"Model name washjobline","timestamp":"2026-10-22T09:38:40.933Z"}
+{"level":"info","message":"Model name QRRequest","timestamp":"2026-10-22T09:38:40.933Z"}
+{"level":"info","message":"Associating table QRRequest with models","timestamp":"2026-10-22T09:38:40.933Z"}
+{"level":"info","message":"Model name saleHeader","timestamp":"2026-10-22T09:38:40.935Z"}
+{"level":"info","message":"Model name salePayment","timestamp":"2026-10-22T09:38:40.942Z"}
+{"level":"info","message":"Model name saleLine","timestamp":"2026-10-22T09:38:40.948Z"}
+{"level":"info","message":"Associating table SaleLine with models","timestamp":"2026-10-22T09:38:40.949Z"}
+{"level":"info","message":"Model name quotationHeader","timestamp":"2026-10-22T09:38:40.952Z"}
+{"level":"info","message":"Model name quotationLine","timestamp":"2026-10-22T09:38:40.952Z"}
+{"level":"info","message":"Associating table QuotationLine with models","timestamp":"2026-10-22T09:38:40.953Z"}
+{"level":"info","message":"Model name poHeader","timestamp":"2026-10-22T09:38:40.953Z"}
+{"level":"info","message":"Model name poLine","timestamp":"2026-10-22T09:38:40.953Z"}
+{"level":"info","message":"Model name poHeaderHIS","timestamp":"2026-10-22T09:38:40.953Z"}
+{"level":"info","message":"Model name poLineHIS","timestamp":"2026-10-22T09:38:40.953Z"}
+{"level":"info","message":"Model name receivingHeader","timestamp":"2026-10-22T09:38:40.953Z"}
+{"level":"info","message":"Model name receivingLine","timestamp":"2026-10-22T09:38:40.953Z"}
+{"level":"info","message":"Model name reservation","timestamp":"2026-10-22T09:38:40.953Z"}
+{"level":"info","message":"Model name reservationLine","timestamp":"2026-10-22T09:38:40.953Z"}
+{"level":"info","message":"Model name transferHeader","timestamp":"2026-10-22T09:38:40.953Z"}
+{"level":"info","message":"Model name transferLine","timestamp":"2026-10-22T09:38:40.953Z"}
+{"level":"info","message":"Model name menuHeader","timestamp":"2026-10-22T09:38:40.953Z"}
+{"level":"info","message":"Model name menuLine","timestamp":"2026-10-22T09:38:40.953Z"}
+{"level":"info","message":"Model name MenuHeaderLines","timestamp":"2026-10-22T09:38:40.953Z"}
+{"level":"info","message":"Model name webMenuHeader","timestamp":"2026-10-22T09:38:40.953Z"}
+{"level":"info","message":"Model name dashboardMenu","timestamp":"2026-10-22T09:38:40.953Z"}
+{"level":"info","message":"Model name QRResponse","timestamp":"2026-10-22T09:38:40.954Z"}
+{"level":"info","message":"Associating table QRResponse with models","timestamp":"2026-10-22T09:38:40.954Z"}
+{"level":"info","message":"Model name PaymentCallback","timestamp":"2026-10-22T09:38:40.954Z"}
+{"level":"info","message":"Associating table PaymentCallback with models","timestamp":"2026-10-22T09:38:40.954Z"}
+{"level":"info","message":"Model name Color","timestamp":"2026-10-22T09:38:40.954Z"}
+{"level":"info","message":"Associating table Color with models","timestamp":"2026-10-22T09:38:40.954Z"}
+{"level":"info","message":"Model name Size","timestamp":"2026-10-22T09:38:40.955Z"}
+{"level":"info","message":"Associating table Size with models","timestamp":"2026-10-22T09:38:40.955Z"}
+{"level":"info","message":"Model name card","timestamp":"2026-10-22T09:38:40.956Z"}
+{"level":"info","message":"Associating table Card with models","timestamp":"2026-10-22T09:38:40.956Z"}
+{"level":"info","message":"Model name cardAudit","timestamp":"2026-10-22T09:38:40.962Z"}
+{"level":"info","message":"Associating table CardAudit with models","timestamp":"2026-10-22T09:38:40.962Z"}
+{"level":"info","message":"Model name Transaction","timestamp":"2026-10-22T09:38:40.962Z"}
+{"level":"info","message":"Model name glPostingBatch","timestamp":"2026-10-22T09:38:40.962Z"}
+{"level":"info","message":"Model name gl","timestamp":"2026-10-22T09:38:40.962Z"}
+{"level":"info","message":"Model name chartAccount","timestamp":"2026-10-22T09:38:40.962Z"}
+{"level":"info","message":"Model name fixedAssetProduct","timestamp":"2026-10-22T09:38:40.962Z"}
+{"level":"info","message":"Model name fixedAssetContract","timestamp":"2026-10-22T09:38:40.962Z"}
+{"level":"info","message":"Model name fixedAssetDepreciation","timestamp":"2026-10-22T09:38:40.962Z"}
+{"level":"info","message":"Model name apPaymentHeader","timestamp":"2026-10-22T09:38:40.962Z"}
+{"level":"info","message":"Model name arReceiveHeader","timestamp":"2026-10-22T09:38:40.963Z"}
+{"level":"info","message":"Model name payment","timestamp":"2026-10-22T09:38:40.963Z"}
+{"level":"info","message":"Model name bank","timestamp":"2026-10-22T09:38:40.963Z"}
+{"level":"info","message":"Model name bankAccount","timestamp":"2026-10-22T09:38:40.963Z"}
+{"level":"info","message":"Associating table Bank with models","timestamp":"2026-10-22T09:38:40.963Z"}
+{"level":"info","message":"Model name ministry","timestamp":"2026-10-22T09:38:40.963Z"}
+{"level":"info","message":"Model name moneySettlement","timestamp":"2026-10-22T09:38:40.965Z"}
+{"level":"info","message":"Model name moneySettlementOverrideLog","timestamp":"2026-10-22T09:38:40.968Z"}
+{"level":"info","message":"Associating table MoneySettlementOverrideLog with models","timestamp":"2026-10-22T09:38:40.968Z"}
+{"level":"info","message":"Model name moneyAdvanceAudit","timestamp":"2026-10-22T09:38:40.968Z"}
+{"level":"info","message":"Associating table MoneyAdvanceAudit with models","timestamp":"2026-10-22T09:38:40.969Z"}
+{"level":"info","message":"Model name moneyAdvanceOverrideLog","timestamp":"2026-10-22T09:38:40.969Z"}
+{"level":"info","message":"Associating table MoneyAdvanceOverrideLog with models","timestamp":"2026-10-22T09:38:40.969Z"}
+{"level":"info","message":"Model name moneyAdvance","timestamp":"2026-10-22T09:38:40.970Z"}
+{"level":"info","message":"Associating table MoneyAdvance with models","timestamp":"2026-10-22T09:38:40.970Z"}
+{"level":"info","message":"Model name ministryPeriodBalance","timestamp":"2026-10-22T09:38:40.974Z"}
+{"level":"info","message":"Associating table MinistryPeriodBalance with models","timestamp":"2026-10-22T09:38:40.974Z"}
+{"level":"info","message":"Model name bankPeriodBalance","timestamp":"2026-10-22T09:38:40.978Z"}
+{"level":"info","message":"Associating table BankPeriodBalance with models","timestamp":"2026-10-22T09:38:40.978Z"}
+{"level":"info","message":"Model name AccountStatement","timestamp":"2026-10-22T09:38:40.979Z"}
+{"level":"info","message":"Associating table AccountStatement with models","timestamp":"2026-10-22T09:38:40.979Z"}
+{"level":"info","message":"Model name Project","timestamp":"2026-10-22T09:38:40.980Z"}
+{"level":"info","message":"Model name ProjectBudget","timestamp":"2026-10-22T09:38:40.983Z"}
+{"level":"info","message":"Model name ProjectContract","timestamp":"2026-10-22T09:38:40.983Z"}
+{"level":"info","message":"Model name ProjectInvoice","timestamp":"2026-10-22T09:38:40.985Z"}
+{"level":"info","message":"Model name WithdrawalApplication","timestamp":"2026-10-22T09:38:40.987Z"}
+{"level":"info","message":"Model name revenue_target","timestamp":"2026-10-22T09:38:40.988Z"}
+{"level":"info","message":"Model name annualExpenseBudget","timestamp":"2026-10-22T09:38:40.989Z"}
+{"level":"info","message":"Model name apInvoice","timestamp":"2026-10-22T09:38:40.989Z"}
+{"level":"info","message":"Associating table APInvoice with models","timestamp":"2026-10-22T09:38:40.989Z"}
+{"level":"info","message":"Model name apInvoiceAudit","timestamp":"2026-10-22T09:38:40.993Z"}
+{"level":"info","message":"Associating table APInvoiceAudit with models","timestamp":"2026-10-22T09:38:40.993Z"}
+{"level":"info","message":"Model name invoiceLineItem","timestamp":"2026-10-22T09:38:40.994Z"}
+{"level":"info","message":"Associating table InvoiceLineItem with models","timestamp":"2026-10-22T09:38:40.994Z"}
+{"level":"info","message":"Model name apInvoiceSettlement","timestamp":"2026-10-22T09:38:41.002Z"}
+{"level":"info","message":"Associating table APInvoiceSettlement with models","timestamp":"2026-10-22T09:38:41.003Z"}
+{"level":"info","message":"Model name apSettlementAudit","timestamp":"2026-10-22T09:38:41.007Z"}
+{"level":"info","message":"Associating table APSettlementAudit with models","timestamp":"2026-10-22T09:38:41.007Z"}
+{"level":"info","message":"Model name apInvoiceSettlementLine","timestamp":"2026-10-22T09:38:41.008Z"}
+{"level":"info","message":"Associating InvoiceSettlementLine with models","timestamp":"2026-10-22T09:38:41.008Z"}
+{"level":"info","message":"Model name arInvoiceHeader","timestamp":"2026-10-22T09:38:41.009Z"}
+{"level":"info","message":"Associating table ARInvoiceHeader with models","timestamp":"2026-10-22T09:38:41.009Z"}
+{"level":"info","message":"Model name arInvoiceHeaderAudit","timestamp":"2026-10-22T09:38:41.013Z"}
+{"level":"info","message":"Associating table ARInvoiceHeaderAudit with models","timestamp":"2026-10-22T09:38:41.013Z"}
+{"level":"info","message":"Model name arInvoiceLine","timestamp":"2026-10-22T09:38:41.013Z"}
+{"level":"info","message":"Associating table InvoiceLine with models","timestamp":"2026-10-22T09:38:41.014Z"}
+{"level":"info","message":"Model name arReceiveHeaderV2","timestamp":"2026-10-22T09:38:41.015Z"}
+{"level":"info","message":"Associating table ARReceiveHeader with models","timestamp":"2026-10-22T09:38:41.015Z"}
+{"level":"info","message":"Model name arReceiveHeaderAudit","timestamp":"2026-10-22T09:38:41.017Z"}
+{"level":"info","message":"Associating table ARReceiveHeaderAudit with models","timestamp":"2026-10-22T09:38:41.017Z"}
+{"level":"info","message":"Model name arReceiveLine","timestamp":"2026-10-22T09:38:41.017Z"}
+{"level":"info","message":"Associating table ReceiveLine with models","timestamp":"2026-10-22T09:38:41.018Z"}
+{"level":"info","message":"Model name vendor","timestamp":"2026-10-22T09:38:41.018Z"}
+{"level":"info","message":"Model name shipping","timestamp":"2026-10-22T09:38:41.018Z"}
+{"level":"info","message":"Model name shipping_order","timestamp":"2026-10-22T09:38:41.018Z"}
+{"level":"info","message":"Model name shipping_checkout_batch","timestamp":"2026-10-22T09:38:41.018Z"}
+{"level":"info","message":"Model name service","timestamp":"2026-10-22T09:38:41.019Z"}
+{"level":"info","message":"Model name authority","timestamp":"2026-10-22T09:38:41.019Z"}
+{"level":"info","message":"Model name terminal","timestamp":"2026-10-22T09:38:41.019Z"}
+{"level":"info","message":"Model name terminalAudit","timestamp":"2026-10-22T09:38:41.019Z"}
+{"level":"info","message":"Associating table TerminalAudit with models","timestamp":"2026-10-22T09:38:41.019Z"}
+{"level":"info","message":"Model name campaign","timestamp":"2026-10-22T09:38:41.019Z"}
+{"level":"info","message":"Model name campaignEntry","timestamp":"2026-10-22T09:38:41.020Z"}
+{"level":"info","message":"Model name rider","timestamp":"2026-10-22T09:38:41.020Z"}
+{"level":"info","message":"Model name outlet","timestamp":"2026-10-22T09:38:41.020Z"}
+{"level":"info","message":"Model name geography","timestamp":"2026-10-22T09:38:41.020Z"}
+{"level":"info","message":"Model name country","timestamp":"2026-10-22T09:38:41.020Z"}
+{"level":"info","message":"Model name village","timestamp":"2026-10-22T09:38:41.020Z"}
+{"level":"info","message":"Model name district","timestamp":"2026-10-22T09:38:41.020Z"}
+{"level":"info","message":"Model name accountDailyBalance","timestamp":"2026-10-22T09:38:41.021Z"}
+{"level":"info","message":"Model name businessDate","timestamp":"2026-10-22T09:38:41.021Z"}
+{"level":"info","message":"Model name cifCustomer","timestamp":"2026-10-22T09:38:41.021Z"}
+{"level":"info","message":"Model name microfinanceGroup","timestamp":"2026-10-22T09:38:41.022Z"}
+{"level":"info","message":"Model name mfCollateral","timestamp":"2026-10-22T09:38:41.023Z"}
+{"level":"info","message":"Model name mfLoanProduct","timestamp":"2026-10-22T09:38:41.023Z"}
+{"level":"info","message":"Model name mfLoanAccount","timestamp":"2026-10-22T09:38:41.024Z"}
+{"level":"info","message":"Model name mfRepaymentSchedule","timestamp":"2026-10-22T09:38:41.025Z"}
+{"level":"info","message":"Model name mfJournalEntry","timestamp":"2026-10-22T09:38:41.026Z"}
+{"level":"info","message":"client_db (SQL executor) Connection established","timestamp":"2026-10-22T09:38:42.752Z"}
+{"level":"info","message":"client_db Connection established","timestamp":"2026-10-22T09:38:42.755Z"}
+{"level":"warn","message":"Non-blocking note during pre-sync data cleanup: Cannot delete property 'meta' of [object Array]","timestamp":"2026-10-22T09:38:42.861Z"}
+{"level":"info","message":"REDEEM product already exists and is fully configured","timestamp":"2026-10-22T09:38:42.956Z"}
+{"level":"info","message":"Dcommerce is up","timestamp":"2026-10-22T09:38:42.963Z"}
+{"level":"info","message":"app is runing: 8888","timestamp":"2026-10-22T09:38:42.964Z"}
+{"level":"warn","message":"env: dcommerce_pro_24h_min","timestamp":"2026-10-22T09:38:42.964Z"}
+{"level":"info","message":"Checking general_ledger deprecated fields in database: dcommerce_pro_24h_min","timestamp":"2026-10-22T09:38:43.046Z"}
+{"level":"info","message":"Column chartOfAccountId does not exist on general_ledger. Skipping constraint and column drops.","timestamp":"2026-10-22T09:38:43.147Z"}
+{"level":"info","message":"Checking for orphaned schoolInvoiceId references in schoolPayment...","timestamp":"2026-10-22T09:38:43.550Z"}
+{"level":"info","message":"No orphaned schoolPayment records found.","timestamp":"2026-10-22T09:38:43.625Z"}
+{"level":"info","message":"Checking performance indexes in database: dcommerce_pro_24h_min","timestamp":"2026-10-22T09:38:43.626Z"}
+{"level":"info","message":"Index idx_card_location_stock already exists on card table.","timestamp":"2026-10-22T09:38:43.794Z"}
+{"level":"info","message":"Index idx_image_path_pro_id already exists on image_path table.","timestamp":"2026-10-22T09:38:43.946Z"}
+{"level":"info","message":"Checking packaging columns and enums in database: dcommerce_pro_24h_min","timestamp":"2026-10-22T09:38:43.947Z"}
+{"level":"info","message":"Updating saleLine.packagingAction ENUM to ensure all actions ('EXCHANGED', 'DEPOSIT', 'DEBT', 'SOLD', 'RETURNED', 'NONE') are allowed...","timestamp":"2026-10-22T09:38:44.138Z"}
+{"level":"info","message":"Checking company table columns in database: dcommerce_pro_24h_min","timestamp":"2026-10-22T09:38:44.982Z"}
+{"level":"info","message":"Starting execution of SQL script: /Users/soubinkittiphanh/Desktop/Pro/dcommerce/dc_api/toomanykey.sql","timestamp":"2026-10-22T09:38:45.429Z"}
+{"level":"info","message":"Found 3328 SQL statements to execute.","timestamp":"2026-10-22T09:38:45.436Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2026-10-22T09:41:17.250Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2026-10-22T09:41:17.253Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2026-10-22T09:41:17.254Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2026-10-22T09:41:17.255Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2026-10-22T09:41:17.257Z","username":"johndoe"}
+{"level":"info","message":"client_db (SQL executor) Connection established","timestamp":"2026-10-22T09:41:18.421Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2026-10-22T09:43:37.675Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2026-10-22T09:43:37.678Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2026-10-22T09:43:37.679Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2026-10-22T09:43:37.680Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2026-10-22T09:43:37.682Z","username":"johndoe"}
+{"level":"info","message":"client_db (SQL executor) Connection established","timestamp":"2026-10-22T09:43:38.690Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2026-10-22T09:43:54.078Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2026-10-22T09:43:54.082Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2026-10-22T09:43:54.082Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2026-10-22T09:43:54.083Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2026-10-22T09:43:54.085Z","username":"johndoe"}
+{"level":"info","message":"Model name sequelize","timestamp":"2026-10-22T09:43:54.472Z"}
+{"level":"info","message":"Model name Sequelize","timestamp":"2026-10-22T09:43:54.474Z"}
+{"level":"info","message":"Model name spf","timestamp":"2026-10-22T09:43:54.475Z"}
+{"level":"info","message":"Model name client","timestamp":"2026-10-22T09:43:54.476Z"}
+{"level":"info","message":"Model name clientAudit","timestamp":"2026-10-22T09:43:54.483Z"}
+{"level":"info","message":"Associating table ClientAudit with models","timestamp":"2026-10-22T09:43:54.484Z"}
+{"level":"info","message":"Model name group","timestamp":"2026-10-22T09:43:54.488Z"}
+{"level":"info","message":"Model name GroupMenuHeader","timestamp":"2026-10-22T09:43:54.491Z"}
+{"level":"info","message":"Model name role","timestamp":"2026-10-22T09:43:54.493Z"}
+{"level":"info","message":"Model name user","timestamp":"2026-10-22T09:43:54.496Z"}
+{"level":"info","message":"Model name Agency","timestamp":"2026-10-22T09:43:54.499Z"}
+{"level":"info","message":"Associating table Agency with models","timestamp":"2026-10-22T09:43:54.500Z"}
+{"level":"info","message":"Model name Applicant","timestamp":"2026-10-22T09:43:54.504Z"}
+{"level":"info","message":"Associating table Applicant with models","timestamp":"2026-10-22T09:43:54.507Z"}
+{"level":"info","message":"Model name MOU","timestamp":"2026-10-22T09:43:54.527Z"}
+{"level":"info","message":"Associating table Job with models","timestamp":"2026-10-22T09:43:54.530Z"}
+{"level":"info","message":"Model name jobAdvertise","timestamp":"2026-10-22T09:43:54.544Z"}
+{"level":"info","message":"Associating table JobAdvertise with models","timestamp":"2026-10-22T09:43:54.547Z"}
+{"level":"info","message":"Model name JobBatch","timestamp":"2026-10-22T09:43:54.551Z"}
+{"level":"info","message":"Associating table JobBatch with models","timestamp":"2026-10-22T09:43:54.551Z"}
+{"level":"info","message":"Model name benefit","timestamp":"2026-10-22T09:43:54.560Z"}
+{"level":"info","message":"Associating table Benefit with models","timestamp":"2026-10-22T09:43:54.564Z"}
+{"level":"info","message":"Model name company","timestamp":"2026-10-22T09:43:54.572Z"}
+{"level":"info","message":"Model name location","timestamp":"2026-10-22T09:43:54.575Z"}
+{"level":"info","message":"Model name currency","timestamp":"2026-10-22T09:43:54.575Z"}
+{"level":"info","message":"Model name currencyAudit","timestamp":"2026-10-22T09:43:54.577Z"}
+{"level":"info","message":"Associating table CurrencyAudit with models","timestamp":"2026-10-22T09:43:54.577Z"}
+{"level":"info","message":"Model name unit","timestamp":"2026-10-22T09:43:54.578Z"}
+{"level":"info","message":"Model name printerModel","timestamp":"2026-10-22T09:43:54.589Z"}
+{"level":"info","message":"Model name stockTransactionModel","timestamp":"2026-10-22T09:43:54.593Z"}
+{"level":"info","message":"Model name stockDailyBalance","timestamp":"2026-10-22T09:43:54.600Z"}
+{"level":"info","message":"Model name mainCategory","timestamp":"2026-10-22T09:43:54.604Z"}
+{"level":"info","message":"Model name category","timestamp":"2026-10-22T09:43:54.604Z"}
+{"level":"info","message":"Associating table Color with models","timestamp":"2026-10-22T09:43:54.604Z"}
+{"level":"info","message":"Model name student","timestamp":"2026-10-22T09:43:54.605Z"}
+{"level":"info","message":"Associating table Student with models","timestamp":"2026-10-22T09:43:54.605Z"}
+{"level":"info","message":"Model name nfcCard","timestamp":"2026-10-22T09:43:54.623Z"}
+{"level":"info","message":"Associating table NfcCard with models","timestamp":"2026-10-22T09:43:54.626Z"}
+{"level":"info","message":"Model name academicYear","timestamp":"2026-10-22T09:43:54.627Z"}
+{"level":"info","message":"Model name schoolClass","timestamp":"2026-10-22T09:43:54.627Z"}
+{"level":"info","message":"Model name schoolRoom","timestamp":"2026-10-22T09:43:54.629Z"}
+{"level":"info","message":"Model name feeItem","timestamp":"2026-10-22T09:43:54.630Z"}
+{"level":"info","message":"Model name feeStructure","timestamp":"2026-10-22T09:43:54.630Z"}
+{"level":"info","message":"Model name schoolInvoice","timestamp":"2026-10-22T09:43:54.631Z"}
+{"level":"info","message":"Model name schoolInvoiceLine","timestamp":"2026-10-22T09:43:54.632Z"}
+{"level":"info","message":"Model name schoolPayment","timestamp":"2026-10-22T09:43:54.632Z"}
+{"level":"info","message":"Model name cashierShift","timestamp":"2026-10-22T09:43:54.633Z"}
+{"level":"info","message":"Model name studentFeeItem","timestamp":"2026-10-22T09:43:54.633Z"}
+{"level":"info","message":"Model name transactionEntry","timestamp":"2026-10-22T09:43:54.634Z"}
+{"level":"info","message":"Associating table TransactionEntry","timestamp":"2026-10-22T09:43:54.634Z"}
+{"level":"info","message":"Model name tax","timestamp":"2026-10-22T09:43:54.634Z"}
+{"level":"info","message":"Model name product","timestamp":"2026-10-22T09:43:54.635Z"}
+{"level":"info","message":"Model name productAudit","timestamp":"2026-10-22T09:43:54.657Z"}
+{"level":"info","message":"Associating table ProductAudit with models","timestamp":"2026-10-22T09:43:54.661Z"}
+{"level":"info","message":"Model name productTemp","timestamp":"2026-10-22T09:43:54.662Z"}
+{"level":"info","message":"Model name productSize","timestamp":"2026-10-22T09:43:54.662Z"}
+{"level":"info","message":"Model name productUnit","timestamp":"2026-10-22T09:43:54.662Z"}
+{"level":"info","message":"Model name productPackaging","timestamp":"2026-10-22T09:43:54.663Z"}
+{"level":"info","message":"Model name customerPackagingLedger","timestamp":"2026-10-22T09:43:54.669Z"}
+{"level":"info","message":"Model name supplierPackagingLedger","timestamp":"2026-10-22T09:43:54.673Z"}
+{"level":"info","message":"Model name packagingDamageLog","timestamp":"2026-10-22T09:43:54.674Z"}
+{"level":"info","message":"Model name image","timestamp":"2026-10-22T09:43:54.675Z"}
+{"level":"info","message":"Associating table IMAGE with models","timestamp":"2026-10-22T09:43:54.675Z"}
+{"level":"info","message":"Model name priceList","timestamp":"2026-10-22T09:43:54.680Z"}
+{"level":"info","message":"Model name webProductGroup","timestamp":"2026-10-22T09:43:54.683Z"}
+{"level":"info","message":"Model name ProductOptionGroup","timestamp":"2026-10-22T09:43:54.683Z"}
+{"level":"info","message":"Model name ProductOption","timestamp":"2026-10-22T09:43:54.692Z"}
+{"level":"info","message":"Model name customer","timestamp":"2026-10-22T09:43:54.697Z"}
+{"level":"info","message":"Model name order","timestamp":"2026-10-22T09:43:54.697Z"}
+{"level":"info","message":"Model name orderHIS","timestamp":"2026-10-22T09:43:54.697Z"}
+{"level":"info","message":"Model name orderTable","timestamp":"2026-10-22T09:43:54.697Z"}
+{"level":"info","message":"Model name recipe","timestamp":"2026-10-22T09:43:54.697Z"}
+{"level":"info","message":"Model name table","timestamp":"2026-10-22T09:43:54.698Z"}
+{"level":"info","message":"Model name ticket","timestamp":"2026-10-22T09:43:54.699Z"}
+{"level":"info","message":"Model name promotion","timestamp":"2026-10-22T09:43:54.709Z"}
+{"level":"info","message":"Model name ticketLine","timestamp":"2026-10-22T09:43:54.710Z"}
+{"level":"info","message":"Model name MemberOffer","timestamp":"2026-10-22T09:43:54.717Z"}
+{"level":"info","message":"Model name loyaltyTransaction","timestamp":"2026-10-22T09:43:54.721Z"}
+{"level":"info","message":"Model name washjob","timestamp":"2026-10-22T09:43:54.722Z"}
+{"level":"info","message":"Model name washjobHis","timestamp":"2026-10-22T09:43:54.722Z"}
+{"level":"info","message":"Model name washjobline","timestamp":"2026-10-22T09:43:54.722Z"}
+{"level":"info","message":"Model name QRRequest","timestamp":"2026-10-22T09:43:54.722Z"}
+{"level":"info","message":"Associating table QRRequest with models","timestamp":"2026-10-22T09:43:54.722Z"}
+{"level":"info","message":"Model name saleHeader","timestamp":"2026-10-22T09:43:54.728Z"}
+{"level":"info","message":"Model name salePayment","timestamp":"2026-10-22T09:43:54.740Z"}
+{"level":"info","message":"Model name saleLine","timestamp":"2026-10-22T09:43:54.740Z"}
+{"level":"info","message":"Associating table SaleLine with models","timestamp":"2026-10-22T09:43:54.740Z"}
+{"level":"info","message":"Model name quotationHeader","timestamp":"2026-10-22T09:43:54.743Z"}
+{"level":"info","message":"Model name quotationLine","timestamp":"2026-10-22T09:43:54.743Z"}
+{"level":"info","message":"Associating table QuotationLine with models","timestamp":"2026-10-22T09:43:54.743Z"}
+{"level":"info","message":"Model name poHeader","timestamp":"2026-10-22T09:43:54.744Z"}
+{"level":"info","message":"Model name poLine","timestamp":"2026-10-22T09:43:54.744Z"}
+{"level":"info","message":"Model name poHeaderHIS","timestamp":"2026-10-22T09:43:54.744Z"}
+{"level":"info","message":"Model name poLineHIS","timestamp":"2026-10-22T09:43:54.744Z"}
+{"level":"info","message":"Model name receivingHeader","timestamp":"2026-10-22T09:43:54.744Z"}
+{"level":"info","message":"Model name receivingLine","timestamp":"2026-10-22T09:43:54.744Z"}
+{"level":"info","message":"Model name reservation","timestamp":"2026-10-22T09:43:54.745Z"}
+{"level":"info","message":"Model name reservationLine","timestamp":"2026-10-22T09:43:54.745Z"}
+{"level":"info","message":"Model name transferHeader","timestamp":"2026-10-22T09:43:54.745Z"}
+{"level":"info","message":"Model name transferLine","timestamp":"2026-10-22T09:43:54.745Z"}
+{"level":"info","message":"Model name menuHeader","timestamp":"2026-10-22T09:43:54.745Z"}
+{"level":"info","message":"Model name menuLine","timestamp":"2026-10-22T09:43:54.745Z"}
+{"level":"info","message":"Model name MenuHeaderLines","timestamp":"2026-10-22T09:43:54.745Z"}
+{"level":"info","message":"Model name webMenuHeader","timestamp":"2026-10-22T09:43:54.745Z"}
+{"level":"info","message":"Model name dashboardMenu","timestamp":"2026-10-22T09:43:54.745Z"}
+{"level":"info","message":"Model name QRResponse","timestamp":"2026-10-22T09:43:54.745Z"}
+{"level":"info","message":"Associating table QRResponse with models","timestamp":"2026-10-22T09:43:54.745Z"}
+{"level":"info","message":"Model name PaymentCallback","timestamp":"2026-10-22T09:43:54.746Z"}
+{"level":"info","message":"Associating table PaymentCallback with models","timestamp":"2026-10-22T09:43:54.746Z"}
+{"level":"info","message":"Model name Color","timestamp":"2026-10-22T09:43:54.746Z"}
+{"level":"info","message":"Associating table Color with models","timestamp":"2026-10-22T09:43:54.746Z"}
+{"level":"info","message":"Model name Size","timestamp":"2026-10-22T09:43:54.747Z"}
+{"level":"info","message":"Associating table Size with models","timestamp":"2026-10-22T09:43:54.747Z"}
+{"level":"info","message":"Model name card","timestamp":"2026-10-22T09:43:54.748Z"}
+{"level":"info","message":"Associating table Card with models","timestamp":"2026-10-22T09:43:54.748Z"}
+{"level":"info","message":"Model name cardAudit","timestamp":"2026-10-22T09:43:54.753Z"}
+{"level":"info","message":"Associating table CardAudit with models","timestamp":"2026-10-22T09:43:54.753Z"}
+{"level":"info","message":"Model name Transaction","timestamp":"2026-10-22T09:43:54.753Z"}
+{"level":"info","message":"Model name glPostingBatch","timestamp":"2026-10-22T09:43:54.753Z"}
+{"level":"info","message":"Model name gl","timestamp":"2026-10-22T09:43:54.753Z"}
+{"level":"info","message":"Model name chartAccount","timestamp":"2026-10-22T09:43:54.753Z"}
+{"level":"info","message":"Model name fixedAssetProduct","timestamp":"2026-10-22T09:43:54.753Z"}
+{"level":"info","message":"Model name fixedAssetContract","timestamp":"2026-10-22T09:43:54.753Z"}
+{"level":"info","message":"Model name fixedAssetDepreciation","timestamp":"2026-10-22T09:43:54.753Z"}
+{"level":"info","message":"Model name apPaymentHeader","timestamp":"2026-10-22T09:43:54.753Z"}
+{"level":"info","message":"Model name arReceiveHeader","timestamp":"2026-10-22T09:43:54.753Z"}
+{"level":"info","message":"Model name payment","timestamp":"2026-10-22T09:43:54.754Z"}
+{"level":"info","message":"Model name bank","timestamp":"2026-10-22T09:43:54.754Z"}
+{"level":"info","message":"Model name bankAccount","timestamp":"2026-10-22T09:43:54.754Z"}
+{"level":"info","message":"Associating table Bank with models","timestamp":"2026-10-22T09:43:54.754Z"}
+{"level":"info","message":"Model name ministry","timestamp":"2026-10-22T09:43:54.754Z"}
+{"level":"info","message":"Model name moneySettlement","timestamp":"2026-10-22T09:43:54.755Z"}
+{"level":"info","message":"Model name moneySettlementOverrideLog","timestamp":"2026-10-22T09:43:54.757Z"}
+{"level":"info","message":"Associating table MoneySettlementOverrideLog with models","timestamp":"2026-10-22T09:43:54.757Z"}
+{"level":"info","message":"Model name moneyAdvanceAudit","timestamp":"2026-10-22T09:43:54.758Z"}
+{"level":"info","message":"Associating table MoneyAdvanceAudit with models","timestamp":"2026-10-22T09:43:54.758Z"}
+{"level":"info","message":"Model name moneyAdvanceOverrideLog","timestamp":"2026-10-22T09:43:54.759Z"}
+{"level":"info","message":"Associating table MoneyAdvanceOverrideLog with models","timestamp":"2026-10-22T09:43:54.759Z"}
+{"level":"info","message":"Model name moneyAdvance","timestamp":"2026-10-22T09:43:54.759Z"}
+{"level":"info","message":"Associating table MoneyAdvance with models","timestamp":"2026-10-22T09:43:54.759Z"}
+{"level":"info","message":"Model name ministryPeriodBalance","timestamp":"2026-10-22T09:43:54.766Z"}
+{"level":"info","message":"Associating table MinistryPeriodBalance with models","timestamp":"2026-10-22T09:43:54.766Z"}
+{"level":"info","message":"Model name bankPeriodBalance","timestamp":"2026-10-22T09:43:54.767Z"}
+{"level":"info","message":"Associating table BankPeriodBalance with models","timestamp":"2026-10-22T09:43:54.768Z"}
+{"level":"info","message":"Model name AccountStatement","timestamp":"2026-10-22T09:43:54.769Z"}
+{"level":"info","message":"Associating table AccountStatement with models","timestamp":"2026-10-22T09:43:54.769Z"}
+{"level":"info","message":"Model name Project","timestamp":"2026-10-22T09:43:54.770Z"}
+{"level":"info","message":"Model name ProjectBudget","timestamp":"2026-10-22T09:43:54.771Z"}
+{"level":"info","message":"Model name ProjectContract","timestamp":"2026-10-22T09:43:54.772Z"}
+{"level":"info","message":"Model name ProjectInvoice","timestamp":"2026-10-22T09:43:54.772Z"}
+{"level":"info","message":"Model name WithdrawalApplication","timestamp":"2026-10-22T09:43:54.774Z"}
+{"level":"info","message":"Model name revenue_target","timestamp":"2026-10-22T09:43:54.774Z"}
+{"level":"info","message":"Model name annualExpenseBudget","timestamp":"2026-10-22T09:43:54.775Z"}
+{"level":"info","message":"Model name apInvoice","timestamp":"2026-10-22T09:43:54.775Z"}
+{"level":"info","message":"Associating table APInvoice with models","timestamp":"2026-10-22T09:43:54.775Z"}
+{"level":"info","message":"Model name apInvoiceAudit","timestamp":"2026-10-22T09:43:54.779Z"}
+{"level":"info","message":"Associating table APInvoiceAudit with models","timestamp":"2026-10-22T09:43:54.779Z"}
+{"level":"info","message":"Model name invoiceLineItem","timestamp":"2026-10-22T09:43:54.780Z"}
+{"level":"info","message":"Associating table InvoiceLineItem with models","timestamp":"2026-10-22T09:43:54.780Z"}
+{"level":"info","message":"Model name apInvoiceSettlement","timestamp":"2026-10-22T09:43:54.784Z"}
+{"level":"info","message":"Associating table APInvoiceSettlement with models","timestamp":"2026-10-22T09:43:54.784Z"}
+{"level":"info","message":"Model name apSettlementAudit","timestamp":"2026-10-22T09:43:54.790Z"}
+{"level":"info","message":"Associating table APSettlementAudit with models","timestamp":"2026-10-22T09:43:54.790Z"}
+{"level":"info","message":"Model name apInvoiceSettlementLine","timestamp":"2026-10-22T09:43:54.790Z"}
+{"level":"info","message":"Associating InvoiceSettlementLine with models","timestamp":"2026-10-22T09:43:54.790Z"}
+{"level":"info","message":"Model name arInvoiceHeader","timestamp":"2026-10-22T09:43:54.791Z"}
+{"level":"info","message":"Associating table ARInvoiceHeader with models","timestamp":"2026-10-22T09:43:54.792Z"}
+{"level":"info","message":"Model name arInvoiceHeaderAudit","timestamp":"2026-10-22T09:43:54.795Z"}
+{"level":"info","message":"Associating table ARInvoiceHeaderAudit with models","timestamp":"2026-10-22T09:43:54.795Z"}
+{"level":"info","message":"Model name arInvoiceLine","timestamp":"2026-10-22T09:43:54.796Z"}
+{"level":"info","message":"Associating table InvoiceLine with models","timestamp":"2026-10-22T09:43:54.796Z"}
+{"level":"info","message":"Model name arReceiveHeaderV2","timestamp":"2026-10-22T09:43:54.797Z"}
+{"level":"info","message":"Associating table ARReceiveHeader with models","timestamp":"2026-10-22T09:43:54.797Z"}
+{"level":"info","message":"Model name arReceiveHeaderAudit","timestamp":"2026-10-22T09:43:54.800Z"}
+{"level":"info","message":"Associating table ARReceiveHeaderAudit with models","timestamp":"2026-10-22T09:43:54.800Z"}
+{"level":"info","message":"Model name arReceiveLine","timestamp":"2026-10-22T09:43:54.800Z"}
+{"level":"info","message":"Associating table ReceiveLine with models","timestamp":"2026-10-22T09:43:54.800Z"}
+{"level":"info","message":"Model name vendor","timestamp":"2026-10-22T09:43:54.801Z"}
+{"level":"info","message":"Model name shipping","timestamp":"2026-10-22T09:43:54.801Z"}
+{"level":"info","message":"Model name shipping_order","timestamp":"2026-10-22T09:43:54.801Z"}
+{"level":"info","message":"Model name shipping_checkout_batch","timestamp":"2026-10-22T09:43:54.801Z"}
+{"level":"info","message":"Model name service","timestamp":"2026-10-22T09:43:54.802Z"}
+{"level":"info","message":"Model name authority","timestamp":"2026-10-22T09:43:54.802Z"}
+{"level":"info","message":"Model name terminal","timestamp":"2026-10-22T09:43:54.802Z"}
+{"level":"info","message":"Model name terminalAudit","timestamp":"2026-10-22T09:43:54.802Z"}
+{"level":"info","message":"Associating table TerminalAudit with models","timestamp":"2026-10-22T09:43:54.802Z"}
+{"level":"info","message":"Model name campaign","timestamp":"2026-10-22T09:43:54.804Z"}
+{"level":"info","message":"Model name campaignEntry","timestamp":"2026-10-22T09:43:54.805Z"}
+{"level":"info","message":"Model name rider","timestamp":"2026-10-22T09:43:54.805Z"}
+{"level":"info","message":"Model name outlet","timestamp":"2026-10-22T09:43:54.805Z"}
+{"level":"info","message":"Model name geography","timestamp":"2026-10-22T09:43:54.805Z"}
+{"level":"info","message":"Model name country","timestamp":"2026-10-22T09:43:54.805Z"}
+{"level":"info","message":"Model name village","timestamp":"2026-10-22T09:43:54.805Z"}
+{"level":"info","message":"Model name district","timestamp":"2026-10-22T09:43:54.806Z"}
+{"level":"info","message":"Model name accountDailyBalance","timestamp":"2026-10-22T09:43:54.807Z"}
+{"level":"info","message":"Model name businessDate","timestamp":"2026-10-22T09:43:54.807Z"}
+{"level":"info","message":"Model name cifCustomer","timestamp":"2026-10-22T09:43:54.807Z"}
+{"level":"info","message":"Model name microfinanceGroup","timestamp":"2026-10-22T09:43:54.808Z"}
+{"level":"info","message":"Model name mfCollateral","timestamp":"2026-10-22T09:43:54.809Z"}
+{"level":"info","message":"Model name mfLoanProduct","timestamp":"2026-10-22T09:43:54.810Z"}
+{"level":"info","message":"Model name mfLoanAccount","timestamp":"2026-10-22T09:43:54.811Z"}
+{"level":"info","message":"Model name mfRepaymentSchedule","timestamp":"2026-10-22T09:43:54.812Z"}
+{"level":"info","message":"Model name mfJournalEntry","timestamp":"2026-10-22T09:43:54.812Z"}
+{"level":"info","message":"client_db Connection established","timestamp":"2026-10-22T09:43:55.799Z"}
+{"level":"warn","message":"Non-blocking note during pre-sync data cleanup: Cannot delete property 'meta' of [object Array]","timestamp":"2026-10-22T09:43:55.883Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2026-10-22T09:45:30.495Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2026-10-22T09:45:30.499Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2026-10-22T09:45:30.500Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2026-10-22T09:45:30.501Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2026-10-22T09:45:30.504Z","username":"johndoe"}
+{"level":"info","message":"client_db (SQL executor) Connection established","timestamp":"2026-10-22T09:45:31.831Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2026-10-22T09:46:20.115Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2026-10-22T09:46:20.118Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2026-10-22T09:46:20.119Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2026-10-22T09:46:20.120Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2026-10-22T09:46:20.122Z","username":"johndoe"}
+{"level":"info","message":"client_db (SQL executor) Connection established","timestamp":"2026-10-22T09:46:21.244Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2026-10-22T09:46:31.079Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2026-10-22T09:46:31.083Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2026-10-22T09:46:31.083Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2026-10-22T09:46:31.084Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2026-10-22T09:46:31.087Z","username":"johndoe"}
+{"level":"info","message":"client_db (SQL executor) Connection established","timestamp":"2026-10-22T09:46:32.323Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2026-10-22T09:48:27.212Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2026-10-22T09:48:27.216Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2026-10-22T09:48:27.216Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2026-10-22T09:48:27.217Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2026-10-22T09:48:27.219Z","username":"johndoe"}
+{"level":"info","message":"client_db (SQL executor) Connection established","timestamp":"2026-10-22T09:48:28.636Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2026-10-22T09:48:38.702Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2026-10-22T09:48:38.706Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2026-10-22T09:48:38.707Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2026-10-22T09:48:38.708Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2026-10-22T09:48:38.710Z","username":"johndoe"}
+{"level":"info","message":"client_db (SQL executor) Connection established","timestamp":"2026-10-22T09:48:39.994Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2026-10-22T09:48:49.675Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2026-10-22T09:48:49.679Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2026-10-22T09:48:49.679Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2026-10-22T09:48:49.680Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2026-10-22T09:48:49.682Z","username":"johndoe"}
+{"level":"info","message":"client_db (SQL executor) Connection established","timestamp":"2026-10-22T09:48:50.794Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2026-10-22T09:49:17.838Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2026-10-22T09:49:17.841Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2026-10-22T09:49:17.842Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2026-10-22T09:49:17.843Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2026-10-22T09:49:17.845Z","username":"johndoe"}
+{"level":"info","message":"client_db (SQL executor) Connection established","timestamp":"2026-10-22T09:49:18.838Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2026-10-22T09:49:33.668Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2026-10-22T09:49:33.672Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2026-10-22T09:49:33.673Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2026-10-22T09:49:33.674Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2026-10-22T09:49:33.675Z","username":"johndoe"}
+{"level":"info","message":"client_db (SQL executor) Connection established","timestamp":"2026-10-22T09:49:34.836Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2026-10-22T09:54:30.791Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2026-10-22T09:54:30.794Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2026-10-22T09:54:30.795Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2026-10-22T09:54:30.796Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2026-10-22T09:54:30.797Z","username":"johndoe"}
+{"level":"info","message":"client_db (SQL executor) Connection established","timestamp":"2026-10-22T09:54:31.825Z"}
+{"level":"info","message":"Hello, Winston!","timestamp":"2026-10-22T09:55:08.889Z"}
+{"level":"warn","message":"This is a warning message.","timestamp":"2026-10-22T09:55:08.892Z"}
+{"level":"error","message":"This is an error message.","timestamp":"2026-10-22T09:55:08.893Z"}
+{"level":"info","message":"This is an information message.","timestamp":"2026-10-22T09:55:08.894Z"}
+{"ip":"192.168.1.1","level":"info","message":"User logged in","timestamp":"2026-10-22T09:55:08.896Z","username":"johndoe"}
+{"level":"info","message":"Model name sequelize","timestamp":"2026-10-22T09:55:09.291Z"}
+{"level":"info","message":"Model name Sequelize","timestamp":"2026-10-22T09:55:09.293Z"}
+{"level":"info","message":"Model name spf","timestamp":"2026-10-22T09:55:09.294Z"}
+{"level":"info","message":"Model name client","timestamp":"2026-10-22T09:55:09.295Z"}
+{"level":"info","message":"Model name clientAudit","timestamp":"2026-10-22T09:55:09.301Z"}
+{"level":"info","message":"Associating table ClientAudit with models","timestamp":"2026-10-22T09:55:09.302Z"}
+{"level":"info","message":"Model name group","timestamp":"2026-10-22T09:55:09.307Z"}
+{"level":"info","message":"Model name GroupMenuHeader","timestamp":"2026-10-22T09:55:09.309Z"}
+{"level":"info","message":"Model name role","timestamp":"2026-10-22T09:55:09.311Z"}
+{"level":"info","message":"Model name user","timestamp":"2026-10-22T09:55:09.315Z"}
+{"level":"info","message":"Model name Agency","timestamp":"2026-10-22T09:55:09.317Z"}
+{"level":"info","message":"Associating table Agency with models","timestamp":"2026-10-22T09:55:09.318Z"}
+{"level":"info","message":"Model name Applicant","timestamp":"2026-10-22T09:55:09.322Z"}
+{"level":"info","message":"Associating table Applicant with models","timestamp":"2026-10-22T09:55:09.325Z"}
+{"level":"info","message":"Model name MOU","timestamp":"2026-10-22T09:55:09.345Z"}
+{"level":"info","message":"Associating table Job with models","timestamp":"2026-10-22T09:55:09.348Z"}
+{"level":"info","message":"Model name jobAdvertise","timestamp":"2026-10-22T09:55:09.361Z"}
+{"level":"info","message":"Associating table JobAdvertise with models","timestamp":"2026-10-22T09:55:09.365Z"}
+{"level":"info","message":"Model name JobBatch","timestamp":"2026-10-22T09:55:09.369Z"}
+{"level":"info","message":"Associating table JobBatch with models","timestamp":"2026-10-22T09:55:09.369Z"}
+{"level":"info","message":"Model name benefit","timestamp":"2026-10-22T09:55:09.379Z"}
+{"level":"info","message":"Associating table Benefit with models","timestamp":"2026-10-22T09:55:09.383Z"}
+{"level":"info","message":"Model name company","timestamp":"2026-10-22T09:55:09.391Z"}
+{"level":"info","message":"Model name location","timestamp":"2026-10-22T09:55:09.394Z"}
+{"level":"info","message":"Model name currency","timestamp":"2026-10-22T09:55:09.394Z"}
+{"level":"info","message":"Model name currencyAudit","timestamp":"2026-10-22T09:55:09.396Z"}
+{"level":"info","message":"Associating table CurrencyAudit with models","timestamp":"2026-10-22T09:55:09.396Z"}
+{"level":"info","message":"Model name unit","timestamp":"2026-10-22T09:55:09.397Z"}
+{"level":"info","message":"Model name printerModel","timestamp":"2026-10-22T09:55:09.409Z"}
+{"level":"info","message":"Model name stockTransactionModel","timestamp":"2026-10-22T09:55:09.413Z"}
+{"level":"info","message":"Model name stockDailyBalance","timestamp":"2026-10-22T09:55:09.421Z"}
+{"level":"info","message":"Model name mainCategory","timestamp":"2026-10-22T09:55:09.424Z"}
+{"level":"info","message":"Model name category","timestamp":"2026-10-22T09:55:09.424Z"}
+{"level":"info","message":"Associating table Color with models","timestamp":"2026-10-22T09:55:09.424Z"}
+{"level":"info","message":"Model name student","timestamp":"2026-10-22T09:55:09.425Z"}
+{"level":"info","message":"Associating table Student with models","timestamp":"2026-10-22T09:55:09.426Z"}
+{"level":"info","message":"Model name nfcCard","timestamp":"2026-10-22T09:55:09.440Z"}
+{"level":"info","message":"Associating table NfcCard with models","timestamp":"2026-10-22T09:55:09.444Z"}
+{"level":"info","message":"Model name academicYear","timestamp":"2026-10-22T09:55:09.445Z"}
+{"level":"info","message":"Model name schoolClass","timestamp":"2026-10-22T09:55:09.445Z"}
+{"level":"info","message":"Model name schoolRoom","timestamp":"2026-10-22T09:55:09.447Z"}
+{"level":"info","message":"Model name feeItem","timestamp":"2026-10-22T09:55:09.448Z"}
+{"level":"info","message":"Model name feeStructure","timestamp":"2026-10-22T09:55:09.449Z"}
+{"level":"info","message":"Model name schoolInvoice","timestamp":"2026-10-22T09:55:09.450Z"}
+{"level":"info","message":"Model name schoolInvoiceLine","timestamp":"2026-10-22T09:55:09.451Z"}
+{"level":"info","message":"Model name schoolPayment","timestamp":"2026-10-22T09:55:09.453Z"}
+{"level":"info","message":"Model name cashierShift","timestamp":"2026-10-22T09:55:09.458Z"}
+{"level":"info","message":"Model name studentFeeItem","timestamp":"2026-10-22T09:55:09.462Z"}
+{"level":"info","message":"Model name transactionEntry","timestamp":"2026-10-22T09:55:09.463Z"}
+{"level":"info","message":"Associating table TransactionEntry","timestamp":"2026-10-22T09:55:09.464Z"}
+{"level":"info","message":"Model name tax","timestamp":"2026-10-22T09:55:09.466Z"}
+{"level":"info","message":"Model name product","timestamp":"2026-10-22T09:55:09.466Z"}
+{"level":"info","message":"Model name productAudit","timestamp":"2026-10-22T09:55:09.512Z"}
+{"level":"info","message":"Associating table ProductAudit with models","timestamp":"2026-10-22T09:55:09.516Z"}
+{"level":"info","message":"Model name productTemp","timestamp":"2026-10-22T09:55:09.518Z"}
+{"level":"info","message":"Model name productSize","timestamp":"2026-10-22T09:55:09.518Z"}
+{"level":"info","message":"Model name productUnit","timestamp":"2026-10-22T09:55:09.518Z"}
+{"level":"info","message":"Model name productPackaging","timestamp":"2026-10-22T09:55:09.518Z"}
+{"level":"info","message":"Model name customerPackagingLedger","timestamp":"2026-10-22T09:55:09.524Z"}
+{"level":"info","message":"Model name supplierPackagingLedger","timestamp":"2026-10-22T09:55:09.528Z"}
+{"level":"info","message":"Model name packagingDamageLog","timestamp":"2026-10-22T09:55:09.529Z"}
+{"level":"info","message":"Model name image","timestamp":"2026-10-22T09:55:09.530Z"}
+{"level":"info","message":"Associating table IMAGE with models","timestamp":"2026-10-22T09:55:09.531Z"}
+{"level":"info","message":"Model name priceList","timestamp":"2026-10-22T09:55:09.538Z"}
+{"level":"info","message":"Model name webProductGroup","timestamp":"2026-10-22T09:55:09.538Z"}
+{"level":"info","message":"Model name ProductOptionGroup","timestamp":"2026-10-22T09:55:09.538Z"}
+{"level":"info","message":"Model name ProductOption","timestamp":"2026-10-22T09:55:09.540Z"}
+{"level":"info","message":"Model name customer","timestamp":"2026-10-22T09:55:09.540Z"}
+{"level":"info","message":"Model name order","timestamp":"2026-10-22T09:55:09.540Z"}
+{"level":"info","message":"Model name orderHIS","timestamp":"2026-10-22T09:55:09.540Z"}
+{"level":"info","message":"Model name orderTable","timestamp":"2026-10-22T09:55:09.541Z"}
+{"level":"info","message":"Model name recipe","timestamp":"2026-10-22T09:55:09.541Z"}
+{"level":"info","message":"Model name table","timestamp":"2026-10-22T09:55:09.541Z"}
+{"level":"info","message":"Model name ticket","timestamp":"2026-10-22T09:55:09.542Z"}
+{"level":"info","message":"Model name promotion","timestamp":"2026-10-22T09:55:09.553Z"}
+{"level":"info","message":"Model name ticketLine","timestamp":"2026-10-22T09:55:09.554Z"}
+{"level":"info","message":"Model name MemberOffer","timestamp":"2026-10-22T09:55:09.557Z"}
+{"level":"info","message":"Model name loyaltyTransaction","timestamp":"2026-10-22T09:55:09.557Z"}
+{"level":"info","message":"Model name washjob","timestamp":"2026-10-22T09:55:09.558Z"}
+{"level":"info","message":"Model name washjobHis","timestamp":"2026-10-22T09:55:09.558Z"}
+{"level":"info","message":"Model name washjobline","timestamp":"2026-10-22T09:55:09.558Z"}
+{"level":"info","message":"Model name QRRequest","timestamp":"2026-10-22T09:55:09.558Z"}
+{"level":"info","message":"Associating table QRRequest with models","timestamp":"2026-10-22T09:55:09.558Z"}
+{"level":"info","message":"Model name saleHeader","timestamp":"2026-10-22T09:55:09.563Z"}
+{"level":"info","message":"Model name salePayment","timestamp":"2026-10-22T09:55:09.587Z"}
+{"level":"info","message":"Model name saleLine","timestamp":"2026-10-22T09:55:09.591Z"}
+{"level":"info","message":"Associating table SaleLine with models","timestamp":"2026-10-22T09:55:09.592Z"}
+{"level":"info","message":"Model name quotationHeader","timestamp":"2026-10-22T09:55:09.594Z"}
+{"level":"info","message":"Model name quotationLine","timestamp":"2026-10-22T09:55:09.594Z"}
+{"level":"info","message":"Associating table QuotationLine with models","timestamp":"2026-10-22T09:55:09.594Z"}
+{"level":"info","message":"Model name poHeader","timestamp":"2026-10-22T09:55:09.595Z"}
+{"level":"info","message":"Model name poLine","timestamp":"2026-10-22T09:55:09.595Z"}
+{"level":"info","message":"Model name poHeaderHIS","timestamp":"2026-10-22T09:55:09.595Z"}
+{"level":"info","message":"Model name poLineHIS","timestamp":"2026-10-22T09:55:09.595Z"}
+{"level":"info","message":"Model name receivingHeader","timestamp":"2026-10-22T09:55:09.595Z"}
+{"level":"info","message":"Model name receivingLine","timestamp":"2026-10-22T09:55:09.595Z"}
+{"level":"info","message":"Model name reservation","timestamp":"2026-10-22T09:55:09.595Z"}
+{"level":"info","message":"Model name reservationLine","timestamp":"2026-10-22T09:55:09.595Z"}
+{"level":"info","message":"Model name transferHeader","timestamp":"2026-10-22T09:55:09.595Z"}
+{"level":"info","message":"Model name transferLine","timestamp":"2026-10-22T09:55:09.595Z"}
+{"level":"info","message":"Model name menuHeader","timestamp":"2026-10-22T09:55:09.595Z"}
+{"level":"info","message":"Model name menuLine","timestamp":"2026-10-22T09:55:09.595Z"}
+{"level":"info","message":"Model name MenuHeaderLines","timestamp":"2026-10-22T09:55:09.595Z"}
+{"level":"info","message":"Model name webMenuHeader","timestamp":"2026-10-22T09:55:09.595Z"}
+{"level":"info","message":"Model name dashboardMenu","timestamp":"2026-10-22T09:55:09.595Z"}
+{"level":"info","message":"Model name QRResponse","timestamp":"2026-10-22T09:55:09.596Z"}
+{"level":"info","message":"Associating table QRResponse with models","timestamp":"2026-10-22T09:55:09.596Z"}
+{"level":"info","message":"Model name PaymentCallback","timestamp":"2026-10-22T09:55:09.597Z"}
+{"level":"info","message":"Associating table PaymentCallback with models","timestamp":"2026-10-22T09:55:09.597Z"}
+{"level":"info","message":"Model name Color","timestamp":"2026-10-22T09:55:09.597Z"}
+{"level":"info","message":"Associating table Color with models","timestamp":"2026-10-22T09:55:09.598Z"}
+{"level":"info","message":"Model name Size","timestamp":"2026-10-22T09:55:09.598Z"}
+{"level":"info","message":"Associating table Size with models","timestamp":"2026-10-22T09:55:09.598Z"}
+{"level":"info","message":"Model name card","timestamp":"2026-10-22T09:55:09.599Z"}
+{"level":"info","message":"Associating table Card with models","timestamp":"2026-10-22T09:55:09.599Z"}
+{"level":"info","message":"Model name cardAudit","timestamp":"2026-10-22T09:55:09.604Z"}
+{"level":"info","message":"Associating table CardAudit with models","timestamp":"2026-10-22T09:55:09.604Z"}
+{"level":"info","message":"Model name Transaction","timestamp":"2026-10-22T09:55:09.605Z"}
+{"level":"info","message":"Model name glPostingBatch","timestamp":"2026-10-22T09:55:09.605Z"}
+{"level":"info","message":"Model name gl","timestamp":"2026-10-22T09:55:09.605Z"}
+{"level":"info","message":"Model name chartAccount","timestamp":"2026-10-22T09:55:09.605Z"}
+{"level":"info","message":"Model name fixedAssetProduct","timestamp":"2026-10-22T09:55:09.605Z"}
+{"level":"info","message":"Model name fixedAssetContract","timestamp":"2026-10-22T09:55:09.605Z"}
+{"level":"info","message":"Model name fixedAssetDepreciation","timestamp":"2026-10-22T09:55:09.605Z"}
+{"level":"info","message":"Model name apPaymentHeader","timestamp":"2026-10-22T09:55:09.605Z"}
+{"level":"info","message":"Model name arReceiveHeader","timestamp":"2026-10-22T09:55:09.609Z"}
+{"level":"info","message":"Model name payment","timestamp":"2026-10-22T09:55:09.609Z"}
+{"level":"info","message":"Model name bank","timestamp":"2026-10-22T09:55:09.609Z"}
+{"level":"info","message":"Model name bankAccount","timestamp":"2026-10-22T09:55:09.609Z"}
+{"level":"info","message":"Associating table Bank with models","timestamp":"2026-10-22T09:55:09.609Z"}
+{"level":"info","message":"Model name ministry","timestamp":"2026-10-22T09:55:09.609Z"}
+{"level":"info","message":"Model name moneySettlement","timestamp":"2026-10-22T09:55:09.610Z"}
+{"level":"info","message":"Model name moneySettlementOverrideLog","timestamp":"2026-10-22T09:55:09.612Z"}
+{"level":"info","message":"Associating table MoneySettlementOverrideLog with models","timestamp":"2026-10-22T09:55:09.613Z"}
+{"level":"info","message":"Model name moneyAdvanceAudit","timestamp":"2026-10-22T09:55:09.614Z"}
+{"level":"info","message":"Associating table MoneyAdvanceAudit with models","timestamp":"2026-10-22T09:55:09.614Z"}
+{"level":"info","message":"Model name moneyAdvanceOverrideLog","timestamp":"2026-10-22T09:55:09.614Z"}
+{"level":"info","message":"Associating table MoneyAdvanceOverrideLog with models","timestamp":"2026-10-22T09:55:09.615Z"}
+{"level":"info","message":"Model name moneyAdvance","timestamp":"2026-10-22T09:55:09.615Z"}
+{"level":"info","message":"Associating table MoneyAdvance with models","timestamp":"2026-10-22T09:55:09.616Z"}
+{"level":"info","message":"Model name ministryPeriodBalance","timestamp":"2026-10-22T09:55:09.621Z"}
+{"level":"info","message":"Associating table MinistryPeriodBalance with models","timestamp":"2026-10-22T09:55:09.622Z"}
+{"level":"info","message":"Model name bankPeriodBalance","timestamp":"2026-10-22T09:55:09.624Z"}
+{"level":"info","message":"Associating table BankPeriodBalance with models","timestamp":"2026-10-22T09:55:09.624Z"}
+{"level":"info","message":"Model name AccountStatement","timestamp":"2026-10-22T09:55:09.626Z"}
+{"level":"info","message":"Associating table AccountStatement with models","timestamp":"2026-10-22T09:55:09.626Z"}
+{"level":"info","message":"Model name Project","timestamp":"2026-10-22T09:55:09.627Z"}
+{"level":"info","message":"Model name ProjectBudget","timestamp":"2026-10-22T09:55:09.628Z"}
+{"level":"info","message":"Model name ProjectContract","timestamp":"2026-10-22T09:55:09.628Z"}
+{"level":"info","message":"Model name ProjectInvoice","timestamp":"2026-10-22T09:55:09.630Z"}
+{"level":"info","message":"Model name WithdrawalApplication","timestamp":"2026-10-22T09:55:09.632Z"}
+{"level":"info","message":"Model name revenue_target","timestamp":"2026-10-22T09:55:09.633Z"}
+{"level":"info","message":"Model name annualExpenseBudget","timestamp":"2026-10-22T09:55:09.633Z"}
+{"level":"info","message":"Model name apInvoice","timestamp":"2026-10-22T09:55:09.633Z"}
+{"level":"info","message":"Associating table APInvoice with models","timestamp":"2026-10-22T09:55:09.633Z"}
+{"level":"info","message":"Model name apInvoiceAudit","timestamp":"2026-10-22T09:55:09.640Z"}
+{"level":"info","message":"Associating table APInvoiceAudit with models","timestamp":"2026-10-22T09:55:09.640Z"}
+{"level":"info","message":"Model name invoiceLineItem","timestamp":"2026-10-22T09:55:09.640Z"}
+{"level":"info","message":"Associating table InvoiceLineItem with models","timestamp":"2026-10-22T09:55:09.640Z"}
+{"level":"info","message":"Model name apInvoiceSettlement","timestamp":"2026-10-22T09:55:09.645Z"}
+{"level":"info","message":"Associating table APInvoiceSettlement with models","timestamp":"2026-10-22T09:55:09.645Z"}
+{"level":"info","message":"Model name apSettlementAudit","timestamp":"2026-10-22T09:55:09.650Z"}
+{"level":"info","message":"Associating table APSettlementAudit with models","timestamp":"2026-10-22T09:55:09.650Z"}
+{"level":"info","message":"Model name apInvoiceSettlementLine","timestamp":"2026-10-22T09:55:09.651Z"}
+{"level":"info","message":"Associating InvoiceSettlementLine with models","timestamp":"2026-10-22T09:55:09.651Z"}
+{"level":"info","message":"Model name arInvoiceHeader","timestamp":"2026-10-22T09:55:09.652Z"}
+{"level":"info","message":"Associating table ARInvoiceHeader with models","timestamp":"2026-10-22T09:55:09.652Z"}
+{"level":"info","message":"Model name arInvoiceHeaderAudit","timestamp":"2026-10-22T09:55:09.656Z"}
+{"level":"info","message":"Associating table ARInvoiceHeaderAudit with models","timestamp":"2026-10-22T09:55:09.656Z"}
+{"level":"info","message":"Model name arInvoiceLine","timestamp":"2026-10-22T09:55:09.657Z"}
+{"level":"info","message":"Associating table InvoiceLine with models","timestamp":"2026-10-22T09:55:09.657Z"}
+{"level":"info","message":"Model name arReceiveHeaderV2","timestamp":"2026-10-22T09:55:09.658Z"}
+{"level":"info","message":"Associating table ARReceiveHeader with models","timestamp":"2026-10-22T09:55:09.659Z"}
+{"level":"info","message":"Model name arReceiveHeaderAudit","timestamp":"2026-10-22T09:55:09.661Z"}
+{"level":"info","message":"Associating table ARReceiveHeaderAudit with models","timestamp":"2026-10-22T09:55:09.661Z"}
+{"level":"info","message":"Model name arReceiveLine","timestamp":"2026-10-22T09:55:09.662Z"}
+{"level":"info","message":"Associating table ReceiveLine with models","timestamp":"2026-10-22T09:55:09.662Z"}
+{"level":"info","message":"Model name vendor","timestamp":"2026-10-22T09:55:09.663Z"}
+{"level":"info","message":"Model name shipping","timestamp":"2026-10-22T09:55:09.663Z"}
+{"level":"info","message":"Model name shipping_order","timestamp":"2026-10-22T09:55:09.663Z"}
+{"level":"info","message":"Model name shipping_checkout_batch","timestamp":"2026-10-22T09:55:09.663Z"}
+{"level":"info","message":"Model name service","timestamp":"2026-10-22T09:55:09.663Z"}
+{"level":"info","message":"Model name authority","timestamp":"2026-10-22T09:55:09.663Z"}
+{"level":"info","message":"Model name terminal","timestamp":"2026-10-22T09:55:09.663Z"}
+{"level":"info","message":"Model name terminalAudit","timestamp":"2026-10-22T09:55:09.664Z"}
+{"level":"info","message":"Associating table TerminalAudit with models","timestamp":"2026-10-22T09:55:09.664Z"}
+{"level":"info","message":"Model name campaign","timestamp":"2026-10-22T09:55:09.664Z"}
+{"level":"info","message":"Model name campaignEntry","timestamp":"2026-10-22T09:55:09.664Z"}
+{"level":"info","message":"Model name rider","timestamp":"2026-10-22T09:55:09.664Z"}
+{"level":"info","message":"Model name outlet","timestamp":"2026-10-22T09:55:09.664Z"}
+{"level":"info","message":"Model name geography","timestamp":"2026-10-22T09:55:09.664Z"}
+{"level":"info","message":"Model name country","timestamp":"2026-10-22T09:55:09.664Z"}
+{"level":"info","message":"Model name village","timestamp":"2026-10-22T09:55:09.664Z"}
+{"level":"info","message":"Model name district","timestamp":"2026-10-22T09:55:09.665Z"}
+{"level":"info","message":"Model name accountDailyBalance","timestamp":"2026-10-22T09:55:09.665Z"}
+{"level":"info","message":"Model name businessDate","timestamp":"2026-10-22T09:55:09.665Z"}
+{"level":"info","message":"Model name cifCustomer","timestamp":"2026-10-22T09:55:09.665Z"}
+{"level":"info","message":"Model name microfinanceGroup","timestamp":"2026-10-22T09:55:09.667Z"}
+{"level":"info","message":"Model name mfCollateral","timestamp":"2026-10-22T09:55:09.668Z"}
+{"level":"info","message":"Model name mfLoanProduct","timestamp":"2026-10-22T09:55:09.668Z"}
+{"level":"info","message":"Model name mfLoanAccount","timestamp":"2026-10-22T09:55:09.669Z"}
+{"level":"info","message":"Model name mfRepaymentSchedule","timestamp":"2026-10-22T09:55:09.671Z"}
+{"level":"info","message":"Model name mfJournalEntry","timestamp":"2026-10-22T09:55:09.672Z"}
+{"level":"info","message":"client_db Connection established","timestamp":"2026-10-22T09:55:10.535Z"}
