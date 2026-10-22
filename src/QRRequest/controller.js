@@ -50,7 +50,7 @@ class QRController {
             const memberDateTime = generateDateTime();
 
             // Auto-set callback URL from body or default fallback
-            const callbackUrl = requestedCallbackUrl || `http://162.35.18.246:8055/api/v1/direct/callback`;
+            const callbackUrl = requestedCallbackUrl || `http://162.35.18.246:8011/api/v1/direct/callback`;
 
             logger.info(`Using callback URL for bankCode ${bankCode}: ${callbackUrl}`);
 

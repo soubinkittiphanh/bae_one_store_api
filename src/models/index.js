@@ -2,6 +2,31 @@ const { Sequelize, DataTypes } = require('sequelize');
 const logger = require('../api/logger');
 const env = require('../config/env').db;
 
+// ---- for db and api in same server setup 
+// Database connection configurations 
+// const createSequelizeInstance = (database, options = {}) => {
+//   const defaultOptions = {
+//     host: env.host,
+//     dialect: 'mariadb',
+//     port: env.port,
+//     pool: {
+//       max: 10,
+//       min: 0,
+//       acquire: 30000,
+//       idle: 10000,
+
+//     },
+//     timezone: '+07:00',
+//     dialectOptions: {
+//       useUTC: false, // ✅ Do not convert date to UTC
+//     },
+//     ...options
+//   };
+
+//   return new Sequelize(database, env.user, env.password, defaultOptions);
+// };
+
+// for separate api and db server deployment 
 // Database connection configurations
 const createSequelizeInstance = (database, options = {}) => {
   const defaultOptions = {
@@ -10,14 +35,16 @@ const createSequelizeInstance = (database, options = {}) => {
     port: env.port,
     pool: {
       max: 10,
-      min: 0,
+      min: 2, // 0 for same db&api 
       acquire: 30000,
-      idle: 10000,
-      
+      idle: 60000,
+      evict: 30000,
+
     },
     timezone: '+07:00',
     dialectOptions: {
       useUTC: false, // ✅ Do not convert date to UTC
+      connectTimeout: 10000,
     },
     ...options
   };
@@ -25,9 +52,20 @@ const createSequelizeInstance = (database, options = {}) => {
   return new Sequelize(database, env.user, env.password, defaultOptions);
 };
 
-// Main database connection
+// Main database connection db and api same server
+// const sequelize = createSequelizeInstance(env.database, {
+//   pool: { max: 10, min: 0, acquire: 30000, idle: 10000, },
+//   define: {
+//     indexes: [] // Empty array instead of false
+//   }
+// });
+
+// db and api different server
 const sequelize = createSequelizeInstance(env.database, {
-  pool: { max: 10, min: 0, acquire: 30000, idle: 10000, },
+  pool: { max: 10, min: 2, acquire: 30000, idle: 60000, evict: 30000 },
+  dialectOptions:{
+    connectionTimeout: 10000,
+  },
   define: {
     indexes: [] // Empty array instead of false
   }
@@ -676,7 +714,7 @@ const preSyncDataCleanup = async (sequelizeInstance) => {
 const synchronizeDatabase = async (db) => {
   try {
     await db.sequelize.query('SET FOREIGN_KEY_CHECKS = 0');
-    
+
     // Step 0: Pre-sync data cleanup to remove orphan records preventing FK constraints
     await preSyncDataCleanup(db.sequelize);
 
@@ -686,7 +724,7 @@ const synchronizeDatabase = async (db) => {
     } catch (syncErr) {
       logger.warn(`Non-blocking note during initial sync: ${syncErr.message}`);
     }
-    
+
     // Phase 2: Safe alter for field additions
     try {
       await db.sequelize.sync({ force: false, alter: { drop: false } });
@@ -730,7 +768,7 @@ const synchronizeDatabase = async (db) => {
   } catch (error) {
     logger.error("Error synchronizing database:", error);
   } finally {
-    try { await db.sequelize.query('SET FOREIGN_KEY_CHECKS = 1'); } catch (e) {}
+    try { await db.sequelize.query('SET FOREIGN_KEY_CHECKS = 1'); } catch (e) { }
   }
 
   try {
@@ -746,7 +784,7 @@ const synchronizeDatabase = async (db) => {
   } catch (error) {
     logger.error("Error synchronizing central database:", error);
   } finally {
-    try { await db.centralSequelize.query('SET FOREIGN_KEY_CHECKS = 1'); } catch (e) {}
+    try { await db.centralSequelize.query('SET FOREIGN_KEY_CHECKS = 1'); } catch (e) { }
   }
 };
 
