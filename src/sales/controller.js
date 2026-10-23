@@ -44,6 +44,31 @@ const WashJob = require('../models').washjob;
 
 // 9. 502 Bad Gateway - The server received an invalid response from an upstream server while trying to fulfill the request.
 
+/**
+ * Ensures critical columns exist on product and saleLine tables in case of client database schema drift.
+ */
+const ensureSaleLineAndProductColumns = async () => {
+  try {
+    const { QueryTypes } = require('sequelize');
+    await sequelize.query("ALTER TABLE `product` ADD COLUMN IF NOT EXISTS `product_code` VARCHAR(255) DEFAULT NULL COMMENT 'Product code / SKU'", { type: QueryTypes.BULKUPDATE }).catch(() => {});
+    await sequelize.query("ALTER TABLE `product` ADD COLUMN IF NOT EXISTS `duration_minutes` INT(11) NOT NULL DEFAULT 0", { type: QueryTypes.BULKUPDATE }).catch(() => {});
+    await sequelize.query("ALTER TABLE `product` ADD COLUMN IF NOT EXISTS `validateStockOnSale` TINYINT(1) NOT NULL DEFAULT 0", { type: QueryTypes.BULKUPDATE }).catch(() => {});
+    await sequelize.query("ALTER TABLE `product` ADD COLUMN IF NOT EXISTS `receiveUnitId` INT(11) DEFAULT NULL", { type: QueryTypes.BULKUPDATE }).catch(() => {});
+    await sequelize.query("ALTER TABLE `product` ADD COLUMN IF NOT EXISTS `stockUnitId` INT(11) DEFAULT NULL", { type: QueryTypes.BULKUPDATE }).catch(() => {});
+    await sequelize.query("ALTER TABLE `product` ADD COLUMN IF NOT EXISTS `baseUnitId` INT(11) DEFAULT NULL", { type: QueryTypes.BULKUPDATE }).catch(() => {});
+    await sequelize.query("ALTER TABLE `product` ADD COLUMN IF NOT EXISTS `vendorName` VARCHAR(100) DEFAULT NULL", { type: QueryTypes.BULKUPDATE }).catch(() => {});
+    await sequelize.query("ALTER TABLE `product` ADD COLUMN IF NOT EXISTS `isReturnablePackaging` TINYINT(1) NOT NULL DEFAULT 0", { type: QueryTypes.BULKUPDATE }).catch(() => {});
+    await sequelize.query("ALTER TABLE `product` ADD COLUMN IF NOT EXISTS `isPackagingAsset` TINYINT(1) NOT NULL DEFAULT 0", { type: QueryTypes.BULKUPDATE }).catch(() => {});
+
+    await sequelize.query("ALTER TABLE `saleLine` ADD COLUMN IF NOT EXISTS `isReturn` TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Whether this line represents a returned item / empty packaging inflow'", { type: QueryTypes.BULKUPDATE }).catch(() => {});
+    await sequelize.query("ALTER TABLE `saleLine` ADD COLUMN IF NOT EXISTS `focQty` DOUBLE NOT NULL DEFAULT 0", { type: QueryTypes.BULKUPDATE }).catch(() => {});
+    await sequelize.query("ALTER TABLE `saleLine` ADD COLUMN IF NOT EXISTS `packagingAction` ENUM('EXCHANGED', 'DEPOSIT', 'DEBT', 'SOLD', 'RETURNED', 'NONE') NOT NULL DEFAULT 'NONE'", { type: QueryTypes.BULKUPDATE }).catch(() => {});
+    await sequelize.query("ALTER TABLE `saleLine` ADD COLUMN IF NOT EXISTS `isGift` TINYINT(1) NOT NULL DEFAULT 0", { type: QueryTypes.BULKUPDATE }).catch(() => {});
+  } catch (e) {
+    logger.warn(`Could not ensure saleLine and product columns: ${e.message}`);
+  }
+};
+
 const validateStockForLines = async (lines, locationId) => {
   logger.info(`Starting stock validation for ${lines.length} lines`);
 
@@ -1443,7 +1468,48 @@ exports.getSaleHeadersByDate = async (req, res) => {
 
     res.status(200).send(saleHeaders);
   } catch (error) {
-    logger.error("===> Filter by date error: " + error)
+    logger.error("===> Filter by date error: " + error);
+    if (error.original?.errno === 1054 || error.message?.includes('Unknown column')) {
+      try {
+        await ensureSaleLineAndProductColumns();
+        const retrySaleHeaders = await SaleHeader.findAll({
+          include: ['user', 'client', 'payment', 'currency', 'location', 'arInvoice',
+            {
+              model: Line,
+              as: "lines",
+              include: [
+                {
+                  model: Product,
+                  as: "product"
+                }
+              ]
+            },
+            {
+              model: Customer,
+              include: ['geography', 'shipping', 'rider']
+            },
+            {
+              model: SalePayment,
+              as: 'payments',
+              include: [
+                {
+                  model: Payment,
+                  as: 'paymentMethod'
+                }
+              ]
+            }
+          ],
+          where: {
+            bookingDate: {
+              [Op.between]: [date.startDate, date.endDate]
+            }
+          }
+        });
+        return res.status(200).send(retrySaleHeaders);
+      } catch (retryErr) {
+        logger.error("Retry getSaleHeadersByDate failed:", retryErr);
+      }
+    }
     res.status(500).send(error);
   }
 };
@@ -1548,6 +1614,101 @@ exports.getSaleHeadersDetailByDate = async (req, res) => {
     res.status(200).send(saleHeaders);
   } catch (error) {
     logger.error("===> Filter by date error: " + error);
+    if (error.original?.errno === 1054 || error.message?.includes('Unknown column')) {
+      try {
+        await ensureSaleLineAndProductColumns();
+        const retrySaleHeaders = await SaleHeader.findAll({
+          attributes: [
+            'id', 'bookingDate', 'referenceNo', 'remark', 'discount', 
+            'total', 'loyaltyDiscount', 'redeemedPoints', 'exchangeRate', 
+            'isActive', 'arInvoiceId', 'isPostedToAR', 'arPostedAt', 
+            'createdAt', 'updateTimestamp', 'paymentId', 'clientId', 
+            'currencyId', 'userId', 'locationId', 'orderTableId', 
+            'washJobId', 'customerId', 'qrRequestId', 'ticketId'
+          ],
+          include: [
+            {
+              model: User,
+              as: 'user',
+              attributes: ['id', 'cus_id', 'cus_name', 'cus_tel', 'cus_email', 'isActive', 'groupId', 'roleId']
+            },
+            {
+              model: Client,
+              as: 'client',
+              attributes: ['id', 'name', 'company', 'email', 'address', 'telephone', 'credit', 'isActive', 'loyaltyPoints']
+            },
+            {
+              model: Payment,
+              as: 'payment',
+              attributes: ['id', 'payment_code', 'payment_name', 'payment_desc', 'isActive']
+            },
+            {
+              model: Currency,
+              as: 'currency',
+              attributes: ['id', 'code', 'name', 'rate', 'isActive', 'isLocalCCY', 'exchangeDirection', 'symbol']
+            },
+            {
+              model: Location,
+              as: 'location',
+              attributes: ['id', 'name', 'description', 'isActive', 'companyId']
+            },
+            {
+              model: Line,
+              as: "lines",
+              separate: true,
+              attributes: [
+                'id', 'quantity', 'unitRate', 'taxRate', 'taxAmount', 'taxType',
+                'exchangeRate', 'price', 'discount', 'total', 'isActive', 'isGift',
+                'colorId', 'sizeId', 'focQty', 'isReturn', 'packagingAction',
+                'saleHeaderId', 'headerId', 'currencyId', 'productId', 'unitId', 'priceListId'
+              ],
+              include: [
+                {
+                  model: Product,
+                  as: "product",
+                  attributes: [
+                    'id', 'pro_id', 'pro_name', 'pro_price', 'duration_minutes',
+                    'pro_desc', 'pro_status', 'validateStockOnSale', 'cost_price',
+                    'stock_count', 'minStock', 'barCode', 'vendorName', 'isActive',
+                    'receiveUnitId', 'stockUnitId', 'baseUnitId', 'product_code',
+                    'isReturnablePackaging', 'isPackagingAsset'
+                  ]
+                },
+                {
+                  model: Card,
+                  as: 'cards',
+                  separate: true,
+                  attributes: [
+                    'id', 'card_type_code', 'product_id', 'cost', 'costLCY',
+                    'exchangeRate', 'card_number', 'card_isused', 'card_input_date',
+                    'isActive', 'lotNumber', 'serialNo', 'expiryDate', 'costPerUnit',
+                    'totalCost', 'costType', 'stockCardQty', 'currencyId', 'saleLineId'
+                  ]
+                }
+              ]
+            },
+            {
+              model: Customer,
+              attributes: [
+                'id', 'name', 'tel', 'address', 'cod_fee', 'cancel_fee',
+                'rider_fee', 'shipping_fee_by', 'txn_date', 'isActive',
+                'saleHeaderId', 'riderId', 'geoId', 'shippingId'
+              ],
+              include: ['geography', 'shipping', 'rider']
+            }
+          ],
+          where: {
+            bookingDate: {
+              [Op.between]: [date.startDate, date.endDate]
+            },
+            ...(req.query.locationId && { locationId: req.query.locationId })
+          }
+        });
+        return res.status(200).send(retrySaleHeaders);
+      } catch (retryErr) {
+        logger.error("Retry getSaleHeadersDetailByDate failed:", retryErr);
+      }
+    }
     res.status(500).send(error);
   }
 };
@@ -1607,7 +1768,59 @@ exports.getSaleHeadersByDateAndUser = async (req, res) => {
 
     res.status(200).send(saleHeaders);
   } catch (error) {
-    logger.error("===> Filter by date error: " + error)
+    logger.error("===> Filter by date error: " + error);
+    if (error.original?.errno === 1054 || error.message?.includes('Unknown column')) {
+      try {
+        await ensureSaleLineAndProductColumns();
+        const retrySaleHeaders = await SaleHeader.findAll({
+          include: ['user', 'client', 'payment', 'currency', 'arInvoice', Customer,
+            {
+              model: Line,
+              as: "lines",
+              include: [
+                {
+                  model: Product,
+                  as: "product"
+                },
+                {
+                  model: SaleHeader,
+                  as: "header",
+                },
+                {
+                  model: Card,
+                  as: "cards",
+                },
+              ]
+            },
+            {
+              model: Customer,
+              include: ['geography', 'shipping']
+            },
+            {
+              model: location,
+              as: "location",
+              include: [
+                {
+                  model: company,
+                  as: "company"
+                },
+              ]
+            },
+          ],
+          where: {
+            bookingDate: {
+              [Op.between]: [date.startDate, date.endDate]
+            },
+            userId: {
+              [date.userId < 1 ? Op.ne : Op.eq]: date.userId,
+            }
+          }
+        });
+        return res.status(200).send(retrySaleHeaders);
+      } catch (retryErr) {
+        logger.error("Retry getSaleHeadersByDateAndUser failed:", retryErr);
+      }
+    }
     res.status(500).send(error);
   }
 };
@@ -1658,7 +1871,52 @@ exports.getSaleHeadersByDateAndCustomer = async (req, res) => {
 
     res.status(200).send(saleHeaders);
   } catch (error) {
-    logger.error("===> getSaleHeadersByDateAndCustomer error: " + error)
+    logger.error("===> getSaleHeadersByDateAndCustomer error: " + error);
+    if (error.original?.errno === 1054 || error.message?.includes('Unknown column')) {
+      try {
+        await ensureSaleLineAndProductColumns();
+        const date = JSON.parse(req.query.date);
+        const whereClause = {
+          bookingDate: {
+            [Op.between]: [date.startDate, date.endDate]
+          }
+        };
+        if (date.clientId && parseInt(date.clientId) > 0) {
+          whereClause.clientId = date.clientId;
+        }
+        const retrySaleHeaders = await SaleHeader.findAll({
+          include: [
+            'user',
+            'client',
+            'payment',
+            'currency',
+            'location',
+            {
+              model: Customer,
+              include: ['geography', 'shipping']
+            },
+            {
+              model: Line,
+              as: "lines",
+              include: [
+                {
+                  model: Product,
+                  as: "product"
+                },
+                {
+                  model: Card,
+                  as: "cards"
+                }
+              ]
+            }
+          ],
+          where: whereClause
+        });
+        return res.status(200).send(retrySaleHeaders);
+      } catch (retryErr) {
+        logger.error("Retry getSaleHeadersByDateAndCustomer failed:", retryErr);
+      }
+    }
     res.status(500).send(error);
   }
 };
@@ -1710,7 +1968,54 @@ exports.getSaleHeadersByDateAndProduct = async (req, res) => {
 
     res.status(200).send(saleLines);
   } catch (error) {
-    logger.error("===> Filter by date error: " + error)
+    logger.error("===> Filter by date error: " + error);
+    if (error.original?.errno === 1054 || error.message?.includes('Unknown column')) {
+      try {
+        await ensureSaleLineAndProductColumns();
+        const retrySaleLines = await Line.findAll({
+          attributes: [
+            ['productId', 'product_id'],
+            ['headerId', 'header_id'],
+            [sequelize.fn('SUM', sequelize.col('price')), 'totalPrice'],
+            [sequelize.fn('SUM', sequelize.col('saleLine.total')), 'totalAmount'],
+            [sequelize.fn('SUM', sequelize.col('quantity')), 'totalQTY'],
+            [sequelize.fn('SUM', sequelize.col('taxAmount')), 'totalTaxAmount'],
+            [sequelize.fn('SUM', sequelize.col('header.discount')), 'totalDiscount'],
+          ],
+          group: ['productId'],
+          include: [
+            {
+              model: Product,
+              as: "product",
+              include: [{
+                model: Category,
+                as: "category",
+              }]
+            },
+            {
+              model: SaleHeader,
+              as: "header",
+              include: ['user', 'client', 'payment', 'currency', 'location', Customer],
+              where: {
+                '$header.bookingDate$': {
+                  [Op.between]: [date.startDate, date.endDate]
+                },
+                '$saleLine.productId$': {
+                  [productId < 1 ? Op.ne : Op.eq]: productId,
+                },
+                'locationId': date.locationId,
+              },
+            }
+          ],
+          where: {
+            "isActive": true,
+          }
+        });
+        return res.status(200).send(retrySaleLines);
+      } catch (retryErr) {
+        logger.error("Retry getSaleHeadersByDateAndProduct failed:", retryErr);
+      }
+    }
     res.status(500).send(error);
   }
 };

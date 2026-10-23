@@ -338,9 +338,65 @@ const ensurePackagingColumns = async () => {
       logger.warn("Could not ensure category packaging column:", catErr.message);
     }
 
-    // 2. Ensure product returnable packaging flags
+    // 2. Ensure product columns (product_code, packaging flags, duration, units, etc.)
     try {
       if (await tableExists('product')) {
+        if (!(await hasColumn('product', 'product_code'))) {
+          logger.info("Adding product_code column to product table...");
+          await sequelize.query(
+            "ALTER TABLE `product` ADD COLUMN `product_code` VARCHAR(255) DEFAULT NULL COMMENT 'Product code / SKU'",
+            { type: QueryTypes.BULKUPDATE }
+          );
+          logger.info("Successfully added product_code to product table.");
+        }
+        if (!(await hasColumn('product', 'duration_minutes'))) {
+          logger.info("Adding duration_minutes column to product table...");
+          await sequelize.query(
+            "ALTER TABLE `product` ADD COLUMN `duration_minutes` INT(11) NOT NULL DEFAULT 0",
+            { type: QueryTypes.BULKUPDATE }
+          );
+          logger.info("Successfully added duration_minutes to product table.");
+        }
+        if (!(await hasColumn('product', 'validateStockOnSale'))) {
+          logger.info("Adding validateStockOnSale column to product table...");
+          await sequelize.query(
+            "ALTER TABLE `product` ADD COLUMN `validateStockOnSale` TINYINT(1) NOT NULL DEFAULT 0",
+            { type: QueryTypes.BULKUPDATE }
+          );
+          logger.info("Successfully added validateStockOnSale to product table.");
+        }
+        if (!(await hasColumn('product', 'receiveUnitId'))) {
+          logger.info("Adding receiveUnitId column to product table...");
+          await sequelize.query(
+            "ALTER TABLE `product` ADD COLUMN `receiveUnitId` INT(11) DEFAULT NULL",
+            { type: QueryTypes.BULKUPDATE }
+          );
+          logger.info("Successfully added receiveUnitId to product table.");
+        }
+        if (!(await hasColumn('product', 'stockUnitId'))) {
+          logger.info("Adding stockUnitId column to product table...");
+          await sequelize.query(
+            "ALTER TABLE `product` ADD COLUMN `stockUnitId` INT(11) DEFAULT NULL",
+            { type: QueryTypes.BULKUPDATE }
+          );
+          logger.info("Successfully added stockUnitId to product table.");
+        }
+        if (!(await hasColumn('product', 'baseUnitId'))) {
+          logger.info("Adding baseUnitId column to product table...");
+          await sequelize.query(
+            "ALTER TABLE `product` ADD COLUMN `baseUnitId` INT(11) DEFAULT NULL",
+            { type: QueryTypes.BULKUPDATE }
+          );
+          logger.info("Successfully added baseUnitId to product table.");
+        }
+        if (!(await hasColumn('product', 'vendorName'))) {
+          logger.info("Adding vendorName column to product table...");
+          await sequelize.query(
+            "ALTER TABLE `product` ADD COLUMN `vendorName` VARCHAR(100) DEFAULT NULL",
+            { type: QueryTypes.BULKUPDATE }
+          );
+          logger.info("Successfully added vendorName to product table.");
+        }
         if (!(await hasColumn('product', 'isReturnablePackaging'))) {
           logger.info("Adding isReturnablePackaging column to product table...");
           await sequelize.query(
@@ -359,7 +415,7 @@ const ensurePackagingColumns = async () => {
         }
       }
     } catch (prodErr) {
-      logger.warn("Could not ensure product packaging columns:", prodErr.message);
+      logger.warn("Could not ensure product columns:", prodErr.message);
     }
 
     // 3. Ensure saleLine.packagingAction ENUM includes 'SOLD' and 'RETURNED'
