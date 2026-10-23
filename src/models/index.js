@@ -840,6 +840,53 @@ const ensureCriticalColumns = async (sequelizeInstance) => {
     await addColIfMissing('saleLine', 'taxRate', "DOUBLE NOT NULL DEFAULT 0");
     await addColIfMissing('saleLine', 'taxAmount', "DOUBLE NOT NULL DEFAULT 0");
 
+    // 4. Ensure annual_expense_budget & revenue_target tables exist
+    if (!(await tableExists('annual_expense_budget'))) {
+      await sequelizeInstance.query(`
+        CREATE TABLE IF NOT EXISTS \`annual_expense_budget\` (
+          \`id\` int(11) NOT NULL AUTO_INCREMENT,
+          \`name\` varchar(255) NOT NULL,
+          \`year\` int(11) NOT NULL,
+          \`allocatedAmount\` decimal(30,2) NOT NULL DEFAULT 0.00,
+          \`exchangeRate\` decimal(30,2) NOT NULL DEFAULT 1.00,
+          \`thresholdWarningPercent\` int(11) NOT NULL DEFAULT 80,
+          \`drAccountId\` int(11) DEFAULT NULL,
+          \`ministryId\` int(11) DEFAULT NULL,
+          \`currencyId\` int(11) NOT NULL,
+          \`remark\` varchar(255) DEFAULT '',
+          \`isActive\` tinyint(1) NOT NULL DEFAULT 1,
+          \`createdAt\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          \`updateTimestamp\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          PRIMARY KEY (\`id\`),
+          KEY \`idx_aeb_year\` (\`year\`),
+          KEY \`idx_aeb_currency\` (\`currencyId\`),
+          KEY \`idx_aeb_drAccount\` (\`drAccountId\`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+      `, { type: QueryTypes.BULKUPDATE }).catch(() => {});
+    }
+
+    if (!(await tableExists('revenue_target'))) {
+      await sequelizeInstance.query(`
+        CREATE TABLE IF NOT EXISTS \`revenue_target\` (
+          \`id\` int(11) NOT NULL AUTO_INCREMENT,
+          \`name\` varchar(255) NOT NULL,
+          \`year\` int(11) NOT NULL,
+          \`targetAmount\` decimal(30,2) NOT NULL DEFAULT 0.00,
+          \`exchangeRate\` decimal(30,2) NOT NULL DEFAULT 1.00,
+          \`remark\` varchar(255) DEFAULT '',
+          \`isActive\` tinyint(1) NOT NULL DEFAULT 1,
+          \`currencyId\` int(11) DEFAULT NULL,
+          \`parentMinistryId\` int(11) DEFAULT NULL,
+          \`chartAccountId\` int(11) DEFAULT NULL,
+          \`createdAt\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          \`updateTimestamp\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          PRIMARY KEY (\`id\`),
+          KEY \`idx_rev_year\` (\`year\`),
+          KEY \`idx_rev_currency\` (\`currencyId\`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+      `, { type: QueryTypes.BULKUPDATE }).catch(() => {});
+    }
+
   } catch (error) {
     logger.warn(`Could not ensure critical columns: ${error.message}`);
   }

@@ -1009,6 +1009,58 @@ const ensureARAndAPColumns = async () => {
       await addColumnIfMissing(legacyArTable, 'crAccountId', "INT(11) DEFAULT NULL");
     }
 
+    // 9. annual_expense_budget table
+    if (!(await getActualTableName('annual_expense_budget'))) {
+      logger.info("Creating annual_expense_budget table...");
+      await sequelize.query(`
+        CREATE TABLE IF NOT EXISTS \`annual_expense_budget\` (
+          \`id\` int(11) NOT NULL AUTO_INCREMENT,
+          \`name\` varchar(255) NOT NULL,
+          \`year\` int(11) NOT NULL,
+          \`allocatedAmount\` decimal(30,2) NOT NULL DEFAULT 0.00,
+          \`exchangeRate\` decimal(30,2) NOT NULL DEFAULT 1.00,
+          \`thresholdWarningPercent\` int(11) NOT NULL DEFAULT 80,
+          \`drAccountId\` int(11) DEFAULT NULL,
+          \`ministryId\` int(11) DEFAULT NULL,
+          \`currencyId\` int(11) NOT NULL,
+          \`remark\` varchar(255) DEFAULT '',
+          \`isActive\` tinyint(1) NOT NULL DEFAULT 1,
+          \`createdAt\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          \`updateTimestamp\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          PRIMARY KEY (\`id\`),
+          KEY \`idx_aeb_year\` (\`year\`),
+          KEY \`idx_aeb_currency\` (\`currencyId\`),
+          KEY \`idx_aeb_drAccount\` (\`drAccountId\`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+      `, { type: QueryTypes.BULKUPDATE });
+      logger.info("Successfully created annual_expense_budget table.");
+    }
+
+    // 10. revenue_target table
+    if (!(await getActualTableName('revenue_target'))) {
+      logger.info("Creating revenue_target table...");
+      await sequelize.query(`
+        CREATE TABLE IF NOT EXISTS \`revenue_target\` (
+          \`id\` int(11) NOT NULL AUTO_INCREMENT,
+          \`name\` varchar(255) NOT NULL,
+          \`year\` int(11) NOT NULL,
+          \`targetAmount\` decimal(30,2) NOT NULL DEFAULT 0.00,
+          \`exchangeRate\` decimal(30,2) NOT NULL DEFAULT 1.00,
+          \`remark\` varchar(255) DEFAULT '',
+          \`isActive\` tinyint(1) NOT NULL DEFAULT 1,
+          \`currencyId\` int(11) DEFAULT NULL,
+          \`parentMinistryId\` int(11) DEFAULT NULL,
+          \`chartAccountId\` int(11) DEFAULT NULL,
+          \`createdAt\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          \`updateTimestamp\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          PRIMARY KEY (\`id\`),
+          KEY \`idx_rev_year\` (\`year\`),
+          KEY \`idx_rev_currency\` (\`currencyId\`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+      `, { type: QueryTypes.BULKUPDATE });
+      logger.info("Successfully created revenue_target table.");
+    }
+
     logger.info("AR and AP tables and columns check completed.");
   } catch (error) {
     logger.warn("Could not ensure AR and AP columns:", error.message);

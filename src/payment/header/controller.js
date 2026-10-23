@@ -85,6 +85,34 @@ exports.upload = async (req, res) => {
 };
 
 
+const ensureAnnualExpenseBudgetTable = async () => {
+  try {
+    const { QueryTypes } = require('sequelize');
+    const db = require('../../models');
+    await db.sequelize.query(`
+      CREATE TABLE IF NOT EXISTS \`annual_expense_budget\` (
+        \`id\` int(11) NOT NULL AUTO_INCREMENT,
+        \`name\` varchar(255) NOT NULL,
+        \`year\` int(11) NOT NULL,
+        \`allocatedAmount\` decimal(30,2) NOT NULL DEFAULT 0.00,
+        \`exchangeRate\` decimal(30,2) NOT NULL DEFAULT 1.00,
+        \`thresholdWarningPercent\` int(11) NOT NULL DEFAULT 80,
+        \`drAccountId\` int(11) DEFAULT NULL,
+        \`ministryId\` int(11) DEFAULT NULL,
+        \`currencyId\` int(11) NOT NULL,
+        \`remark\` varchar(255) DEFAULT '',
+        \`isActive\` tinyint(1) NOT NULL DEFAULT 1,
+        \`createdAt\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        \`updateTimestamp\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (\`id\`),
+        KEY \`idx_aeb_year\` (\`year\`),
+        KEY \`idx_aeb_currency\` (\`currencyId\`),
+        KEY \`idx_aeb_drAccount\` (\`drAccountId\`)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+    `, { type: QueryTypes.BULKUPDATE }).catch(() => {});
+  } catch (err) {}
+};
+
 // Get all Payment Headers
 exports.getAllPaymentHeaders = async (req, res) => {
   try {
@@ -93,7 +121,23 @@ exports.getAllPaymentHeaders = async (req, res) => {
     });
     res.status(200).json(paymentHeaders);
   } catch (error) {
-    console.log(error);
+    console.error(error);
+    if (error.original?.errno === 1146 || error.message?.includes('annual_expense_budget') || error.original?.code === 'ER_NO_SUCH_TABLE') {
+      try {
+        await ensureAnnualExpenseBudgetTable();
+        const retryHeaders = await PaymentHeader.findAll({
+          include: ['payment', 'currency', 'drAccount', 'crAccount', 'budget']
+        });
+        return res.status(200).json(retryHeaders);
+      } catch (retryErr) {
+        try {
+          const fallbackHeaders = await PaymentHeader.findAll({
+            include: ['payment', 'currency', 'drAccount', 'crAccount']
+          });
+          return res.status(200).json(fallbackHeaders);
+        } catch (fbErr) {}
+      }
+    }
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -121,6 +165,24 @@ exports.getAllPaymentHeadersByDate = async (req, res) => {
     res.status(200).json(paymentHeaders);
   } catch (error) {
     console.error(error);
+    if (error.original?.errno === 1146 || error.message?.includes('annual_expense_budget') || error.original?.code === 'ER_NO_SUCH_TABLE') {
+      try {
+        await ensureAnnualExpenseBudgetTable();
+        const retryHeaders = await PaymentHeader.findAll({
+          where: whereClause,
+          include: ['payment', 'currency', 'drAccount', 'crAccount', 'budget']
+        });
+        return res.status(200).json(retryHeaders);
+      } catch (retryErr) {
+        try {
+          const fallbackHeaders = await PaymentHeader.findAll({
+            where: whereClause,
+            include: ['payment', 'currency', 'drAccount', 'crAccount']
+          });
+          return res.status(200).json(fallbackHeaders);
+        } catch (fbErr) {}
+      }
+    }
     res.status(500).json({ message: 'Server Error' });
   }
 };
@@ -136,7 +198,29 @@ exports.getPaymentHeaderById = async (req, res) => {
     }
     res.status(200).json(paymentHeader);
   } catch (error) {
-    console.log(error);
+    console.error(error);
+    if (error.original?.errno === 1146 || error.message?.includes('annual_expense_budget') || error.original?.code === 'ER_NO_SUCH_TABLE') {
+      try {
+        await ensureAnnualExpenseBudgetTable();
+        const retryHeader = await PaymentHeader.findByPk(req.params.id, {
+          include: ['payment', 'currency', 'drAccount', 'crAccount', 'budget']
+        });
+        if (!retryHeader) {
+          return res.status(404).json({ message: "Payment Header not found" });
+        }
+        return res.status(200).json(retryHeader);
+      } catch (retryErr) {
+        try {
+          const fallbackHeader = await PaymentHeader.findByPk(req.params.id, {
+            include: ['payment', 'currency', 'drAccount', 'crAccount']
+          });
+          if (!fallbackHeader) {
+            return res.status(404).json({ message: "Payment Header not found" });
+          }
+          return res.status(200).json(fallbackHeader);
+        } catch (fbErr) {}
+      }
+    }
     res.status(500).json({ message: "Server Error" });
   }
 };
