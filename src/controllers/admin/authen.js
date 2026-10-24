@@ -10,7 +10,7 @@ const authenticate = async (req, res) => {
         if(!user) return  res.send({ "accessToken": "", "error": "ລະຫັດຜ່ານ ຫລື ໄອດີບໍ່ຖືກຕ້ອງ" })
     
     // Check if user is deactivated or deleted
-    if (user.cus_active === false || user.isActive === false) {
+    if (/*user.cus_active === false ||*/ user.isActive === false) {
         logger.warn(`Deactivated user attempted login: ${user.cus_id}`);
         return res.send({ "accessToken": "", "error": "ບັນຊີນີ້ຖືກປິດການໃຊ້ງານແລ້ວ / Account is deactivated or deleted" });
     }
