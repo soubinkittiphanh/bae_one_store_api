@@ -1156,6 +1156,21 @@ const executeSqlScript = async () => {
       return;
     }
 
+    // Check if there are any duplicate indexes (e.g. ending in _01, _02) before executing 3300+ statements
+    try {
+      const checkDup = await sequelize.query(
+        "SELECT COUNT(*) as cnt FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND (INDEX_NAME LIKE '%_01' OR INDEX_NAME LIKE '%_02')",
+        { type: QueryTypes.SELECT }
+      );
+      const dupCount = checkDup && checkDup[0] ? Number(checkDup[0].cnt || checkDup[0].CNT || 0) : 0;
+      if (dupCount === 0) {
+        logger.info("No duplicate index patterns found in database. Skipping toomanykey.sql execution.");
+        return;
+      }
+    } catch (checkErr) {
+      logger.debug(`Could not check duplicate index count: ${checkErr.message}`);
+    }
+
     logger.info(`Starting execution of SQL script: ${filePath}`);
     try {
       const sqlContent = fs.readFileSync(filePath, 'utf8');

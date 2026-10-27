@@ -119,6 +119,7 @@ const mfProducts = require("../microfinance/products").router
 const mfAccounts = require("../microfinance/accounts").router
 const mfJournal = require("../microfinance/journal").router
 const mfBatch = require("../microfinance/batch").router
+const parking = require("../parking/router")
 const productOptionGroup = require("../productOptionGroup").router
 const productOption = require("../productOption").router
 const packaging = require("../packaging").router
@@ -245,5 +246,6 @@ module.exports = {
     productOptionGroup,
     productOption,
     packaging,
-    expenseBudget
+    expenseBudget,
+    parking
 }

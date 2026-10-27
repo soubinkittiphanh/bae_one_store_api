@@ -232,6 +232,9 @@ const buildApp = async () => {
     app.use('/api/mf/journal', myRouter.mfJournal);
     app.use('/api/mf/batch', myRouter.mfBatch);
 
+    // Car Parking module routing
+    app.use('/api/parking', myRouter.parking);
+
     Router.category(app);
     Router.product(app);
     Router.sale(app);

@@ -18,9 +18,25 @@ const sequelize = new Sequelize(env.database, env.user, env.password, {
   dialectOptions: {
     useUTC: false,   // Do not convert date to UTC
     dateStrings: true, // Also set here for good measure
+    connectTimeout: 60000, // 60s socket creation/handshake timeout
+    socketTimeout: 60000,  // 60s socket read/write timeout
+    acquireTimeout: 60000,
+    keepAliveDelay: 10000, // TCP keepalive every 10s
   },
   
-  pool: { max: 2, min: 0, acquire: 30000, idle: 10000 },
+  pool: { max: 5, min: 0, acquire: 60000, idle: 10000, evict: 10000 },
+  retry: {
+    max: 3,
+    match: [
+      /SequelizeConnectionError/,
+      /ER_CONNECTION_TIMEOUT/,
+      /Connection timeout/,
+      /ECONNRESET/,
+      /ETIMEDOUT/,
+      /EPIPE/,
+      /PROTOCOL_CONNECTION_LOST/
+    ]
+  }
 });
 
 // Tutorial database (Not used by startup sqlExecutor script - commented out to prevent connection leak)

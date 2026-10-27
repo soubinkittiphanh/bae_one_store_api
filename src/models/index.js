@@ -27,49 +27,59 @@ const env = require('../config/env').db;
 // };
 
 // for separate api and db server deployment 
-// Database connection configurations
+// Database connection configurations with resilient settings for remote/WAN deployment
 const createSequelizeInstance = (database, options = {}) => {
+  const mergedDialectOptions = {
+    useUTC: false, // ✅ Do not convert date to UTC
+    dateStrings: true,
+    connectTimeout: 60000, // 60 seconds socket creation/handshake timeout
+    socketTimeout: 60000,  // 60 seconds socket activity timeout
+    acquireTimeout: 60000,
+    keepAliveDelay: 10000, // TCP Keep-Alive every 10s to keep remote WAN connection alive
+    ...(options.dialectOptions || {})
+  };
+
+  const mergedPool = {
+    max: 10,
+    min: 0, // min: 0 prevents holding stale sockets when remote server wait_timeout is reached (60s)
+    acquire: 60000,
+    idle: 10000, // release idle connections after 10s (well before 60s server wait_timeout)
+    evict: 10000, // check and evict idle connections every 10s
+    ...(options.pool || {})
+  };
+
   const defaultOptions = {
     host: env.host,
     dialect: 'mariadb',
     port: env.port,
-    pool: {
-      max: 10,
-      min: 2, // 0 for same db&api 
-      acquire: 30000,
-      idle: 60000,
-      evict: 30000,
-
-    },
     timezone: '+07:00',
-    dialectOptions: {
-      useUTC: false, // ✅ Do not convert date to UTC
-      connectTimeout: 10000,
+    pool: mergedPool,
+    dialectOptions: mergedDialectOptions,
+    retry: {
+      max: 3,
+      match: [
+        /SequelizeConnectionError/,
+        /ER_CONNECTION_TIMEOUT/,
+        /Connection timeout/,
+        /ECONNRESET/,
+        /ETIMEDOUT/,
+        /EPIPE/,
+        /PROTOCOL_CONNECTION_LOST/
+      ]
     },
-    ...options
+    define: {
+      indexes: [] // Empty array instead of false
+    },
+    ...options,
+    pool: mergedPool,
+    dialectOptions: mergedDialectOptions
   };
 
   return new Sequelize(database, env.user, env.password, defaultOptions);
 };
 
-// Main database connection db and api same server
-// const sequelize = createSequelizeInstance(env.database, {
-//   pool: { max: 10, min: 0, acquire: 30000, idle: 10000, },
-//   define: {
-//     indexes: [] // Empty array instead of false
-//   }
-// });
-
-// db and api different server
-const sequelize = createSequelizeInstance(env.database, {
-  pool: { max: 10, min: 2, acquire: 30000, idle: 60000, evict: 30000 },
-  dialectOptions:{
-    connectionTimeout: 10000,
-  },
-  define: {
-    indexes: [] // Empty array instead of false
-  }
-});
+// Main database connection (resilient against network latency & remote timeouts)
+const sequelize = createSequelizeInstance(env.database);
 
 // Tutorial database connection
 // const tutorialDB = createSequelizeInstance('tutorial_db', {
@@ -292,6 +302,15 @@ const initializeModels = () => {
     mfLoanAccount: require("../microfinance/accounts/model")(sequelize, DataTypes),
     mfRepaymentSchedule: require("../microfinance/accounts/scheduleModel")(sequelize, DataTypes),
     mfJournalEntry: require("../microfinance/journal/model")(sequelize, DataTypes),
+
+    // Car Parking models
+    parkingZone: require("../parking/models/zone")(sequelize, DataTypes),
+    parkingSlot: require("../parking/models/slot")(sequelize, DataTypes),
+    parkingVehicle: require("../parking/models/vehicle")(sequelize, DataTypes),
+    parkingPricingRule: require("../parking/models/pricingRule")(sequelize, DataTypes),
+    parkingMonthlyPass: require("../parking/models/monthlyPass")(sequelize, DataTypes),
+    parkingTicket: require("../parking/models/ticket")(sequelize, DataTypes),
+    parkingPayment: require("../parking/models/payment")(sequelize, DataTypes),
 
     // Tutorial model (uses different DB)
     // tuturial: require("../tutorial/model")(tutorialDB, DataTypes),
@@ -918,7 +937,7 @@ const ensureCriticalColumns = async (sequelizeInstance) => {
           KEY \`idx_aeb_currency\` (\`currencyId\`),
           KEY \`idx_aeb_drAccount\` (\`drAccountId\`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-      `, { type: QueryTypes.BULKUPDATE }).catch(() => {});
+      `, { type: QueryTypes.BULKUPDATE }).catch(() => { });
     }
 
     if (!(await tableExists('revenue_target'))) {
@@ -940,7 +959,7 @@ const ensureCriticalColumns = async (sequelizeInstance) => {
           KEY \`idx_rev_year\` (\`year\`),
           KEY \`idx_rev_currency\` (\`currencyId\`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-      `, { type: QueryTypes.BULKUPDATE }).catch(() => {});
+      `, { type: QueryTypes.BULKUPDATE }).catch(() => { });
     }
 
   } catch (error) {
