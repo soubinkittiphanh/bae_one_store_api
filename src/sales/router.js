@@ -39,6 +39,7 @@ router
   // ========== SALE REPORTS ==========
   .post("/report/summary", controller.getSaleHeaderByPaymentType)
   .post("/report/detail", controller.getSaleHeaderById)
+  .get("/commission/report", controller.getSaleCommissionReport)
   
   // ========== GIFT REPORT ROUTES ==========
   .get('/findByDateWithGifts', controller.getSaleHeadersByDateWithGifts)

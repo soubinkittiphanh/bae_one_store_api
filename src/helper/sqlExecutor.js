@@ -413,6 +413,48 @@ const ensurePackagingColumns = async () => {
           );
           logger.info("Successfully added isPackagingAsset to product table.");
         }
+        if (!(await hasColumn('product', 'hasCommission'))) {
+          await sequelize.query(
+            "ALTER TABLE `product` ADD COLUMN `hasCommission` TINYINT(1) NOT NULL DEFAULT 0",
+            { type: QueryTypes.BULKUPDATE }
+          );
+        }
+        if (!(await hasColumn('product', 'commissionType'))) {
+          await sequelize.query(
+            "ALTER TABLE `product` ADD COLUMN `commissionType` ENUM('percentage', 'fixed') NOT NULL DEFAULT 'percentage'",
+            { type: QueryTypes.BULKUPDATE }
+          );
+        }
+        if (!(await hasColumn('product', 'commissionValue'))) {
+          await sequelize.query(
+            "ALTER TABLE `product` ADD COLUMN `commissionValue` DOUBLE NOT NULL DEFAULT 0",
+            { type: QueryTypes.BULKUPDATE }
+          );
+        }
+        if (!(await hasColumn('product', 'commissionCurrencyId'))) {
+          await sequelize.query(
+            "ALTER TABLE `product` ADD COLUMN `commissionCurrencyId` INT(11) DEFAULT NULL",
+            { type: QueryTypes.BULKUPDATE }
+          );
+        }
+        if (!(await hasColumn('product', 'commissionDiscountImpact'))) {
+          await sequelize.query(
+            "ALTER TABLE `product` ADD COLUMN `commissionDiscountImpact` VARCHAR(32) NOT NULL DEFAULT 'deduct_full'",
+            { type: QueryTypes.BULKUPDATE }
+          );
+        }
+        if (!(await hasColumn('product', 'commissionDiscountRate'))) {
+          await sequelize.query(
+            "ALTER TABLE `product` ADD COLUMN `commissionDiscountRate` DOUBLE NOT NULL DEFAULT 100",
+            { type: QueryTypes.BULKUPDATE }
+          );
+        }
+        if (!(await hasColumn('product', 'commissionMinFloor'))) {
+          await sequelize.query(
+            "ALTER TABLE `product` ADD COLUMN `commissionMinFloor` DOUBLE NOT NULL DEFAULT 0",
+            { type: QueryTypes.BULKUPDATE }
+          );
+        }
       }
     } catch (prodErr) {
       logger.warn("Could not ensure product columns:", prodErr.message);
@@ -491,6 +533,55 @@ const ensurePackagingColumns = async () => {
         if (!(await hasColumn('saleLine', 'taxAmount'))) {
           await sequelize.query(
             "ALTER TABLE `saleLine` ADD COLUMN `taxAmount` DOUBLE NOT NULL DEFAULT 0",
+            { type: QueryTypes.BULKUPDATE }
+          );
+        }
+
+        if (!(await hasColumn('saleLine', 'hasCommission'))) {
+          await sequelize.query(
+            "ALTER TABLE `saleLine` ADD COLUMN `hasCommission` TINYINT(1) NOT NULL DEFAULT 0",
+            { type: QueryTypes.BULKUPDATE }
+          );
+        }
+        if (!(await hasColumn('saleLine', 'commissionType'))) {
+          await sequelize.query(
+            "ALTER TABLE `saleLine` ADD COLUMN `commissionType` ENUM('percentage', 'fixed') DEFAULT NULL",
+            { type: QueryTypes.BULKUPDATE }
+          );
+        }
+        if (!(await hasColumn('saleLine', 'commissionRate'))) {
+          await sequelize.query(
+            "ALTER TABLE `saleLine` ADD COLUMN `commissionRate` DOUBLE NOT NULL DEFAULT 0",
+            { type: QueryTypes.BULKUPDATE }
+          );
+        }
+        if (!(await hasColumn('saleLine', 'commissionGrossAmount'))) {
+          await sequelize.query(
+            "ALTER TABLE `saleLine` ADD COLUMN `commissionGrossAmount` DOUBLE NOT NULL DEFAULT 0",
+            { type: QueryTypes.BULKUPDATE }
+          );
+        }
+        if (!(await hasColumn('saleLine', 'commissionDiscountDeduction'))) {
+          await sequelize.query(
+            "ALTER TABLE `saleLine` ADD COLUMN `commissionDiscountDeduction` DOUBLE NOT NULL DEFAULT 0",
+            { type: QueryTypes.BULKUPDATE }
+          );
+        }
+        if (!(await hasColumn('saleLine', 'commissionAmount'))) {
+          await sequelize.query(
+            "ALTER TABLE `saleLine` ADD COLUMN `commissionAmount` DOUBLE NOT NULL DEFAULT 0",
+            { type: QueryTypes.BULKUPDATE }
+          );
+        }
+        if (!(await hasColumn('saleLine', 'commissionCurrencyId'))) {
+          await sequelize.query(
+            "ALTER TABLE `saleLine` ADD COLUMN `commissionCurrencyId` INT(11) DEFAULT NULL",
+            { type: QueryTypes.BULKUPDATE }
+          );
+        }
+        if (!(await hasColumn('saleLine', 'commissionBaseAmount'))) {
+          await sequelize.query(
+            "ALTER TABLE `saleLine` ADD COLUMN `commissionBaseAmount` DOUBLE NOT NULL DEFAULT 0",
             { type: QueryTypes.BULKUPDATE }
           );
         }

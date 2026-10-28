@@ -235,6 +235,11 @@ const buildApp = async () => {
     // Car Parking module routing
     app.use('/api/parking', myRouter.parking);
 
+    // Multi-Platform & Connected Accounts (Facebook, TikTok, Shopee, Lazada, etc.)
+    app.use('/api/platforms', myRouter.platformCatalog);
+    app.use('/api/platform-accounts', myRouter.platformAccount);
+    app.use('/api/platform', myRouter.platform);
+
     Router.category(app);
     Router.product(app);
     Router.sale(app);

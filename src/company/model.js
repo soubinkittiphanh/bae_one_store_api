@@ -144,6 +144,23 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.TEXT,
             allowNull: true,
         },
+        max_social_pages: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            defaultValue: 2,
+            comment: 'Maximum connected social/marketplace pages allowed'
+        },
+        social_plan_name: {
+            type: DataTypes.STRING(50),
+            allowNull: false,
+            defaultValue: 'FREE',
+            comment: 'Social platform subscription tier: FREE, BASIC, PRO, etc.'
+        },
+        social_plan_expires_at: {
+            type: DataTypes.DATE,
+            allowNull: true,
+            comment: 'Expiration date of social/marketplace plan'
+        },
     }, {
         sequelize,
         timestamps: true,

@@ -123,6 +123,7 @@ const getAllProducts = async (req, res) => {
         'priceLists',
         'costCurrency',
         'saleCurrency',
+        'commissionCurrency',
         'images',
         'company'
         // Note: Removed WebGroup for now to avoid many-to-many issues
@@ -161,6 +162,13 @@ const getAllProducts = async (req, res) => {
       stockUnitId: product.stockUnitId,
       receiveUnitId: product.receiveUnitId,
       baseUnitId: product.baseUnitId,
+      hasCommission: product.hasCommission,
+      commissionType: product.commissionType,
+      commissionValue: product.commissionValue,
+      commissionCurrencyId: product.commissionCurrencyId,
+      commissionDiscountImpact: product.commissionDiscountImpact,
+      commissionDiscountRate: product.commissionDiscountRate,
+      commissionMinFloor: product.commissionMinFloor,
 
       // Associations - handle safely
       category: product.category,
@@ -170,6 +178,7 @@ const getAllProducts = async (req, res) => {
       priceLists: product.priceLists || [],
       costCurrency: product.costCurrency,
       saleCurrency: product.saleCurrency,
+      commissionCurrency: product.commissionCurrency,
       images: product.images || [],
       company: product.company
     }));
@@ -250,7 +259,8 @@ const getAllActiveProducts = async (req, res) => {
         'priceLists',
         'images',
         'costCurrency',
-        'saleCurrency'
+        'saleCurrency',
+        'commissionCurrency'
       ],
       order: [[orderField, orderDirection]],
       distinct: true,
@@ -273,6 +283,13 @@ const getAllActiveProducts = async (req, res) => {
       costCurrencyId: product.costCurrencyId,
       saleCurrencyId: product.saleCurrencyId,
       cost_price: product.cost_price,
+      hasCommission: product.hasCommission,
+      commissionType: product.commissionType,
+      commissionValue: product.commissionValue,
+      commissionCurrencyId: product.commissionCurrencyId,
+      commissionDiscountImpact: product.commissionDiscountImpact,
+      commissionDiscountRate: product.commissionDiscountRate,
+      commissionMinFloor: product.commissionMinFloor,
 
       category: product.category,
       _category: product._category,
@@ -280,7 +297,8 @@ const getAllActiveProducts = async (req, res) => {
       priceLists: product.priceLists || [],
       images: product.images || [],
       costCurrency: product.costCurrency,
-      saleCurrency: product.saleCurrency
+      saleCurrency: product.saleCurrency,
+      commissionCurrency: product.commissionCurrency
     }));
 
     res.status(200).json({
@@ -309,6 +327,7 @@ const getProductById = async (req, res) => {
       include: [
         'costCurrency',
         'saleCurrency',
+        'commissionCurrency',
         'images',
         'stockUnit',
         'baseUnit',
@@ -376,7 +395,9 @@ const createProduct = async (req, res) => {
   let { pro_id, pro_name, pro_price, pro_desc, pro_status, validateStockOnSale,
     pro_image_path, retail_cost_percent, cost_price,
     stock_count, locking_session_id, isActive, minStock, barCode, saleCurrencyId, costCurrencyId, companyId, vendorName, _category,
-    receiveUnitId, stockUnitId, baseUnitId, product_code, productUnits } = req.body;
+    receiveUnitId, stockUnitId, baseUnitId, product_code, productUnits,
+    hasCommission, commissionType, commissionValue, commissionCurrencyId,
+    commissionDiscountImpact, commissionDiscountRate, commissionMinFloor } = req.body;
   locking_session_id = Date.now();
   
   const transaction = await Product.sequelize.transaction();
@@ -405,6 +426,13 @@ const createProduct = async (req, res) => {
       stockUnitId,
       baseUnitId,
       product_code,
+      hasCommission: hasCommission === true || hasCommission === 1,
+      commissionType: commissionType || 'percentage',
+      commissionValue: Number(commissionValue) || 0,
+      commissionCurrencyId: commissionCurrencyId || null,
+      commissionDiscountImpact: commissionDiscountImpact || 'deduct_full',
+      commissionDiscountRate: commissionDiscountRate !== undefined ? Number(commissionDiscountRate) : 100,
+      commissionMinFloor: commissionMinFloor !== undefined ? Number(commissionMinFloor) : 0,
     }, {
       transaction,
       context: { userId: req.user?.id || 1, reason: 'Product created via API' }
@@ -442,7 +470,9 @@ const updateProductById = async (req, res) => {
   const { pro_id, pro_name, pro_price, pro_desc, pro_status, validateStockOnSale,
     pro_image_path, retail_cost_percent, cost_price, stock_count,
     isActive, minStock, barCode, saleCurrencyId, costCurrencyId, companyId, vendorName, _category,
-    receiveUnitId, stockUnitId, baseUnitId, product_code, productUnits } = req.body;
+    receiveUnitId, stockUnitId, baseUnitId, product_code, productUnits,
+    hasCommission, commissionType, commissionValue, commissionCurrencyId,
+    commissionDiscountImpact, commissionDiscountRate, commissionMinFloor } = req.body;
   
   const transaction = await Product.sequelize.transaction();
   try {
@@ -468,7 +498,14 @@ const updateProductById = async (req, res) => {
         isActive,
         barCode, saleCurrencyId, costCurrencyId, companyId, vendorName, _category,
         receiveUnitId, stockUnitId, baseUnitId,
-        product_code
+        product_code,
+        hasCommission: hasCommission !== undefined ? (hasCommission === true || hasCommission === 1) : product.hasCommission,
+        commissionType: commissionType || product.commissionType,
+        commissionValue: commissionValue !== undefined ? Number(commissionValue) : product.commissionValue,
+        commissionCurrencyId: commissionCurrencyId !== undefined ? commissionCurrencyId : product.commissionCurrencyId,
+        commissionDiscountImpact: commissionDiscountImpact !== undefined ? commissionDiscountImpact : product.commissionDiscountImpact,
+        commissionDiscountRate: commissionDiscountRate !== undefined ? Number(commissionDiscountRate) : product.commissionDiscountRate,
+        commissionMinFloor: commissionMinFloor !== undefined ? Number(commissionMinFloor) : product.commissionMinFloor,
       },
       { 
         transaction,

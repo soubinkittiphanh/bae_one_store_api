@@ -113,7 +113,8 @@ class APSettlementController {
                                         model: apInvoice,
                                         as: 'invoice',
                                         include: [
-                                            { model: vendor, as: 'vendor' }
+                                            { model: vendor, as: 'vendor' },
+                                            { model: currency, as: 'currency', required: false }
                                         ]
                                     }
                                 ]
@@ -272,7 +273,8 @@ class APSettlementController {
                                         model: apInvoice,
                                         as: 'invoice',
                                         include: [
-                                            { model: vendor, as: 'vendor' }
+                                            { model: vendor, as: 'vendor' },
+                                            { model: currency, as: 'currency', required: false }
                                         ]
                                     }
                                 ]
@@ -471,13 +473,25 @@ class APSettlementController {
             }
             const documents = [...initialDocs, ...documentsData];
 
+            // Auto-resolve currencyId if missing from invoice lines
+            let resolvedCurrencyId = currencyId;
+            if (!resolvedCurrencyId && lines && lines.length > 0) {
+                const firstWithInv = lines.find(l => l.invoiceId);
+                if (firstWithInv) {
+                    const inv = await apInvoice.findByPk(firstWithInv.invoiceId, { transaction });
+                    if (inv && inv.currencyId) {
+                        resolvedCurrencyId = inv.currencyId;
+                    }
+                }
+            }
+
             // Create main settlement record
             const settlementData = {
                 settlementDate,
                 exchangeRate,
                 paymentAmount,
                 baseAmount,
-                currencyId,
+                currencyId: resolvedCurrencyId,
                 paymentMethodId,
                 bankAccountId,
                 status,

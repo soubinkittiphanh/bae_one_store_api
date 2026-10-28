@@ -123,6 +123,9 @@ const parking = require("../parking/router")
 const productOptionGroup = require("../productOptionGroup").router
 const productOption = require("../productOption").router
 const packaging = require("../packaging").router
+const platform = require("../platform").router
+const platformCatalog = require("../platform/platform").router
+const platformAccount = require("../platform/account").router
 
 module.exports = {
     orderRouter,
@@ -247,5 +250,8 @@ module.exports = {
     productOption,
     packaging,
     expenseBudget,
-    parking
+    parking,
+    platform,
+    platformCatalog,
+    platformAccount
 }

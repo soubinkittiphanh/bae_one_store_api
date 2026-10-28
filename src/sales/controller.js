@@ -59,11 +59,26 @@ const ensureSaleLineAndProductColumns = async () => {
     await sequelize.query("ALTER TABLE `product` ADD COLUMN IF NOT EXISTS `vendorName` VARCHAR(100) DEFAULT NULL", { type: QueryTypes.BULKUPDATE }).catch(() => {});
     await sequelize.query("ALTER TABLE `product` ADD COLUMN IF NOT EXISTS `isReturnablePackaging` TINYINT(1) NOT NULL DEFAULT 0", { type: QueryTypes.BULKUPDATE }).catch(() => {});
     await sequelize.query("ALTER TABLE `product` ADD COLUMN IF NOT EXISTS `isPackagingAsset` TINYINT(1) NOT NULL DEFAULT 0", { type: QueryTypes.BULKUPDATE }).catch(() => {});
+    await sequelize.query("ALTER TABLE `product` ADD COLUMN IF NOT EXISTS `hasCommission` TINYINT(1) NOT NULL DEFAULT 0", { type: QueryTypes.BULKUPDATE }).catch(() => {});
+    await sequelize.query("ALTER TABLE `product` ADD COLUMN IF NOT EXISTS `commissionType` ENUM('percentage', 'fixed') NOT NULL DEFAULT 'percentage'", { type: QueryTypes.BULKUPDATE }).catch(() => {});
+    await sequelize.query("ALTER TABLE `product` ADD COLUMN IF NOT EXISTS `commissionValue` DOUBLE NOT NULL DEFAULT 0", { type: QueryTypes.BULKUPDATE }).catch(() => {});
+    await sequelize.query("ALTER TABLE `product` ADD COLUMN IF NOT EXISTS `commissionCurrencyId` INT(11) DEFAULT NULL", { type: QueryTypes.BULKUPDATE }).catch(() => {});
+    await sequelize.query("ALTER TABLE `product` ADD COLUMN IF NOT EXISTS `commissionDiscountImpact` VARCHAR(32) NOT NULL DEFAULT 'deduct_full'", { type: QueryTypes.BULKUPDATE }).catch(() => {});
+    await sequelize.query("ALTER TABLE `product` ADD COLUMN IF NOT EXISTS `commissionDiscountRate` DOUBLE NOT NULL DEFAULT 100", { type: QueryTypes.BULKUPDATE }).catch(() => {});
+    await sequelize.query("ALTER TABLE `product` ADD COLUMN IF NOT EXISTS `commissionMinFloor` DOUBLE NOT NULL DEFAULT 0", { type: QueryTypes.BULKUPDATE }).catch(() => {});
 
     await sequelize.query("ALTER TABLE `saleLine` ADD COLUMN IF NOT EXISTS `isReturn` TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Whether this line represents a returned item / empty packaging inflow'", { type: QueryTypes.BULKUPDATE }).catch(() => {});
     await sequelize.query("ALTER TABLE `saleLine` ADD COLUMN IF NOT EXISTS `focQty` DOUBLE NOT NULL DEFAULT 0", { type: QueryTypes.BULKUPDATE }).catch(() => {});
     await sequelize.query("ALTER TABLE `saleLine` ADD COLUMN IF NOT EXISTS `packagingAction` ENUM('EXCHANGED', 'DEPOSIT', 'DEBT', 'SOLD', 'RETURNED', 'NONE') NOT NULL DEFAULT 'NONE'", { type: QueryTypes.BULKUPDATE }).catch(() => {});
     await sequelize.query("ALTER TABLE `saleLine` ADD COLUMN IF NOT EXISTS `isGift` TINYINT(1) NOT NULL DEFAULT 0", { type: QueryTypes.BULKUPDATE }).catch(() => {});
+    await sequelize.query("ALTER TABLE `saleLine` ADD COLUMN IF NOT EXISTS `hasCommission` TINYINT(1) NOT NULL DEFAULT 0", { type: QueryTypes.BULKUPDATE }).catch(() => {});
+    await sequelize.query("ALTER TABLE `saleLine` ADD COLUMN IF NOT EXISTS `commissionType` ENUM('percentage', 'fixed') DEFAULT NULL", { type: QueryTypes.BULKUPDATE }).catch(() => {});
+    await sequelize.query("ALTER TABLE `saleLine` ADD COLUMN IF NOT EXISTS `commissionRate` DOUBLE NOT NULL DEFAULT 0", { type: QueryTypes.BULKUPDATE }).catch(() => {});
+    await sequelize.query("ALTER TABLE `saleLine` ADD COLUMN IF NOT EXISTS `commissionGrossAmount` DOUBLE NOT NULL DEFAULT 0", { type: QueryTypes.BULKUPDATE }).catch(() => {});
+    await sequelize.query("ALTER TABLE `saleLine` ADD COLUMN IF NOT EXISTS `commissionDiscountDeduction` DOUBLE NOT NULL DEFAULT 0", { type: QueryTypes.BULKUPDATE }).catch(() => {});
+    await sequelize.query("ALTER TABLE `saleLine` ADD COLUMN IF NOT EXISTS `commissionAmount` DOUBLE NOT NULL DEFAULT 0", { type: QueryTypes.BULKUPDATE }).catch(() => {});
+    await sequelize.query("ALTER TABLE `saleLine` ADD COLUMN IF NOT EXISTS `commissionCurrencyId` INT(11) DEFAULT NULL", { type: QueryTypes.BULKUPDATE }).catch(() => {});
+    await sequelize.query("ALTER TABLE `saleLine` ADD COLUMN IF NOT EXISTS `commissionBaseAmount` DOUBLE NOT NULL DEFAULT 0", { type: QueryTypes.BULKUPDATE }).catch(() => {});
   } catch (e) {
     logger.warn(`Could not ensure saleLine and product columns: ${e.message}`);
   }
@@ -1279,15 +1294,196 @@ exports.reverseSaleHeader = async (req, res) => {
     res.status(500).send(`Cannot reverse data with ${error}`);
   }
 };
-const assignHeaderId = async (lines, id, lockingSessionId, isUpdate, locationId) => {
+
+/**
+ * Calculates and snapshots sales commissions onto sale lines based on product configuration.
+ */
+/**
+ * Helper to convert monetary amounts between currencies
+ */
+const convertCurrencyAmount = (amount, fromCcyId, toCcyId, currencies) => {
+  const val = parseFloat(amount || 0);
+  if (isNaN(val) || val === 0 || !fromCcyId || !toCcyId || fromCcyId === toCcyId) return val;
+  const localCurrency = (currencies && currencies.find(c => c.isLocalCCY === true || c.isLocalCCY === 1)) || { id: 1, code: 'LAK', rate: 1.0, exchangeDirection: 'local_to_foreign' };
+
+  // Step 1: convert to LAK base
+  const fromCurrency = currencies && currencies.find(c => c.id === fromCcyId);
+  let amountInLAK = val;
+  if (fromCurrency && fromCurrency.code !== 'LAK') {
+    if (fromCurrency.exchangeDirection === 'local_to_foreign') {
+      amountInLAK = val / (parseFloat(fromCurrency.rate) || 1.0);
+    } else {
+      amountInLAK = val * (parseFloat(fromCurrency.rate) || 1.0);
+    }
+  }
+
+  // Step 2: convert from LAK to target currency
+  const toCurrency = currencies && currencies.find(c => c.id === toCcyId);
+  if (!toCurrency || toCurrency.code === 'LAK') {
+    return Math.round(amountInLAK * 100) / 100;
+  }
+  if (toCurrency.exchangeDirection === 'local_to_foreign') {
+    return Math.round((amountInLAK * (parseFloat(toCurrency.rate) || 1.0)) * 100) / 100;
+  } else {
+    return Math.round((amountInLAK / (parseFloat(toCurrency.rate) || 1.0)) * 100) / 100;
+  }
+};
+
+const convertToBaseCurrency = (amount, fromCcyId, currencies) => {
+  const localCurrency = (currencies && currencies.find(c => c.isLocalCCY === true || c.isLocalCCY === 1)) || { id: 1, code: 'LAK', rate: 1.0 };
+  return convertCurrencyAmount(amount, fromCcyId, localCurrency.id, currencies);
+};
+
+const attachLineCommissions = async (lines, headerIdOrObj = null) => {
+  try {
+    if (!lines || !Array.isArray(lines) || lines.length === 0) return lines;
+
+    let saleHeader = null;
+    if (headerIdOrObj) {
+      if (typeof headerIdOrObj === 'object' && headerIdOrObj !== null) {
+        saleHeader = headerIdOrObj;
+      } else {
+        saleHeader = await SaleHeader.findByPk(headerIdOrObj).catch(() => null);
+      }
+    }
+    if (!saleHeader) {
+      const lineWithHId = lines.find(l => l.headerId || l.saleHeaderId);
+      const hId = lineWithHId ? (lineWithHId.headerId || lineWithHId.saleHeaderId) : null;
+      if (hId) {
+        saleHeader = await SaleHeader.findByPk(hId).catch(() => null);
+      }
+    }
+    const saleCurrencyId = (saleHeader && saleHeader.currencyId) || null;
+
+    const productIds = lines
+      .map(l => l.productId)
+      .filter(id => id && id !== 999);
+
+    if (productIds.length === 0) return lines;
+
+    const products = await Product.findAll({
+      where: { id: { [Op.in]: productIds } },
+      attributes: [
+        'id', 'hasCommission', 'commissionType', 'commissionValue',
+        'commissionCurrencyId', 'saleCurrencyId',
+        'commissionDiscountImpact', 'commissionDiscountRate', 'commissionMinFloor'
+      ]
+    });
+    const productMap = new Map();
+    products.forEach(p => productMap.set(p.id, p));
+
+    const Currency = sequelize.models.currency;
+    const currencies = await Currency.findAll().catch(() => []);
+    const localCurrency = currencies.find(c => c.isLocalCCY === true || c.isLocalCCY === 1) || { id: 1, code: 'LAK', rate: 1.0, exchangeDirection: 'local_to_foreign' };
+
+    const headerDiscount = (parseFloat(saleHeader?.discount) || 0) + (parseFloat(saleHeader?.loyaltyDiscount) || 0);
+    const orderGrossTotal = lines.reduce((sum, l) => {
+      const q = parseFloat(l.quantity) || 1;
+      const p = parseFloat(l.price) || 0;
+      return sum + (p * q);
+    }, 0);
+
+    for (const line of lines) {
+      if (line.hasCommission !== undefined && line.commissionAmount !== undefined && line.commissionBaseAmount !== undefined) {
+        continue;
+      }
+
+      const isRedeem = line.productId === 999;
+      const isReturn = line.isReturn === true || line.isReturn === 1 || line.packagingAction === 'RETURNED';
+      const isGift = line.isGift === true || line.isGift === 1;
+
+      const product = productMap.get(line.productId);
+      if (!product || !product.hasCommission || isRedeem || isReturn || isGift) {
+        line.hasCommission = false;
+        line.commissionType = null;
+        line.commissionRate = 0;
+        line.commissionGrossAmount = 0;
+        line.commissionDiscountDeduction = 0;
+        line.commissionAmount = 0;
+        line.commissionCurrencyId = null;
+        line.commissionBaseAmount = 0;
+        continue;
+      }
+
+      const commType = product.commissionType || 'percentage';
+      const commRate = parseFloat(product.commissionValue) || 0;
+      const qty = parseFloat(line.quantity) || 1;
+      const unitPrice = parseFloat(line.price) || 0;
+      const lineDirectDiscount = parseFloat(line.discount) || 0;
+      const lineGrossTotal = unitPrice * qty;
+      const lineAllocatedHeaderDiscount = (headerDiscount > 0 && orderGrossTotal > 0)
+        ? Math.round(((lineGrossTotal / orderGrossTotal) * headerDiscount) * 100) / 100
+        : 0;
+      const discount = Math.min(lineGrossTotal, lineDirectDiscount + lineAllocatedHeaderDiscount);
+      const lineNetTotal = Math.max(0, lineGrossTotal - discount);
+
+      let grossComm = 0;
+      let discountDeduction = 0;
+      let commAmount = 0;
+      let commCurrencyId = product.commissionCurrencyId || line.currencyId || saleCurrencyId || localCurrency.id;
+
+      if (commType === 'percentage') {
+        commCurrencyId = line.currencyId || saleCurrencyId || localCurrency.id;
+        grossComm = Math.round(((lineGrossTotal * commRate) / 100) * 100) / 100;
+        commAmount = Math.round(((lineNetTotal * commRate) / 100) * 100) / 100;
+        discountDeduction = Math.max(0, Math.round((grossComm - commAmount) * 100) / 100);
+      } else {
+        // Fixed Commission per unit
+        commCurrencyId = product.commissionCurrencyId || line.currencyId || saleCurrencyId || localCurrency.id;
+        grossComm = Math.round((commRate * qty) * 100) / 100;
+
+        if (discount > 0) {
+          const saleLineCcyId = line.currencyId || saleCurrencyId || localCurrency.id;
+          const discountInCommCcy = convertCurrencyAmount(discount, saleLineCcyId, commCurrencyId, currencies);
+
+          const discountImpact = product.commissionDiscountImpact || 'deduct_full';
+          const discountRate = product.commissionDiscountRate !== undefined ? (parseFloat(product.commissionDiscountRate) || 0) : 100;
+
+          if (discountImpact === 'deduct_full') {
+            discountDeduction = discountInCommCcy;
+          } else if (discountImpact === 'deduct_shared') {
+            discountDeduction = Math.round(discountInCommCcy * (discountRate / 100) * 100) / 100;
+          } else if (discountImpact === 'proportional') {
+            const discountRatio = lineGrossTotal > 0 ? (discount / lineGrossTotal) : 0;
+            discountDeduction = Math.round(grossComm * discountRatio * 100) / 100;
+          } else {
+            // 'none'
+            discountDeduction = 0;
+          }
+        }
+
+        const minFloor = parseFloat(product.commissionMinFloor) || 0;
+        commAmount = Math.max(minFloor, Math.round((grossComm - discountDeduction) * 100) / 100);
+      }
+
+      const commBaseAmount = convertToBaseCurrency(commAmount, commCurrencyId, currencies);
+
+      line.hasCommission = true;
+      line.commissionType = commType;
+      line.commissionRate = commRate;
+      line.commissionGrossAmount = grossComm;
+      line.commissionDiscountDeduction = discountDeduction;
+      line.commissionAmount = commAmount;
+      line.commissionCurrencyId = commCurrencyId;
+      line.commissionBaseAmount = commBaseAmount;
+    }
+  } catch (err) {
+    logger.error('Failed to attach line commissions: ' + err.message);
+  }
+  return lines;
+};
+
+const assignHeaderId = async (lines, idOrHeader, lockingSessionId, isUpdate, locationId) => {
+  const actualHeaderId = (typeof idOrHeader === 'object' && idOrHeader !== null) ? idOrHeader.id : idOrHeader;
+  await attachLineCommissions(lines, idOrHeader);
   // Fetch STOCK.VAR parameter from SPF
   const spfStockVarParam = await spfService.getSPFByCode('STOCK.VAR');
   const checkVariant = spfStockVarParam && spfStockVarParam.value === 'Y';
   logger.info(`[assignHeaderId] STOCK.VAR parameter value is: ${spfStockVarParam ? spfStockVarParam.value : 'not set'} (checkVariant: ${checkVariant})`);
 
   for (const iterator of lines) {
-    iterator.headerId = id;
-    iterator.saleHeaderId = id;
+    iterator.headerId = actualHeaderId;
+    iterator.saleHeaderId = actualHeaderId;
 
     // Use iterator.product.validateStockOnSale if it's nested, or directly
     const isRedeem = iterator.productId === 999;
@@ -1566,7 +1762,9 @@ exports.getSaleHeadersDetailByDate = async (req, res) => {
             'id', 'quantity', 'unitRate', 'taxRate', 'taxAmount', 'taxType',
             'exchangeRate', 'price', 'discount', 'total', 'isActive', 'isGift',
             'colorId', 'sizeId', 'focQty', 'isReturn', 'packagingAction',
-            'saleHeaderId', 'headerId', 'currencyId', 'productId', 'unitId', 'priceListId'
+            'saleHeaderId', 'headerId', 'currencyId', 'productId', 'unitId', 'priceListId',
+            'hasCommission', 'commissionType', 'commissionRate', 'commissionGrossAmount',
+            'commissionDiscountDeduction', 'commissionAmount', 'commissionCurrencyId', 'commissionBaseAmount'
           ],
           include: [
             {
@@ -1577,7 +1775,9 @@ exports.getSaleHeadersDetailByDate = async (req, res) => {
                 'pro_desc', 'pro_status', 'validateStockOnSale', 'cost_price',
                 'stock_count', 'minStock', 'barCode', 'vendorName', 'isActive',
                 'receiveUnitId', 'stockUnitId', 'baseUnitId', 'product_code',
-                'isReturnablePackaging', 'isPackagingAsset'
+                'isReturnablePackaging', 'isPackagingAsset',
+                'hasCommission', 'commissionType', 'commissionValue', 'commissionCurrencyId',
+                'commissionDiscountImpact', 'commissionDiscountRate', 'commissionMinFloor'
               ]
             },
             {
@@ -1660,7 +1860,9 @@ exports.getSaleHeadersDetailByDate = async (req, res) => {
                 'id', 'quantity', 'unitRate', 'taxRate', 'taxAmount', 'taxType',
                 'exchangeRate', 'price', 'discount', 'total', 'isActive', 'isGift',
                 'colorId', 'sizeId', 'focQty', 'isReturn', 'packagingAction',
-                'saleHeaderId', 'headerId', 'currencyId', 'productId', 'unitId', 'priceListId'
+                'saleHeaderId', 'headerId', 'currencyId', 'productId', 'unitId', 'priceListId',
+                'hasCommission', 'commissionType', 'commissionRate', 'commissionGrossAmount',
+                'commissionDiscountDeduction', 'commissionAmount', 'commissionCurrencyId', 'commissionBaseAmount'
               ],
               include: [
                 {
@@ -1671,7 +1873,9 @@ exports.getSaleHeadersDetailByDate = async (req, res) => {
                     'pro_desc', 'pro_status', 'validateStockOnSale', 'cost_price',
                     'stock_count', 'minStock', 'barCode', 'vendorName', 'isActive',
                     'receiveUnitId', 'stockUnitId', 'baseUnitId', 'product_code',
-                    'isReturnablePackaging', 'isPackagingAsset'
+                    'isReturnablePackaging', 'isPackagingAsset',
+                    'hasCommission', 'commissionType', 'commissionValue', 'commissionCurrencyId',
+                    'commissionDiscountImpact', 'commissionDiscountRate', 'commissionMinFloor'
                   ]
                 },
                 {
@@ -2921,13 +3125,15 @@ const reserveCardV2 = async (line, lockingSessionId, qty, locationId) => {
   await sequelize.query(sql, { replacements });
 };
 
-const assignHeaderIdV2 = async (lines, id, lockingSessionId, isUpdate, locationId) => {
+const assignHeaderIdV2 = async (lines, idOrHeader, lockingSessionId, isUpdate, locationId) => {
+  const actualHeaderId = (typeof idOrHeader === 'object' && idOrHeader !== null) ? idOrHeader.id : idOrHeader;
+  await attachLineCommissions(lines, idOrHeader);
   const spfStockVarParam = await spfService.getSPFByCode('STOCK.VAR');
   const checkVariant = spfStockVarParam && spfStockVarParam.value === 'Y';
 
   for (const iterator of lines) {
-    iterator.headerId = id;
-    iterator.saleHeaderId = id;
+    iterator.headerId = actualHeaderId;
+    iterator.saleHeaderId = actualHeaderId;
 
     const isRedeem = iterator.productId === 999;
     const isReturn = iterator.isReturn === true || iterator.isReturn === 1 || iterator.packagingAction === 'RETURNED';
@@ -2991,4 +3197,322 @@ const assignHeaderIdV2 = async (lines, id, lockingSessionId, isUpdate, locationI
 exports.validateStockForLines = validateStockForLines;
 exports.validateStockForLinesV2 = validateStockForLinesV2;
 exports.assignHeaderIdV2 = assignHeaderIdV2;
+exports.attachLineCommissions = attachLineCommissions;
+
+/**
+ * Report endpoint to fetch and aggregate sales commissions from all sold products.
+ */
+exports.getSaleCommissionReport = async (req, res) => {
+  try {
+    await ensureSaleLineAndProductColumns();
+    const { startDate, endDate, userId, productId, categoryId, currencyId, locationId } = req.query;
+
+    const whereLine = {
+      isActive: true,
+      hasCommission: true,
+    };
+
+    if (productId) {
+      whereLine.productId = productId;
+    }
+    if (currencyId) {
+      whereLine.commissionCurrencyId = currencyId;
+    }
+
+    const whereHeader = {
+      isActive: true
+    };
+    if (startDate && endDate) {
+      whereHeader.bookingDate = { [Op.between]: [startDate, endDate] };
+    } else if (startDate) {
+      whereHeader.bookingDate = { [Op.gte]: startDate };
+    } else if (endDate) {
+      whereHeader.bookingDate = { [Op.lte]: endDate };
+    }
+    if (userId) {
+      whereHeader.userId = userId;
+    }
+    if (locationId) {
+      whereHeader.locationId = locationId;
+    }
+
+    const productInclude = {
+      model: Product,
+      as: 'product',
+      include: [
+        { model: sequelize.models.category, as: 'category' }
+      ]
+    };
+    if (categoryId) {
+      productInclude.where = {
+        [Op.or]: [
+          { pro_category: categoryId },
+          { categoryCategId: categoryId }
+        ]
+      };
+    }
+
+    const saleLines = await Line.findAll({
+      where: whereLine,
+      include: [
+        {
+          model: SaleHeader,
+          as: 'header',
+          where: whereHeader,
+          include: [
+            { model: sequelize.models.user, as: 'user', attributes: ['id', 'cus_id', 'cus_name', 'cus_tel', 'cus_email'], required: false },
+            { model: sequelize.models.client, as: 'client', attributes: ['id', 'name', 'telephone', 'company'], required: false },
+            { model: sequelize.models.currency, as: 'currency', attributes: ['id', 'code', 'name', 'symbol', 'rate', 'isLocalCCY'], required: false },
+            { model: sequelize.models.location, as: 'location', attributes: ['id', 'name'], required: false }
+          ]
+        },
+        productInclude,
+        {
+          model: sequelize.models.currency,
+          as: 'commissionCurrency',
+          attributes: ['id', 'code', 'name', 'symbol', 'rate', 'isLocalCCY'],
+          required: false
+        },
+        {
+          model: sequelize.models.currency,
+          as: 'currency',
+          attributes: ['id', 'code', 'name', 'symbol', 'rate', 'isLocalCCY'],
+          required: false
+        }
+      ],
+      order: [
+        [{ model: SaleHeader, as: 'header' }, 'bookingDate', 'DESC'],
+        ['id', 'DESC']
+      ]
+    });
+
+    const Currency = sequelize.models.currency;
+    const currencies = await Currency.findAll().catch(() => []);
+    const localCurrency = currencies.find(c => c.isLocalCCY === true || c.isLocalCCY === 1) || { id: 1, code: 'LAK', symbol: '₭', rate: 1.0 };
+
+    const formattedLines = [];
+    const productSummaryMap = new Map();
+    const userSummaryMap = new Map();
+    const currencyTotalsMap = new Map();
+
+    let totalCommissionBase = 0;
+    let totalItemsSold = 0;
+    const uniqueOrders = new Set();
+
+    // Calculate total gross per order for proportional allocation of header discounts
+    const orderGrossMap = new Map();
+    for (const l of saleLines) {
+      if (!l.header) continue;
+      const hId = l.header.id;
+      const q = parseFloat(l.quantity) || 1;
+      const p = parseFloat(l.price) || 0;
+      orderGrossMap.set(hId, (orderGrossMap.get(hId) || 0) + (p * q));
+    }
+
+    for (const line of saleLines) {
+      const header = line.header;
+      if (!header) continue;
+
+      uniqueOrders.add(header.id);
+      const product = line.product || {};
+      const user = header.user || {};
+      const userName = user.cus_name || user.name || user.cus_id || (header.userId ? ('Staff #' + header.userId) : 'Unknown');
+      const commCurrency = line.commissionCurrency || header.currency || localCurrency;
+      const commCcyCode = commCurrency.code || 'LAK';
+      const commCcySymbol = commCurrency.symbol || commCcyCode;
+
+      let commAmount = parseFloat(line.commissionAmount) || 0;
+      let commBaseAmount = parseFloat(line.commissionBaseAmount) || commAmount;
+      let commGrossAmount = parseFloat(line.commissionGrossAmount) || commAmount;
+      let discountDeduction = parseFloat(line.commissionDiscountDeduction) || 0;
+      const qty = parseFloat(line.quantity) || 0;
+      const price = parseFloat(line.price) || 0;
+      const lineDirectDiscount = parseFloat(line.discount) || 0;
+
+      const headerDiscount = (parseFloat(header.discount) || 0) + (parseFloat(header.loyaltyDiscount) || 0);
+      const orderGross = orderGrossMap.get(header.id) || (price * qty);
+      const lineGross = price * qty;
+      const allocatedHeaderDiscount = (headerDiscount > 0 && orderGross > 0)
+        ? Math.round(((lineGross / orderGross) * headerDiscount) * 100) / 100
+        : 0;
+      const effectiveDiscount = Math.min(lineGross, lineDirectDiscount + allocatedHeaderDiscount);
+      const lineTotal = effectiveDiscount > 0 ? Math.max(0, lineGross - effectiveDiscount) : (parseFloat(line.total) || lineGross);
+
+      // Check if discount impact was not applied (e.g. legacy row or order-level discount)
+      if (line.hasCommission && effectiveDiscount > 0 && discountDeduction === 0) {
+        const commType = line.commissionType || product.commissionType || 'percentage';
+        const commRate = parseFloat(line.commissionRate) || parseFloat(product.commissionValue) || 0;
+        const discountImpact = product.commissionDiscountImpact || 'deduct_full';
+        const discountRate = product.commissionDiscountRate !== undefined ? (parseFloat(product.commissionDiscountRate) || 0) : 100;
+        const minFloor = parseFloat(product.commissionMinFloor) || 0;
+
+        if (commType === 'fixed' && discountImpact !== 'none') {
+          commGrossAmount = Math.round((commRate * qty) * 100) / 100;
+          const saleLineCcyId = line.currencyId || header.currencyId || localCurrency.id;
+          const discountInCommCcy = convertCurrencyAmount(effectiveDiscount, saleLineCcyId, commCurrency.id, currencies);
+
+          if (discountImpact === 'deduct_full') {
+            discountDeduction = discountInCommCcy;
+          } else if (discountImpact === 'deduct_shared') {
+            discountDeduction = Math.round(discountInCommCcy * (discountRate / 100) * 100) / 100;
+          } else if (discountImpact === 'proportional') {
+            const discountRatio = lineGross > 0 ? (effectiveDiscount / lineGross) : 0;
+            discountDeduction = Math.round(commGrossAmount * discountRatio * 100) / 100;
+          }
+          discountDeduction = Math.min(commGrossAmount, Math.max(0, discountDeduction));
+          commAmount = Math.max(minFloor, Math.round((commGrossAmount - discountDeduction) * 100) / 100);
+          commBaseAmount = convertToBaseCurrency(commAmount, commCurrency.id, currencies);
+
+          // Update database row asynchronously so it is permanently corrected
+          Line.update({
+            commissionGrossAmount: commGrossAmount,
+            commissionDiscountDeduction: discountDeduction,
+            commissionAmount: commAmount,
+            commissionBaseAmount: commBaseAmount
+          }, { where: { id: line.id } }).catch(() => null);
+        }
+      }
+
+      totalCommissionBase += commBaseAmount;
+      totalItemsSold += qty;
+
+      if (!currencyTotalsMap.has(commCurrency.id)) {
+        currencyTotalsMap.set(commCurrency.id, {
+          currencyId: commCurrency.id,
+          code: commCcyCode,
+          symbol: commCcySymbol,
+          totalCommissionAmount: 0,
+          totalCommissionBaseAmount: 0,
+          totalQuantity: 0,
+          lineCount: 0
+        });
+      }
+      const ccyEntry = currencyTotalsMap.get(commCurrency.id);
+      ccyEntry.totalCommissionAmount += commAmount;
+      ccyEntry.totalCommissionBaseAmount += commBaseAmount;
+      ccyEntry.totalQuantity += qty;
+      ccyEntry.lineCount += 1;
+
+      const pId = line.productId;
+      if (!productSummaryMap.has(pId)) {
+        productSummaryMap.set(pId, {
+          productId: pId,
+          productName: product.pro_name || 'Item #' + pId,
+          productCode: product.product_code || '',
+          barCode: product.barCode || '',
+          categoryName: product.category?.categ_name || '',
+          commissionType: line.commissionType || product.commissionType || 'percentage',
+          commissionRate: parseFloat(line.commissionRate) || parseFloat(product.commissionValue) || 0,
+          currencyId: commCurrency.id,
+          currencyCode: commCcyCode,
+          currencySymbol: commCcySymbol,
+          totalQuantity: 0,
+          totalSalesAmount: 0,
+          totalCommissionAmount: 0,
+          totalCommissionBaseAmount: 0,
+          orderCount: 0,
+          _orderIds: new Set()
+        });
+      }
+      const pEntry = productSummaryMap.get(pId);
+      pEntry.totalQuantity += qty;
+      pEntry.totalSalesAmount += lineTotal;
+      pEntry.totalCommissionAmount += commAmount;
+      pEntry.totalCommissionBaseAmount += commBaseAmount;
+      pEntry._orderIds.add(header.id);
+      pEntry.orderCount = pEntry._orderIds.size;
+
+      const uId = user.id || header.userId || 0;
+      if (!userSummaryMap.has(uId)) {
+        userSummaryMap.set(uId, {
+          userId: uId,
+          userName: userName,
+          totalQuantity: 0,
+          totalOrders: 0,
+          totalCommissionBaseAmount: 0,
+          currencies: {},
+          _orderIds: new Set()
+        });
+      }
+      const uEntry = userSummaryMap.get(uId);
+      uEntry.totalQuantity += qty;
+      uEntry._orderIds.add(header.id);
+      uEntry.totalOrders = uEntry._orderIds.size;
+      uEntry.totalCommissionBaseAmount += commBaseAmount;
+      if (!uEntry.currencies[commCcyCode]) {
+        uEntry.currencies[commCcyCode] = 0;
+      }
+      uEntry.currencies[commCcyCode] += commAmount;
+
+      formattedLines.push({
+        id: line.id,
+        saleHeaderId: header.id,
+        bookingDate: header.bookingDate,
+        referenceNo: header.referenceNo,
+        userId: uId,
+        userName: userName,
+        clientId: header.clientId,
+        clientName: header.client?.name || '',
+        productId: line.productId,
+        productName: product.pro_name || '',
+        productCode: product.product_code || '',
+        barCode: product.barCode || '',
+        categoryName: product.category?.categ_name || '',
+        quantity: qty,
+        unitPrice: price,
+        discount: effectiveDiscount,
+        lineTotal: lineTotal,
+        saleCurrencyCode: header.currency?.code || 'LAK',
+        commissionType: line.commissionType,
+        commissionRate: parseFloat(line.commissionRate) || 0,
+        commissionGrossAmount: commGrossAmount,
+        commissionDiscountDeduction: discountDeduction,
+        commissionAmount: commAmount,
+        commissionCurrencyId: commCurrency.id,
+        commissionCurrencyCode: commCcyCode,
+        commissionCurrencySymbol: commCcySymbol,
+        commissionBaseAmount: commBaseAmount
+      });
+    }
+
+    const cleanByProduct = Array.from(productSummaryMap.values()).map(item => {
+      const { _orderIds, ...rest } = item;
+      return rest;
+    });
+
+    const cleanByUser = Array.from(userSummaryMap.values()).map(item => {
+      const { _orderIds, ...rest } = item;
+      return rest;
+    });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        summary: {
+          totalCommissionBase: Math.round(totalCommissionBase * 100) / 100,
+          totalOrdersCount: uniqueOrders.size,
+          totalLinesCount: formattedLines.length,
+          totalItemsSold: Math.round(totalItemsSold * 100) / 100,
+          localCurrency: {
+            id: localCurrency.id,
+            code: localCurrency.code,
+            symbol: localCurrency.symbol
+          },
+          currencyTotals: Array.from(currencyTotalsMap.values())
+        },
+        byProduct: cleanByProduct,
+        byUser: cleanByUser,
+        lines: formattedLines
+      }
+    });
+  } catch (error) {
+    logger.error('Error fetching commission report: ' + (error.stack || error));
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch commission report',
+      error: error.message
+    });
+  }
+};
+
 

@@ -85,6 +85,52 @@ module.exports = (sequelize, DataTypes) => {
             defaultValue: 'NONE',
             comment: 'Packaging handling for returnable items (EXCHANGED: 1:1 swap, DEPOSIT: paid cash deposit, DEBT: wholesale packaging credit, SOLD: packaging asset sold, RETURNED: packaging asset received/bought back, NONE)'
         },
+        hasCommission: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false,
+            comment: 'Whether commission was applied to this sale line'
+        },
+        commissionType: {
+            type: DataTypes.ENUM('percentage', 'fixed'),
+            allowNull: true,
+            comment: 'Commission snapshot type: percentage or fixed'
+        },
+        commissionRate: {
+            type: DataTypes.DOUBLE,
+            allowNull: false,
+            defaultValue: 0,
+            comment: 'Commission snapshot percentage or fixed rate per unit'
+        },
+        commissionGrossAmount: {
+            type: DataTypes.DOUBLE,
+            allowNull: false,
+            defaultValue: 0,
+            comment: 'Commission before discount impact deduction'
+        },
+        commissionDiscountDeduction: {
+            type: DataTypes.DOUBLE,
+            allowNull: false,
+            defaultValue: 0,
+            comment: 'Deduction from commission caused by customer discount'
+        },
+        commissionAmount: {
+            type: DataTypes.DOUBLE,
+            allowNull: false,
+            defaultValue: 0,
+            comment: 'Calculated commission amount in commission currency'
+        },
+        commissionCurrencyId: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            comment: 'Currency of the commission'
+        },
+        commissionBaseAmount: {
+            type: DataTypes.DOUBLE,
+            allowNull: false,
+            defaultValue: 0,
+            comment: 'Commission converted to system base/local currency'
+        },
     }, {
         sequelize,
         // don't forget to enable timestamps!
@@ -112,6 +158,11 @@ module.exports = (sequelize, DataTypes) => {
         SaleLine.belongsTo(models.currency, {
             foreignKey: 'currencyId',
             as: 'currency',
+        });
+
+        SaleLine.belongsTo(models.currency, {
+            foreignKey: 'commissionCurrencyId',
+            as: 'commissionCurrency',
         });
 
         // SaleLine -> Product (Many-to-One)

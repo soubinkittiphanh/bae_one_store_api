@@ -222,7 +222,14 @@ const createProdV1 = async (req, imagesObj) => {
             _category: body._category || 'product',
             duration_minutes: parseInt(body.duration_minutes) || 0,
             taxId: parseInt(body.taxId) || null,
-            product_code: body.product_code || null
+            product_code: body.product_code || null,
+            hasCommission: body.hasCommission == 1 || body.hasCommission === true,
+            commissionType: body.commissionType || 'percentage',
+            commissionValue: parseFloat(body.commissionValue) || 0,
+            commissionCurrencyId: parseInt(body.commissionCurrencyId) || null,
+            commissionDiscountImpact: body.commissionDiscountImpact || 'deduct_full',
+            commissionDiscountRate: body.commissionDiscountRate !== undefined ? parseFloat(body.commissionDiscountRate) : 100,
+            commissionMinFloor: body.commissionMinFloor !== undefined ? parseFloat(body.commissionMinFloor) : 0
         };
 
         const newProduct = await Product.create(productData, {
@@ -313,7 +320,14 @@ const updateProd = async (req, imagesObj) => {
             _category: body._category || 'product',
             duration_minutes: parseInt(body.duration_minutes) || 0,
             taxId: parseInt(body.taxId) || null,
-            product_code: body.product_code || null
+            product_code: body.product_code || null,
+            hasCommission: body.hasCommission == 1 || body.hasCommission === true,
+            commissionType: body.commissionType || 'percentage',
+            commissionValue: parseFloat(body.commissionValue) || 0,
+            commissionCurrencyId: parseInt(body.commissionCurrencyId) || null,
+            commissionDiscountImpact: body.commissionDiscountImpact !== undefined ? body.commissionDiscountImpact : product.commissionDiscountImpact,
+            commissionDiscountRate: body.commissionDiscountRate !== undefined ? parseFloat(body.commissionDiscountRate) : product.commissionDiscountRate,
+            commissionMinFloor: body.commissionMinFloor !== undefined ? parseFloat(body.commissionMinFloor) : product.commissionMinFloor
         };
 
         await product.update(updateData, {

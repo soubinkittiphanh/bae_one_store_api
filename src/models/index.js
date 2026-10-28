@@ -312,6 +312,10 @@ const initializeModels = () => {
     parkingTicket: require("../parking/models/ticket")(sequelize, DataTypes),
     parkingPayment: require("../parking/models/payment")(sequelize, DataTypes),
 
+    // Multi-Platform & Connected Platform Accounts
+    platform: require("../platform/platform/model")(sequelize, DataTypes),
+    platformAccount: require("../platform/account/model")(sequelize, DataTypes),
+
     // Tutorial model (uses different DB)
     // tuturial: require("../tutorial/model")(tutorialDB, DataTypes),
   };
@@ -686,6 +690,11 @@ const defineManyToManyAssociations = (db) => {
     foreignKey: 'userGroupId',
     otherKey: 'menuHeaderId'
   });
+
+  // Platform & Company associations
+  if (db.company && db.platformAccount) {
+    db.company.hasMany(db.platformAccount, { foreignKey: 'companyId', as: 'platformAccounts' });
+  }
 };
 
 // Initialize and setup associations

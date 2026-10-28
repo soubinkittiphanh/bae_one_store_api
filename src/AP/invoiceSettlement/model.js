@@ -53,6 +53,26 @@ module.exports = (sequelize, DataTypes) => {
     documents: {
       type: DataTypes.JSON,
       allowNull: true
+    },
+    currencyId: {
+      type: DataTypes.INTEGER,
+      allowNull: true
+    },
+    paymentMethodId: {
+      type: DataTypes.INTEGER,
+      allowNull: true
+    },
+    bankAccountId: {
+      type: DataTypes.INTEGER,
+      allowNull: true
+    },
+    makerId: {
+      type: DataTypes.INTEGER,
+      allowNull: true
+    },
+    checkerId: {
+      type: DataTypes.INTEGER,
+      allowNull: true
     }
   }, {
     sequelize,

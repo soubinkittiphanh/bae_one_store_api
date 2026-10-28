@@ -118,6 +118,47 @@ module.exports = (sequelize, DataTypes) => {
             defaultValue: false,
             comment: 'Whether this product is an empty crate/bottle packaging asset'
         },
+        hasCommission: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false,
+            comment: 'Whether this product has sales commission enabled'
+        },
+        commissionType: {
+            type: DataTypes.ENUM('percentage', 'fixed'),
+            allowNull: false,
+            defaultValue: 'percentage',
+            comment: 'Commission calculation type: percentage or fixed amount'
+        },
+        commissionValue: {
+            type: DataTypes.DOUBLE,
+            allowNull: false,
+            defaultValue: 0,
+            comment: 'Commission value (percentage % or fixed amount)'
+        },
+        commissionCurrencyId: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            comment: 'Currency for fixed commission amount'
+        },
+        commissionDiscountImpact: {
+            type: DataTypes.ENUM('deduct_full', 'deduct_shared', 'proportional', 'none'),
+            allowNull: false,
+            defaultValue: 'deduct_full',
+            comment: 'How discount affects commission: deduct_full, deduct_shared, proportional, none'
+        },
+        commissionDiscountRate: {
+            type: DataTypes.DOUBLE,
+            allowNull: false,
+            defaultValue: 100,
+            comment: 'Discount absorption rate % for deduct_shared'
+        },
+        commissionMinFloor: {
+            type: DataTypes.DOUBLE,
+            allowNull: false,
+            defaultValue: 0,
+            comment: 'Minimum commission floor payout'
+        },
     }, {
         sequelize,
         // don't forget to enable timestamps!
@@ -260,6 +301,12 @@ module.exports = (sequelize, DataTypes) => {
         Product.belongsTo(models.currency, {
             as: 'saleCurrency',
             foreignKey: 'saleCurrencyId',
+            targetKey: 'id'
+        });
+
+        Product.belongsTo(models.currency, {
+            as: 'commissionCurrency',
+            foreignKey: 'commissionCurrencyId',
             targetKey: 'id'
         });
 

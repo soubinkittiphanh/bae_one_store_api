@@ -115,7 +115,7 @@ class ReceiveHeaderController {
           {
             model: arInvoiceHeader,
             as: 'invoiceHeader',
-            attributes: ['id', 'invoiceNumber', 'invoiceDate', 'status'],
+            attributes: ['id', 'invoiceNumber', 'invoiceDate', 'status', 'currencyId'],
             include: [
               {
                 model: JobBatch,
@@ -197,7 +197,7 @@ class ReceiveHeaderController {
               {
                 model: arInvoiceHeader,
                 as: 'invoiceHeader',
-                attributes: ['id', 'invoiceNumber', 'invoiceDate', 'status'],
+                attributes: ['id', 'invoiceNumber', 'invoiceDate', 'status', 'currencyId'],
                 include: [
                   {
                     model: JobBatch,
