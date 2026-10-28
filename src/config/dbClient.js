@@ -180,11 +180,11 @@ const clientDB = {
         "port": 3306,
     },
     "env_auto": {
-        "host": "150.95.31.23",
-        "user": "root",
-        "password": "sdat@3480",
+        "host": process.env.DB_HOST || "150.95.31.23",
+        "user": process.env.DB_USER || "root",
+        "password": process.env.DB_PASSWORD !== undefined ? process.env.DB_PASSWORD : "sdat@3480",
         "database": process.env.DB_NAME || 'dcommerce_demo',
-        "port": 3306,
+        "port": Number(process.env.DB_PORT) || 3306,
     },
     "pro_sho": {
         "host": "150.95.31.23",
