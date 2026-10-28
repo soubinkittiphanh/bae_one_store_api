@@ -316,6 +316,9 @@ const initializeModels = () => {
     platform: require("../platform/platform/model")(sequelize, DataTypes),
     platformAccount: require("../platform/account/model")(sequelize, DataTypes),
 
+    // Core Banking Loan Module models (FLEXCUBE-style)
+    ...require("../loan/models")(sequelize, DataTypes).models,
+
     // Tutorial model (uses different DB)
     // tuturial: require("../tutorial/model")(tutorialDB, DataTypes),
   };
@@ -369,6 +372,9 @@ const defineAssociations = (db) => {
 
   // School Billing module associations
   defineSchoolAssociations(db);
+
+  // Core Banking Loan Module associations
+  require("../loan/models")(sequelize, DataTypes).defineLoanAssociations(db);
 
   // Many-to-many associations
   defineManyToManyAssociations(db);

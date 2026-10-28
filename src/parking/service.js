@@ -135,15 +135,49 @@ const parkingService = {
   // =========================================================================
   // 2. FEE CALCULATION
   // =========================================================================
-  async calculateExitFee({ ticketId, ticketNumber, barcode, plateNumber, isLostTicket = false, exitTime = new Date() }) {
+  async calculateExitFee({ ticketId, ticketNumber, barcode, plateNumber, identifier, isLostTicket = false, exitTime = new Date() }) {
     const where = { status: 'active' };
-    if (ticketId) where.id = ticketId;
-    else if (ticketNumber) where.ticketNumber = ticketNumber;
-    else if (barcode) where.barcode = barcode;
-    else if (plateNumber) {
-      where.plateNumber = slotService.normalizePlateNumber(plateNumber);
+    if (ticketId) {
+      where.id = ticketId;
     } else {
-      throw new Error('Please provide ticketId, ticketNumber, barcode, or plateNumber.');
+      const candidates = [];
+      const addCandidate = (field, val) => {
+        if (val && typeof val === 'string' && val.trim()) {
+          candidates.push({ [field]: val.trim() });
+        }
+      };
+
+      addCandidate('ticketNumber', ticketNumber);
+      addCandidate('barcode', barcode);
+
+      if (plateNumber && typeof plateNumber === 'string' && plateNumber.trim()) {
+        const norm = slotService.normalizePlateNumber(plateNumber);
+        candidates.push({ plateNumber: norm });
+        const noSpace = norm.replace(/\s+/g, '');
+        if (noSpace !== norm) {
+          candidates.push({ plateNumber: noSpace });
+        }
+      }
+
+      if (identifier && typeof identifier === 'string' && identifier.trim()) {
+        const idTrim = identifier.trim();
+        const normId = slotService.normalizePlateNumber(idTrim);
+        candidates.push({ ticketNumber: idTrim });
+        candidates.push({ barcode: idTrim });
+        candidates.push({ plateNumber: normId });
+        const noSpace = normId.replace(/\s+/g, '');
+        if (noSpace !== normId) {
+          candidates.push({ plateNumber: noSpace });
+        }
+      }
+
+      if (candidates.length === 0) {
+        throw new Error('Please provide ticketId, ticketNumber, barcode, or plateNumber.');
+      } else if (candidates.length === 1) {
+        Object.assign(where, candidates[0]);
+      } else {
+        where[Op.or] = candidates;
+      }
     }
 
     const ticket = await db.parkingTicket.findOne({
@@ -295,7 +329,16 @@ const parkingService = {
       where.status = status;
     }
     if (plateNumber) {
-      where.plateNumber = { [Op.like]: `%${slotService.normalizePlateNumber(plateNumber)}%` };
+      const norm = slotService.normalizePlateNumber(plateNumber);
+      const noSpace = norm.replace(/\s+/g, '');
+      if (norm !== noSpace) {
+        where[Op.or] = [
+          { plateNumber: { [Op.like]: `%${norm}%` } },
+          { plateNumber: { [Op.like]: `%${noSpace}%` } }
+        ];
+      } else {
+        where.plateNumber = { [Op.like]: `%${norm}%` };
+      }
     }
     if (ticketNumber) {
       where.ticketNumber = { [Op.like]: `%${ticketNumber.trim()}%` };

@@ -235,6 +235,9 @@ const buildApp = async () => {
     // Car Parking module routing
     app.use('/api/parking', myRouter.parking);
 
+    // Core Banking Loan & Vehicle Financing Module (Phase 2A)
+    app.use('/api/loan', myRouter.loan);
+
     // Multi-Platform & Connected Accounts (Facebook, TikTok, Shopee, Lazada, etc.)
     app.use('/api/platforms', myRouter.platformCatalog);
     app.use('/api/platform-accounts', myRouter.platformAccount);

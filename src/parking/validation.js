@@ -71,8 +71,8 @@ const validateEntry = [
 
 const validateCalculateFee = [
   body().custom((value, { req }) => {
-    if (!req.body.ticketId && !req.body.ticketNumber && !req.body.barcode && !req.body.plateNumber) {
-      throw new Error('At least one identifier (ticketId, ticketNumber, barcode, or plateNumber) must be provided.');
+    if (!req.body.ticketId && !req.body.ticketNumber && !req.body.barcode && !req.body.plateNumber && !req.body.identifier && !req.body.query) {
+      throw new Error('At least one identifier (ticketId, ticketNumber, barcode, plateNumber, or query) must be provided.');
     }
     return true;
   }),
