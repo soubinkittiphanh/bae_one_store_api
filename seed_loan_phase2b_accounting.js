@@ -7,6 +7,7 @@
  *   overwritten. Deferred-fee rules and every leg touching PENALTY_RECEIVABLE are isActive = 0.
  * - Status penalty treatment defaults to MEMO_ONLY: untouched seeded PENDING statuses are aligned;
  *   anything a user created or authorized is left alone (change it in the Parameter Studio).
+ * - Go-live checklist items ENTRY_RULES and GL_MAPPINGS (GL_MAPPINGS replaces the held GL_ROLE_MAPPINGS row).
  * - NO GL accounts and NO ln_role_gl_mapping rows are created.
  */
 process.env.NO_SYNC = 'true';
@@ -89,7 +90,22 @@ async function seedPhase2B() {
     const grantSummary = await grantToGroupCodes(db, ['SUPER_ADMIN', 'ADMIN'], ['LN_ENTRY_RULE']);
     console.log(`Entry rule grants: ${grantSummary.join(', ') || 'none'}`);
 
-    // 5. Output VAT account parameter: empty until the accountant decides (never overwritten)
+    // 5. Go-live checklist: ENTRY_RULES and GL_MAPPINGS (confirmed one by one; GL_MAPPINGS replaces the held GL_ROLE_MAPPINGS)
+    const oldGl = await db.lnChecklistConfirmation.findOne({ where: { itemKey: 'GL_ROLE_MAPPINGS' } });
+    if (oldGl) {
+      if (await db.lnChecklistConfirmation.findOne({ where: { itemKey: 'GL_MAPPINGS' } })) {
+        await reconcileLog('checklist', 'GL_ROLE_MAPPINGS', { itemKey: 'GL_ROLE_MAPPINGS', status: oldGl.status }, { deleted: true, replacedBy: 'GL_MAPPINGS' });
+        await oldGl.destroy();
+      } else {
+        await reconcileLog('checklist', 'GL_ROLE_MAPPINGS', { itemKey: 'GL_ROLE_MAPPINGS', status: oldGl.status }, { itemKey: 'GL_MAPPINGS', status: 'UNCONFIRMED' });
+        await oldGl.update({ itemKey: 'GL_MAPPINGS', status: 'UNCONFIRMED', confirmedBy: null, confirmedAt: null, snapshotJson: null });
+      }
+    }
+    for (const itemKey of ['ENTRY_RULES', 'GL_MAPPINGS']) {
+      await db.lnChecklistConfirmation.findOrCreate({ where: { itemKey }, defaults: { itemKey, status: 'UNCONFIRMED' } });
+    }
+
+    // 6. Output VAT account parameter: empty until the accountant decides (never overwritten)
     await db.spf.findOrCreate({
       where: { code: 'GL_MAP_VAT_OUTPUT_ACC' },
       defaults: {

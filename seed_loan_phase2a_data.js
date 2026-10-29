@@ -492,10 +492,10 @@ async function seedPhase2A() {
     for (const bj of batchJobs) await db.lnBatchJob.findOrCreate({ where: { jobCode: bj.jobCode }, defaults: { ...bj, ...AUTHORIZED } });
 
     // 9. Go-live checklist items (confirmed individually by management)
-    for (const itemKey of ['TAX_PROFILE', 'FEE_TREATMENT', 'PROVISION_POLICY', 'DPD_CLASSIFICATION', 'GL_ROLE_MAPPINGS']) {
+    for (const itemKey of ['TAX_PROFILE', 'FEE_TREATMENT', 'PROVISION_POLICY', 'DPD_CLASSIFICATION', 'ENTRY_RULES', 'GL_MAPPINGS']) {
       await db.lnChecklistConfirmation.findOrCreate({
         where: { itemKey },
-        defaults: { itemKey, status: itemKey === 'GL_ROLE_MAPPINGS' ? 'HELD' : 'UNCONFIRMED' }
+        defaults: { itemKey, status: 'UNCONFIRMED' }
       });
     }
 

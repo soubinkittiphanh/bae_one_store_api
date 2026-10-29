@@ -16,7 +16,8 @@ const ITEMS = [
   { itemKey: 'FEE_TREATMENT', category: 'Accounting policy (ນະໂຍບາຍບັນຊີ)', title: 'Fee treatment (ຮູບແບບການຮັບຮູ້ຄ່າທຳນຽມ)', severity: 'IMPORTANT', entities: ['product'], models: ['lnProduct'] },
   { itemKey: 'PROVISION_POLICY', category: 'Risk & provisioning (ນະໂຍບາຍສຳຮອງໜີ້)', title: 'Provision rates - company policy (ອັດຕາສຳຮອງໜີ້ຕາມນະໂຍບາຍບໍລິສັດ)', severity: 'WARNING', entities: ['provision-rule', 'regulatory-class'], models: ['lnProvisionRule', 'lnRegulatoryClass'] },
   { itemKey: 'DPD_CLASSIFICATION', category: 'Credit operations (ການຈັດຊັ້ນໜີ້)', title: 'DPD ranges & status rules (ຊ່ວງວັນຄ້າງຊຳລະ)', severity: 'WARNING', entities: ['status', 'status-movement-rule', 'status-cure-rule'], models: ['lnStatusMaster', 'lnStatusMovementRule', 'lnStatusCureRule'] },
-  { itemKey: 'GL_ROLE_MAPPINGS', category: 'GL integration (ການເຊື່ອມໂຍງຜັງບັນຊີ)', title: 'Accounting role to GL mappings (Phase 2B)', severity: 'HOLD', entities: ['role-gl-mapping'], held: true }
+  { itemKey: 'ENTRY_RULES', category: 'Accounting setup (ການຕັ້ງຄ່າບັນຊີ)', title: 'Accounting entry rules (ກົດການບັນທຶກບັນຊີ)', severity: 'IMPORTANT', entities: ['accounting-entry-rule', 'event', 'amount-tag'], models: ['lnAccountingEntryRule'] },
+  { itemKey: 'GL_MAPPINGS', category: 'GL integration (ການເຊື່ອມໂຍງຜັງບັນຊີ)', title: 'Accounting role to GL account mappings (ການເຊື່ອມບົດບາດກັບບັນຊີ)', severity: 'IMPORTANT', entities: ['role-gl-mapping'], models: ['lnRoleGlMapping'] }
 ];
 
 // '0.010000' -> '1%' (string shift, no floats)
@@ -45,6 +46,21 @@ const snapshots = {
       provisionBase: r.provisionBase, policyNote: r.policyNote
     })).sort((a, b) => a.regulatoryClassCode.localeCompare(b.regulatoryClassCode));
   },
+  async ENTRY_RULES() {
+    const rules = await getEffective(db.lnAccountingEntryRule, {}, today());
+    return rules.map(r => ({
+      eventCode: r.eventCode, amountTag: r.amountTag, drCr: r.drCr, roleCode: r.roleCode, qualifierSource: r.qualifierSource,
+      isActive: Boolean(r.isActive), feeModeFilter: r.feeModeFilter, presentationFilter: r.presentationFilter, targetFilter: r.targetFilter,
+      productId: r.productId, categoryId: r.categoryId
+    })).sort((a, b) => `${a.eventCode} ${a.amountTag} ${a.drCr} ${a.roleCode}`.localeCompare(`${b.eventCode} ${b.amountTag} ${b.drCr} ${b.roleCode}`));
+  },
+  async GL_MAPPINGS() {
+    const rows = await getEffective(db.lnRoleGlMapping, {}, today());
+    return rows.map(r => ({
+      roleCode: r.roleCode, statusQualifier: r.statusQualifier, chartAccountId: r.chartAccountId,
+      productId: r.productId, categoryId: r.categoryId, branchId: r.branchId, currencyId: r.currencyId
+    })).sort((a, b) => `${a.roleCode} ${a.statusQualifier}`.localeCompare(`${b.roleCode} ${b.statusQualifier}`));
+  },
   async DPD_CLASSIFICATION() {
     const rules = await getEffective(db.lnStatusMovementRule, {}, today());
     return rules.map(r => ({ fromStatus: r.fromStatus, toStatus: r.toStatus, minDpd: r.minDpd, maxDpd: r.maxDpd }))
@@ -59,6 +75,12 @@ const describe = {
   PROVISION_POLICY: (s) => (s.length
     ? `Company policy (not regulation): ${s.map(r => `${r.regulatoryClassCode} ${pct(r.provisionRate)}`).join(', ')}`
     : 'No authorized provision rules yet'),
+  ENTRY_RULES: (s) => (s.length
+    ? `${s.length} authorized entry rules (${s.filter(r => r.isActive).length} active, ${s.filter(r => !r.isActive).length} inactive options) across ${new Set(s.map(r => r.eventCode)).size} events`
+    : 'No authorized entry rules yet'),
+  GL_MAPPINGS: (s) => (s.length
+    ? `${s.length} authorized mappings covering ${new Set(s.map(r => r.roleCode)).size} accounting roles`
+    : 'No authorized role-to-GL mappings yet (accounts still to be confirmed by the accountant)'),
   DPD_CLASSIFICATION: (s) => (s.length
     ? s.map(r => `${r.fromStatus} -> ${r.toStatus}: ${r.minDpd}-${r.maxDpd} DPD`).join('; ')
     : 'No authorized DPD rules yet')
@@ -74,7 +96,7 @@ const pendingCount = async (item) => {
 const rowFor = async (itemKey, transaction) => {
   const [row] = await db.lnChecklistConfirmation.findOrCreate({
     where: { itemKey },
-    defaults: { itemKey, status: itemKey === 'GL_ROLE_MAPPINGS' ? 'HELD' : 'UNCONFIRMED' },
+    defaults: { itemKey, status: 'UNCONFIRMED' },
     transaction
   });
   return row;
