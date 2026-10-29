@@ -511,9 +511,42 @@ const apiTests = async ({ port, q, db, runNode }) => {
     const flat = (await call(SUPER, 'get', `${L}/products?search=CAR-LOAN-FLAT`)).data.data[0];
     expectStatus(await call(SUPER, 'post', `${L}/params/product/${flat.id}/authorize`), 409, 'category still pending');
   });
-  await test('editing an authorized product creates a new version; authorizing it supersedes v1', async () => {
+  await test('a product cannot be authorized until every entry rule it needs is AUTHORIZED; the failing legs are returned', async () => {
     const cat = (await call(SUPER, 'get', `${L}/params/product-category?code=VEHICLE_FINANCING`)).data.data.items[0];
     expectStatus(await call(SUPER, 'post', `${L}/params/product-category/${cat.id}/authorize`), 200, 'authorize seeded category');
+    const v1 = (await call(SUPER, 'get', `${L}/products?search=CAR-LOAN-DB`)).data.data[0];
+    const blocked = await call(SUPER, 'post', `${L}/params/product/${v1.id}/authorize`);
+    expectStatus(blocked, 409, 'rules not authorized');
+    assert.match(blocked.data.message, /cannot be authorized: \d+ accounting entry rule problem/);
+    assert.ok(Array.isArray(blocked.data.errors) && blocked.data.errors.some(e => /Missing required leg DISB PRINCIPAL DR LOAN_PORTFOLIO/.test(e)), 'failing legs listed');
+    const still = await q('SELECT authStatus FROM ln_product WHERE id = ?', [v1.id]);
+    assert.strictEqual(still[0].authStatus, 'PENDING');
+  });
+  await test('bulk review-and-authorize: all or nothing, maker-checker per row, every row audited', async () => {
+    const pending = (await call(ADMIN, 'get', `${L}/params/accounting-entry-rule?authStatus=PENDING&limit=500`)).data.data.items;
+    assert.ok(pending.length > 100, 'seeded rules pending');
+    const own = await call(ADMIN, 'post', `${L}/params/accounting-entry-rule`, { eventCode: 'ACCR', amountTag: 'INT_ACCR', drCr: 'CR', roleCode: 'INTEREST_INCOME', qualifierSource: 'NONE', effectiveFrom: '2030-01-01' });
+    expectStatus(own, 201, 'admin creates a rule');
+    const mixed = await call(ADMIN, 'post', `${L}/params/accounting-entry-rule/bulk-authorize`, { keys: [...pending.slice(0, 5).map(r => r.id), own.data.data.id] });
+    expectStatus(mixed, 403, 'own rule in the batch');
+    assert.strictEqual(Number((await q("SELECT COUNT(*) n FROM ln_accounting_entry_rule WHERE authStatus = 'PENDING'"))[0].n), pending.length + 1, 'nothing authorized');
+    expectStatus(await call(ADMIN, 'delete', `${L}/params/accounting-entry-rule/${own.data.data.id}`), 200, 'maker deletes own pending rule');
+    expectStatus(await call(CASHIER, 'post', `${L}/params/accounting-entry-rule/bulk-authorize`, { keys: [pending[0].id] }), 403, 'cashier');
+    expectStatus(await call(ADMIN, 'post', `${L}/params/accounting-entry-rule/bulk-authorize`, { keys: [] }), 400, 'empty batch');
+
+    const groups = {};
+    for (const r of pending) (groups[r.eventCode] = groups[r.eventCode] || []).push(r.id);
+    for (const [eventCode, keys] of Object.entries(groups)) {
+      const res = await call(ADMIN, 'post', `${L}/params/accounting-entry-rule/bulk-authorize`, { keys });
+      expectStatus(res, 200, `authorize ${eventCode}`);
+      assert.strictEqual(res.data.data.authorized, keys.length);
+    }
+    const rows = await q("SELECT authStatus s, COUNT(*) n, COUNT(DISTINCT checkerId) c FROM ln_accounting_entry_rule GROUP BY 1");
+    assert.deepStrictEqual(rows.map(r => `${r.s}/${r.n}/${r.c}`), [`AUTHORIZED/${pending.length}/1`]);
+    const audits = Number((await q("SELECT COUNT(*) n FROM ln_audit_log WHERE entityName = 'accounting-entry-rule' AND actionType = 'AUTH' AND userId = ?", [ADMIN]))[0].n);
+    assert.strictEqual(audits, pending.length, 'one AUTH audit row per rule');
+  });
+  await test('editing an authorized product creates a new version; authorizing it supersedes v1', async () => {
     const v1 = (await call(SUPER, 'get', `${L}/products?search=CAR-LOAN-DB`)).data.data[0];
     expectStatus(await call(SUPER, 'post', `${L}/params/product/${v1.id}/authorize`), 200, 'authorize v1');
     const children = await q("SELECT authStatus s, COUNT(*) n FROM ln_product_component WHERE productId = ? GROUP BY authStatus", [v1.id]);
@@ -574,7 +607,17 @@ const apiTests = async ({ port, q, db, runNode }) => {
       const rows = (await call(SUPER, 'get', `${L}/params/${entity}?authStatus=PENDING`)).data.data.items;
       for (const r of rows) expectStatus(await call(SUPER, 'post', `${L}/params/${entity}/${r.id}/authorize`), 200, `authorize ${entity} ${r.id}`);
     }
-    expectStatus(await call(SUPER, 'post', `${L}/checklist/GL_ROLE_MAPPINGS/confirm`), 409, 'held item');
+    const gl = await call(SUPER, 'post', `${L}/checklist/GL_MAPPINGS/confirm`);
+    expectStatus(gl, 409, 'no authorized GL mappings yet');
+    assert.match(gl.data.message, /Nothing authorized to confirm for GL_MAPPINGS/);
+    expectStatus(await call(CASHIER, 'post', `${L}/checklist/ENTRY_RULES/confirm`), 403, 'cashier confirms');
+    const er = await call(SUPER, 'post', `${L}/checklist/ENTRY_RULES/confirm`);
+    expectStatus(er, 200, 'confirm entry rules');
+    const erRow = await q("SELECT status, confirmedBy, snapshotJson FROM ln_checklist_confirmation WHERE itemKey = 'ENTRY_RULES'");
+    assert.strictEqual(erRow[0].status, 'CONFIRMED');
+    assert.strictEqual(erRow[0].confirmedBy, SUPER);
+    assert.ok(JSON.parse(erRow[0].snapshotJson).length > 100, 'snapshot of the authorized rules');
+    assert.strictEqual(Number((await q("SELECT COUNT(*) n FROM ln_checklist_confirmation WHERE itemKey = 'GL_ROLE_MAPPINGS'"))[0].n), 0, 'old held item replaced');
     const confirmed = await call(SUPER, 'post', `${L}/checklist/PROVISION_POLICY/confirm`);
     expectStatus(confirmed, 200, 'confirm provision policy');
     const itemOf = (res, key) => res.data.data.checklistItems.find(i => i.itemKey === key);
@@ -666,7 +709,7 @@ const apiTests = async ({ port, q, db, runNode }) => {
       expectStatus(res, 200, `check ${p.productCode}`);
       assert.deepStrictEqual(res.data.data.errors, [], `${p.productCode} rule set`);
       const auth = await call(ADMIN, 'get', `${L}/products/${p.id}/accounting-check`);
-      assert.ok(!auth.data.data.ok && auth.data.data.errors.some(e => /Missing required leg/.test(e)), 'nothing authorized yet');
+      assert.deepStrictEqual(auth.data.data.errors, [], `${p.productCode} passes on the authorized rules`);
     }
     expectStatus(await call(CASHIER, 'get', `${L}/products/${products[0].id}/accounting-check`), 403, 'cashier');
     expectStatus(await call(ADMIN, 'post', `${L}/params/role-gl-mapping`, { roleCode: 'INTEREST_INCOME', chartAccountId: 1, effectiveFrom: '2026-11-01' }), 403, 'admin creates GL mapping');
@@ -680,6 +723,8 @@ const apiTests = async ({ port, q, db, runNode }) => {
     const id = created.data.data.id;
     expectStatus(await call(ADMIN, 'post', `${L}/params/accounting-entry-rule/${id}/authorize`), 403, 'self authorize');
     expectStatus(await call(SUPER, 'post', `${L}/params/accounting-entry-rule/${id}/authorize`), 200, 'checker authorizes');
+    const item = (await call(SUPER, 'get', `${L}/checklist`)).data.data.checklistItems.find(i => i.itemKey === 'ENTRY_RULES');
+    assert.strictEqual(item.status, 'UNCONFIRMED', 'ENTRY_RULES reset after an authorized rule change');
     expectStatus(await call(CASHIER, 'get', `${L}/params/accounting-entry-rule`), 403, 'cashier lists rules');
   });
   await test('banner status for any user, pending inbox filtered by grants, enums served by lookups', async () => {
