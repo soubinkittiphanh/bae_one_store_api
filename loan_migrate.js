@@ -29,6 +29,14 @@ const MIGRATIONS = [
     marker: 'ln_param_change',
     dropsData: false,
     dropsSecurity: true
+  },
+  {
+    name: '20261030_loan_phase2b_accounting',
+    up: '20261030_loan_phase2b_accounting.sql',
+    down: '20261030_loan_phase2b_accounting_down.sql',
+    marker: 'ln_lookup_interest_recognition',
+    dropsData: false,
+    dropsEntryRules: true
   }
 ];
 
@@ -88,6 +96,15 @@ const assertSecurityOnlyLoan = async (conn) => {
   }
 };
 
+// The 2B DOWN removes the rule filter columns; never while entry rules exist
+const assertNoEntryRules = async (conn) => {
+  if (!(await tableExists(conn, 'ln_accounting_entry_rule'))) return;
+  const rows = await conn.query('SELECT COUNT(*) AS n FROM ln_accounting_entry_rule');
+  if (Number(rows[0].n) > 0) {
+    throw new Error(`Refusing to roll back Phase 2B: ln_accounting_entry_rule has ${rows[0].n} row(s).`);
+  }
+};
+
 const main = async () => {
   const [command = 'status', ...flags] = process.argv.slice(2);
   const target = assertLocalDb('loan_migrate');
@@ -125,11 +142,16 @@ const main = async () => {
         console.log('loan_migrate down: nothing applied');
         return;
       }
+      // Check every step before running any, so a refusal never leaves a partial rollback
+      const refusals = [];
       for (const m of toRollBack) {
-        if (m.dropsData) await assertNoBusinessData(conn);
-        if (m.dropsSecurity) await assertSecurityOnlyLoan(conn);
-        await runFile(conn, m.down);
+        const checks = [m.dropsData && assertNoBusinessData, m.dropsSecurity && assertSecurityOnlyLoan, m.dropsEntryRules && assertNoEntryRules];
+        for (const check of checks.filter(Boolean)) {
+          try { await check(conn); } catch (err) { refusals.push(err.message); }
+        }
       }
+      if (refusals.length) throw new Error(refusals.join(' '));
+      for (const m of toRollBack) await runFile(conn, m.down);
       console.log(`loan_migrate down: rolled back ${toRollBack.map(m => m.name).join(', ')}`);
       return;
     }

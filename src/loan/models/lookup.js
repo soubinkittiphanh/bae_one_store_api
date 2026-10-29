@@ -73,6 +73,14 @@ module.exports = (sequelize, DataTypes) => {
     ...makerChecker(DataTypes)
   }, { freezeTableName: true, tableName: 'ln_lookup_deferred_fee_presentation', timestamps: true });
 
+  // When interest is recognized (DUE_DATE / DAILY / CASH); created by 20261030_loan_phase2b_accounting.sql
+  const lnLookupInterestRecognition = sequelize.define('lnLookupInterestRecognition', {
+    code: { type: DataTypes.STRING(30), primaryKey: true },
+    name: { type: DataTypes.STRING(100), allowNull: false },
+    description: { type: DataTypes.TEXT, allowNull: true },
+    ...makerChecker(DataTypes)
+  }, { freezeTableName: true, tableName: 'ln_lookup_interest_recognition', timestamps: true });
+
   return {
     lnLookupLoanType,
     lnLookupFrequency,
@@ -83,6 +91,7 @@ module.exports = (sequelize, DataTypes) => {
     lnLookupAccrualMethod,
     lnLookupCollateralType,
     lnLookupLoanPurpose,
-    lnLookupDeferredFeePresentation
+    lnLookupDeferredFeePresentation,
+    lnLookupInterestRecognition
   };
 };

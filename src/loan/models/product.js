@@ -31,6 +31,7 @@ module.exports = (sequelize, DataTypes) => {
     deferredFeePresentation: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'IMMEDIATE' },
     earlySettlementRebateMethod: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'RULE_OF_78' },
     accrualMethodCode: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'DAILY_OUTSTANDING' },
+    interestRecognitionCode: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'DUE_DATE' },
     dayCountCode: { type: DataTypes.STRING(30), allowNull: false, defaultValue: '30_360' },
     defaultFrequencyCode: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'MONTHLY' },
     holidayHandlingCode: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'NEXT_WORKING_DAY' },

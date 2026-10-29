@@ -27,6 +27,7 @@ module.exports = (sequelize, DataTypes) => {
 
   // UNIQUE uk_accounting_entry_rule is built on PERSISTENT generated columns (ukProductId,
   // ukCategoryId) in SQL only; they are not model attributes so Sequelize never writes them.
+  // The filters ('ANY' or one code) select legs by product parameter (Phase 2B).
   const lnAccountingEntryRule = sequelize.define('lnAccountingEntryRule', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     productId: { type: DataTypes.INTEGER, allowNull: true },
@@ -36,6 +37,10 @@ module.exports = (sequelize, DataTypes) => {
     drCr: { type: DataTypes.STRING(10), allowNull: false },
     roleCode: { type: DataTypes.STRING(50), allowNull: false },
     qualifierSource: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'CURRENT' },
+    isActive: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true },
+    feeModeFilter: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'ANY' },
+    presentationFilter: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'ANY' },
+    targetFilter: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'ANY' },
     effectiveFrom: { type: DataTypes.DATEONLY, allowNull: false },
     effectiveTo: { type: DataTypes.DATEONLY, allowNull: true },
     ...makerChecker(DataTypes)
