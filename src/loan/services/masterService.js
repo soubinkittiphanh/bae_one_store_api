@@ -18,7 +18,8 @@ const LOOKUP_MODELS = {
   accrualMethods: 'lnLookupAccrualMethod',
   collateralTypes: 'lnLookupCollateralType',
   loanPurposes: 'lnLookupLoanPurpose',
-  deferredFeePresentations: 'lnLookupDeferredFeePresentation'
+  deferredFeePresentations: 'lnLookupDeferredFeePresentation',
+  interestRecognitions: 'lnLookupInterestRecognition'
 };
 
 const masterService = {

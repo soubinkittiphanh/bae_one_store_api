@@ -16,7 +16,8 @@ const LOOKUPS = {
   'lookup-accrual-method': 'lnLookupAccrualMethod',
   'lookup-collateral-type': 'lnLookupCollateralType',
   'lookup-loan-purpose': 'lnLookupLoanPurpose',
-  'lookup-deferred-fee-presentation': 'lnLookupDeferredFeePresentation'
+  'lookup-deferred-fee-presentation': 'lnLookupDeferredFeePresentation',
+  'lookup-interest-recognition': 'lnLookupInterestRecognition'
 };
 
 // ref: { model, key } -> value must exist; loan refs must not be REJECTED/CLOSED, and must be
@@ -55,6 +56,7 @@ const ENTITIES = {
       deferredFeePresentation: ref('lnLookupDeferredFeePresentation', 'code'),
       earlySettlementRebateMethod: ref('lnLookupRebateMethod', 'code'),
       accrualMethodCode: ref('lnLookupAccrualMethod', 'code'),
+      interestRecognitionCode: ref('lnLookupInterestRecognition', 'code'),
       dayCountCode: ref('lnLookupDayCount', 'code'),
       defaultFrequencyCode: ref('lnLookupFrequency', 'code'),
       holidayHandlingCode: ref('lnLookupHolidayHandling', 'code'),
@@ -143,9 +145,36 @@ const ENTITIES = {
 
   // Accounting setup is view-only in Phase 2A (LN_ACCOUNTING_SETUP grants VIEW only; 2B held)
   'accounting-role': { model: 'lnAccountingRole', functionCode: 'LN_ACCOUNTING_SETUP', fields: { resolverType: enumOf('MAPPING_TABLE', 'SYSTEM_PARAM', 'BANK_ACCOUNT') } },
-  'amount-tag': { model: 'lnAmountTag', functionCode: 'LN_ACCOUNTING_SETUP' },
-  event: { model: 'lnEventMaster', functionCode: 'LN_ACCOUNTING_SETUP' },
-  'accounting-entry-rule': { model: 'lnAccountingEntryRule', functionCode: 'LN_ACCOUNTING_SETUP' },
+  // Phase 2B: events, tags and entry rules are maintained under LN_ENTRY_RULE; roles and GL mappings stay view-only
+  'amount-tag': { model: 'lnAmountTag', functionCode: 'LN_ENTRY_RULE' },
+  event: { model: 'lnEventMaster', functionCode: 'LN_ENTRY_RULE' },
+  'accounting-entry-rule': {
+    model: 'lnAccountingEntryRule',
+    functionCode: 'LN_ENTRY_RULE',
+    fields: {
+      productId: ref('lnProduct'),
+      categoryId: ref('lnProductCategory'),
+      eventCode: ref('lnEventMaster', 'eventCode'),
+      amountTag: ref('lnAmountTag', 'tagCode'),
+      roleCode: ref('lnAccountingRole', 'roleCode'),
+      drCr: enumOf('DR', 'CR'),
+      qualifierSource: enumOf('CURRENT', 'NEW', 'PREVIOUS', 'NONE'),
+      feeModeFilter: enumOf('ANY', 'UPFRONT', 'CAPITALIZED', 'DEDUCTED'),
+      presentationFilter: enumOf('ANY', 'IMMEDIATE', 'LIABILITY', 'CONTRA_ASSET_NET'),
+      targetFilter: enumOf('ANY', 'SALE_INVOICE_SETTLEMENT', 'CASH_BANK', 'CUSTOMER_ACCOUNT')
+    },
+    rules: [
+      (row) => {
+        if (!row.roleCode || !row.qualifierSource) return null;
+        if (row.roleCode === 'LOAN_PORTFOLIO') {
+          const allowed = ['STCH', 'STCH_CURE'].includes(row.eventCode) ? ['NEW', 'PREVIOUS'] : ['CURRENT'];
+          return allowed.includes(row.qualifierSource) ? null : `LOAN_PORTFOLIO needs qualifierSource ${allowed.join(' or ')} for ${row.eventCode}`;
+        }
+        return row.qualifierSource === 'NONE' ? null : 'Only LOAN_PORTFOLIO is status-qualified; use qualifierSource NONE';
+      },
+      dateOrder('effectiveFrom', 'effectiveTo', 'Entry rule')
+    ]
+  },
   'role-gl-mapping': { model: 'lnRoleGlMapping', functionCode: 'LN_ACCOUNTING_SETUP' },
 
   sequence: { model: 'lnNumberingSequence', functionCode: 'LN_SEQUENCE' },

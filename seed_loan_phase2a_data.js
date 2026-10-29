@@ -15,6 +15,8 @@ require('./src/loan/dbGuard').assertLocalDb('seed_loan_phase2a_data');
 const db = require('./src/models');
 const { registerFunctions, grantToGroupCodes, ensureSecurityFunctions } = require('./src/security/grantService');
 const { compareDecimal } = require('./src/loan/decimal');
+// Phase 2B catalog additions must survive a re-run of this seed (its obsolete-code cleanup)
+const phase2bCatalog = require('./src/loan/accounting/catalog');
 
 const { Op } = db.Sequelize;
 const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Vientiane' });
@@ -258,11 +260,11 @@ async function seedPhase2A() {
     }
 
     const statuses = [
-      { statusCode: 'NORMAL', name: 'Normal Performing (ສະຖານະປົກກະຕິ)', regulatoryClassCode: 'CLASS_A', interestTreatment: 'CONTINUE_ACCRUAL', penaltyTreatment: 'ACCRUE' },
-      { statusCode: 'WATCH', name: 'Watch / Special Mention (ຕິດຕາມພິເສດ)', regulatoryClassCode: 'CLASS_B', interestTreatment: 'CONTINUE_ACCRUAL', penaltyTreatment: 'ACCRUE' },
-      { statusCode: 'SUBSTANDARD', name: 'Substandard (ຕ່ຳກວ່າມາດຕະຖານ)', regulatoryClassCode: 'CLASS_C', interestTreatment: 'SUSPEND_ACCRUAL', penaltyTreatment: 'ACCRUE' },
+      { statusCode: 'NORMAL', name: 'Normal Performing (ສະຖານະປົກກະຕິ)', regulatoryClassCode: 'CLASS_A', interestTreatment: 'CONTINUE_ACCRUAL', penaltyTreatment: 'MEMO_ONLY' },
+      { statusCode: 'WATCH', name: 'Watch / Special Mention (ຕິດຕາມພິເສດ)', regulatoryClassCode: 'CLASS_B', interestTreatment: 'CONTINUE_ACCRUAL', penaltyTreatment: 'MEMO_ONLY' },
+      { statusCode: 'SUBSTANDARD', name: 'Substandard (ຕ່ຳກວ່າມາດຕະຖານ)', regulatoryClassCode: 'CLASS_C', interestTreatment: 'SUSPEND_ACCRUAL', penaltyTreatment: 'MEMO_ONLY' },
       { statusCode: 'DOUBTFUL', name: 'Doubtful (ສົງໄສ)', regulatoryClassCode: 'CLASS_D', interestTreatment: 'SUSPEND_ACCRUAL', penaltyTreatment: 'MEMO_ONLY' },
-      { statusCode: 'LOSS', name: 'Loss (ສູນ/ເສຍ)', regulatoryClassCode: 'CLASS_E', interestTreatment: 'STOP_ACCRUAL', penaltyTreatment: 'STOP_ACCRUAL' },
+      { statusCode: 'LOSS', name: 'Loss (ສູນ/ເສຍ)', regulatoryClassCode: 'CLASS_E', interestTreatment: 'STOP_ACCRUAL', penaltyTreatment: 'MEMO_ONLY' },
       { statusCode: 'WRITTEN_OFF', name: 'Written-Off (ຕັດໜີ້ສູນອອກຈາກບັນຊີ)', regulatoryClassCode: 'CLASS_E', interestTreatment: 'STOP_ACCRUAL', penaltyTreatment: 'STOP_ACCRUAL' },
       { statusCode: 'REPOSSESSED', name: 'Vehicle Repossessed (ຍຶດລົດແລ້ວ)', regulatoryClassCode: 'CLASS_E', interestTreatment: 'STOP_ACCRUAL', penaltyTreatment: 'STOP_ACCRUAL' },
       { statusCode: 'CLOSED', name: 'Closed / Paid Off (ປິດສັນຍາແລ້ວ)', regulatoryClassCode: 'CLASS_A', interestTreatment: 'STOP_ACCRUAL', penaltyTreatment: 'STOP_ACCRUAL' }
@@ -428,7 +430,7 @@ async function seedPhase2A() {
       GAIN: 'Gain on disposal', LOSS: 'Loss on disposal'
     };
     const tagRefs = [['lnAccountingEntryRule', 'amountTag']];
-    const obsoleteTags = await db.lnAmountTag.findAll({ where: { tagCode: { [Op.notIn]: Object.keys(tagNames) } } });
+    const obsoleteTags = await db.lnAmountTag.findAll({ where: { tagCode: { [Op.notIn]: [...Object.keys(tagNames), ...Object.keys(phase2bCatalog.TAGS)] } } });
     for (const t of obsoleteTags) await deleteIfUnreferenced(db.lnAmountTag, 'tagCode', t.tagCode, tagRefs, 'amount-tag');
     for (const [tagCode, name] of Object.entries(tagNames)) await upsertCatalog(db.lnAmountTag, { tagCode }, { tagCode, name }, 'amount-tag');
 
@@ -461,7 +463,7 @@ async function seedPhase2A() {
       { eventCode: 'VEH_DISPOSE', name: 'Disposal of Repossessed Vehicle (ການຂາຍຊັບສິນລົດຍຶດ)', description: 'Repossessed vehicle resale' },
       { eventCode: 'REVERSAL', name: 'Transaction Reversal (ການຍົກເລີກທຸລະກຳ)', description: 'Transaction void / reversal' }
     ];
-    const obsoleteEvents = await db.lnEventMaster.findAll({ where: { eventCode: { [Op.notIn]: events.map(e => e.eventCode) } } });
+    const obsoleteEvents = await db.lnEventMaster.findAll({ where: { eventCode: { [Op.notIn]: [...events, ...phase2bCatalog.EVENTS].map(e => e.eventCode) } } });
     for (const e of obsoleteEvents) await deleteIfUnreferenced(db.lnEventMaster, 'eventCode', e.eventCode, eventRefs, 'event');
     for (const ev of events) await upsertCatalog(db.lnEventMaster, { eventCode: ev.eventCode }, ev, 'event');
 
