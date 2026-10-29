@@ -19,7 +19,8 @@ const LOOKUP_MODELS = {
   collateralTypes: 'lnLookupCollateralType',
   loanPurposes: 'lnLookupLoanPurpose',
   deferredFeePresentations: 'lnLookupDeferredFeePresentation',
-  interestRecognitions: 'lnLookupInterestRecognition'
+  interestRecognitions: 'lnLookupInterestRecognition',
+  repaymentMethods: 'lnLookupRepaymentMethod'
 };
 
 const masterService = {

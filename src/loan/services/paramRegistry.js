@@ -17,7 +17,8 @@ const LOOKUPS = {
   'lookup-collateral-type': 'lnLookupCollateralType',
   'lookup-loan-purpose': 'lnLookupLoanPurpose',
   'lookup-deferred-fee-presentation': 'lnLookupDeferredFeePresentation',
-  'lookup-interest-recognition': 'lnLookupInterestRecognition'
+  'lookup-interest-recognition': 'lnLookupInterestRecognition',
+  'lookup-repayment-method': 'lnLookupRepaymentMethod'
 };
 
 // ref: { model, key } -> value must exist; loan refs must not be REJECTED/CLOSED, and must be
@@ -57,6 +58,7 @@ const ENTITIES = {
       earlySettlementRebateMethod: ref('lnLookupRebateMethod', 'code'),
       accrualMethodCode: ref('lnLookupAccrualMethod', 'code'),
       interestRecognitionCode: ref('lnLookupInterestRecognition', 'code'),
+      repaymentMethodCode: ref('lnLookupRepaymentMethod', 'code'),
       dayCountCode: ref('lnLookupDayCount', 'code'),
       defaultFrequencyCode: ref('lnLookupFrequency', 'code'),
       holidayHandlingCode: ref('lnLookupHolidayHandling', 'code'),
@@ -68,6 +70,18 @@ const ENTITIES = {
       minMax('minAmount', 'maxAmount', 'Amount'),
       minMax('minTenorMonths', 'maxTenorMonths', 'Tenor'),
       minMax('minInterestRate', 'maxInterestRate', 'Interest rate'),
+      minMax('firstPeriodMinDays', 'firstPeriodMaxDays', 'First period days'),
+      // Phase 3 engine combinations (decision D6)
+      (row) => {
+        if (!row.repaymentMethodCode || !row.accrualMethodCode) return null;
+        const flat = row.repaymentMethodCode === 'FLAT';
+        const flatAccrual = ['MONTHLY_FLAT', 'UPFRONT_SIMPLE'].includes(row.accrualMethodCode);
+        if (flat !== flatAccrual) return `Repayment method ${row.repaymentMethodCode} cannot be combined with accrual method ${row.accrualMethodCode}`;
+        return null;
+      },
+      (row) => (row.repaymentMethodCode === 'FLAT' && row.earlySettlementRebateMethod === 'ACTUARIAL_PRO_RATA'
+        ? 'ACTUARIAL_PRO_RATA rebate is not supported for FLAT products (use RULE_OF_78 or NONE)'
+        : null),
       (row) => (row.disbursementTargetCode === 'SALE_INVOICE_SETTLEMENT' && row.feeFinancingMode === 'DEDUCTED'
         ? 'DEDUCTED fee mode is not allowed with SALE_INVOICE_SETTLEMENT (it would leave an unpaid invoice balance)'
         : null)
@@ -104,7 +118,21 @@ const ENTITIES = {
     fields: { productComponentId: ref('lnProductComponent'), tierBasis: enumOf('AMOUNT', 'TENOR') },
     rules: [minMax('fromValue', 'toValue', 'Tier')]
   },
-  'holiday-calendar': { model: 'lnHolidayCalendar', functionCode: 'LN_HOLIDAY', fields: { branchId: ref('location') } },
+  'holiday-calendar': {
+    model: 'lnHolidayCalendar', functionCode: 'LN_HOLIDAY',
+    fields: { branchId: ref('location') },
+    rules: [(row) => (row.weekendDays !== undefined && !/^((MON|TUE|WED|THU|FRI|SAT|SUN)(,(MON|TUE|WED|THU|FRI|SAT|SUN))*)?$/.test(row.weekendDays)
+      ? 'weekendDays must be a comma list of MON..SUN' : null)]
+  },
+  // Loan-owned rounding rule per currency (docs/loan/rounding-policy.md)
+  'currency-rule': {
+    model: 'lnCurrencyRule', functionCode: 'LN_CURRENCY_RULE',
+    fields: { currencyId: ref('currency'), roundingMode: enumOf('HALF_UP') },
+    rules: [
+      (row) => (row.decimalPlaces !== undefined && (Number(row.decimalPlaces) < 0 || Number(row.decimalPlaces) > 2) ? 'decimalPlaces must be 0, 1 or 2 (general_ledger stores 2 decimals)' : null),
+      dateOrder('effectiveFrom', 'effectiveTo', 'Currency rule')
+    ]
+  },
   'holiday-date': { model: 'lnHolidayDate', functionCode: 'LN_HOLIDAY', fields: { calendarId: ref('lnHolidayCalendar') } },
   fee: {
     model: 'lnFeeMaster', functionCode: 'LN_FEE',
