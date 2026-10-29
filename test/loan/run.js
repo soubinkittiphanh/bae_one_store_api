@@ -96,10 +96,11 @@ const main = async () => {
   await test('migrate up on a clean copy', async () => {
     runNode('loan_migrate.js', ['up']);
     const n = Number((await q("SELECT COUNT(*) n FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name LIKE 'ln\\_%'"))[0].n);
-    assert.strictEqual(n, 69, `expected 69 ln_* tables, found ${n}`);
+    assert.strictEqual(n, 71, `expected 71 ln_* tables, found ${n}`);
   });
-  await test('2B and corrections DOWN, then UP, restore the schema exactly', async () => {
+  await test('Phase 3, 2B and corrections DOWN, then UP, restore the schema exactly', async () => {
     const before = await snapshot();
+    assert.match(runNode('loan_migrate.js', ['down', '--yes']), /20261031_loan_phase3/);
     assert.match(runNode('loan_migrate.js', ['down', '--yes']), /20261030_loan_phase2b_accounting/);
     assert.match(runNode('loan_migrate.js', ['down', '--yes']), /20261029_loan_phase2a_corrections/);
     runNode('loan_migrate.js', ['up']);
@@ -176,6 +177,26 @@ const main = async () => {
     assert.deepStrictEqual(fn.map(r => r.a), ['VIEW', 'VIEW,CREATE,EDIT,DELETE,AUTHORIZE']);
   });
 
+  console.log('\n[phase 3 seed]');
+  await test('Phase 3 seed: runs twice with identical counts; currency and cure rules PENDING; repayment methods set; functions granted', async () => {
+    runNode('seed_loan_phase3.js');
+    const counts = await tableCounts();
+    runNode('seed_loan_phase3.js');
+    runNode('seed_loan_phase2a_data.js');
+    runNode('seed_loan_phase2b_accounting.js');
+    assert.deepStrictEqual(await tableCounts(), counts);
+    const rules = await q('SELECT c.code, r.decimalPlaces d, r.authStatus s FROM ln_currency_rule r JOIN currency c ON c.id = r.currencyId ORDER BY c.code');
+    assert.ok(rules.length >= 1 && rules.every(r => r.s === 'PENDING'), 'currency rules PENDING');
+    const lak = rules.find(r => r.code === 'LAK');
+    assert.ok(!lak || Number(lak.d) === 0, 'LAK has 0 decimals');
+    const cures = await q('SELECT fromStatus f, consecutiveOnTimeInstallmentsRequired n, authStatus s FROM ln_status_cure_rule ORDER BY id');
+    assert.deepStrictEqual(cures.map(c => `${c.f}:${c.n}:${c.s}`), ['WATCH:0:PENDING', 'SUBSTANDARD:3:PENDING', 'DOUBTFUL:3:PENDING', 'LOSS:3:PENDING']);
+    const methods = await q("SELECT productCode p, repaymentMethodCode m FROM ln_product WHERE version = 1 ORDER BY productCode");
+    assert.deepStrictEqual(methods.map(m => `${m.p}:${m.m}`), ['CAR-LOAN-BALLOON:EQUAL_INSTALLMENT', 'CAR-LOAN-DB:EQUAL_INSTALLMENT', 'CAR-LOAN-FLAT:FLAT']);
+    const fns = await q("SELECT functionCode FROM sec_function WHERE functionCode IN ('LN_APPLICATION','LN_ACCOUNT','LN_CURRENCY_RULE') ORDER BY 1");
+    assert.strictEqual(fns.length, 3);
+  });
+
   console.log('\n[schema parity]');
   const db = require('../../src/models');
   db.sequelize.options.logging = false;
@@ -186,6 +207,9 @@ const main = async () => {
 
   console.log('\n[accounting validators]');
   await accountingTests({ db });
+
+  console.log('\n[phase 3 engines (pure)]');
+  await require('./engineTests').run(test);
 
   console.log('\n[api] starting API on port', port);
   const app = await startApi(port, childEnv);
@@ -726,6 +750,100 @@ const apiTests = async ({ port, q, db, runNode }) => {
     const item = (await call(SUPER, 'get', `${L}/checklist`)).data.data.checklistItems.find(i => i.itemKey === 'ENTRY_RULES');
     assert.strictEqual(item.status, 'UNCONFIRMED', 'ENTRY_RULES reset after an authorized rule change');
     expectStatus(await call(CASHIER, 'get', `${L}/params/accounting-entry-rule`), 403, 'cashier lists rules');
+  });
+  console.log('\n[phase 3 api]');
+  const authorizeAll = async (entity) => {
+    const rows = (await call(SUPER, 'get', `${L}/params/${entity}?authStatus=PENDING&limit=500`)).data.data.items;
+    if (rows.length) expectStatus(await call(SUPER, 'post', `${L}/params/${entity}/bulk-authorize`, { keys: rows.map(r => r.id) }), 200, `authorize ${entity}`);
+  };
+  const activeDb = async () => (await call(ADMIN, 'get', `${L}/products?search=CAR-LOAN-DB`)).data.data.find(p => p.authStatus === 'AUTHORIZED' && p.status === 'ACTIVE');
+  const D3 = require('../../src/loan/engine/dates');
+  const businessDate = (await q("SELECT DATE_FORMAT(currentBusinessDate, '%Y-%m-%d') d FROM ln_system_date ORDER BY id LIMIT 1"))[0].d;
+  const SIM = { principal: '240000000', interestRate: '0.18', tenorMonths: 12, valueDate: businessDate };
+  await test('simulate: schedule, fees and a balanced journal preview; preview flag until the currency rule is authorized; CASHIER refused', async () => {
+    const product = await activeDb();
+    const sim = await call(ADMIN, 'post', `${L}/products/${product.id}/simulate`, SIM);
+    expectStatus(sim, 200, 'simulate');
+    const d = sim.data.data;
+    assert.strictEqual(d.preview, true);
+    assert.ok(d.warnings.some(w => /Rounding rule/.test(w)));
+    assert.strictEqual(d.schedule.rows[0].total, '22003198', 'equal installment from the engine (fixture value)');
+    assert.strictEqual(d.schedule.totals.principal, '240000000');
+    assert.strictEqual(d.fees.total, '2700000', '1% processing + 300,000 documentation (seeded components)');
+    assert.deepStrictEqual(d.events.map(e => e.event), ['FEE_COLLECT', 'DISB']);
+    assert.strictEqual(d.journal.balanced, true, d.journal.errors.join('; '));
+    expectStatus(await call(CASHIER, 'post', `${L}/products/${product.id}/simulate`, SIM), 403, 'cashier');
+    expectStatus(await call(ADMIN, 'post', `${L}/products/${product.id}/simulate`, { ...SIM, interestRate: '1.5' }), 400, 'bad rate');
+    await authorizeAll('currency-rule');
+    const after = await call(ADMIN, 'post', `${L}/products/${product.id}/simulate`, SIM);
+    assert.strictEqual(after.data.data.preview, false);
+  });
+  let bookedAccount;
+  await test('application: limits checked, maker-checker approval audited, booking freezes the snapshot and stores the engine schedule; no GL rows', async () => {
+    const product = await activeDb();
+    const client = (await q('SELECT id FROM client ORDER BY id LIMIT 1'))[0];
+    assert.ok(client, 'test DB has a POS client');
+    const currencyId = (await q('SELECT currencyId FROM ln_product_currency WHERE productId = ? LIMIT 1', [product.id]))[0].currencyId;
+    const body = { customerId: client.id, productId: product.id, currencyId, vehiclePrice: '300000000', downPaymentAmount: '60000000', requestedAmount: '240000000', tenorMonths: 12, interestRate: '0.18', valueDate: businessDate };
+    expectStatus(await call(ADMIN, 'post', `${L}/applications`, { ...body, requestedAmount: '1000' }), 400, 'below product minimum');
+    expectStatus(await call(ADMIN, 'post', `${L}/applications`, { ...body, downPaymentAmount: '10000000' }), 400, 'down payment too low');
+    expectStatus(await call(ADMIN, 'post', `${L}/applications`, { ...body, foo: 1 }), 400, 'unknown field');
+    expectStatus(await call(CASHIER, 'post', `${L}/applications`, body), 403, 'cashier');
+    const created = await call(ADMIN, 'post', `${L}/applications`, body);
+    expectStatus(created, 201, 'create');
+    const app = created.data.data;
+    assert.strictEqual(app.status, 'DRAFT');
+    expectStatus(await call(SUPER, 'post', `${L}/applications/${app.id}/book`), 409, 'book before approval');
+    expectStatus(await call(ADMIN, 'post', `${L}/applications/${app.id}/submit`), 200, 'submit');
+    expectStatus(await call(ADMIN, 'post', `${L}/applications/${app.id}/approve`), 403, 'maker approves own');
+    expectStatus(await call(SUPER, 'post', `${L}/applications/${app.id}/approve`), 200, 'checker approves');
+    const audits = await q("SELECT actionType FROM ln_audit_log WHERE entityName = 'application' AND entityId = ? ORDER BY id", [app.id]);
+    assert.deepStrictEqual(audits.map(a => a.actionType), ['CREATE', 'SUBMIT', 'AUTH']);
+
+    const gl = Number((await q('SELECT COUNT(*) n FROM general_ledger'))[0].n);
+    const booked = await call(SUPER, 'post', `${L}/applications/${app.id}/book`);
+    expectStatus(booked, 201, 'book');
+    bookedAccount = booked.data.data.account;
+    assert.match(bookedAccount.accountNo, /^LN-\d{6}-\d+$/);
+    assert.deepStrictEqual([bookedAccount.status, bookedAccount.accountStage], ['NORMAL', 'BOOKED']);
+    expectStatus(await call(SUPER, 'post', `${L}/applications/${app.id}/book`), 409, 'book twice');
+    const rows = await q('SELECT s.installmentNo n, c.componentId k, c.amountDue a FROM ln_schedule s JOIN ln_schedule_component c ON c.scheduleId = s.id WHERE s.loanAccountId = ? ORDER BY s.installmentNo, c.componentId', [bookedAccount.id]);
+    assert.strictEqual(rows.length, 24);
+    assert.deepStrictEqual(rows.slice(0, 2).map(r => String(Math.trunc(Number(r.a)))), ['18403198', '3600000']);
+    assert.strictEqual(Number((await q('SELECT COUNT(*) n FROM general_ledger'))[0].n), gl, 'no GL rows');
+    assert.strictEqual(Number((await q('SELECT COUNT(*) n FROM ln_journal_posting'))[0].n), 0, 'no loan journal postings');
+    assert.strictEqual((await q('SELECT status FROM ln_application WHERE id = ?', [app.id]))[0].status, 'BOOKED');
+
+    const snapBefore = (await q('SELECT snapshotJson j FROM ln_account_param_snapshot WHERE loanAccountId = ?', [bookedAccount.id]))[0].j;
+    const snap = JSON.parse(snapBefore);
+    assert.strictEqual(snap.product.version, product.version);
+    assert.strictEqual(snap.schedule.rows.length, 12);
+    assert.ok(!('movementRules' in snap), 'DPD rules stay live');
+    expectStatus(await call(ADMIN, 'put', `${L}/products/${product.id}`, { maxInterestRate: '0.300000' }), 200, 'edit product after booking (new version)');
+    assert.strictEqual((await q('SELECT snapshotJson j FROM ln_account_param_snapshot WHERE loanAccountId = ?', [bookedAccount.id]))[0].j, snapBefore, 'snapshot unchanged');
+  });
+  await test('account previews: due date ACCR, payment LIQD, prepayment PREPAY, DPD status + provision; all journals balanced; nothing persisted', async () => {
+    for (const entity of ['status', 'status-movement-rule', 'status-cure-rule']) await authorizeAll(entity);
+    const acc = (await call(ADMIN, 'get', `${L}/accounts/${bookedAccount.id}`)).data.data;
+    const first = acc.schedule.rows[0];
+    const P = (kind, body) => call(ADMIN, 'post', `${L}/accounts/${bookedAccount.id}/preview/${kind}`, body);
+    const due = (await P('due-date', { date: first.dueDate })).data.data;
+    assert.deepStrictEqual(due.events, [{ event: 'ACCR', tags: { INT_ACCR: '3600000' } }]);
+    assert.strictEqual(due.journal.balanced, true, due.journal.errors.join('; '));
+    const pay = (await P('payment', { date: first.dueDate, amount: first.total })).data.data;
+    assert.deepStrictEqual(pay.events[0].tags, { TOTAL_PAID: '22003198', INT_PAID: '3600000', PRIN_PAID: '18403198' });
+    assert.strictEqual(pay.journal.balanced, true, pay.journal.errors.join('; '));
+    const pre = (await P('prepayment', { date: D3.addDays(first.dueDate, 15) })).data.data;
+    assert.strictEqual(pre.events[0].event, 'PREPAY');
+    assert.strictEqual(pre.journal.balanced, true, pre.journal.errors.join('; '));
+    const late = (await P('status', { date: D3.addDays(first.dueDate, 61) })).data.data;
+    assert.strictEqual(late.details.status.dpd, 61);
+    assert.strictEqual(late.details.status.newStatus, 'SUBSTANDARD');
+    assert.deepStrictEqual(late.events.map(e => e.event), ['STCH', 'PROVISION']);
+    assert.strictEqual(late.journal.balanced, true, late.journal.errors.join('; '));
+    expectStatus(await call(CASHIER, 'post', `${L}/accounts/${bookedAccount.id}/preview/status`, {}), 403, 'cashier');
+    const stillNormal = await q('SELECT status, currentDpd FROM ln_account WHERE id = ?', [bookedAccount.id]);
+    assert.deepStrictEqual([stillNormal[0].status, Number(stillNormal[0].currentDpd)], ['NORMAL', 0], 'previews persist nothing');
   });
   await test('banner status for any user, pending inbox filtered by grants, enums served by lookups', async () => {
     const st = await call(CASHIER, 'get', `${L}/status`);
