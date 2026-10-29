@@ -4,6 +4,7 @@
  */
 const db = require('../models');
 const logger = require('../api/logger');
+const { applyGrant } = require('./grantService');
 
 const fail = (res, status, message) => res.status(status).json({ success: false, status: false, message });
 const ok = (res, data, message) => res.status(200).json({ success: true, status: true, message, data });
@@ -68,11 +69,8 @@ const securityController = {
       }
 
       const where = { userGroupId: Number(userGroupId), functionCode, actionCode };
-      if (granted) {
-        await db.secGroupGrant.findOrCreate({ where, defaults: { ...where, grantedBy: req.user.id } });
-      } else {
-        await db.secGroupGrant.destroy({ where });
-      }
+      const changed = await applyGrant(db, { group, functionCode, actionCode, granted, userId: req.user.id, source: 'API', ipAddress: req.ip });
+      if (!changed) return ok(res, where, 'No change');
       logger.info(`[security] user ${req.user.id} ${granted ? 'granted' : 'revoked'} ${functionCode}.${actionCode} for group ${group.code}`);
       return ok(res, where, granted ? 'Granted' : 'Revoked');
     } catch (err) {

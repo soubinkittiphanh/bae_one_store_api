@@ -79,6 +79,13 @@ const assertSecurityOnlyLoan = async (conn) => {
   if (Number(rows[0].n) > 0) {
     throw new Error(`Refusing to drop sec_* tables: ${rows[0].n} function(s) belong to other modules.`);
   }
+  // Grant changes made by people are audit history; seed rows can be rebuilt by re-seeding.
+  if (await tableExists(conn, 'sec_audit_log')) {
+    const audit = await conn.query("SELECT COUNT(*) AS n FROM sec_audit_log WHERE source <> 'SEED'");
+    if (Number(audit[0].n) > 0) {
+      throw new Error(`Refusing to drop sec_audit_log: it holds ${audit[0].n} grant change(s) made by users.`);
+    }
+  }
 };
 
 const main = async () => {

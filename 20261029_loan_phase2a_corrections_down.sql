@@ -5,6 +5,9 @@
 -- share a taxCode; resolve those rows first.
 -- ==============================================================================
 
+-- 13. Grant audit trail
+DROP TABLE IF EXISTS `sec_audit_log`;
+
 -- 12. Generic RBAC tables (loan_migrate.js refuses this step while non-LN functions exist)
 DROP TABLE IF EXISTS `sec_group_grant`;
 DROP TABLE IF EXISTS `sec_function`;

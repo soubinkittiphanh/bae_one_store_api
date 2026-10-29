@@ -147,7 +147,7 @@ const main = async () => {
   console.log('\n[api] starting API on port', port);
   const app = await startApi(port, childEnv);
   try {
-    await apiTests({ port, q, db });
+    await apiTests({ port, q, db, runNode });
   } finally {
     app.kill('SIGTERM');
   }
@@ -220,7 +220,7 @@ const startApi = (port, env) => new Promise((resolve, reject) => {
 
 // ----------------------------------------------------------------------------- API tests
 
-const apiTests = async ({ port, q, db }) => {
+const apiTests = async ({ port, q, db, runNode }) => {
   const axios = require('axios');
   const jwt = require('jsonwebtoken');
   const secret = require('../../src/config').actksecret;
@@ -429,6 +429,48 @@ const apiTests = async ({ port, q, db }) => {
     expectStatus(await call(CASHIER, 'get', `${L}/products`), 403, 'cashier view after revoke');
     expectStatus(await call(SUPER, 'put', '/api/security/grants', { userGroupId: superGroup, functionCode: 'SEC_GRANT', actionCode: 'EDIT', granted: false }), 409, 'self lockout');
     expectStatus(await call(SUPER, 'put', '/api/security/grants', { userGroupId: cashierGroup, functionCode: 'LN_CHECKLIST', actionCode: 'DELETE', granted: true }), 400, 'non-applicable action');
+  });
+  await test('every sec_group_grant change is audited (who, group, function, action, before/after); no-ops and refusals are not', async () => {
+    const cashierGroup = (await q("SELECT id FROM userGroup WHERE code = 'CASHIER'"))[0].id;
+    const superGroup = (await q("SELECT id FROM userGroup WHERE code = 'SUPER_ADMIN'"))[0].id;
+    const seedRows = Number((await q("SELECT COUNT(*) n FROM sec_audit_log WHERE source = 'SEED' AND userId IS NULL AND actionType = 'GRANT'"))[0].n);
+    const seedGrants = Number((await q("SELECT COUNT(*) n FROM sec_group_grant WHERE grantedBy IS NULL"))[0].n);
+    assert.ok(seedRows > 0 && seedRows === seedGrants, `seed grants audited once each (audit ${seedRows}, grants ${seedGrants}) even after seeding twice`);
+
+    const lastId = Number((await q('SELECT COALESCE(MAX(id), 0) m FROM sec_audit_log'))[0].m);
+    const body = granted => ({ userGroupId: cashierGroup, functionCode: 'LN_HOLIDAY', actionCode: 'VIEW', granted });
+    expectStatus(await call(SUPER, 'put', '/api/security/grants', body(true)), 200, 'grant');
+    const again = await call(SUPER, 'put', '/api/security/grants', body(true));
+    expectStatus(again, 200, 'repeat grant');
+    assert.strictEqual(again.data.message, 'No change');
+    expectStatus(await call(SUPER, 'put', '/api/security/grants', body(false)), 200, 'revoke');
+    expectStatus(await call(SUPER, 'put', '/api/security/grants', { userGroupId: superGroup, functionCode: 'SEC_GRANT', actionCode: 'EDIT', granted: false }), 409, 'self lockout');
+    expectStatus(await call(ADMIN, 'put', '/api/security/grants', body(true)), 403, 'admin refused');
+
+    const rows = await q('SELECT * FROM sec_audit_log WHERE id > ? ORDER BY id', [lastId]);
+    assert.strictEqual(rows.length, 2, 'only the real grant and revoke are logged');
+    const [g, r] = rows;
+    for (const row of rows) {
+      assert.strictEqual(Number(row.userId), SUPER);
+      assert.strictEqual(Number(row.userGroupId), cashierGroup);
+      assert.strictEqual(row.groupCode, 'CASHIER');
+      assert.strictEqual(row.functionCode, 'LN_HOLIDAY');
+      assert.strictEqual(row.actionCode, 'VIEW');
+      assert.strictEqual(row.source, 'API');
+      assert.ok(row.ipAddress, 'ip recorded');
+    }
+    assert.strictEqual(g.actionType, 'GRANT');
+    assert.deepStrictEqual(JSON.parse(g.beforeValue), { granted: false });
+    assert.deepStrictEqual(JSON.parse(g.afterValue), { granted: true });
+    assert.strictEqual(r.actionType, 'REVOKE');
+    const before = JSON.parse(r.beforeValue);
+    assert.strictEqual(before.granted, true);
+    assert.strictEqual(Number(before.grantedBy), SUPER);
+    assert.deepStrictEqual(JSON.parse(r.afterValue), { granted: false });
+    assert.strictEqual(Number((await q('SELECT COUNT(*) n FROM sec_group_grant WHERE userGroupId = ? AND functionCode = ?', [cashierGroup, 'LN_HOLIDAY']))[0].n), 0);
+  });
+  await test('migrate down refuses to drop user-made grant audit history', async () => {
+    assert.throws(() => runNode('loan_migrate.js', ['down', '--yes']), /sec_audit_log/);
   });
   await test('banner status for any user, pending inbox filtered by grants, enums served by lookups', async () => {
     const st = await call(CASHIER, 'get', `${L}/status`);

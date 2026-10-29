@@ -382,3 +382,26 @@ CREATE TABLE IF NOT EXISTS `sec_group_grant` (
   UNIQUE KEY `uk_sec_group_grant` (`userGroupId`, `functionCode`, `actionCode`),
   KEY `idx_sec_grant_function` (`functionCode`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ------------------------------------------------------------------------------
+-- 13. Audit trail for every change to sec_group_grant (API and seeds).
+--     Module-neutral, so it is not an ln_ table.
+-- ------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `sec_audit_log` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `entityName` VARCHAR(50) NOT NULL DEFAULT 'sec_group_grant',
+  `actionType` VARCHAR(20) NOT NULL COMMENT 'GRANT | REVOKE',
+  `userId` INT(11) NULL COMMENT 'NULL when written by a seed',
+  `userGroupId` INT(11) NOT NULL,
+  `groupCode` VARCHAR(50) NULL,
+  `functionCode` VARCHAR(50) NOT NULL,
+  `actionCode` VARCHAR(20) NOT NULL,
+  `beforeValue` TEXT NULL COMMENT 'JSON',
+  `afterValue` TEXT NULL COMMENT 'JSON',
+  `source` VARCHAR(20) NOT NULL DEFAULT 'API' COMMENT 'API | SEED',
+  `ipAddress` VARCHAR(45) NULL,
+  `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_sec_audit_group` (`userGroupId`, `functionCode`),
+  KEY `idx_sec_audit_created` (`createdAt`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

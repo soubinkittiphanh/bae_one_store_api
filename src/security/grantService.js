@@ -17,6 +17,31 @@ const registerFunctions = async (db, moduleCode, defs) => {
   }
 };
 
+// Every change to sec_group_grant goes through here so it is written together with its audit row.
+// Returns false when the grant was already in the requested state (nothing changed, nothing logged).
+const applyGrant = async (db, { group, functionCode, actionCode, granted, userId = null, source = 'API', ipAddress = null }) => {
+  const where = { userGroupId: group.id, functionCode, actionCode };
+  return db.sequelize.transaction(async (transaction) => {
+    const existing = await db.secGroupGrant.findOne({ where, transaction, lock: transaction.LOCK.UPDATE });
+    if (Boolean(existing) === granted) return false;
+    if (granted) await db.secGroupGrant.create({ ...where, grantedBy: userId }, { transaction });
+    else await existing.destroy({ transaction });
+    await db.secAuditLog.create({
+      actionType: granted ? 'GRANT' : 'REVOKE',
+      userId,
+      userGroupId: group.id,
+      groupCode: group.code,
+      functionCode,
+      actionCode,
+      beforeValue: JSON.stringify(existing ? { granted: true, grantedBy: existing.grantedBy, grantedAt: existing.createdAt } : { granted: false }),
+      afterValue: JSON.stringify({ granted }),
+      source,
+      ipAddress
+    }, { transaction });
+    return true;
+  });
+};
+
 const grantToGroupCodes = async (db, groupCodes, functionCodes) => {
   const summary = [];
   for (const groupCode of groupCodes) {
@@ -30,11 +55,7 @@ const grantToGroupCodes = async (db, groupCodes, functionCodes) => {
       const fn = await db.secFunction.findByPk(functionCode);
       if (!fn) continue;
       for (const actionCode of fn.applicableActions.split(',')) {
-        const [, created] = await db.secGroupGrant.findOrCreate({
-          where: { userGroupId: group.id, functionCode, actionCode },
-          defaults: { userGroupId: group.id, functionCode, actionCode }
-        });
-        if (created) granted++;
+        if (await applyGrant(db, { group, functionCode, actionCode, granted: true, source: 'SEED' })) granted++;
       }
     }
     summary.push(`${groupCode}: +${granted}`);
@@ -50,4 +71,4 @@ const ensureSecurityFunctions = async (db) => {
   return grantToGroupCodes(db, ['SUPER_ADMIN'], ['SEC_GRANT']);
 };
 
-module.exports = { registerFunctions, grantToGroupCodes, ensureSecurityFunctions };
+module.exports = { registerFunctions, applyGrant, grantToGroupCodes, ensureSecurityFunctions };
