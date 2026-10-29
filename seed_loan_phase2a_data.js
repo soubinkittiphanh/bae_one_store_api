@@ -6,6 +6,7 @@ process.env.NO_SYNC = 'true';
 require('./src/loan/dbGuard').assertLocalDb('seed_loan_phase2a_data');
 const db = require('./src/models');
 const logger = require('./src/api/logger');
+const { registerFunctions, grantToGroupCodes } = require('./src/security/grantService');
 
 async function seedPhase2A() {
   console.log('--- Starting Phase 2A Idempotent Master Seeding ---');
@@ -653,6 +654,47 @@ async function seedPhase2A() {
         defaults: bj
       });
     }
+
+    // 9. Security: register loan functions (sec_function) and grant them to admin groups by code
+    console.log('Registering loan security functions and admin grants...');
+    const PARAM_ACTIONS = ['VIEW', 'CREATE', 'EDIT', 'DELETE', 'AUTHORIZE'];
+    const loanFunctions = [
+      { functionCode: 'LN_PRODUCT', name: 'Loan products', llname: 'ຜະລິດຕະພັນສິນເຊື່ອ', actions: PARAM_ACTIONS },
+      { functionCode: 'LN_PRODUCT_CATEGORY', name: 'Loan product categories', llname: 'ໝວດຜະລິດຕະພັນສິນເຊື່ອ', actions: PARAM_ACTIONS },
+      { functionCode: 'LN_COMPONENT', name: 'Loan components', llname: 'ອົງປະກອບສິນເຊື່ອ', actions: PARAM_ACTIONS },
+      { functionCode: 'LN_UDE', name: 'User defined elements', llname: 'ຕົວແປທີ່ກຳນົດເອງ', actions: PARAM_ACTIONS },
+      { functionCode: 'LN_LOOKUP', name: 'Loan lookups', llname: 'ຂໍ້ມູນອ້າງອີງສິນເຊື່ອ', actions: PARAM_ACTIONS },
+      { functionCode: 'LN_RATE_INDEX', name: 'Rate indexes', llname: 'ອັດຕາອ້າງອີງ', actions: PARAM_ACTIONS },
+      { functionCode: 'LN_HOLIDAY', name: 'Holiday calendars', llname: 'ປະຕິທິນວັນພັກ', actions: PARAM_ACTIONS },
+      { functionCode: 'LN_FEE', name: 'Fee master', llname: 'ຄ່າທຳນຽມ', actions: PARAM_ACTIONS },
+      { functionCode: 'LN_TAX_MASTER', name: 'Tax master', llname: 'ອາກອນ', actions: PARAM_ACTIONS },
+      { functionCode: 'LN_PROVISION', name: 'Provisioning policy', llname: 'ນະໂຍບາຍສຳຮອງໜີ້', actions: PARAM_ACTIONS },
+      { functionCode: 'LN_STATUS_RULE', name: 'Status and DPD rules', llname: 'ກົດການຈັດຊັ້ນໜີ້', actions: PARAM_ACTIONS },
+      { functionCode: 'LN_APPROVAL_MATRIX', name: 'Approval matrix', llname: 'ຕາຕະລາງອະນຸມັດ', actions: PARAM_ACTIONS },
+      { functionCode: 'LN_DOC_CHECKLIST', name: 'Document checklist', llname: 'ລາຍການເອກະສານ', actions: PARAM_ACTIONS },
+      { functionCode: 'LN_SEQUENCE', name: 'Numbering sequences', llname: 'ລຳດັບເລກທີ', actions: PARAM_ACTIONS },
+      { functionCode: 'LN_BATCH_JOB', name: 'Batch jobs', llname: 'ວຽກປະມວນຜົນ', actions: PARAM_ACTIONS },
+      { functionCode: 'LN_TAX_PROFILE', name: 'Tax profile', llname: 'ໂປຣໄຟລ໌ອາກອນ', actions: ['VIEW', 'EDIT', 'AUTHORIZE'] },
+      { functionCode: 'LN_CHECKLIST', name: 'Go-live checklist', llname: 'ລາຍການກວດກ່ອນເປີດໃຊ້', actions: ['VIEW', 'AUTHORIZE'] },
+      // Phase 2B held: accounting setup is inspection only
+      { functionCode: 'LN_ACCOUNTING_SETUP', name: 'Accounting roles, events and mappings', llname: 'ການຕັ້ງຄ່າບັນຊີ', actions: ['VIEW'] },
+      { functionCode: 'LN_VAT_REPORT', name: 'Loan VAT report', llname: 'ລາຍງານອາກອນ', actions: ['VIEW'] },
+      { functionCode: 'LN_AUDIT_LOG', name: 'Loan audit trail', llname: 'ປະຫວັດການແກ້ໄຂ', actions: ['VIEW'] }
+    ];
+    await registerFunctions(db, 'LN', loanFunctions);
+    const grantSummary = await grantToGroupCodes(db, ['SUPER_ADMIN', 'ADMIN'], loanFunctions.map(f => f.functionCode));
+    console.log(`Loan grants: ${grantSummary.join(', ') || 'none'}`);
+
+    // Maker-checker relaxation switch (off by default; never overwritten once it exists)
+    await db.spf.findOrCreate({
+      where: { code: 'LOAN_ALLOW_SELF_AUTHORIZE' },
+      defaults: {
+        code: 'LOAN_ALLOW_SELF_AUTHORIZE',
+        value: 'false',
+        remark: 'Loan module: allow a maker to authorize their own change (true/false). Every self-authorization is audited.',
+        isActive: true
+      }
+    });
 
     console.log('--- Phase 2A Seeding Completed Successfully! ---');
     console.log('NOTE: ln_accounting_entry_rule and ln_role_gl_mapping were intentionally NOT seeded (Phase 2B hold preserved).');

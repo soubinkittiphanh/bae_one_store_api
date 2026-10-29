@@ -332,3 +332,53 @@ ALTER TABLE `ln_audit_log`
   MODIFY COLUMN `entityId` INT(11) NULL,
   ADD COLUMN IF NOT EXISTS `entityKey` VARCHAR(100) NULL AFTER `entityId`,
   ADD INDEX IF NOT EXISTS `idx_audit_entity_key` (`entityName`, `entityKey`);
+
+-- ------------------------------------------------------------------------------
+-- 12. Generic, module-neutral RBAC (FLEXCUBE-style). userGroup acts as the role.
+--     Each module registers its functions and grants them in its own seed.
+-- ------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `sec_action` (
+  `actionCode` VARCHAR(20) NOT NULL,
+  `name` VARCHAR(100) NOT NULL,
+  `sortOrder` INT(11) NOT NULL DEFAULT 0,
+  `isActive` TINYINT(1) NOT NULL DEFAULT 1,
+  `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`actionCode`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT IGNORE INTO `sec_action` (`actionCode`, `name`, `sortOrder`) VALUES
+  ('VIEW', 'View', 10),
+  ('CREATE', 'Create', 20),
+  ('EDIT', 'Edit', 30),
+  ('DELETE', 'Delete', 40),
+  ('AUTHORIZE', 'Authorize', 50),
+  ('VOID', 'Void', 60),
+  ('CLOSE', 'Close', 70),
+  ('OPEN', 'Open', 80);
+
+CREATE TABLE IF NOT EXISTS `sec_function` (
+  `functionCode` VARCHAR(50) NOT NULL,
+  `moduleCode` VARCHAR(20) NOT NULL,
+  `name` VARCHAR(150) NOT NULL,
+  `llname` VARCHAR(150) NULL,
+  `applicableActions` VARCHAR(255) NOT NULL COMMENT 'Comma-separated sec_action codes',
+  `isActive` TINYINT(1) NOT NULL DEFAULT 1,
+  `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`functionCode`),
+  KEY `idx_sec_function_module` (`moduleCode`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `sec_group_grant` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `userGroupId` INT(11) NOT NULL COMMENT 'userGroup.id (no FK)',
+  `functionCode` VARCHAR(50) NOT NULL,
+  `actionCode` VARCHAR(20) NOT NULL,
+  `grantedBy` INT(11) NULL,
+  `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_sec_group_grant` (`userGroupId`, `functionCode`, `actionCode`),
+  KEY `idx_sec_grant_function` (`functionCode`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

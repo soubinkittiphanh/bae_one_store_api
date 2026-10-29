@@ -1,135 +1,83 @@
 const db = require('../../models');
 
+// Lists include every authStatus so the Parameter Studio can show pending rows;
+// pass authStatus=AUTHORIZED (the default for dropdown lookups) to restrict.
+const statusWhere = (query = {}, defaultStatus) => {
+  const status = query.authStatus || defaultStatus;
+  return status ? { authStatus: String(status).split(',') } : {};
+};
+
+const LOOKUP_MODELS = {
+  loanTypes: 'lnLookupLoanType',
+  frequencies: 'lnLookupFrequency',
+  disbursementTargets: 'lnLookupDisbursementTarget',
+  holidayHandlings: 'lnLookupHolidayHandling',
+  dayCounts: 'lnLookupDayCount',
+  rebateMethods: 'lnLookupRebateMethod',
+  accrualMethods: 'lnLookupAccrualMethod',
+  collateralTypes: 'lnLookupCollateralType',
+  loanPurposes: 'lnLookupLoanPurpose',
+  deferredFeePresentations: 'lnLookupDeferredFeePresentation'
+};
+
 const masterService = {
-  /**
-   * Get all 10 system lookups in a single call for parameter studio dropdowns
-   */
-  async getLookups() {
-    const [
-      loanTypes,
-      frequencies,
-      disbursementTargets,
-      holidayHandlings,
-      dayCounts,
-      rebateMethods,
-      accrualMethods,
-      collateralTypes,
-      loanPurposes,
-      deferredFeePresentations
-    ] = await Promise.all([
-      db.lnLookupLoanType.findAll({ order: [['code', 'ASC']] }),
-      db.lnLookupFrequency.findAll({ order: [['daysInterval', 'ASC']] }),
-      db.lnLookupDisbursementTarget.findAll({ order: [['code', 'ASC']] }),
-      db.lnLookupHolidayHandling.findAll({ order: [['code', 'ASC']] }),
-      db.lnLookupDayCount.findAll({ order: [['code', 'ASC']] }),
-      db.lnLookupRebateMethod.findAll({ order: [['code', 'ASC']] }),
-      db.lnLookupAccrualMethod.findAll({ order: [['code', 'ASC']] }),
-      db.lnLookupCollateralType.findAll({ order: [['code', 'ASC']] }),
-      db.lnLookupLoanPurpose.findAll({ order: [['code', 'ASC']] }),
-      db.lnLookupDeferredFeePresentation.findAll({ order: [['code', 'ASC']] })
-    ]);
-
-    return {
-      loanTypes,
-      frequencies,
-      disbursementTargets,
-      holidayHandlings,
-      dayCounts,
-      rebateMethods,
-      accrualMethods,
-      collateralTypes,
-      loanPurposes,
-      deferredFeePresentations
-    };
+  // All lookups for Parameter Studio dropdowns; AUTHORIZED only unless includePending=1
+  async getLookups(query = {}) {
+    const where = query.includePending === '1' ? {} : { authStatus: 'AUTHORIZED' };
+    const entries = await Promise.all(Object.entries(LOOKUP_MODELS).map(async ([key, model]) => (
+      [key, await db[model].findAll({ where, order: [['code', 'ASC']] })]
+    )));
+    return Object.fromEntries(entries);
   },
 
-  /**
-   * Get Master UDEs
-   */
-  async getUdes() {
-    return db.lnUde.findAll({ order: [['udeCode', 'ASC']] });
+  async getUdes(query) {
+    return db.lnUde.findAll({ where: statusWhere(query), order: [['udeCode', 'ASC']] });
   },
 
-  /**
-   * Get Components
-   */
-  async getComponents() {
-    return db.lnComponent.findAll({ order: [['id', 'ASC']] });
+  async getComponents(query) {
+    return db.lnComponent.findAll({ where: statusWhere(query), order: [['id', 'ASC']] });
   },
 
-  /**
-   * Get Regulatory Classes and Provision Rules
-   */
-  async getProvisionRules() {
+  async getProvisionRules(query) {
     const [regClasses, rules] = await Promise.all([
-      db.lnRegulatoryClass.findAll({ order: [['classCode', 'ASC']] }),
+      db.lnRegulatoryClass.findAll({ where: statusWhere(query), order: [['classCode', 'ASC']] }),
       db.lnProvisionRule.findAll({
+        where: statusWhere(query),
         include: [{ model: db.lnRegulatoryClass, as: 'regulatoryClass' }],
-        order: [['regulatoryClassCode', 'ASC']]
-      }).catch(() => db.lnProvisionRule.findAll({ order: [['regulatoryClassCode', 'ASC']] }))
+        order: [['regulatoryClassCode', 'ASC'], ['effectiveFrom', 'DESC']]
+      })
     ]);
-
     return { regClasses, rules };
   },
 
-  /**
-   * Update Provision Rule
-   */
-  async updateProvisionRule(id, data, userId) {
-    const rule = await db.lnProvisionRule.findByPk(id);
-    if (!rule) {
-      throw new Error(`Provision rule with ID ${id} not found`);
-    }
-
-    await rule.update({
-      provisionRate: data.provisionRate !== undefined ? data.provisionRate : rule.provisionRate,
-      collateralHaircutPct: data.collateralHaircutPct !== undefined ? data.collateralHaircutPct : rule.collateralHaircutPct,
-      provisionBase: data.provisionBase || rule.provisionBase
-    });
-
-    return rule;
-  },
-
-  /**
-   * Get Status Master & Movement Rules
-   */
-  async getStatusRules() {
-    const [statuses, movements] = await Promise.all([
-      db.lnStatusMaster.findAll({ order: [['statusCode', 'ASC']] }),
-      db.lnStatusMovementRule.findAll({ order: [['minDpd', 'ASC']] })
+  async getStatusRules(query) {
+    const [statuses, movements, cures] = await Promise.all([
+      db.lnStatusMaster.findAll({ where: statusWhere(query), order: [['statusCode', 'ASC']] }),
+      db.lnStatusMovementRule.findAll({ where: statusWhere(query), order: [['minDpd', 'ASC']] }),
+      db.lnStatusCureRule.findAll({ where: statusWhere(query), order: [['id', 'ASC']] })
     ]);
-
-    return { statuses, movements };
+    return { statuses, movements, cures };
   },
 
-  /**
-   * Get Accounting Roles & Events (Phase 2A metadata inspection)
-   */
+  // Accounting roles, tags and events (Phase 2A: inspection only)
   async getAccountingMetadata() {
     const [roles, amountTags, events] = await Promise.all([
       db.lnAccountingRole.findAll({ order: [['roleCode', 'ASC']] }),
       db.lnAmountTag.findAll({ order: [['tagCode', 'ASC']] }),
       db.lnEventMaster.findAll({ order: [['eventCode', 'ASC']] })
     ]);
-
     return { roles, amountTags, events };
   },
 
-  /**
-   * Get Numbering Sequences
-   */
   async getSequences() {
     return db.lnNumberingSequence.findAll({ order: [['sequenceCode', 'ASC']] });
   },
 
-  /**
-   * Get Holiday Calendars
-   */
   async getHolidayCalendars() {
     return db.lnHolidayCalendar.findAll({
-      include: [{ model: db.lnHolidayDate, as: 'holidays' }],
+      include: [{ model: db.lnHolidayDate, as: 'dates' }],
       order: [['calendarCode', 'ASC']]
-    }).catch(() => db.lnHolidayCalendar.findAll());
+    });
   }
 };
 

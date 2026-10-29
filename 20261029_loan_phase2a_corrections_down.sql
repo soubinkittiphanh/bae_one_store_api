@@ -5,6 +5,11 @@
 -- share a taxCode; resolve those rows first.
 -- ==============================================================================
 
+-- 12. Generic RBAC tables (loan_migrate.js refuses this step while non-LN functions exist)
+DROP TABLE IF EXISTS `sec_group_grant`;
+DROP TABLE IF EXISTS `sec_function`;
+DROP TABLE IF EXISTS `sec_action`;
+
 -- 11. Audit log
 ALTER TABLE `ln_audit_log` DROP INDEX IF EXISTS `idx_audit_entity_key`, DROP COLUMN IF EXISTS `entityKey`;
 UPDATE `ln_audit_log` SET `entityId` = 0 WHERE `entityId` IS NULL;

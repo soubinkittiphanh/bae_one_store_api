@@ -27,7 +27,8 @@ const MIGRATIONS = [
     up: '20261029_loan_phase2a_corrections.sql',
     down: '20261029_loan_phase2a_corrections_down.sql',
     marker: 'ln_param_change',
-    dropsData: false
+    dropsData: false,
+    dropsSecurity: true
   }
 ];
 
@@ -71,6 +72,15 @@ const assertNoBusinessData = async (conn) => {
   }
 };
 
+// The sec_* RBAC tables are shared by all modules; never drop them while another module uses them.
+const assertSecurityOnlyLoan = async (conn) => {
+  if (!(await tableExists(conn, 'sec_function'))) return;
+  const rows = await conn.query("SELECT COUNT(*) AS n FROM sec_function WHERE moduleCode <> 'LN'");
+  if (Number(rows[0].n) > 0) {
+    throw new Error(`Refusing to drop sec_* tables: ${rows[0].n} function(s) belong to other modules.`);
+  }
+};
+
 const main = async () => {
   const [command = 'status', ...flags] = process.argv.slice(2);
   const target = assertLocalDb('loan_migrate');
@@ -110,6 +120,7 @@ const main = async () => {
       }
       for (const m of toRollBack) {
         if (m.dropsData) await assertNoBusinessData(conn);
+        if (m.dropsSecurity) await assertSecurityOnlyLoan(conn);
         await runFile(conn, m.down);
       }
       console.log(`loan_migrate down: rolled back ${toRollBack.map(m => m.name).join(', ')}`);

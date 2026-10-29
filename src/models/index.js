@@ -319,6 +319,9 @@ const initializeModels = () => {
     // Core Banking Loan Module models (FLEXCUBE-style)
     ...require("../loan/models")(sequelize, DataTypes).models,
 
+    // Generic module-neutral RBAC (sec_action, sec_function, sec_group_grant)
+    ...require("../security/models")(sequelize, DataTypes),
+
     // Tutorial model (uses different DB)
     // tuturial: require("../tutorial/model")(tutorialDB, DataTypes),
   };
