@@ -11,6 +11,7 @@ const paramController = {
   update: handle(req => paramService.update(req.params.entity, req.params.key, req.body, ctxOf(req))),
   remove: handle(req => paramService.remove(req.params.entity, req.params.key, ctxOf(req))),
   authorize: handle(req => paramService.authorize(req.params.entity, req.params.key, ctxOf(req))),
+  bulkAuthorize: handle(req => paramService.bulkAuthorize(req.params.entity, (req.body || {}).keys, ctxOf(req))),
   reject: handle(req => paramService.reject(req.params.entity, req.params.key, ctxOf(req), req.body && req.body.remarks)),
 
   listChanges: handle(req => paramService.listChanges(req.query)),

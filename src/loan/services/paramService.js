@@ -14,6 +14,7 @@ const db = require('../../models');
 const logger = require('../../api/logger');
 const { LoanError } = require('../errors');
 const { SYSTEM_FIELDS, getEntity, entityForModel } = require('./paramRegistry');
+const { checkProductRow } = require('./accountingService');
 
 const MONEY_RE = /^\d{1,16}(\.\d{1,4})?$/;
 const RATE_RE = /^(0(\.\d{1,6})?|1(\.0{1,6})?)$/;
@@ -341,32 +342,66 @@ const remove = async (entityName, key, ctx) => {
 
 const markAuthorized = (ctx) => ({ authStatus: 'AUTHORIZED', checkerId: ctx.userId, authorizedAt: new Date() });
 
+// A product can only be authorized when every entry rule it needs is AUTHORIZED (Phase 2B).
+// The failing legs are returned in the error details so the UI can list them.
+const assertProductAccounting = async (row, transaction) => {
+  const check = await checkProductRow(row, { transaction });
+  if (!check.ok) {
+    throw new LoanError(409, `${row.productCode} v${row.version} cannot be authorized: ${check.errors.length} accounting entry rule problem(s); authorize the entry rules first`, check.errors);
+  }
+};
+
+// Authorizes one PENDING row inside the caller's transaction; returns { row, self }
+const authorizeRow = async (def, key, ctx, transaction) => {
+  const row = await findRow(def, key, transaction);
+  if (row.authStatus !== 'PENDING') throw new LoanError(409, `${def.name} ${key}: only PENDING records can be authorized (this one is ${row.authStatus})`);
+  const self = await assertChecker(row.makerId, ctx.userId, transaction);
+  await checkRefs(def, plain(row), { forAuthorize: true, transaction });
+  if (def.name === 'product') await assertProductAccounting(row, transaction);
+
+  await row.update(markAuthorized(ctx), { transaction });
+  if (def.versioned) {
+    // A product version is authorized together with its copied children
+    for (const childModel of def.children) {
+      await db[childModel].update(markAuthorized(ctx), { where: { productId: row.id, authStatus: 'PENDING' }, transaction });
+    }
+    const componentIds = (await db.lnProductComponent.findAll({ where: { productId: row.id }, attributes: ['id'], transaction })).map(c => c.id);
+    if (componentIds.length) await db.lnRateTier.update(markAuthorized(ctx), { where: { productComponentId: componentIds, authStatus: 'PENDING' }, transaction });
+    await modelOf(def).update({ status: 'SUPERSEDED' }, {
+      where: { productCode: row.productCode, authStatus: 'AUTHORIZED', id: { [db.Sequelize.Op.ne]: row.id }, status: { [db.Sequelize.Op.ne]: 'SUPERSEDED' } },
+      transaction
+    });
+  }
+  await audit({ entityName: def.name, key, actionType: self ? 'SELF_AUTH' : 'AUTH', newValues: plain(row), userId: ctx.userId, ip: ctx.ip }, transaction);
+  return { row, self };
+};
+
 const authorize = async (entityName, key, ctx) => {
   const def = resolveEntity(entityName);
-  const result = await db.sequelize.transaction(async (transaction) => {
-    const row = await findRow(def, key, transaction);
-    if (row.authStatus !== 'PENDING') throw new LoanError(409, `Only PENDING records can be authorized (this one is ${row.authStatus})`);
-    const self = await assertChecker(row.makerId, ctx.userId, transaction);
-    await checkRefs(def, plain(row), { forAuthorize: true, transaction });
+  const { row } = await db.sequelize.transaction(transaction => authorizeRow(def, key, ctx, transaction));
+  await runAuthorizedHooks(def.name, row);
+  return respondRow(row, 'Authorized');
+};
 
-    await row.update(markAuthorized(ctx), { transaction });
-    if (def.versioned) {
-      // A product version is authorized together with its copied children
-      for (const childModel of def.children) {
-        await db[childModel].update(markAuthorized(ctx), { where: { productId: row.id, authStatus: 'PENDING' }, transaction });
-      }
-      const componentIds = (await db.lnProductComponent.findAll({ where: { productId: row.id }, attributes: ['id'], transaction })).map(c => c.id);
-      if (componentIds.length) await db.lnRateTier.update(markAuthorized(ctx), { where: { productComponentId: componentIds, authStatus: 'PENDING' }, transaction });
-      await modelOf(def).update({ status: 'SUPERSEDED' }, {
-        where: { productCode: row.productCode, authStatus: 'AUTHORIZED', id: { [db.Sequelize.Op.ne]: row.id }, status: { [db.Sequelize.Op.ne]: 'SUPERSEDED' } },
-        transaction
-      });
-    }
-    await audit({ entityName: def.name, key, actionType: self ? 'SELF_AUTH' : 'AUTH', newValues: plain(row), userId: ctx.userId, ip: ctx.ip }, transaction);
-    return row;
+// Review-and-authorize a selected group: all rows or none (one transaction). Each row is
+// checked and audited exactly like a single authorization, including the maker-checker rule.
+const BULK_LIMIT = 500;
+const bulkAuthorize = async (entityName, keys, ctx) => {
+  const def = resolveEntity(entityName);
+  if (!Array.isArray(keys) || !keys.length) throw new LoanError(400, 'keys must be a non-empty array');
+  if (keys.length > BULK_LIMIT) throw new LoanError(400, `At most ${BULK_LIMIT} records per bulk authorization`);
+  const unique = [...new Set(keys.map(String))];
+  const results = await db.sequelize.transaction(async (transaction) => {
+    const out = [];
+    for (const key of unique) out.push(await authorizeRow(def, key, ctx, transaction));
+    return out;
   });
-  await runAuthorizedHooks(def.name, result);
-  return respondRow(result, 'Authorized');
+  for (const { row } of results) await runAuthorizedHooks(def.name, row);
+  const selfCount = results.filter(r => r.self).length;
+  return respondRow(
+    { authorized: results.length, selfAuthorized: selfCount, keys: unique },
+    `${results.length} ${def.name} record(s) authorized${selfCount ? ` (${selfCount} self-authorized, audited)` : ''}`
+  );
 };
 
 const reject = async (entityName, key, ctx, remarks) => {
@@ -508,6 +543,7 @@ module.exports = {
   update,
   remove,
   authorize,
+  bulkAuthorize,
   reject,
   listChanges,
   listPendingRecords,

@@ -57,6 +57,7 @@ router.get('/holiday-calendars', can('LN_HOLIDAY', 'VIEW'), masterController.get
 // --- Generic parameter maker-checker (entity names: see services/paramRegistry.js) ---
 router.get('/params/:entity', can(entityFunction, 'VIEW'), paramController.list);
 router.post('/params/:entity', can(entityFunction, 'CREATE'), paramController.create);
+router.post('/params/:entity/bulk-authorize', can(entityFunction, 'AUTHORIZE'), paramController.bulkAuthorize);
 router.get('/params/:entity/:key', can(entityFunction, 'VIEW'), paramController.get);
 router.put('/params/:entity/:key', can(entityFunction, 'EDIT'), paramController.update);
 router.delete('/params/:entity/:key', can(entityFunction, 'DELETE'), paramController.remove);
