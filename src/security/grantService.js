@@ -42,4 +42,12 @@ const grantToGroupCodes = async (db, groupCodes, functionCodes) => {
   return summary;
 };
 
-module.exports = { registerFunctions, grantToGroupCodes };
+// The security module's own function: managing the grant matrix (SUPER_ADMIN only by default)
+const ensureSecurityFunctions = async (db) => {
+  await registerFunctions(db, 'SEC', [
+    { functionCode: 'SEC_GRANT', name: 'User group access rights', llname: 'ສິດການເຂົ້າເຖິງຂອງກຸ່ມຜູ້ໃຊ້', actions: ['VIEW', 'EDIT'] }
+  ]);
+  return grantToGroupCodes(db, ['SUPER_ADMIN'], ['SEC_GRANT']);
+};
+
+module.exports = { registerFunctions, grantToGroupCodes, ensureSecurityFunctions };

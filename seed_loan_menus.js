@@ -57,6 +57,33 @@ async function seedLoanMenus() {
         target_systems: 'ALL',
         isActive: true,
         order: 4
+      },
+      {
+        name: 'Loan Master Data',
+        llname: 'ຂໍ້ມູນພື້ນຖານສິນເຊື່ອ',
+        icon: 'mdi-database-cog-outline',
+        path: '/admin/loan/studio?tab=master',
+        target_systems: 'ALL',
+        isActive: true,
+        order: 5
+      },
+      {
+        name: 'Pending Approvals',
+        llname: 'ລາຍການລໍຖ້າອະນຸມັດ',
+        icon: 'mdi-account-check-outline',
+        path: '/admin/loan/studio?tab=changes',
+        target_systems: 'ALL',
+        isActive: true,
+        order: 6
+      },
+      {
+        name: 'User Group Access Rights',
+        llname: 'ສິດການເຂົ້າເຖິງຂອງກຸ່ມຜູ້ໃຊ້',
+        icon: 'mdi-shield-key-outline',
+        path: '/admin/security/grants',
+        target_systems: 'ALL',
+        isActive: true,
+        order: 7
       }
     ];
 

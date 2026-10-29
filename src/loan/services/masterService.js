@@ -1,4 +1,5 @@
 const db = require('../../models');
+const { ENTITIES } = require('./paramRegistry');
 
 // Lists include every authStatus so the Parameter Studio can show pending rows;
 // pass authStatus=AUTHORIZED (the default for dropdown lookups) to restrict.
@@ -27,7 +28,14 @@ const masterService = {
     const entries = await Promise.all(Object.entries(LOOKUP_MODELS).map(async ([key, model]) => (
       [key, await db[model].findAll({ where, order: [['code', 'ASC']] })]
     )));
-    return Object.fromEntries(entries);
+    // Fixed value lists defined by the engine (registry), keyed "<entity>.<field>", so UIs never hard-code them
+    const enums = {};
+    for (const [entity, def] of Object.entries(ENTITIES)) {
+      for (const [field, spec] of Object.entries(def.fields || {})) {
+        if (spec.enum) enums[`${entity}.${field}`] = spec.enum;
+      }
+    }
+    return { ...Object.fromEntries(entries), enums };
   },
 
   async getUdes(query) {

@@ -126,6 +126,7 @@ const packaging = require("../packaging").router
 const platform = require("../platform").router
 const platformCatalog = require("../platform/platform").router
 const loan = require("../loan").router
+const security = require("../security").router
 const platformAccount = require("../platform/account").router
 
 module.exports = {
@@ -255,5 +256,6 @@ module.exports = {
     platform,
     platformCatalog,
     platformAccount,
-    loan
+    loan,
+    security
 }

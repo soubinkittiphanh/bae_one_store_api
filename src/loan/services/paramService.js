@@ -383,6 +383,20 @@ const reject = async (entityName, key, ctx, remarks) => {
 
 // ----------------------------------------------------------------------------- pending changes
 
+// Unauthorized records (PENDING / REJECTED) across every entity the user may view
+const listPendingRecords = async (userId) => {
+  const { hasPermission } = require('../../security/middleware');
+  const { ENTITIES } = require('./paramRegistry');
+  const out = [];
+  for (const name of Object.keys(ENTITIES)) {
+    const def = getEntity(name);
+    if (!(await hasPermission(userId, def.functionCode, 'VIEW'))) continue;
+    const rows = await modelOf(def).findAll({ where: { authStatus: ['PENDING', 'REJECTED'] }, order: [[def.key, 'ASC']], limit: 200 });
+    if (rows.length) out.push({ entity: name, functionCode: def.functionCode, key: def.key, rows });
+  }
+  return out;
+};
+
 const listChanges = async (query = {}) => {
   const where = { status: query.status ? String(query.status).split(',') : 'PENDING' };
   if (query.entityName) where.entityName = query.entityName;
@@ -496,6 +510,7 @@ module.exports = {
   authorize,
   reject,
   listChanges,
+  listPendingRecords,
   authorizeChange,
   rejectChange,
   changeFunctionCode,

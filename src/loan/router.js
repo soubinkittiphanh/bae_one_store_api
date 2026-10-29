@@ -21,6 +21,9 @@ const entityFunction = (req) => {
 };
 const changeFunction = (req) => paramService.changeFunctionCode(req.params.id);
 
+// --- Banner state for every loan screen (any logged-in user; no parameter details) ---
+router.get('/status', taxProfileController.getStatus);
+
 // --- Go-Live Checklist ---
 router.get('/checklist', can('LN_CHECKLIST', 'VIEW'), checklistController.getChecklist);
 router.post('/checklist/:itemKey/confirm', can('LN_CHECKLIST', 'AUTHORIZE'), checklistController.confirmItem);
@@ -58,6 +61,9 @@ router.put('/params/:entity/:key', can(entityFunction, 'EDIT'), paramController.
 router.delete('/params/:entity/:key', can(entityFunction, 'DELETE'), paramController.remove);
 router.post('/params/:entity/:key/authorize', can(entityFunction, 'AUTHORIZE'), paramController.authorize);
 router.post('/params/:entity/:key/reject', can(entityFunction, 'AUTHORIZE'), paramController.reject);
+
+// --- Unauthorized records across entities (filtered by the caller's VIEW grants) ---
+router.get('/pending', paramController.listPending);
 
 // --- Pending changes to authorized records ---
 router.get('/changes', can('LN_AUDIT_LOG', 'VIEW'), paramController.listChanges);

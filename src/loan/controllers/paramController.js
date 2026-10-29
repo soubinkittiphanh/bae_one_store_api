@@ -14,6 +14,7 @@ const paramController = {
   reject: handle(req => paramService.reject(req.params.entity, req.params.key, ctxOf(req), req.body && req.body.remarks)),
 
   listChanges: handle(req => paramService.listChanges(req.query)),
+  listPending: handle(req => paramService.listPendingRecords(req.user.id)),
   authorizeChange: handle(req => paramService.authorizeChange(req.params.id, ctxOf(req))),
   rejectChange: handle(req => paramService.rejectChange(req.params.id, ctxOf(req), req.body && req.body.remarks)),
 

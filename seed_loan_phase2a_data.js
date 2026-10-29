@@ -13,7 +13,7 @@
 process.env.NO_SYNC = 'true';
 require('./src/loan/dbGuard').assertLocalDb('seed_loan_phase2a_data');
 const db = require('./src/models');
-const { registerFunctions, grantToGroupCodes } = require('./src/security/grantService');
+const { registerFunctions, grantToGroupCodes, ensureSecurityFunctions } = require('./src/security/grantService');
 const { compareDecimal } = require('./src/loan/decimal');
 
 const { Op } = db.Sequelize;
@@ -526,6 +526,8 @@ async function seedPhase2A() {
     await registerFunctions(db, 'LN', loanFunctions);
     const grantSummary = await grantToGroupCodes(db, ['SUPER_ADMIN', 'ADMIN'], loanFunctions.map(f => f.functionCode));
     console.log(`Loan grants: ${grantSummary.join(', ') || 'none'}`);
+    const secSummary = await ensureSecurityFunctions(db);
+    console.log(`Security grants: ${secSummary.join(', ') || 'none'}`);
 
     // Maker-checker relaxation switch (off by default; never overwritten once it exists)
     await db.spf.findOrCreate({

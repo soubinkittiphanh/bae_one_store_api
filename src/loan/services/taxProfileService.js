@@ -54,6 +54,13 @@ const taxProfileService = {
     return { taxProfile: profile, vat, vatError, posTaxes, components, taxMaster, isConfirmed, warningBannerActive: !isConfirmed };
   },
 
+  // Minimal state for the warning banner shown on every loan screen
+  async getStatus() {
+    const profile = await db.lnTaxProfile.findOne({ attributes: ['confirmationStatus'] });
+    const confirmationStatus = profile ? profile.confirmationStatus : 'UNCONFIRMED';
+    return { confirmationStatus, warningBannerActive: confirmationStatus !== 'CONFIRMED' };
+  },
+
   // Only companyVatRegistered, posTaxId and notes can change; confirmationStatus is ignored.
   // Any change returns the profile to UNCONFIRMED.
   async updateTaxProfile(body, ctx) {

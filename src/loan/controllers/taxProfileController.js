@@ -4,6 +4,7 @@ const { ctxOf } = require('./paramController');
 
 const taxProfileController = {
   getTaxProfile: handle(() => taxProfileService.getTaxProfile()),
+  getStatus: handle(() => taxProfileService.getStatus()),
   // confirmationStatus in the body is ignored; use POST /tax-profile/confirm
   updateTaxProfile: handle(async req => respond(await taxProfileService.updateTaxProfile(req.body, ctxOf(req)), 'Tax profile updated; confirmation required')),
   confirmTaxProfile: handle(async req => respond(await taxProfileService.confirmTaxProfile(ctxOf(req)), 'Tax profile confirmed')),

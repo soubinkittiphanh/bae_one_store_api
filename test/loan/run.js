@@ -408,6 +408,39 @@ const apiTests = async ({ port, q, db }) => {
     assert.strictEqual(itemOf(await call(SUPER, 'get', `${L}/checklist`), 'PROVISION_POLICY').status, 'UNCONFIRMED');
   });
 
+  console.log('\n[security api & ui support]');
+  await test('my-permissions reflects group grants (CASHIER none, ADMIN loan incl. AUTHORIZE, SUPER_ADMIN grant matrix)', async () => {
+    const perms = async id => (await call(id, 'get', '/api/security/my-permissions')).data.data.permissions;
+    const [c, a, s] = await Promise.all([perms(CASHIER), perms(ADMIN), perms(SUPER)]);
+    assert.ok(!Object.keys(c).some(k => k.startsWith('LN_')), 'cashier has no loan permissions');
+    assert.ok(a.LN_PRODUCT && a.LN_PRODUCT.includes('AUTHORIZE'), 'admin can authorize products');
+    assert.ok(!a.SEC_GRANT, 'admin cannot manage grants by default');
+    assert.ok(s.SEC_GRANT && s.SEC_GRANT.includes('EDIT'), 'super admin manages grants');
+  });
+  await test('grant matrix: ADMIN refused, SUPER_ADMIN can grant and revoke; own SEC_GRANT EDIT cannot be removed', async () => {
+    expectStatus(await call(ADMIN, 'get', '/api/security/matrix'), 403, 'admin views matrix');
+    expectStatus(await call(SUPER, 'get', '/api/security/matrix'), 200, 'super views matrix');
+    const cashierGroup = (await q("SELECT id FROM userGroup WHERE code = 'CASHIER'"))[0].id;
+    const superGroup = (await q("SELECT id FROM userGroup WHERE code = 'SUPER_ADMIN'"))[0].id;
+    const grant = granted => call(SUPER, 'put', '/api/security/grants', { userGroupId: cashierGroup, functionCode: 'LN_PRODUCT', actionCode: 'VIEW', granted });
+    expectStatus(await grant(true), 200, 'grant');
+    expectStatus(await call(CASHIER, 'get', `${L}/products`), 200, 'cashier view after grant');
+    expectStatus(await grant(false), 200, 'revoke');
+    expectStatus(await call(CASHIER, 'get', `${L}/products`), 403, 'cashier view after revoke');
+    expectStatus(await call(SUPER, 'put', '/api/security/grants', { userGroupId: superGroup, functionCode: 'SEC_GRANT', actionCode: 'EDIT', granted: false }), 409, 'self lockout');
+    expectStatus(await call(SUPER, 'put', '/api/security/grants', { userGroupId: cashierGroup, functionCode: 'LN_CHECKLIST', actionCode: 'DELETE', granted: true }), 400, 'non-applicable action');
+  });
+  await test('banner status for any user, pending inbox filtered by grants, enums served by lookups', async () => {
+    const st = await call(CASHIER, 'get', `${L}/status`);
+    expectStatus(st, 200, 'status');
+    assert.strictEqual(typeof st.data.data.warningBannerActive, 'boolean');
+    const pendingSuper = (await call(SUPER, 'get', `${L}/pending`)).data.data;
+    assert.ok(pendingSuper.length > 0 && pendingSuper.every(e => e.rows.length), 'super sees pending records');
+    assert.deepStrictEqual((await call(CASHIER, 'get', `${L}/pending`)).data.data, [], 'cashier sees none');
+    const enums = (await call(ADMIN, 'get', `${L}/lookups`)).data.data.enums;
+    assert.deepStrictEqual(enums['product.feeFinancingMode'], ['CAPITALIZED', 'UPFRONT', 'DEDUCTED']);
+  });
+
   console.log('\n[regression & safety]');
   await test('existing POS routes still respond (currency, product, trial balance)', async () => {
     expectStatus(await call(SUPER, 'get', '/api/currency/findAll'), 200, 'currency');

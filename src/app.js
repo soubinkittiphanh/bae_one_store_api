@@ -238,6 +238,9 @@ const buildApp = async () => {
     // Core Banking Loan & Vehicle Financing Module (Phase 2A)
     app.use('/api/loan', myRouter.loan);
 
+    // Generic module-neutral RBAC (grant matrix, current user permissions)
+    app.use('/api/security', myRouter.security);
+
     // Multi-Platform & Connected Accounts (Facebook, TikTok, Shopee, Lazada, etc.)
     app.use('/api/platforms', myRouter.platformCatalog);
     app.use('/api/platform-accounts', myRouter.platformAccount);

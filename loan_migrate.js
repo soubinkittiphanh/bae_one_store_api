@@ -75,7 +75,7 @@ const assertNoBusinessData = async (conn) => {
 // The sec_* RBAC tables are shared by all modules; never drop them while another module uses them.
 const assertSecurityOnlyLoan = async (conn) => {
   if (!(await tableExists(conn, 'sec_function'))) return;
-  const rows = await conn.query("SELECT COUNT(*) AS n FROM sec_function WHERE moduleCode <> 'LN'");
+  const rows = await conn.query("SELECT COUNT(*) AS n FROM sec_function WHERE moduleCode NOT IN ('LN', 'SEC')");
   if (Number(rows[0].n) > 0) {
     throw new Error(`Refusing to drop sec_* tables: ${rows[0].n} function(s) belong to other modules.`);
   }
