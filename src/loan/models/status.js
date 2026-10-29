@@ -1,10 +1,12 @@
+const { makerChecker } = require('./common');
+
 module.exports = (sequelize, DataTypes) => {
   const lnRegulatoryClass = sequelize.define('lnRegulatoryClass', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     classCode: { type: DataTypes.STRING(30), allowNull: false, unique: true },
     name: { type: DataTypes.STRING(100), allowNull: false },
     glQualifier: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'NORMAL' },
-    authStatus: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'AUTHORIZED' }
+    ...makerChecker(DataTypes)
   }, { freezeTableName: true, tableName: 'ln_regulatory_class', timestamps: true });
 
   const lnStatusMaster = sequelize.define('lnStatusMaster', {
@@ -14,7 +16,7 @@ module.exports = (sequelize, DataTypes) => {
     regulatoryClassCode: { type: DataTypes.STRING(30), allowNull: false },
     interestTreatment: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'CONTINUE_ACCRUAL' },
     penaltyTreatment: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'ACCRUE' },
-    authStatus: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'AUTHORIZED' }
+    ...makerChecker(DataTypes)
   }, { freezeTableName: true, tableName: 'ln_status_master', timestamps: true });
 
   const lnStatusMovementRule = sequelize.define('lnStatusMovementRule', {
@@ -26,7 +28,7 @@ module.exports = (sequelize, DataTypes) => {
     conditionFormula: { type: DataTypes.TEXT, allowNull: true },
     effectiveFrom: { type: DataTypes.DATEONLY, allowNull: false },
     effectiveTo: { type: DataTypes.DATEONLY, allowNull: true },
-    authStatus: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'AUTHORIZED' }
+    ...makerChecker(DataTypes)
   }, { freezeTableName: true, tableName: 'ln_status_movement_rule', timestamps: true });
 
   const lnStatusCureRule = sequelize.define('lnStatusCureRule', {
@@ -35,7 +37,7 @@ module.exports = (sequelize, DataTypes) => {
     toStatus: { type: DataTypes.STRING(30), allowNull: false },
     consecutiveOnTimeInstallmentsRequired: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 3 },
     observationMonthsRequired: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
-    authStatus: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'AUTHORIZED' }
+    ...makerChecker(DataTypes)
   }, { freezeTableName: true, tableName: 'ln_status_cure_rule', timestamps: true });
 
   const lnProvisionRule = sequelize.define('lnProvisionRule', {
@@ -46,9 +48,10 @@ module.exports = (sequelize, DataTypes) => {
     provisionRate: { type: DataTypes.DECIMAL(9, 6), allowNull: false, defaultValue: 0.010000 },
     collateralHaircutPct: { type: DataTypes.DECIMAL(9, 6), allowNull: false, defaultValue: 0.300000 },
     provisionBase: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'NET_EXPOSURE' },
+    policyNote: { type: DataTypes.STRING(255), allowNull: false, defaultValue: 'To be set by company management policy' },
     effectiveFrom: { type: DataTypes.DATEONLY, allowNull: false },
     effectiveTo: { type: DataTypes.DATEONLY, allowNull: true },
-    authStatus: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'AUTHORIZED' }
+    ...makerChecker(DataTypes)
   }, { freezeTableName: true, tableName: 'ln_provision_rule', timestamps: true });
 
   const lnProvisionLedger = sequelize.define('lnProvisionLedger', {
@@ -62,9 +65,12 @@ module.exports = (sequelize, DataTypes) => {
     requiredProvision: { type: DataTypes.DECIMAL(20, 4), allowNull: false, defaultValue: 0.0000 },
     bookedProvision: { type: DataTypes.DECIMAL(20, 4), allowNull: false, defaultValue: 0.0000 },
     deltaProvision: { type: DataTypes.DECIMAL(20, 4), allowNull: false, defaultValue: 0.0000 },
-    glBatchId: { type: DataTypes.STRING(50), allowNull: true },
+    glBatchId: { type: DataTypes.STRING(100), allowNull: true, comment: 'ln_gl_batch.batchNumber' },
     status: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'POSTED' }
-  }, { freezeTableName: true, tableName: 'ln_provision_ledger', timestamps: true });
+  }, { freezeTableName: true, tableName: 'ln_provision_ledger', timestamps: true,
+    indexes: [
+      { name: 'idx_prov_loan_date', fields: ['loanAccountId', 'evaluationDate'] }
+    ] });
 
   return {
     lnRegulatoryClass,

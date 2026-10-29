@@ -2,7 +2,7 @@ module.exports = (sequelize, DataTypes) => {
   const lnAccount = sequelize.define('lnAccount', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     accountNo: { type: DataTypes.STRING(30), allowNull: false, unique: true },
-    branchId: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 1 },
+    branchId: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 1, comment: 'location.id (no FK)' },
     applicationId: { type: DataTypes.INTEGER, allowNull: false },
     customerId: { type: DataTypes.INTEGER, allowNull: false },
     productId: { type: DataTypes.INTEGER, allowNull: false },
@@ -23,7 +23,7 @@ module.exports = (sequelize, DataTypes) => {
     valueDate: { type: DataTypes.DATEONLY, allowNull: false },
     maturityDate: { type: DataTypes.DATEONLY, allowNull: false },
     disbursementTarget: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'SALE_INVOICE_SETTLEMENT' },
-    status: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'ACTIVE' },
+    status: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'NORMAL' },
     regulatoryClass: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'CLASS_A' },
     currentDpd: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
     closedAt: { type: DataTypes.DATE, allowNull: true },
@@ -42,7 +42,10 @@ module.exports = (sequelize, DataTypes) => {
     loanAccountId: { type: DataTypes.INTEGER, allowNull: false },
     udeCode: { type: DataTypes.STRING(30), allowNull: false },
     udeValue: { type: DataTypes.DECIMAL(20, 4), allowNull: false, defaultValue: 0.0000 }
-  }, { freezeTableName: true, tableName: 'ln_account_ude', timestamps: true });
+  }, { freezeTableName: true, tableName: 'ln_account_ude', timestamps: true,
+    indexes: [
+      { name: 'uk_account_ude', unique: true, fields: ['loanAccountId', 'udeCode'] }
+    ] });
 
   const lnAccountBalance = sequelize.define('lnAccountBalance', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
@@ -54,7 +57,10 @@ module.exports = (sequelize, DataTypes) => {
     totalPaid: { type: DataTypes.DECIMAL(20, 4), allowNull: false, defaultValue: 0.0000 },
     totalWaived: { type: DataTypes.DECIMAL(20, 4), allowNull: false, defaultValue: 0.0000 },
     optLockVersion: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 1 }
-  }, { freezeTableName: true, tableName: 'ln_account_balance', timestamps: true });
+  }, { freezeTableName: true, tableName: 'ln_account_balance', timestamps: true,
+    indexes: [
+      { name: 'uk_account_component_balance', unique: true, fields: ['loanAccountId', 'componentId'] }
+    ] });
 
   return {
     lnAccount,

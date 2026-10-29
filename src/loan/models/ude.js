@@ -1,10 +1,13 @@
+const { makerChecker } = require('./common');
+
 module.exports = (sequelize, DataTypes) => {
   const lnUde = sequelize.define('lnUde', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     udeCode: { type: DataTypes.STRING(30), allowNull: false, unique: true },
     name: { type: DataTypes.STRING(100), allowNull: false },
     dataType: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'RATE' },
-    description: { type: DataTypes.TEXT, allowNull: true }
+    description: { type: DataTypes.TEXT, allowNull: true },
+    ...makerChecker(DataTypes)
   }, { freezeTableName: true, tableName: 'ln_ude', timestamps: true });
 
   const lnProductUde = sequelize.define('lnProductUde', {
@@ -15,17 +18,18 @@ module.exports = (sequelize, DataTypes) => {
     minValue: { type: DataTypes.DECIMAL(20, 4), allowNull: false, defaultValue: 0.0000 },
     maxValue: { type: DataTypes.DECIMAL(20, 4), allowNull: false, defaultValue: 1000000000.0000 },
     isAmendableAtAccount: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
-    authStatus: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'AUTHORIZED' }
-  }, { freezeTableName: true, tableName: 'ln_product_ude', timestamps: true });
+    ...makerChecker(DataTypes)
+  }, { freezeTableName: true, tableName: 'ln_product_ude', timestamps: true,
+    indexes: [
+      { name: 'uk_product_ude', unique: true, fields: ['productId', 'udeCode'] }
+    ] });
 
   const lnRateIndex = sequelize.define('lnRateIndex', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     rateCode: { type: DataTypes.STRING(30), allowNull: false, unique: true },
     name: { type: DataTypes.STRING(100), allowNull: false },
     resetFrequencyCode: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'MONTHLY' },
-    authStatus: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'AUTHORIZED' },
-    makerId: { type: DataTypes.INTEGER, allowNull: true },
-    checkerId: { type: DataTypes.INTEGER, allowNull: true }
+    ...makerChecker(DataTypes)
   }, { freezeTableName: true, tableName: 'ln_rate_index', timestamps: true });
 
   const lnRateIndexValue = sequelize.define('lnRateIndexValue', {
@@ -33,8 +37,12 @@ module.exports = (sequelize, DataTypes) => {
     rateIndexId: { type: DataTypes.INTEGER, allowNull: false },
     effectiveDate: { type: DataTypes.DATEONLY, allowNull: false },
     baseRate: { type: DataTypes.DECIMAL(9, 6), allowNull: false, defaultValue: 0.000000 },
-    optLockVersion: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 1 }
-  }, { freezeTableName: true, tableName: 'ln_rate_index_value', timestamps: true });
+    optLockVersion: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 1 },
+    ...makerChecker(DataTypes)
+  }, { freezeTableName: true, tableName: 'ln_rate_index_value', timestamps: true,
+    indexes: [
+      { name: 'uk_rate_index_date', unique: true, fields: ['rateIndexId', 'effectiveDate'] }
+    ] });
 
   const lnRateTier = sequelize.define('lnRateTier', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
@@ -42,7 +50,8 @@ module.exports = (sequelize, DataTypes) => {
     tierBasis: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'AMOUNT' },
     fromValue: { type: DataTypes.DECIMAL(20, 4), allowNull: false, defaultValue: 0.0000 },
     toValue: { type: DataTypes.DECIMAL(20, 4), allowNull: false, defaultValue: 0.0000 },
-    tierRate: { type: DataTypes.DECIMAL(9, 6), allowNull: false, defaultValue: 0.000000 }
+    tierRate: { type: DataTypes.DECIMAL(9, 6), allowNull: false, defaultValue: 0.000000 },
+    ...makerChecker(DataTypes)
   }, { freezeTableName: true, tableName: 'ln_rate_tier', timestamps: true });
 
   return {

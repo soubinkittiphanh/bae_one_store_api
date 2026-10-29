@@ -13,7 +13,7 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING,
         },
         accountType: {
-            type: DataTypes.ENUM('Asset', 'Liability', 'Equity', 'Revenue', 'Expense'),
+            type: DataTypes.ENUM('Asset', 'Liability', 'Equity', 'Revenue', 'Expense', 'Off-Balance'),
             allowNull: false
         },
         isActive: {

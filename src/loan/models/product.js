@@ -1,12 +1,12 @@
+const { makerChecker } = require('./common');
+
 module.exports = (sequelize, DataTypes) => {
   const lnProductCategory = sequelize.define('lnProductCategory', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     code: { type: DataTypes.STRING(30), allowNull: false, unique: true },
     name: { type: DataTypes.STRING(100), allowNull: false },
     description: { type: DataTypes.TEXT, allowNull: true },
-    authStatus: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'AUTHORIZED' },
-    makerId: { type: DataTypes.INTEGER, allowNull: true },
-    checkerId: { type: DataTypes.INTEGER, allowNull: true }
+    ...makerChecker(DataTypes)
   }, { freezeTableName: true, tableName: 'ln_product_category', timestamps: true });
 
   const lnProduct = sequelize.define('lnProduct', {
@@ -45,19 +45,24 @@ module.exports = (sequelize, DataTypes) => {
     allowBackdatedDisbursement: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
     requireCollateral: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true },
     requireGuarantor: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
-    authStatus: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'AUTHORIZED' },
-    makerId: { type: DataTypes.INTEGER, allowNull: true },
-    checkerId: { type: DataTypes.INTEGER, allowNull: true },
     status: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'ACTIVE' },
-    optLockVersion: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 1 }
-  }, { freezeTableName: true, tableName: 'ln_product', timestamps: true });
+    optLockVersion: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 1 },
+    ...makerChecker(DataTypes)
+  }, { freezeTableName: true, tableName: 'ln_product', timestamps: true,
+    indexes: [
+      { name: 'uk_product_version', unique: true, fields: ['productCode', 'version'] }
+    ] });
 
   const lnProductCurrency = sequelize.define('lnProductCurrency', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     productId: { type: DataTypes.INTEGER, allowNull: false },
     currencyId: { type: DataTypes.INTEGER, allowNull: false },
-    isDefault: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false }
-  }, { freezeTableName: true, tableName: 'ln_product_currency', timestamps: true });
+    isDefault: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+    ...makerChecker(DataTypes)
+  }, { freezeTableName: true, tableName: 'ln_product_currency', timestamps: true,
+    indexes: [
+      { name: 'uk_product_currency', unique: true, fields: ['productId', 'currencyId'] }
+    ] });
 
   const lnComponent = sequelize.define('lnComponent', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
@@ -71,9 +76,7 @@ module.exports = (sequelize, DataTypes) => {
     taxCode: { type: DataTypes.STRING(30), allowNull: true },
     taxInclusive: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
     taxPointEvent: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'DISB' },
-    authStatus: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'AUTHORIZED' },
-    makerId: { type: DataTypes.INTEGER, allowNull: true },
-    checkerId: { type: DataTypes.INTEGER, allowNull: true }
+    ...makerChecker(DataTypes)
   }, { freezeTableName: true, tableName: 'ln_component', timestamps: true });
 
   const lnProductComponent = sequelize.define('lnProductComponent', {
@@ -87,8 +90,11 @@ module.exports = (sequelize, DataTypes) => {
     timing: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'UPFRONT_COLLECTED' },
     isAmendableAtAccount: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
     isEIRAmortized: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
-    authStatus: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'AUTHORIZED' }
-  }, { freezeTableName: true, tableName: 'ln_product_component', timestamps: true });
+    ...makerChecker(DataTypes)
+  }, { freezeTableName: true, tableName: 'ln_product_component', timestamps: true,
+    indexes: [
+      { name: 'uk_product_component', unique: true, fields: ['productId', 'componentId'] }
+    ] });
 
   const lnWaterfallRule = sequelize.define('lnWaterfallRule', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
@@ -96,8 +102,11 @@ module.exports = (sequelize, DataTypes) => {
     accountStatus: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'NORMAL' },
     priorityOrder: { type: DataTypes.INTEGER, allowNull: false },
     componentId: { type: DataTypes.INTEGER, allowNull: false },
-    authStatus: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'AUTHORIZED' }
-  }, { freezeTableName: true, tableName: 'ln_waterfall_rule', timestamps: true });
+    ...makerChecker(DataTypes)
+  }, { freezeTableName: true, tableName: 'ln_waterfall_rule', timestamps: true,
+    indexes: [
+      { name: 'uk_product_status_priority', unique: true, fields: ['productId', 'accountStatus', 'priorityOrder'] }
+    ] });
 
   return {
     lnProductCategory,

@@ -1,3 +1,5 @@
+const { makerChecker } = require('./common');
+
 module.exports = (sequelize, DataTypes) => {
   const lnIdempotency = sequelize.define('lnIdempotency', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
@@ -7,17 +9,23 @@ module.exports = (sequelize, DataTypes) => {
     requestHash: { type: DataTypes.STRING(64), allowNull: false },
     responseBody: { type: DataTypes.TEXT('long'), allowNull: true },
     status: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 200 }
-  }, { freezeTableName: true, tableName: 'ln_idempotency', timestamps: true, updatedAt: false });
+  }, { freezeTableName: true, tableName: 'ln_idempotency', timestamps: true, updatedAt: false,
+    indexes: [
+      { name: 'uk_endpoint_account_key', unique: true, fields: ['endpoint', 'accountId', 'idempotencyKey'] }
+    ] });
 
   const lnSystemDate = sequelize.define('lnSystemDate', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
-    branchId: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 1, unique: true },
+    branchId: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 1, comment: 'location.id (no FK)' },
     currentBusinessDate: { type: DataTypes.DATEONLY, allowNull: false },
     prevBusinessDate: { type: DataTypes.DATEONLY, allowNull: false },
     nextBusinessDate: { type: DataTypes.DATEONLY, allowNull: false },
     periodLockDate: { type: DataTypes.DATEONLY, allowNull: false },
     status: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'OPEN' }
-  }, { freezeTableName: true, tableName: 'ln_system_date', timestamps: true });
+  }, { freezeTableName: true, tableName: 'ln_system_date', timestamps: true,
+    indexes: [
+      { name: 'uk_branch_date', unique: true, fields: ['branchId'] }
+    ] });
 
   const lnNumberingSequence = sequelize.define('lnNumberingSequence', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
@@ -25,7 +33,8 @@ module.exports = (sequelize, DataTypes) => {
     prefix: { type: DataTypes.STRING(20), allowNull: false },
     nextNumber: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 1 },
     paddingLength: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 6 },
-    formatPattern: { type: DataTypes.STRING(50), allowNull: false, defaultValue: '{PREFIX}-{YEAR}{MONTH}-{NUMBER}' }
+    formatPattern: { type: DataTypes.STRING(50), allowNull: false, defaultValue: '{PREFIX}-{YEAR}{MONTH}-{NUMBER}' },
+    ...makerChecker(DataTypes)
   }, { freezeTableName: true, tableName: 'ln_numbering_sequence', timestamps: true });
 
   const lnBatchJob = sequelize.define('lnBatchJob', {
@@ -35,7 +44,8 @@ module.exports = (sequelize, DataTypes) => {
     executionOrder: { type: DataTypes.INTEGER, allowNull: false },
     isEnabled: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true },
     lastRunDate: { type: DataTypes.DATEONLY, allowNull: true },
-    lastStatus: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'IDLE' }
+    lastStatus: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'IDLE' },
+    ...makerChecker(DataTypes)
   }, { freezeTableName: true, tableName: 'ln_batch_job', timestamps: true });
 
   const lnBatchLog = sequelize.define('lnBatchLog', {

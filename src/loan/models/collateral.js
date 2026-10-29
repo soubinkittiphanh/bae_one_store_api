@@ -25,7 +25,10 @@ module.exports = (sequelize, DataTypes) => {
     insuranceCompany: { type: DataTypes.STRING(100), allowNull: true },
     insuranceExpiryDate: { type: DataTypes.DATEONLY, allowNull: true },
     insuranceCoverageAmount: { type: DataTypes.DECIMAL(20, 4), allowNull: false, defaultValue: 0.0000 }
-  }, { freezeTableName: true, tableName: 'ln_collateral_vehicle', timestamps: true });
+  }, { freezeTableName: true, tableName: 'ln_collateral_vehicle', timestamps: true,
+    indexes: [
+      { name: 'idx_vin', fields: ['vinChassisNo'] }
+    ] });
 
   const lnLoanCollateral = sequelize.define('lnLoanCollateral', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
@@ -33,7 +36,10 @@ module.exports = (sequelize, DataTypes) => {
     collateralId: { type: DataTypes.INTEGER, allowNull: false },
     allocatedValue: { type: DataTypes.DECIMAL(20, 4), allowNull: false, defaultValue: 0.0000 },
     ltvPct: { type: DataTypes.DECIMAL(9, 6), allowNull: false, defaultValue: 0.000000 }
-  }, { freezeTableName: true, tableName: 'ln_loan_collateral', timestamps: true });
+  }, { freezeTableName: true, tableName: 'ln_loan_collateral', timestamps: true,
+    indexes: [
+      { name: 'uk_loan_collateral', unique: true, fields: ['loanAccountId', 'collateralId'] }
+    ] });
 
   return {
     lnCollateralMaster,

@@ -1,9 +1,12 @@
+const { makerChecker } = require('./common');
+
 module.exports = (sequelize, DataTypes) => {
   const lnHolidayCalendar = sequelize.define('lnHolidayCalendar', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     calendarCode: { type: DataTypes.STRING(30), allowNull: false, unique: true },
-    branchId: { type: DataTypes.INTEGER, allowNull: true },
-    description: { type: DataTypes.TEXT, allowNull: true }
+    branchId: { type: DataTypes.INTEGER, allowNull: true, comment: 'location.id (no FK)' },
+    description: { type: DataTypes.TEXT, allowNull: true },
+    ...makerChecker(DataTypes)
   }, { freezeTableName: true, tableName: 'ln_holiday_calendar', timestamps: true });
 
   const lnHolidayDate = sequelize.define('lnHolidayDate', {
@@ -11,8 +14,12 @@ module.exports = (sequelize, DataTypes) => {
     calendarId: { type: DataTypes.INTEGER, allowNull: false },
     holidayDate: { type: DataTypes.DATEONLY, allowNull: false },
     description: { type: DataTypes.STRING(100), allowNull: false },
-    isWeekend: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false }
-  }, { freezeTableName: true, tableName: 'ln_holiday_date', timestamps: true });
+    isWeekend: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+    ...makerChecker(DataTypes)
+  }, { freezeTableName: true, tableName: 'ln_holiday_date', timestamps: true,
+    indexes: [
+      { name: 'uk_calendar_date', unique: true, fields: ['calendarId', 'holidayDate'] }
+    ] });
 
   const lnFeeMaster = sequelize.define('lnFeeMaster', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
@@ -27,19 +34,23 @@ module.exports = (sequelize, DataTypes) => {
     taxApplicable: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true },
     triggerEventCode: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'DISB' },
     accountingRoleCode: { type: DataTypes.STRING(50), allowNull: false, defaultValue: 'FEE_INCOME' },
-    authStatus: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'AUTHORIZED' }
+    ...makerChecker(DataTypes)
   }, { freezeTableName: true, tableName: 'ln_fee_master', timestamps: true });
 
   const lnTaxMaster = sequelize.define('lnTaxMaster', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
-    taxCode: { type: DataTypes.STRING(30), allowNull: false, unique: true },
+    taxCode: { type: DataTypes.STRING(30), allowNull: false },
     componentId: { type: DataTypes.INTEGER, allowNull: true },
-    taxRate: { type: DataTypes.DECIMAL(9, 6), allowNull: false, defaultValue: 0.070000 },
+    posTaxId: { type: DataTypes.INTEGER, allowNull: true, comment: 'tax.id (no FK)' },
+    taxRate: { type: DataTypes.DECIMAL(9, 6), allowNull: true, comment: 'NULL = rate from POS tax row' },
     accountingRoleCode: { type: DataTypes.STRING(50), allowNull: false, defaultValue: 'TAX_PAYABLE' },
     effectiveFrom: { type: DataTypes.DATEONLY, allowNull: false },
     effectiveTo: { type: DataTypes.DATEONLY, allowNull: true },
-    authStatus: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'AUTHORIZED' }
-  }, { freezeTableName: true, tableName: 'ln_tax_master', timestamps: true });
+    ...makerChecker(DataTypes)
+  }, { freezeTableName: true, tableName: 'ln_tax_master', timestamps: true,
+    indexes: [
+      { name: 'uk_tax_master_code_from', unique: true, fields: ['taxCode', 'effectiveFrom'] }
+    ] });
 
   return {
     lnHolidayCalendar,

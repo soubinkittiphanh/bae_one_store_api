@@ -2,7 +2,7 @@ module.exports = (sequelize, DataTypes) => {
   const lnTransaction = sequelize.define('lnTransaction', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     txNo: { type: DataTypes.STRING(50), allowNull: false, unique: true },
-    branchId: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 1 },
+    branchId: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 1, comment: 'location.id (no FK)' },
     loanAccountId: { type: DataTypes.INTEGER, allowNull: false },
     eventCode: { type: DataTypes.STRING(30), allowNull: false },
     valueDate: { type: DataTypes.DATEONLY, allowNull: false },
@@ -16,11 +16,14 @@ module.exports = (sequelize, DataTypes) => {
     bankAccountId: { type: DataTypes.INTEGER, allowNull: true },
     isReversed: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
     reversalOfTxId: { type: DataTypes.INTEGER, allowNull: true },
-    authStatus: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'AUTHORIZED' },
+    authStatus: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'PENDING' },
     makerId: { type: DataTypes.INTEGER, allowNull: true },
     checkerId: { type: DataTypes.INTEGER, allowNull: true },
     authorizedAt: { type: DataTypes.DATE, allowNull: true }
-  }, { freezeTableName: true, tableName: 'ln_transaction', timestamps: true });
+  }, { freezeTableName: true, tableName: 'ln_transaction', timestamps: true,
+    indexes: [
+      { name: 'idx_tx_loan_event', fields: ['loanAccountId', 'eventCode'] }
+    ] });
 
   const lnTransactionAllocation = sequelize.define('lnTransactionAllocation', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
@@ -33,7 +36,7 @@ module.exports = (sequelize, DataTypes) => {
   const lnJournalPosting = sequelize.define('lnJournalPosting', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     transactionId: { type: DataTypes.INTEGER, allowNull: true },
-    glBatchId: { type: DataTypes.STRING(50), allowNull: true },
+    glBatchId: { type: DataTypes.STRING(100), allowNull: true, comment: 'ln_gl_batch.batchNumber' },
     loanAccountId: { type: DataTypes.INTEGER, allowNull: true },
     eventCode: { type: DataTypes.STRING(30), allowNull: false },
     amountTag: { type: DataTypes.STRING(50), allowNull: false },
@@ -44,7 +47,11 @@ module.exports = (sequelize, DataTypes) => {
     baseAmount: { type: DataTypes.DECIMAL(20, 4), allowNull: false, defaultValue: 0.0000 },
     exchangeRate: { type: DataTypes.DECIMAL(20, 8), allowNull: false, defaultValue: 1.00000000 },
     glRecordId: { type: DataTypes.INTEGER, allowNull: true }
-  }, { freezeTableName: true, tableName: 'ln_journal_posting', timestamps: true });
+  }, { freezeTableName: true, tableName: 'ln_journal_posting', timestamps: true,
+    indexes: [
+      { name: 'idx_jp_batch', fields: ['glBatchId'] },
+      { name: 'idx_jp_tx', fields: ['transactionId'] }
+    ] });
 
   const lnStatusHistory = sequelize.define('lnStatusHistory', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
@@ -55,7 +62,10 @@ module.exports = (sequelize, DataTypes) => {
     triggeredBy: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'EOD_BATCH' },
     approvalUserId: { type: DataTypes.INTEGER, allowNull: true },
     effectiveDate: { type: DataTypes.DATEONLY, allowNull: false }
-  }, { freezeTableName: true, tableName: 'ln_status_history', timestamps: true, updatedAt: false });
+  }, { freezeTableName: true, tableName: 'ln_status_history', timestamps: true, updatedAt: false,
+    indexes: [
+      { name: 'idx_sh_loan', fields: ['loanAccountId'] }
+    ] });
 
   const lnAmendmentHistory = sequelize.define('lnAmendmentHistory', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
@@ -65,7 +75,10 @@ module.exports = (sequelize, DataTypes) => {
     oldValuesJson: { type: DataTypes.TEXT('long'), allowNull: false },
     newValuesJson: { type: DataTypes.TEXT('long'), allowNull: false },
     approvedBy: { type: DataTypes.INTEGER, allowNull: false }
-  }, { freezeTableName: true, tableName: 'ln_amendment_history', timestamps: true, updatedAt: false });
+  }, { freezeTableName: true, tableName: 'ln_amendment_history', timestamps: true, updatedAt: false,
+    indexes: [
+      { name: 'idx_ah_loan', fields: ['loanAccountId'] }
+    ] });
 
   return {
     lnTransaction,

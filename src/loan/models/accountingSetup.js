@@ -1,3 +1,5 @@
+const { makerChecker } = require('./common');
+
 module.exports = (sequelize, DataTypes) => {
   const lnAccountingRole = sequelize.define('lnAccountingRole', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
@@ -5,22 +7,26 @@ module.exports = (sequelize, DataTypes) => {
     name: { type: DataTypes.STRING(100), allowNull: false },
     expectedType: { type: DataTypes.STRING(30), allowNull: false },
     resolverType: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'MAPPING_TABLE' },
-    authStatus: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'AUTHORIZED' }
+    ...makerChecker(DataTypes)
   }, { freezeTableName: true, tableName: 'ln_accounting_role', timestamps: true });
 
   const lnAmountTag = sequelize.define('lnAmountTag', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     tagCode: { type: DataTypes.STRING(50), allowNull: false, unique: true },
-    name: { type: DataTypes.STRING(100), allowNull: false }
+    name: { type: DataTypes.STRING(100), allowNull: false },
+    ...makerChecker(DataTypes)
   }, { freezeTableName: true, tableName: 'ln_amount_tag', timestamps: true });
 
   const lnEventMaster = sequelize.define('lnEventMaster', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     eventCode: { type: DataTypes.STRING(30), allowNull: false, unique: true },
     name: { type: DataTypes.STRING(100), allowNull: false },
-    description: { type: DataTypes.TEXT, allowNull: true }
+    description: { type: DataTypes.TEXT, allowNull: true },
+    ...makerChecker(DataTypes)
   }, { freezeTableName: true, tableName: 'ln_event_master', timestamps: true });
 
+  // UNIQUE uk_accounting_entry_rule is built on PERSISTENT generated columns (ukProductId,
+  // ukCategoryId) in SQL only; they are not model attributes so Sequelize never writes them.
   const lnAccountingEntryRule = sequelize.define('lnAccountingEntryRule', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     productId: { type: DataTypes.INTEGER, allowNull: true },
@@ -32,14 +38,16 @@ module.exports = (sequelize, DataTypes) => {
     qualifierSource: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'CURRENT' },
     effectiveFrom: { type: DataTypes.DATEONLY, allowNull: false },
     effectiveTo: { type: DataTypes.DATEONLY, allowNull: true },
-    authStatus: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'AUTHORIZED' }
+    ...makerChecker(DataTypes)
   }, { freezeTableName: true, tableName: 'ln_accounting_entry_rule', timestamps: true });
 
+  // UNIQUE uk_role_gl_mapping is built on PERSISTENT generated columns (ukProductId, ukCategoryId,
+  // ukBranchId, ukCurrencyId, ukStatusQualifier) in SQL only; they are not model attributes.
   const lnRoleGlMapping = sequelize.define('lnRoleGlMapping', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     productId: { type: DataTypes.INTEGER, allowNull: true },
     categoryId: { type: DataTypes.INTEGER, allowNull: true },
-    branchId: { type: DataTypes.INTEGER, allowNull: true },
+    branchId: { type: DataTypes.INTEGER, allowNull: true, comment: 'location.id (no FK)' },
     currencyId: { type: DataTypes.INTEGER, allowNull: true },
     statusQualifier: { type: DataTypes.STRING(30), allowNull: true },
     roleCode: { type: DataTypes.STRING(50), allowNull: false },
@@ -47,10 +55,11 @@ module.exports = (sequelize, DataTypes) => {
     effectiveFrom: { type: DataTypes.DATEONLY, allowNull: false },
     effectiveTo: { type: DataTypes.DATEONLY, allowNull: true },
     isSeedDefault: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
-    authStatus: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'AUTHORIZED' },
-    makerId: { type: DataTypes.INTEGER, allowNull: true },
-    checkerId: { type: DataTypes.INTEGER, allowNull: true }
-  }, { freezeTableName: true, tableName: 'ln_role_gl_mapping', timestamps: true });
+    ...makerChecker(DataTypes)
+  }, { freezeTableName: true, tableName: 'ln_role_gl_mapping', timestamps: true,
+    indexes: [
+      { name: 'idx_gl_map_lookup', fields: ['roleCode', 'statusQualifier', 'productId', 'currencyId'] }
+    ] });
 
   const lnGlBatch = sequelize.define('lnGlBatch', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
@@ -60,7 +69,7 @@ module.exports = (sequelize, DataTypes) => {
     totalDebit: { type: DataTypes.DECIMAL(20, 4), allowNull: false, defaultValue: 0.0000 },
     totalCredit: { type: DataTypes.DECIMAL(20, 4), allowNull: false, defaultValue: 0.0000 },
     currencyId: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 1 },
-    branchId: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 1 },
+    branchId: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 1, comment: 'location.id (no FK)' },
     status: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'POSTED' }
   }, { freezeTableName: true, tableName: 'ln_gl_batch', timestamps: true });
 
