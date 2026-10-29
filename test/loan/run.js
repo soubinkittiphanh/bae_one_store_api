@@ -1,5 +1,5 @@
 /**
- * Loan module integration tests (Phase 2A). LOCAL DATABASE ONLY.
+ * Loan module integration tests (Phase 2A and 2B). LOCAL DATABASE ONLY.
  *
  *   DB_HOST=127.0.0.1 DB_USER=<user> DB_PASSWORD=<pw> npm run test:loan
  *
@@ -9,8 +9,9 @@
  *   LOAN_TEST_MYSQL_ARGS  extra arguments for the mariadb / mariadb-dump CLIs used to rebuild the
  *                         test database (default: none, i.e. OS socket authentication)
  *
- * Steps: rebuild test DB -> migrate down/up round trip -> seed twice -> model/DB parity ->
- * start the API from a temp working directory -> HTTP and service tests -> stop the API.
+ * Steps: rebuild test DB -> migrate down/up round trip -> 2A and 2B seeds twice -> model/DB parity ->
+ * accounting validators on the worked examples -> start the API from a temp working directory ->
+ * HTTP and service tests -> stop the API.
  */
 const path = require('path');
 const os = require('os');
@@ -95,11 +96,12 @@ const main = async () => {
   await test('migrate up on a clean copy', async () => {
     runNode('loan_migrate.js', ['up']);
     const n = Number((await q("SELECT COUNT(*) n FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name LIKE 'ln\\_%'"))[0].n);
-    assert.strictEqual(n, 68, `expected 68 ln_* tables, found ${n}`);
+    assert.strictEqual(n, 69, `expected 69 ln_* tables, found ${n}`);
   });
-  await test('corrections DOWN then UP restores the schema exactly', async () => {
+  await test('2B and corrections DOWN, then UP, restore the schema exactly', async () => {
     const before = await snapshot();
-    runNode('loan_migrate.js', ['down', '--yes']);
+    assert.match(runNode('loan_migrate.js', ['down', '--yes']), /20261030_loan_phase2b_accounting/);
+    assert.match(runNode('loan_migrate.js', ['down', '--yes']), /20261029_loan_phase2a_corrections/);
     runNode('loan_migrate.js', ['up']);
     assert.strictEqual(await snapshot(), before);
   });
@@ -136,6 +138,44 @@ const main = async () => {
     assert.ok(tax[0].taxRate === null && tax[0].posTaxId && tax[0].posTaxId === tax[0].profileTax, 'VAT referenced via posTaxId, no copied rate');
   });
 
+  console.log('\n[phase 2b seed]');
+  let countsAfter2b;
+  await test('2B seed: aligns an untouched PENDING status to MEMO_ONLY and runs twice with identical row counts', async () => {
+    await q("UPDATE ln_status_master SET penaltyTreatment = 'ACCRUE' WHERE statusCode = 'WATCH' AND authStatus = 'PENDING' AND makerId IS NULL");
+    const mappings = Number((await q('SELECT COUNT(*) n FROM ln_role_gl_mapping'))[0].n);
+    const accounts = Number((await q('SELECT COUNT(*) n FROM chart_of_account'))[0].n);
+    runNode('seed_loan_phase2b_accounting.js');
+    countsAfter2b = await tableCounts();
+    runNode('seed_loan_phase2b_accounting.js');
+    runNode('seed_loan_phase2a_data.js'); // a 2A re-run must not remove the 2B catalog additions
+    assert.deepStrictEqual(await tableCounts(), countsAfter2b);
+    assert.strictEqual(Number((await q('SELECT COUNT(*) n FROM ln_role_gl_mapping'))[0].n), mappings, 'no role-to-GL mappings');
+    assert.strictEqual(Number((await q('SELECT COUNT(*) n FROM chart_of_account'))[0].n), accounts, 'no GL accounts created');
+    const pen = await q("SELECT statusCode, penaltyTreatment p FROM ln_status_master ORDER BY id");
+    assert.deepStrictEqual(pen.map(r => `${r.statusCode}:${r.p}`), ['NORMAL:MEMO_ONLY', 'WATCH:MEMO_ONLY', 'SUBSTANDARD:MEMO_ONLY', 'DOUBTFUL:MEMO_ONLY', 'LOSS:MEMO_ONLY',
+      'WRITTEN_OFF:STOP_ACCRUAL', 'REPOSSESSED:STOP_ACCRUAL', 'CLOSED:STOP_ACCRUAL']);
+    assert.strictEqual(Number((await q("SELECT COUNT(*) n FROM ln_audit_log WHERE actionType = 'SEED_RECONCILE' AND entityName = 'status' AND entityKey = 'WATCH'"))[0].n), 1);
+  });
+  await test('2B seed: catalog additions AUTHORIZED, entry rules PENDING with the inactive options, VAT parameter empty', async () => {
+    const catalog = require('../../src/loan/accounting/catalog');
+    for (const [t, n] of [['ln_event_master', 25], ['ln_amount_tag', 50], ['ln_lookup_interest_recognition', 3]]) {
+      const c = await q(`SELECT COUNT(*) n, SUM(authStatus = 'AUTHORIZED') a FROM \`${t}\``);
+      assert.strictEqual(Number(c[0].n), n, `${t} count`);
+      assert.strictEqual(Number(c[0].a), n, `${t} AUTHORIZED`);
+    }
+    const rules = await q('SELECT authStatus s, isActive a, COUNT(*) n FROM ln_accounting_entry_rule GROUP BY 1, 2 ORDER BY 1, 2');
+    const inactive = catalog.ENTRY_RULES.filter(r => !r.isActive).length;
+    assert.deepStrictEqual(rules.map(r => `${r.s}/${r.a}/${r.n}`), [`PENDING/0/${inactive}`, `PENDING/1/${catalog.ENTRY_RULES.length - inactive}`]);
+    const offRoles = await q("SELECT DISTINCT amountTag t FROM ln_accounting_entry_rule WHERE isActive = 0 AND roleCode NOT IN ('DEFERRED_FEE','UNAMORTIZED_FEE_CONTRA','FEE_INCOME') ORDER BY 1");
+    assert.deepStrictEqual(offRoles.map(r => r.t), ['PEN_WAIVE', 'PEN_WO', 'PENALTY'], 'only deferred-fee and penalty-receivable legs are inactive');
+    const prodRec = await q('SELECT DISTINCT interestRecognitionCode c FROM ln_product');
+    assert.deepStrictEqual(prodRec.map(r => r.c), ['DUE_DATE']);
+    const vat = await q("SELECT value FROM spf WHERE code = 'GL_MAP_VAT_OUTPUT_ACC'");
+    assert.ok(vat.length === 1 && vat[0].value === '', 'GL_MAP_VAT_OUTPUT_ACC exists and is empty');
+    const fn = await q("SELECT applicableActions a FROM sec_function WHERE functionCode IN ('LN_ENTRY_RULE','LN_ACCOUNTING_SETUP') ORDER BY functionCode");
+    assert.deepStrictEqual(fn.map(r => r.a), ['VIEW', 'VIEW,CREATE,EDIT,DELETE,AUTHORIZE']);
+  });
+
   console.log('\n[schema parity]');
   const db = require('../../src/models');
   db.sequelize.options.logging = false;
@@ -143,6 +183,9 @@ const main = async () => {
     const diffs = await parity(db);
     assert.deepStrictEqual(diffs, []);
   });
+
+  console.log('\n[accounting validators]');
+  await accountingTests({ db });
 
   console.log('\n[api] starting API on port', port);
   const app = await startApi(port, childEnv);
@@ -219,6 +262,147 @@ const startApi = (port, env) => new Promise((resolve, reject) => {
 });
 
 // ----------------------------------------------------------------------------- API tests
+
+// ----------------------------------------------------------------------------- accounting (2B)
+const accountingTests = async ({ db }) => {
+  const { resolveRuleSet, buildJournal, reverseLines, toUnits, fromUnits } = require('../../src/loan/accounting/journal');
+  const V = require('../../src/loan/accounting/validators');
+  const { DEFAULT_PRODUCT, EXAMPLES } = require('./fixtures/workedExamples');
+  const allRules = (await db.lnAccountingEntryRule.findAll()).map(r => r.get({ plain: true }));
+  const roleTypes = Object.fromEntries((await db.lnAccountingRole.findAll()).map(r => [r.roleCode, r.expectedType]));
+  const product = { id: -1, categoryId: -1, ...DEFAULT_PRODUCT };
+  const rules = resolveRuleSet(allRules, product, { includePending: true });
+  const fmt = l => `${l.amountTag} ${l.drCr} ${l.roleCode}${l.qualifier ? `[${l.qualifier}]` : ''} ${fromUnits(toUnits(l.amount))}`;
+  const norm = e => { const parts = e.split(' '); parts[3] = fromUnits(toUnits(parts[3])); return parts.join(' '); };
+
+  const journals = {};
+  for (const ex of EXAMPLES) {
+    await test(`${ex.name}: seeded rules produce the addendum entries; balanced; total-cash check passes`, async () => {
+      for (const step of ex.steps) {
+        const lines = step.reverses
+          ? reverseLines(journals[step.reverses])
+          : buildJournal({ rules, eventCode: step.event, tags: step.tags, qualifiers: step.qualifiers, currency: 'LAK' });
+        if (step.id) journals[step.id] = lines;
+        assert.deepStrictEqual(lines.map(fmt).sort(), step.expected.map(norm).sort(), `${step.event} lines`);
+        assert.deepStrictEqual(V.validateJournal(lines, roleTypes), [], `${step.event} balance`);
+        if (step.tags) assert.deepStrictEqual(V.validateTagAmounts(step.event, step.tags, rules), [], `${step.event} total-cash`);
+      }
+    });
+  }
+
+  await test('validator: an unbalanced journal is rejected (per currency)', async () => {
+    const lines = buildJournal({ rules, eventCode: 'ACCR', tags: { INT_ACCR: '3600000' }, currency: 'LAK' });
+    lines[1].amount = '3599999.9999';
+    assert.match(V.validateJournal(lines, roleTypes).join(), /Unbalanced on-balance lines in LAK/);
+    const usd = buildJournal({ rules, eventCode: 'ACCR', tags: { INT_ACCR: '100' }, currency: 'USD' });
+    assert.match(V.validateJournal([...usd.slice(0, 1), ...buildJournal({ rules, eventCode: 'ACCR', tags: { INT_ACCR: '100' }, currency: 'LAK' }).slice(1)], roleTypes).join(), /in USD.*in LAK|in LAK.*in USD/);
+  });
+  await test('validator: on- and off-balance must balance separately (an off-balance leg cannot offset an on-balance leg)', async () => {
+    const lines = [
+      { eventCode: 'X', amountTag: 'T', drCr: 'DR', roleCode: 'LOAN_LOSS_SHORTFALL', currency: 'LAK', amount: '100' },
+      { eventCode: 'X', amountTag: 'T', drCr: 'CR', roleCode: 'WRITTEN_OFF_MEMO_CR', currency: 'LAK', amount: '100' }
+    ];
+    const errors = V.validateJournal(lines, roleTypes);
+    assert.strictEqual(errors.length, 2);
+    assert.match(errors.join(), /on-balance/);
+    assert.match(errors.join(), /off-balance/);
+  });
+  await test('validator: total-cash tag must equal the sum of its parts', async () => {
+    assert.match(V.validateTagAmounts('LIQD', { TOTAL_PAID: '23600000', INT_PAID: '3600000', PRIN_PAID: '20000001' }, rules).join(), /total-cash tag TOTAL_PAID/);
+    assert.match(V.validateTagAmounts('PREPAY', { PAYOFF_CASH: '82200000', OUT_PRIN: '80000000', EARNED_INT: '600000' }, rules).join(), /total-cash tag PAYOFF_CASH/);
+    assert.match(V.validateTagAmounts('FEE_REFUND', { REFUND_AMT: '10000000', FEE_DOC: '3000000' }, rules).join(), /total-cash tag REFUND_AMT/);
+    assert.match(V.validateTagAmounts('REPOSSESS', { APPRAISED: '125000000', OUT_PRIN: '150000000' }, rules).join(), /one-sided tags/);
+  });
+  await test('builder: a non-zero tag without an active rule is refused (booked penalty under MEMO_ONLY, deferred fee under IMMEDIATE)', async () => {
+    assert.throws(() => buildJournal({ rules, eventCode: 'LIQD', tags: { TOTAL_PAID: '100', PENALTY: '100' }, qualifiers: { CURRENT: 'NORMAL' } }), /PENALTY is non-zero but has no active entry rule/);
+    assert.throws(() => buildJournal({ rules, eventCode: 'EIR_AMORT', tags: { EIR_AMORT: '10' } }), /no active entry rule/);
+    assert.throws(() => buildJournal({ rules, eventCode: 'DISB', tags: { PRINCIPAL: '1' } }), /needs the CURRENT status qualifier/);
+  });
+
+  const check = (params, extra = []) => {
+    const p = { id: -1, categoryId: -1, ...params };
+    const active = [...resolveRuleSet(allRules, p, { includePending: true }), ...extra];
+    return V.validateProductRuleSet(p, active, resolveRuleSet(allRules, p, { includePending: true, includeInactive: true }));
+  };
+  await test('product rule set: every valid fee mode x target with IMMEDIATE passes on the seeded rules', async () => {
+    for (const feeFinancingMode of ['UPFRONT', 'CAPITALIZED', 'DEDUCTED']) {
+      for (const disbursementTargetCode of ['SALE_INVOICE_SETTLEMENT', 'CASH_BANK']) {
+        if (feeFinancingMode === 'DEDUCTED' && disbursementTargetCode === 'SALE_INVOICE_SETTLEMENT') continue;
+        assert.deepStrictEqual(check({ feeFinancingMode, deferredFeePresentation: 'IMMEDIATE', disbursementTargetCode }), [], `${feeFinancingMode}/${disbursementTargetCode}`);
+      }
+    }
+  });
+  await test('product rule set: invalid combinations and mismatches are reported', async () => {
+    assert.match(check({ feeFinancingMode: 'DEDUCTED', deferredFeePresentation: 'IMMEDIATE', disbursementTargetCode: 'SALE_INVOICE_SETTLEMENT' }).join(), /DEDUCTED fee mode cannot be combined/);
+    assert.match(check({ ...DEFAULT_PRODUCT, disbursementTargetCode: 'CUSTOMER_ACCOUNT' }).join(), /CUSTOMER_ACCOUNT has no accounting role/);
+    const deferred = check({ ...DEFAULT_PRODUCT, deferredFeePresentation: 'LIABILITY' });
+    assert.ok(deferred.some(e => /Required leg FEE_COLLECT FEE_DOC CR DEFERRED_FEE exists but is inactive/.test(e)), 'deferred fee legs inactive');
+    assert.ok(deferred.some(e => /Required leg EIR_AMORT EIR_AMORT DR DEFERRED_FEE exists but is inactive/.test(e)), 'EIR legs inactive');
+    const withoutDisb = allRules.filter(r => !(r.eventCode === 'DISB' && r.amountTag === 'PRINCIPAL' && r.drCr === 'CR'));
+    const p = { id: -1, categoryId: -1, ...DEFAULT_PRODUCT };
+    assert.match(V.validateProductRuleSet(p, resolveRuleSet(withoutDisb, p, { includePending: true }), []).join(), /Missing required leg DISB PRINCIPAL CR SALE_RECEIVABLE/);
+    const rogue = (over) => ({ productId: -1, categoryId: null, qualifierSource: 'NONE', authStatus: 'PENDING', isActive: true, feeModeFilter: 'ANY', presentationFilter: 'ANY', targetFilter: 'ANY', effectiveFrom: '2026-01-01', ...over });
+    assert.match(check(DEFAULT_PRODUCT, [rogue({ eventCode: 'EIR_AMORT', amountTag: 'EIR_AMORT', drCr: 'DR', roleCode: 'DEFERRED_FEE' })]).join(), /uses DEFERRED_FEE, but presentation is IMMEDIATE/);
+    assert.match(check(DEFAULT_PRODUCT, [rogue({ eventCode: 'DISB', amountTag: 'FEE_DOC', drCr: 'DR', roleCode: 'LOAN_PORTFOLIO', qualifierSource: 'CURRENT' })]).join(), /fees are paid UPFRONT/);
+    assert.match(check(DEFAULT_PRODUCT, [rogue({ eventCode: 'DISB', amountTag: 'PRINCIPAL', drCr: 'CR', roleCode: 'CASH_BANK' })]).join(), /disbursement target is SALE_INVOICE_SETTLEMENT/);
+    assert.match(check({ ...DEFAULT_PRODUCT, feeFinancingMode: 'CAPITALIZED' }, [rogue({ eventCode: 'FEE_COLLECT', amountTag: 'TOTAL_PAID', drCr: 'DR', roleCode: 'CASH_BANK' })]).join(), /FEE_COLLECT leg, but fee mode is CAPITALIZED/);
+  });
+  await test('rule structure: qualifier misuse and a two-sided tag that does not balance are reported', async () => {
+    const r = (over) => ({ eventCode: 'ACCR', amountTag: 'INT_ACCR', qualifierSource: 'NONE', ...over });
+    const errors = V.validateRuleStructure([
+      r({ drCr: 'DR', roleCode: 'LOAN_PORTFOLIO', qualifierSource: 'NONE' }),
+      r({ drCr: 'DR', roleCode: 'INTEREST_RECEIVABLE', qualifierSource: 'CURRENT' }),
+      r({ drCr: 'CR', roleCode: 'INTEREST_INCOME' })
+    ]);
+    assert.ok(errors.some(e => /LOAN_PORTFOLIO needs qualifierSource CURRENT/.test(e)));
+    assert.ok(errors.some(e => /only LOAN_PORTFOLIO is status-qualified/.test(e)));
+    assert.ok(errors.some(e => /2 debit leg\(s\) vs 1 credit leg/.test(e)));
+    assert.deepStrictEqual(V.validateRuleStructure(rules), [], 'seeded default rule set is structurally valid');
+  });
+  await test('rule resolution: a product-scoped set for an event overrides the global set; effective dates apply', async () => {
+    const p = { id: 77, categoryId: 5, ...DEFAULT_PRODUCT };
+    const own = { productId: 77, categoryId: null, eventCode: 'ACCR', amountTag: 'INT_ACCR', drCr: 'DR', roleCode: 'INTEREST_RECEIVABLE', qualifierSource: 'NONE', authStatus: 'AUTHORIZED', isActive: true, feeModeFilter: 'ANY', presentationFilter: 'ANY', targetFilter: 'ANY', effectiveFrom: '2027-01-01' };
+    const auth = allRules.map(x => ({ ...x, authStatus: 'AUTHORIZED', effectiveFrom: '2026-01-01' }));
+    const before = resolveRuleSet([...auth, own], p, { asOfDate: '2026-12-31' }).filter(x => x.eventCode === 'ACCR');
+    const after = resolveRuleSet([...auth, own], p, { asOfDate: '2027-01-01' }).filter(x => x.eventCode === 'ACCR');
+    assert.strictEqual(before.length, 2, 'global ACCR pair before the product rule is effective');
+    assert.deepStrictEqual(after.map(x => x.productId), [77], 'product rule replaces the global ACCR set');
+    assert.strictEqual(resolveRuleSet(allRules, p, {}).length, 0, 'PENDING rules are not used unless includePending');
+  });
+
+  await test('propose-accounts helper: 19 accounts by default (20 with VAT, 33 with every option); collisions and parameters checked; read-only', async () => {
+    const { proposeAccounts } = require('../../src/loan/accounting/accountProposals');
+    const countBefore = await db.chartAccount.count();
+    const base = await proposeAccounts(db);
+    assert.strictEqual(base.accounts.length, 19);
+    assert.deepStrictEqual(base.accounts.filter(a => a.roleCode === 'LOAN_PORTFOLIO').map(a => `${a.number}:${a.qualifiers.join('+')}`), ['1211:NORMAL+WATCH', '1213:SUBSTANDARD+DOUBTFUL+LOSS']);
+    assert.strictEqual((await proposeAccounts(db, { features: ['VAT'] })).accounts.length, 20);
+    const all = await proposeAccounts(db, { features: ['VAT', 'BILL_PENALTY', 'BILLED_FEES', 'FX', 'DEFERRED_FEES', 'FIVE_PORTFOLIO'] });
+    assert.strictEqual(all.accounts.length, 33);
+    assert.strictEqual(all.accounts.filter(a => a.roleCode === 'LOAN_PORTFOLIO').length, 5);
+    await assert.rejects(proposeAccounts(db, { features: ['NOPE'] }), /Unknown feature/);
+
+    // Collision: an unrelated account already uses 1213; a matching 1221 can be reused (throwaway test DB only)
+    const clash = await db.chartAccount.create({ accountNumber: '1213', accountName: 'Office supplies', accountLLName: 'x', accountType: 'Expense', isActive: true });
+    const same = await db.chartAccount.create({ accountNumber: '1221', accountName: 'Loan interest receivable', accountLLName: 'x', accountType: 'Asset', isActive: true });
+    try {
+      const r = await proposeAccounts(db, { features: ['VAT'] });
+      const by = Object.fromEntries(r.accounts.map(a => [a.number, a]));
+      assert.strictEqual(by['1213'].status, 'COLLISION');
+      assert.match(by['1213'].detail, /Office supplies/);
+      assert.strictEqual(by['1221'].status, 'REUSE');
+      assert.strictEqual(r.summary.collisions, 1);
+      const params = Object.fromEntries(r.params.map(x => [x.param, x.status]));
+      assert.strictEqual(params.GL_MAP_VAT_OUTPUT_ACC, 'NOT_SET');
+      assert.strictEqual(params.GL_MAP_AR_ACC, 'OK', 'AR resolved through its system parameter');
+    } finally {
+      await clash.destroy();
+      await same.destroy();
+    }
+    assert.strictEqual(await db.chartAccount.count(), countBefore);
+    assert.strictEqual(await db.lnRoleGlMapping.count(), 0);
+  });
+};
 
 const apiTests = async ({ port, q, db, runNode }) => {
   const axios = require('axios');
@@ -469,8 +653,34 @@ const apiTests = async ({ port, q, db, runNode }) => {
     assert.deepStrictEqual(JSON.parse(r.afterValue), { granted: false });
     assert.strictEqual(Number((await q('SELECT COUNT(*) n FROM sec_group_grant WHERE userGroupId = ? AND functionCode = ?', [cashierGroup, 'LN_HOLIDAY']))[0].n), 0);
   });
-  await test('migrate down refuses to drop user-made grant audit history', async () => {
-    assert.throws(() => runNode('loan_migrate.js', ['down', '--yes']), /sec_audit_log/);
+  await test('migrate down --all refuses (entry rules, grant audit history) and changes nothing', async () => {
+    const before = Number((await q("SELECT COUNT(*) n FROM information_schema.tables WHERE table_schema = DATABASE() AND (table_name LIKE 'ln\\_%' OR table_name LIKE 'sec\\_%')"))[0].n);
+    assert.throws(() => runNode('loan_migrate.js', ['down', '--all', '--yes']), (err) => /ln_accounting_entry_rule/.test(err.message) && /sec_audit_log/.test(err.message));
+    const after = Number((await q("SELECT COUNT(*) n FROM information_schema.tables WHERE table_schema = DATABASE() AND (table_name LIKE 'ln\\_%' OR table_name LIKE 'sec\\_%')"))[0].n);
+    assert.strictEqual(after, before);
+  });
+  await test('accounting check endpoint: seeded products pass on the pending rule set; CASHIER refused; GL mappings stay view-only', async () => {
+    const products = (await call(ADMIN, 'get', `${L}/products`)).data.data;
+    for (const p of products.filter(x => x.status !== 'SUPERSEDED')) {
+      const res = await call(ADMIN, 'get', `${L}/products/${p.id}/accounting-check?includePending=1`);
+      expectStatus(res, 200, `check ${p.productCode}`);
+      assert.deepStrictEqual(res.data.data.errors, [], `${p.productCode} rule set`);
+      const auth = await call(ADMIN, 'get', `${L}/products/${p.id}/accounting-check`);
+      assert.ok(!auth.data.data.ok && auth.data.data.errors.some(e => /Missing required leg/.test(e)), 'nothing authorized yet');
+    }
+    expectStatus(await call(CASHIER, 'get', `${L}/products/${products[0].id}/accounting-check`), 403, 'cashier');
+    expectStatus(await call(ADMIN, 'post', `${L}/params/role-gl-mapping`, { roleCode: 'INTEREST_INCOME', chartAccountId: 1, effectiveFrom: '2026-11-01' }), 403, 'admin creates GL mapping');
+  });
+  await test('entry rules follow maker-checker under LN_ENTRY_RULE; LOAN_PORTFOLIO qualifier rule enforced', async () => {
+    const base = { eventCode: 'ACCR', amountTag: 'INT_ACCR', drCr: 'DR', roleCode: 'INTEREST_RECEIVABLE', qualifierSource: 'NONE', effectiveFrom: '2026-12-01' };
+    expectStatus(await call(ADMIN, 'post', `${L}/params/accounting-entry-rule`, { ...base, roleCode: 'LOAN_PORTFOLIO' }), 400, 'portfolio without qualifier');
+    expectStatus(await call(ADMIN, 'post', `${L}/params/accounting-entry-rule`, { ...base, amountTag: 'NO_SUCH_TAG' }), 400, 'unknown tag');
+    const created = await call(ADMIN, 'post', `${L}/params/accounting-entry-rule`, base);
+    expectStatus(created, 201, 'create rule');
+    const id = created.data.data.id;
+    expectStatus(await call(ADMIN, 'post', `${L}/params/accounting-entry-rule/${id}/authorize`), 403, 'self authorize');
+    expectStatus(await call(SUPER, 'post', `${L}/params/accounting-entry-rule/${id}/authorize`), 200, 'checker authorizes');
+    expectStatus(await call(CASHIER, 'get', `${L}/params/accounting-entry-rule`), 403, 'cashier lists rules');
   });
   await test('banner status for any user, pending inbox filtered by grants, enums served by lookups', async () => {
     const st = await call(CASHIER, 'get', `${L}/status`);
