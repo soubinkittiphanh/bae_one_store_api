@@ -36,13 +36,13 @@ const clientDB = {
     //     "port": 10087,
     // },
     "dev": {
-        "host": "localhost",
-        "user": "root",
-        "password": "SDAT@3480",
+        "host": process.env.DB_HOST || "localhost",
+        "user": process.env.DB_USER || "root",
+        "password": process.env.DB_PASSWORD !== undefined ? process.env.DB_PASSWORD : "SDAT@3480",
         // "database": "dcommerce_pro_carcare_sokpaluang",
         // "database": "dcommerce_mpwt",
-        "database": "dcommerce_dev",
-        "port": 3306,
+        "database": process.env.DB_NAME || "dcommerce_dev",
+        "port": Number(process.env.DB_PORT) || 3306,
     },
     "payment_1": {
         "host": "150.95.31.23",

@@ -12,7 +12,7 @@
 const fs = require('fs');
 const path = require('path');
 const mariadb = require('mariadb');
-const { assertLocalDb } = require('./src/loan/dbGuard');
+const { assertLocalDb, resolveConfig } = require('./src/loan/dbGuard');
 
 const MIGRATIONS = [
   {
@@ -74,7 +74,7 @@ const assertNoBusinessData = async (conn) => {
 const main = async () => {
   const [command = 'status', ...flags] = process.argv.slice(2);
   const target = assertLocalDb('loan_migrate');
-  const cfg = require('./src/config/dbClient').clientDB.env_auto;
+  const cfg = resolveConfig();
 
   const conn = await mariadb.createConnection({
     host: cfg.host,

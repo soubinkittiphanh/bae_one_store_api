@@ -2,12 +2,15 @@
  * Loan module DB guard.
  * Loan seeds and migrations must run against a local database unless the operator
  * explicitly opts in with ALLOW_REMOTE=1 and CONFIRM_DB=<database name>.
- * Reads the connection config directly so it can run before src/models connects.
+ * Resolves the same config src/models uses (src/config/env.js -> db) without
+ * connecting, so it can run before src/models opens a connection.
  */
 const LOCAL_HOSTS = ['127.0.0.1', 'localhost', '::1'];
 
+const resolveConfig = () => require('../config/env').db;
+
 const resolveTarget = () => {
-  const cfg = require('../config/dbClient').clientDB.env_auto;
+  const cfg = resolveConfig();
   return { host: String(cfg.host), port: cfg.port, database: String(cfg.database) };
 };
 
@@ -30,4 +33,4 @@ const assertLocalDb = (scriptName = 'loan script') => {
   return target;
 };
 
-module.exports = { assertLocalDb, resolveTarget };
+module.exports = { assertLocalDb, resolveTarget, resolveConfig };
