@@ -81,6 +81,26 @@ module.exports = (sequelize, DataTypes) => {
     ...makerChecker(DataTypes)
   }, { freezeTableName: true, tableName: 'ln_lookup_interest_recognition', timestamps: true });
 
+  // EQUAL_PRINCIPAL / EQUAL_INSTALLMENT / FLAT; created by 20261031_loan_phase3.sql
+  const lnLookupRepaymentMethod = sequelize.define('lnLookupRepaymentMethod', {
+    code: { type: DataTypes.STRING(30), primaryKey: true },
+    name: { type: DataTypes.STRING(100), allowNull: false },
+    description: { type: DataTypes.TEXT, allowNull: true },
+    ...makerChecker(DataTypes)
+  }, { freezeTableName: true, tableName: 'ln_lookup_repayment_method', timestamps: true });
+
+  // Loan-owned rounding rule per currency (docs/loan/rounding-policy.md); the POS currency table has no decimals
+  const lnCurrencyRule = sequelize.define('lnCurrencyRule', {
+    id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+    currencyId: { type: DataTypes.INTEGER, allowNull: false, comment: 'currency.id (no FK)' },
+    decimalPlaces: { type: DataTypes.INTEGER, allowNull: false, comment: '0..2 while posting into general_ledger DECIMAL(15,2)' },
+    roundingMode: { type: DataTypes.STRING(20), allowNull: false, defaultValue: 'HALF_UP' },
+    effectiveFrom: { type: DataTypes.DATEONLY, allowNull: false },
+    effectiveTo: { type: DataTypes.DATEONLY, allowNull: true },
+    ...makerChecker(DataTypes)
+  }, { freezeTableName: true, tableName: 'ln_currency_rule', timestamps: true,
+    indexes: [{ name: 'uk_currency_rule', unique: true, fields: ['currencyId', 'effectiveFrom'] }] });
+
   return {
     lnLookupLoanType,
     lnLookupFrequency,
@@ -92,6 +112,8 @@ module.exports = (sequelize, DataTypes) => {
     lnLookupCollateralType,
     lnLookupLoanPurpose,
     lnLookupDeferredFeePresentation,
-    lnLookupInterestRecognition
+    lnLookupInterestRecognition,
+    lnLookupRepaymentMethod,
+    lnCurrencyRule
   };
 };

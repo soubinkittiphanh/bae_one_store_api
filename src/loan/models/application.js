@@ -14,11 +14,19 @@ module.exports = (sequelize, DataTypes) => {
     tenorMonths: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 12 },
     interestRate: { type: DataTypes.DECIMAL(9, 6), allowNull: false, defaultValue: 0.000000 },
     balloonAmount: { type: DataTypes.DECIMAL(20, 4), allowNull: false, defaultValue: 0.0000 },
+    valueDate: { type: DataTypes.DATEONLY, allowNull: true },
+    firstDueDate: { type: DataTypes.DATEONLY, allowNull: true },
+    graceType: { type: DataTypes.STRING(20), allowNull: false, defaultValue: 'NONE' },
+    gracePeriods: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
     purposeCode: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'VEHICLE_PURCHASE' },
     status: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'DRAFT' },
     currentApprovalLevel: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
     createdBy: { type: DataTypes.INTEGER, allowNull: false },
-    approvedBy: { type: DataTypes.INTEGER, allowNull: true }
+    approvedBy: { type: DataTypes.INTEGER, allowNull: true },
+    remarks: { type: DataTypes.TEXT, allowNull: true },
+    makerId: { type: DataTypes.INTEGER, allowNull: true },
+    checkerId: { type: DataTypes.INTEGER, allowNull: true },
+    authorizedAt: { type: DataTypes.DATE, allowNull: true }
   }, { freezeTableName: true, tableName: 'ln_application', timestamps: true });
 
   const lnGuarantor = sequelize.define('lnGuarantor', {

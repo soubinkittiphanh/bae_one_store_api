@@ -5,6 +5,7 @@ module.exports = (sequelize, DataTypes) => {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     calendarCode: { type: DataTypes.STRING(30), allowNull: false, unique: true },
     branchId: { type: DataTypes.INTEGER, allowNull: true, comment: 'location.id (no FK)' },
+    weekendDays: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'SAT,SUN' },
     description: { type: DataTypes.TEXT, allowNull: true },
     ...makerChecker(DataTypes)
   }, { freezeTableName: true, tableName: 'ln_holiday_calendar', timestamps: true });

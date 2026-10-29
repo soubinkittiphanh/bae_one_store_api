@@ -37,6 +37,14 @@ const MIGRATIONS = [
     marker: 'ln_lookup_interest_recognition',
     dropsData: false,
     dropsEntryRules: true
+  },
+  {
+    name: '20261031_loan_phase3',
+    up: '20261031_loan_phase3.sql',
+    down: '20261031_loan_phase3_down.sql',
+    marker: 'ln_currency_rule',
+    dropsData: false,
+    dropsAccounts: true
   }
 ];
 
@@ -105,6 +113,15 @@ const assertNoEntryRules = async (conn) => {
   }
 };
 
+// The Phase 3 DOWN removes application/account columns; never while applications or accounts exist
+const assertNoAccounts = async (conn) => {
+  for (const t of ['ln_application', 'ln_account']) {
+    if (!(await tableExists(conn, t))) continue;
+    const rows = await conn.query(`SELECT COUNT(*) AS n FROM \`${t}\``);
+    if (Number(rows[0].n) > 0) throw new Error(`Refusing to roll back Phase 3: ${t} has ${rows[0].n} row(s).`);
+  }
+};
+
 const main = async () => {
   const [command = 'status', ...flags] = process.argv.slice(2);
   const target = assertLocalDb('loan_migrate');
@@ -145,7 +162,7 @@ const main = async () => {
       // Check every step before running any, so a refusal never leaves a partial rollback
       const refusals = [];
       for (const m of toRollBack) {
-        const checks = [m.dropsData && assertNoBusinessData, m.dropsSecurity && assertSecurityOnlyLoan, m.dropsEntryRules && assertNoEntryRules];
+        const checks = [m.dropsData && assertNoBusinessData, m.dropsSecurity && assertSecurityOnlyLoan, m.dropsEntryRules && assertNoEntryRules, m.dropsAccounts && assertNoAccounts];
         for (const check of checks.filter(Boolean)) {
           try { await check(conn); } catch (err) { refusals.push(err.message); }
         }
