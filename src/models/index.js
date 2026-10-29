@@ -374,7 +374,7 @@ const defineAssociations = (db) => {
   defineSchoolAssociations(db);
 
   // Core Banking Loan Module associations
-  require("../loan/models")(sequelize, DataTypes).defineLoanAssociations(db);
+  require("../loan/models").defineLoanAssociations(db);
 
   // Many-to-many associations
   defineManyToManyAssociations(db);

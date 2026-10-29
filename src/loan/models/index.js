@@ -158,7 +158,7 @@ const defineLoanAssociations = (models) => {
   lnAccrualLedger.belongsTo(lnComponent, { foreignKey: 'componentId', as: 'component' });
 };
 
-module.exports = (sequelize, DataTypes) => {
+const defineLoanModels = (sequelize, DataTypes) => {
   const lookupModels = require('./lookup')(sequelize, DataTypes);
   const taxProfileModels = require('./taxProfile')(sequelize, DataTypes);
   const productModels = require('./product')(sequelize, DataTypes);
@@ -196,3 +196,9 @@ module.exports = (sequelize, DataTypes) => {
     defineLoanAssociations
   };
 };
+
+// Call the factory once (it defines the models); associations are attached
+// separately so the models are never defined twice.
+defineLoanModels.defineLoanAssociations = defineLoanAssociations;
+
+module.exports = defineLoanModels;
