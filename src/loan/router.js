@@ -41,6 +41,7 @@ router.get('/products/:id', can('LN_PRODUCT', 'VIEW'), productController.getProd
 router.post('/products', can('LN_PRODUCT', 'CREATE'), productController.createProduct);
 router.put('/products/:id', can('LN_PRODUCT', 'EDIT'), productController.updateProduct);
 router.post('/products/:id/clone', can('LN_PRODUCT', 'CREATE'), productController.cloneProduct);
+router.get('/products/:id/accounting-check', can('LN_ENTRY_RULE', 'VIEW'), productController.accountingCheck);
 
 // --- Master data, lookups & rules ---
 router.get('/lookups', can('LN_LOOKUP', 'VIEW'), masterController.getLookups);

@@ -1,5 +1,6 @@
 const productService = require('../services/productService');
 const paramService = require('../services/paramService');
+const accountingService = require('../services/accountingService');
 const { handle, respond } = require('../errors');
 const { ctxOf } = require('./paramController');
 
@@ -9,7 +10,8 @@ const productController = {
   getProductById: handle(req => productService.getProductById(req.params.id)),
   createProduct: handle(async req => respond(await paramService.create('product', req.body, ctxOf(req)), 'Product created; pending authorization', 201)),
   updateProduct: handle(req => paramService.update('product', req.params.id, req.body, ctxOf(req))),
-  cloneProduct: handle(async req => respond(await paramService.cloneProduct(req.params.id, req.body, ctxOf(req)), 'Product cloned; pending authorization', 201))
+  cloneProduct: handle(async req => respond(await paramService.cloneProduct(req.params.id, req.body, ctxOf(req)), 'Product cloned; pending authorization', 201)),
+  accountingCheck: handle(req => accountingService.checkProduct(req.params.id, req.query))
 };
 
 module.exports = productController;
