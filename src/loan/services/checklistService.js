@@ -1,129 +1,174 @@
+/**
+ * Go-live checklist. Each item is confirmed explicitly by a user with LN_CHECKLIST AUTHORIZE
+ * and stored in ln_checklist_confirmation with a snapshot of the AUTHORIZED values confirmed.
+ * When a related parameter change is authorized later, the item returns to UNCONFIRMED.
+ * Descriptions are built from database values; nothing about rates or ranges is hard-coded.
+ */
 const db = require('../../models');
-const logger = require('../../api/logger');
+const { LoanError } = require('../errors');
+const paramService = require('./paramService');
+const taxProfileService = require('./taxProfileService');
+const { getEffective } = require('./paramReader');
+const { getVatRate, today } = require('./taxRateService');
+
+const ITEMS = [
+  { itemKey: 'TAX_PROFILE', category: 'Tax & VAT (ລະບົບອາກອນ)', title: 'Tax profile & component taxability (ການກຳນົດອາກອນມູນຄ່າເພີ່ມ)', severity: 'BLOCKING', entities: [] },
+  { itemKey: 'FEE_TREATMENT', category: 'Accounting policy (ນະໂຍບາຍບັນຊີ)', title: 'Fee treatment (ຮູບແບບການຮັບຮູ້ຄ່າທຳນຽມ)', severity: 'IMPORTANT', entities: ['product'], models: ['lnProduct'] },
+  { itemKey: 'PROVISION_POLICY', category: 'Risk & provisioning (ນະໂຍບາຍສຳຮອງໜີ້)', title: 'Provision rates - company policy (ອັດຕາສຳຮອງໜີ້ຕາມນະໂຍບາຍບໍລິສັດ)', severity: 'WARNING', entities: ['provision-rule', 'regulatory-class'], models: ['lnProvisionRule', 'lnRegulatoryClass'] },
+  { itemKey: 'DPD_CLASSIFICATION', category: 'Credit operations (ການຈັດຊັ້ນໜີ້)', title: 'DPD ranges & status rules (ຊ່ວງວັນຄ້າງຊຳລະ)', severity: 'WARNING', entities: ['status', 'status-movement-rule', 'status-cure-rule'], models: ['lnStatusMaster', 'lnStatusMovementRule', 'lnStatusCureRule'] },
+  { itemKey: 'GL_ROLE_MAPPINGS', category: 'GL integration (ການເຊື່ອມໂຍງຜັງບັນຊີ)', title: 'Accounting role to GL mappings (Phase 2B)', severity: 'HOLD', entities: ['role-gl-mapping'], held: true }
+];
+
+// '0.010000' -> '1%' (string shift, no floats)
+const pct = (rate) => {
+  const [i, f = ''] = String(rate).split('.');
+  const frac = f.padEnd(2, '0');
+  const whole = String(Number(i + frac.slice(0, 2)));
+  const rest = frac.slice(2).replace(/0+$/, '');
+  return `${whole}${rest ? `.${rest}` : ''}%`;
+};
+
+const snapshots = {
+  async FEE_TREATMENT() {
+    const products = await db.lnProduct.findAll({
+      where: { authStatus: 'AUTHORIZED', status: { [db.Sequelize.Op.ne]: 'SUPERSEDED' } },
+      attributes: ['productCode', 'version', 'feeFinancingMode', 'deferredFeePresentation'],
+      order: [['productCode', 'ASC']]
+    });
+    return products.map(p => ({ productCode: p.productCode, version: p.version, feeFinancingMode: p.feeFinancingMode, deferredFeePresentation: p.deferredFeePresentation }));
+  },
+  async PROVISION_POLICY() {
+    const rules = await getEffective(db.lnProvisionRule, {}, today());
+    return rules.map(r => ({
+      regulatoryClassCode: r.regulatoryClassCode, productId: r.productId, categoryId: r.categoryId,
+      provisionRate: String(r.provisionRate), collateralHaircutPct: String(r.collateralHaircutPct),
+      provisionBase: r.provisionBase, policyNote: r.policyNote
+    })).sort((a, b) => a.regulatoryClassCode.localeCompare(b.regulatoryClassCode));
+  },
+  async DPD_CLASSIFICATION() {
+    const rules = await getEffective(db.lnStatusMovementRule, {}, today());
+    return rules.map(r => ({ fromStatus: r.fromStatus, toStatus: r.toStatus, minDpd: r.minDpd, maxDpd: r.maxDpd }))
+      .sort((a, b) => a.minDpd - b.minDpd);
+  }
+};
+
+const describe = {
+  FEE_TREATMENT: (s) => (s.length
+    ? s.map(p => `${p.productCode} v${p.version}: ${p.feeFinancingMode} / ${p.deferredFeePresentation}`).join('; ')
+    : 'No authorized products yet'),
+  PROVISION_POLICY: (s) => (s.length
+    ? `Company policy (not regulation): ${s.map(r => `${r.regulatoryClassCode} ${pct(r.provisionRate)}`).join(', ')}`
+    : 'No authorized provision rules yet'),
+  DPD_CLASSIFICATION: (s) => (s.length
+    ? s.map(r => `${r.fromStatus} -> ${r.toStatus}: ${r.minDpd}-${r.maxDpd} DPD`).join('; ')
+    : 'No authorized DPD rules yet')
+};
+
+const pendingCount = async (item) => {
+  let count = 0;
+  for (const model of item.models || []) count += await db[model].count({ where: { authStatus: 'PENDING' } });
+  count += await db.lnParamChange.count({ where: { entityName: item.entities, status: 'PENDING' } });
+  return count;
+};
+
+const rowFor = async (itemKey, transaction) => {
+  const [row] = await db.lnChecklistConfirmation.findOrCreate({
+    where: { itemKey },
+    defaults: { itemKey, status: itemKey === 'GL_ROLE_MAPPINGS' ? 'HELD' : 'UNCONFIRMED' },
+    transaction
+  });
+  return row;
+};
+
+const audit = (itemKey, actionType, newValues, ctx, transaction) => db.lnAuditLog.create({
+  entityName: 'checklist', entityKey: itemKey, actionType,
+  newValuesJson: newValues ? JSON.stringify(newValues) : null,
+  userId: (ctx && ctx.userId) || 0, ipAddress: (ctx && ctx.ip) || null, timestamp: new Date()
+}, { transaction });
 
 const checklistService = {
-  /**
-   * Get the full Go-Live Checklist evaluation
-   */
   async getChecklist() {
-    // 1. Tax Profile check
-    const taxProfile = await db.lnTaxProfile.findOne();
-    const isTaxConfirmed = taxProfile && taxProfile.confirmationStatus === 'CONFIRMED';
-
-    // 2. Fee Treatment check (check default products feeFinancingMode and deferredFeePresentation)
-    const products = await db.lnProduct.findAll({
-      attributes: ['id', 'productCode', 'name', 'feeFinancingMode', 'deferredFeePresentation', 'status']
-    });
-    const feeReviewed = products.length > 0 && products.every(p => p.feeFinancingMode && p.deferredFeePresentation);
-
-    // 3. Provisioning Rules check (check if ln_provision_rule exists and rates are confirmed)
-    const provisionRules = await db.lnProvisionRule.findAll({
-      attributes: ['id', 'regulatoryClassCode', 'provisionRate', 'collateralHaircutPct', 'authStatus']
-    });
-    const provisionReviewed = provisionRules.length >= 5;
-
-    // 4. DPD Delinquency Ranges check (check ln_status_movement_rule)
-    const movementRules = await db.lnStatusMovementRule.findAll({
-      attributes: ['id', 'fromStatus', 'toStatus', 'minDpd', 'maxDpd', 'authStatus']
-    });
-    const dpdReviewed = movementRules.length >= 4;
-
-    // 5. GL Role Mappings check (Phase 2B readiness)
-    const glMappingsCount = await db.lnRoleGlMapping.count();
-    const glRolesCount = await db.lnAccountingRole.count();
-    const glMappingsConfirmed = glMappingsCount > 0;
-
-    const checklistItems = [
-      {
-        itemKey: 'TAX_PROFILE',
-        category: 'Tax & VAT Engine (ລະບົບອາກອນ)',
-        title: 'Tax Profile & Component Taxability (ການກຳນົດອາກອນມູນຄ່າເພີ່ມ VAT)',
-        description: isTaxConfirmed
-          ? `Confirmed: Company VAT registered at ${(parseFloat(taxProfile.defaultVatRate || 0.1) * 100).toFixed(1)}%. Production billing unlocked.`
-          : '⚠️ UNCONFIRMED: VAT registration and component tax rules must be reviewed and confirmed before production disbursement.',
-        status: isTaxConfirmed ? 'CONFIRMED' : 'UNCONFIRMED',
-        severity: 'BLOCKING',
-        confirmedBy: taxProfile ? taxProfile.confirmedBy : null,
-        confirmedAt: taxProfile ? taxProfile.confirmedAt : null,
-        actionLabel: isTaxConfirmed ? 'Re-review Tax Profile' : 'Confirm Tax Profile'
-      },
-      {
-        itemKey: 'FEE_TREATMENT',
-        category: 'Accounting Policy (ນະໂຍບາຍບັນຊີ)',
-        title: 'Fee Treatment Defaults (ຮູບແບບການຮັບຮູ້ຄ່າທຳນຽມ)',
-        description: 'Default: UPFRONT financing with IMMEDIATE fee-to-income recognition. Pass-through insurance.',
-        status: feeReviewed ? 'CONFIRMED' : 'UNCONFIRMED',
-        severity: 'IMPORTANT',
-        details: {
-          feeFinancingMode: 'UPFRONT',
-          deferredFeePresentation: 'IMMEDIATE',
-          insuranceMode: 'UPFRONT'
-        },
-        actionLabel: 'Review Fee Settings'
-      },
-      {
-        itemKey: 'PROVISION_POLICY',
-        category: 'Risk & Provisioning (ນະໂຍບາຍສຳຮອງໜີ້)',
-        title: 'Company Provisioning Rules (ອັດຕາສຳຮອງໜີ້ຕາມນະໂຍບາຍບໍລິສັດ)',
-        description: 'Company management policy default rates (Class A: 1%, B: 3%, C: 20%, D: 50%, E: 100%). Not assumed BOL mandated.',
-        status: provisionReviewed ? 'CONFIRMED' : 'UNCONFIRMED',
-        severity: 'WARNING',
-        itemCount: provisionRules.length,
-        actionLabel: 'Edit Provision Rates'
-      },
-      {
-        itemKey: 'DPD_CLASSIFICATION',
-        category: 'Credit Operations (ການຈັດຊັ້ນໜີ້)',
-        title: 'DPD Delinquency Aging Thresholds (ຊ່ວງວັນຄ້າງຊຳລະ DPD)',
-        description: 'Normal (0-30 DPD), Watchlist (31-60 DPD), Substandard (61-90 DPD), Doubtful (91-180 DPD), Loss (>180 DPD).',
-        status: dpdReviewed ? 'CONFIRMED' : 'UNCONFIRMED',
-        severity: 'WARNING',
-        itemCount: movementRules.length,
-        actionLabel: 'Review Aging Rules'
-      },
-      {
-        itemKey: 'GL_ROLE_MAPPINGS',
-        category: 'General Ledger Integration (ການເຊື່ອມໂຍງຜັງບັນຊີ)',
-        title: 'Chart of Accounts Role Mappings (ການຈັບຄູ່ລະຫັດບັນຊີ GL - Phase 2B)',
-        description: glMappingsConfirmed
-          ? `${glMappingsCount} accounting roles mapped to Chart of Accounts.`
-          : 'Pending Phase 2B Confirmation: 31 accounting roles registered. GL mappings held pending Rev 5 confirmation.',
-        status: glMappingsConfirmed ? 'CONFIRMED' : 'HELD_PENDING_REV5',
-        severity: 'HOLD',
-        rolesCount: glRolesCount,
-        actionLabel: 'Inspect Roles'
+    const profile = await db.lnTaxProfile.findOne();
+    const rows = Object.fromEntries((await db.lnChecklistConfirmation.findAll()).map(r => [r.itemKey, r]));
+    const items = [];
+    for (const item of ITEMS) {
+      const row = rows[item.itemKey];
+      const entry = { itemKey: item.itemKey, category: item.category, title: item.title, severity: item.severity };
+      if (item.itemKey === 'TAX_PROFILE') {
+        let vatText;
+        try {
+          const vat = await getVatRate(today());
+          vatText = `POS tax ${vat.code} ${pct(vat.rate)}`;
+        } catch (err) {
+          if (!(err instanceof LoanError)) throw err;
+          vatText = err.message;
+        }
+        const confirmed = profile && profile.confirmationStatus === 'CONFIRMED';
+        Object.assign(entry, {
+          status: confirmed ? 'CONFIRMED' : 'UNCONFIRMED',
+          description: `${profile && profile.companyVatRegistered ? 'VAT registered' : 'Not VAT registered'}; ${vatText}`,
+          confirmedBy: profile ? profile.confirmedBy : null,
+          confirmedAt: profile ? profile.confirmedAt : null
+        });
+      } else if (item.held) {
+        const [roles, mappings] = await Promise.all([db.lnAccountingRole.count(), db.lnRoleGlMapping.count()]);
+        Object.assign(entry, { status: 'HELD', description: `${roles} accounting roles, ${mappings} GL mappings. Held until the Rev 5 accounting addendum is confirmed.` });
+      } else {
+        const snapshot = await snapshots[item.itemKey]();
+        Object.assign(entry, {
+          status: row ? row.status : 'UNCONFIRMED',
+          description: describe[item.itemKey](snapshot),
+          pendingChanges: await pendingCount(item),
+          confirmedBy: row ? row.confirmedBy : null,
+          confirmedAt: row ? row.confirmedAt : null
+        });
       }
-    ];
-
-    const allConfirmed = isTaxConfirmed && feeReviewed && provisionReviewed && dpdReviewed;
-    const canDisburse = isTaxConfirmed;
-
+      items.push(entry);
+    }
+    const taxConfirmed = items[0].status === 'CONFIRMED';
     return {
-      checklistItems,
-      allConfirmed,
-      canDisburse,
-      warningBannerActive: !canDisburse
+      checklistItems: items,
+      allConfirmed: items.filter(i => i.severity !== 'HOLD').every(i => i.status === 'CONFIRMED'),
+      canDisburse: taxConfirmed,
+      warningBannerActive: !taxConfirmed
     };
   },
 
-  /**
-   * Confirm an individual checklist item
-   */
-  async confirmItem(itemKey, userId) {
+  async confirmItem(itemKey, ctx) {
+    const item = ITEMS.find(i => i.itemKey === itemKey);
+    if (!item) throw new LoanError(404, `Unknown checklist item ${itemKey}`);
+    if (item.held) throw new LoanError(409, `${itemKey} is held until Phase 2B`);
     if (itemKey === 'TAX_PROFILE') {
-      const taxProfile = await db.lnTaxProfile.findOne();
-      if (taxProfile) {
-        await taxProfile.update({
-          confirmationStatus: 'CONFIRMED',
-          confirmedBy: userId,
-          confirmedAt: new Date(),
-          warningBannerActive: false
-        });
-      }
+      await taxProfileService.confirmTaxProfile(ctx);
+      return checklistService.getChecklist();
     }
-    logger.info(`Checklist item ${itemKey} confirmed by user ${userId}`);
-    return this.getChecklist();
+    if (await pendingCount(item)) throw new LoanError(409, `Authorize or reject the pending ${item.entities.join('/')} changes before confirming ${itemKey}`);
+    const snapshot = await snapshots[itemKey]();
+    if (!snapshot.length) throw new LoanError(409, `Nothing authorized to confirm for ${itemKey}`);
+    await db.sequelize.transaction(async (transaction) => {
+      const row = await rowFor(itemKey, transaction);
+      await row.update({ status: 'CONFIRMED', confirmedBy: ctx.userId, confirmedAt: new Date(), snapshotJson: JSON.stringify(snapshot) }, { transaction });
+      await audit(itemKey, 'CONFIRM', snapshot, ctx, transaction);
+    });
+    return checklistService.getChecklist();
+  },
+
+  // Called after any parameter authorization; resets the related confirmed item
+  async invalidate(entityName) {
+    const item = ITEMS.find(i => !i.held && i.entities.includes(entityName));
+    if (!item) return;
+    const row = await db.lnChecklistConfirmation.findOne({ where: { itemKey: item.itemKey } });
+    if (!row || row.status !== 'CONFIRMED') return;
+    if (item.itemKey === 'FEE_TREATMENT') {
+      // Only a change to the fee settings themselves resets this item
+      const current = JSON.stringify(await snapshots.FEE_TREATMENT());
+      if (current === row.snapshotJson) return;
+    }
+    await row.update({ status: 'UNCONFIRMED', confirmedBy: null, confirmedAt: null });
+    await audit(item.itemKey, 'RESET', { reason: `${entityName} change authorized` });
   }
 };
+
+paramService.onAuthorized((entityName) => checklistService.invalidate(entityName));
 
 module.exports = checklistService;

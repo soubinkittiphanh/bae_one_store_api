@@ -142,6 +142,7 @@ const defineLoanAssociations = (models) => {
   lnTransaction.hasMany(lnTransactionAllocation, { foreignKey: 'transactionId', as: 'allocations' });
   lnTransactionAllocation.belongsTo(lnTransaction, { foreignKey: 'transactionId', as: 'transaction' });
   lnTransactionAllocation.belongsTo(lnScheduleComponent, { foreignKey: 'scheduleComponentId', as: 'scheduleComponent' });
+  lnTransactionAllocation.belongsTo(lnComponent, { foreignKey: 'componentId', as: 'component' });
 
   // Journal Postings & GL Mapping
   lnJournalPosting.belongsTo(lnTransaction, { foreignKey: 'transactionId', as: 'transaction' });

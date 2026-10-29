@@ -11,6 +11,7 @@
  */
 const { checkSchema, validationResult } = require('express-validator');
 const db = require('../../models');
+const logger = require('../../api/logger');
 const { LoanError } = require('../errors');
 const { SYSTEM_FIELDS, getEntity, entityForModel } = require('./paramRegistry');
 
@@ -473,8 +474,15 @@ const cloneProduct = async (sourceId, body, ctx) => {
 
 // Listeners run after a successful authorization: fn(entityName, row)
 const onAuthorized = (fn) => authorizedHooks.push(fn);
+// The authorization is already committed; a failing listener is logged, not reported as a failed request
 const runAuthorizedHooks = async (entityName, row) => {
-  for (const fn of authorizedHooks) await fn(entityName, row);
+  for (const fn of authorizedHooks) {
+    try {
+      await fn(entityName, row);
+    } catch (err) {
+      logger.error(`[loan] post-authorization hook failed for ${entityName}: ${err.message}`);
+    }
+  }
 };
 
 module.exports = {
