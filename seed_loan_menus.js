@@ -1,4 +1,5 @@
 process.env.NO_SYNC = 'true';
+require('./src/loan/dbGuard').assertLocalDb('seed_loan_menus');
 const db = require('./src/models');
 
 async function seedLoanMenus() {

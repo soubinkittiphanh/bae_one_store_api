@@ -3,6 +3,7 @@
  * Strictly Idempotent. Zero seeding of ln_accounting_entry_rule or ln_role_gl_mapping (Phase 2B).
  */
 process.env.NO_SYNC = 'true';
+require('./src/loan/dbGuard').assertLocalDb('seed_loan_phase2a_data');
 const db = require('./src/models');
 const logger = require('./src/api/logger');
 
