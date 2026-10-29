@@ -3,7 +3,8 @@
  *
  * - Repayment-method lookup (system catalog, AUTHORIZED).
  * - Currency rounding rules (rounding-policy.md, UNCONFIRMED): LAK 0, USD 2, THB 2 decimals, PENDING,
- *   created only for currencies that exist; existing rules are never overwritten.
+ *   effective 2000-01-01, created only for currencies that exist. Untouched seeded PENDING rules are
+ *   realigned to that date; authorized or user-made rules are never overwritten.
  * - Untouched seeded PENDING products get their repayment method (CAR-LOAN-FLAT -> FLAT).
  * - Default cure rules (decision D4, company policy, PENDING) where none exist for the status.
  * - Security functions LN_APPLICATION, LN_ACCOUNT, LN_CURRENCY_RULE granted to SUPER_ADMIN and ADMIN.
@@ -14,7 +15,6 @@ require('./src/loan/dbGuard').assertLocalDb('seed_loan_phase3');
 const db = require('./src/models');
 const { registerFunctions, grantToGroupCodes } = require('./src/security/grantService');
 
-const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Vientiane' });
 const AUTHORIZED = { authStatus: 'AUTHORIZED', authorizedAt: new Date() };
 const PENDING = { authStatus: 'PENDING', makerId: null };
 
@@ -34,8 +34,10 @@ const REPAYMENT_METHODS = [
   { code: 'FLAT', name: 'Flat rate (ດອກເບ້ຍຄົງທີ່)', description: 'Interest on the original principal, spread evenly' }
 ];
 
-// rounding-policy.md §3 starting values (UNCONFIRMED)
+// rounding-policy.md §3 starting values (UNCONFIRMED); effective from 2000-01-01 so loans with
+// earlier value dates (e.g. migrated loans) can be booked
 const CURRENCY_DECIMALS = { LAK: 0, USD: 2, THB: 2 };
+const RULE_EFFECTIVE_FROM = '2000-01-01';
 
 const PRODUCT_REPAYMENT = { 'CAR-LOAN-DB': 'EQUAL_INSTALLMENT', 'CAR-LOAN-FLAT': 'FLAT', 'CAR-LOAN-BALLOON': 'EQUAL_INSTALLMENT' };
 
@@ -64,11 +66,15 @@ async function seedPhase3() {
     for (const [code, decimalPlaces] of Object.entries(CURRENCY_DECIMALS)) {
       const currency = await db.currency.findOne({ where: { code } });
       if (!currency) continue;
-      const [, created] = await db.lnCurrencyRule.findOrCreate({
+      const [rule, created] = await db.lnCurrencyRule.findOrCreate({
         where: { currencyId: currency.id },
-        defaults: { currencyId: currency.id, decimalPlaces, roundingMode: 'HALF_UP', effectiveFrom: today, ...PENDING }
+        defaults: { currencyId: currency.id, decimalPlaces, roundingMode: 'HALF_UP', effectiveFrom: RULE_EFFECTIVE_FROM, ...PENDING }
       });
       if (created) rules++;
+      else if (rule.authStatus === 'PENDING' && rule.makerId == null && String(rule.effectiveFrom) !== RULE_EFFECTIVE_FROM) {
+        await reconcileLog('currency-rule', code, { effectiveFrom: String(rule.effectiveFrom) }, { effectiveFrom: RULE_EFFECTIVE_FROM });
+        await rule.update({ effectiveFrom: RULE_EFFECTIVE_FROM });
+      }
     }
     console.log(`Currency rounding rules: ${rules} created PENDING`);
 

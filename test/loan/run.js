@@ -185,8 +185,9 @@ const main = async () => {
     runNode('seed_loan_phase2a_data.js');
     runNode('seed_loan_phase2b_accounting.js');
     assert.deepStrictEqual(await tableCounts(), counts);
-    const rules = await q('SELECT c.code, r.decimalPlaces d, r.authStatus s FROM ln_currency_rule r JOIN currency c ON c.id = r.currencyId ORDER BY c.code');
+    const rules = await q("SELECT c.code, r.decimalPlaces d, r.authStatus s, DATE_FORMAT(r.effectiveFrom, '%Y-%m-%d') f FROM ln_currency_rule r JOIN currency c ON c.id = r.currencyId ORDER BY c.code");
     assert.ok(rules.length >= 1 && rules.every(r => r.s === 'PENDING'), 'currency rules PENDING');
+    assert.ok(rules.every(r => r.f === '2000-01-01'), 'currency rules effective 2000-01-01 (earlier value dates can be booked)');
     const lak = rules.find(r => r.code === 'LAK');
     assert.ok(!lak || Number(lak.d) === 0, 'LAK has 0 decimals');
     const cures = await q('SELECT fromStatus f, consecutiveOnTimeInstallmentsRequired n, authStatus s FROM ln_status_cure_rule ORDER BY id');
