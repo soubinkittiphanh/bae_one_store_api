@@ -1,7 +1,7 @@
 const db = require('../../models');
 const { LoanError } = require('../errors');
-const { resolveRuleSet } = require('../accounting/journal');
-const { validateProductRuleSet } = require('../accounting/validators');
+const { resolveRuleSet, buildJournal } = require('../accounting/journal');
+const { validateProductRuleSet, validateJournal, validateTagAmounts } = require('../accounting/validators');
 
 const today = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Vientiane' });
 
@@ -34,8 +34,32 @@ const checkProductRow = async (product, { includePending = false, asOfDate = tod
   };
 };
 
+// Engine events -> journal lines with the product's rule set -> 2B validators. Nothing is posted.
+// Uses AUTHORIZED rules; includePending previews with pending rules (flagged in the result).
+const previewJournal = async (product, events, { includePending = false, currency = null, asOfDate = today() } = {}) => {
+  const [rules, roles] = await Promise.all([db.lnAccountingEntryRule.findAll(), db.lnAccountingRole.findAll()]);
+  const plainRules = rules.map(r => r.get({ plain: true }));
+  const roleTypes = Object.fromEntries(roles.map(r => [r.roleCode, r.expectedType]));
+  const set = resolveRuleSet(plainRules, product, { asOfDate, includePending });
+  const lines = [];
+  const errors = [];
+  for (const ev of events) {
+    try {
+      const built = buildJournal({ rules: set, eventCode: ev.event, tags: ev.tags, qualifiers: ev.qualifiers || {}, currency });
+      errors.push(...validateTagAmounts(ev.event, ev.tags, set));
+      lines.push(...built);
+    } catch (err) {
+      if (!(err instanceof LoanError)) throw err;
+      errors.push(err.message);
+    }
+  }
+  errors.push(...validateJournal(lines, roleTypes));
+  return { rules: includePending ? 'AUTHORIZED+PENDING' : 'AUTHORIZED', lines, balanced: errors.length === 0, errors };
+};
+
 const accountingService = {
   checkProductRow,
+  previewJournal,
 
   async checkProduct(productId, query = {}) {
     const product = await db.lnProduct.findByPk(productId);

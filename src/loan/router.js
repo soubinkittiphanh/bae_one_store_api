@@ -10,6 +10,8 @@ const checklistController = require('./controllers/checklistController');
 const productController = require('./controllers/productController');
 const masterController = require('./controllers/masterController');
 const { paramController } = require('./controllers/paramController');
+const applicationController = require('./controllers/applicationController');
+const accountController = require('./controllers/accountController');
 
 // All loan endpoints require a valid token and a sec_group_grant for the function/action
 router.use(validateToken);
@@ -42,6 +44,20 @@ router.post('/products', can('LN_PRODUCT', 'CREATE'), productController.createPr
 router.put('/products/:id', can('LN_PRODUCT', 'EDIT'), productController.updateProduct);
 router.post('/products/:id/clone', can('LN_PRODUCT', 'CREATE'), productController.cloneProduct);
 router.get('/products/:id/accounting-check', can('LN_ENTRY_RULE', 'VIEW'), productController.accountingCheck);
+router.post('/products/:id/simulate', can('LN_PRODUCT', 'VIEW'), accountController.simulate);
+
+// --- Applications and accounts (Phase 3: calculation only, no GL posting) ---
+router.get('/applications', can('LN_APPLICATION', 'VIEW'), applicationController.list);
+router.post('/applications', can('LN_APPLICATION', 'CREATE'), applicationController.create);
+router.get('/applications/:id', can('LN_APPLICATION', 'VIEW'), applicationController.get);
+router.put('/applications/:id', can('LN_APPLICATION', 'EDIT'), applicationController.update);
+router.post('/applications/:id/submit', can('LN_APPLICATION', 'EDIT'), applicationController.submit);
+router.post('/applications/:id/approve', can('LN_APPLICATION', 'AUTHORIZE'), applicationController.approve);
+router.post('/applications/:id/reject', can('LN_APPLICATION', 'AUTHORIZE'), applicationController.reject);
+router.post('/applications/:id/book', can('LN_ACCOUNT', 'CREATE'), applicationController.book);
+router.get('/accounts', can('LN_ACCOUNT', 'VIEW'), accountController.list);
+router.get('/accounts/:id', can('LN_ACCOUNT', 'VIEW'), accountController.get);
+router.post('/accounts/:id/preview/:kind', can('LN_ACCOUNT', 'VIEW'), accountController.preview);
 
 // --- Master data, lookups & rules ---
 router.get('/lookups', can('LN_LOOKUP', 'VIEW'), masterController.getLookups);
