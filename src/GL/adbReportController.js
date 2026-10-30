@@ -694,6 +694,34 @@ class ADBReportController {
                     { accountName: "Owner's Capital / Other Equity (ທຶນອື່ນໆ)", balance: otherEquity }
                 ];
 
+                // Loan module, opt-in (SPF BS_INCLUDE_LOAN_BOOK = 'true'): loan accounts from the GL, a separate
+                // "Loan result" line so the Other equity plug cannot absorb it, and a GL-vs-subledger check.
+                // When the switch is off this block does nothing and the response below is unchanged.
+                const loanBookSwitch = await db.spf.findOne({ where: { code: 'BS_INCLUDE_LOAN_BOOK' } });
+                if (loanBookSwitch && String(loanBookSwitch.value).trim() === 'true') {
+                    const loan = await require('../loan/reports/balanceSheetSection').build({ asOfDate, subledger: { cashAndBank: totalCashAndBank, ar: totalAR } });
+                    const totalAssetsWithLoan = totalAssets + loan.totalAssets;
+                    const totalLiabilitiesWithLoan = totalLiabilities + loan.totalLiabilities;
+                    return res.json({
+                        success: true,
+                        mode: 'Global POS/Minimart',
+                        asOfDate,
+                        currencyCode: localCurrency.code,
+                        currencySymbol: localCurrency.symbol || localCurrency.code,
+                        assets: { items: [...assetsList, ...loan.assets], total: totalAssetsWithLoan },
+                        liabilities: { items: [...liabilitiesList, ...loan.liabilities], total: totalLiabilitiesWithLoan },
+                        equity: {
+                            items: [
+                                equityList[0],
+                                { accountName: 'Loan result (ຜົນໄດ້ຮັບສິນເຊື່ອ)', balance: loan.loanResult },
+                                { accountName: equityList[1].accountName, balance: totalAssetsWithLoan - totalLiabilitiesWithLoan - netProfit - loan.loanResult }
+                            ],
+                            total: totalAssetsWithLoan - totalLiabilitiesWithLoan
+                        },
+                        loanReconciliation: loan.reconciliation
+                    });
+                }
+
                 return res.json({
                     success: true,
                     mode: 'Global POS/Minimart',
