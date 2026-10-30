@@ -12,6 +12,7 @@ const masterController = require('./controllers/masterController');
 const { paramController } = require('./controllers/paramController');
 const applicationController = require('./controllers/applicationController');
 const accountController = require('./controllers/accountController');
+const transactionController = require('./controllers/transactionController');
 
 // All loan endpoints require a valid token and a sec_group_grant for the function/action
 router.use(validateToken);
@@ -58,6 +59,14 @@ router.post('/applications/:id/book', can('LN_ACCOUNT', 'CREATE'), applicationCo
 router.get('/accounts', can('LN_ACCOUNT', 'VIEW'), accountController.list);
 router.get('/accounts/:id', can('LN_ACCOUNT', 'VIEW'), accountController.get);
 router.post('/accounts/:id/preview/:kind', can('LN_ACCOUNT', 'VIEW'), accountController.preview);
+
+// --- Phase 4: transactions (one DB transaction each, Idempotency-Key required) and EOD ---
+router.get('/accounts/:id/transactions', can('LN_TRANSACTION', 'VIEW'), transactionController.list);
+router.post('/accounts/:id/transactions', can('LN_TRANSACTION', 'CREATE'), transactionController.create);
+router.post('/transactions/:txId/authorize', can('LN_TRANSACTION', 'AUTHORIZE'), transactionController.authorize);
+router.post('/transactions/:txId/reject', can('LN_TRANSACTION', 'AUTHORIZE'), transactionController.reject);
+router.get('/eod/status', can('LN_EOD', 'VIEW'), transactionController.eodStatus);
+router.post('/eod/run', can('LN_EOD', 'CREATE'), transactionController.runEod);
 
 // --- Master data, lookups & rules ---
 router.get('/lookups', can('LN_LOOKUP', 'VIEW'), masterController.getLookups);
