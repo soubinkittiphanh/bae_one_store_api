@@ -17,9 +17,18 @@ module.exports = (sequelize, DataTypes) => {
     isReversed: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
     reversalOfTxId: { type: DataTypes.INTEGER, allowNull: true },
     authStatus: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'PENDING' },
+    postingStatus: { type: DataTypes.STRING(20), allowNull: false, defaultValue: 'POSTED', comment: 'PENDING_AUTH / POSTED / REJECTED' },
     makerId: { type: DataTypes.INTEGER, allowNull: true },
     checkerId: { type: DataTypes.INTEGER, allowNull: true },
-    authorizedAt: { type: DataTypes.DATE, allowNull: true }
+    authorizedAt: { type: DataTypes.DATE, allowNull: true },
+    // Phase 4: booking date (period lock), source, and the stored request / events / subledger effects
+    bookingDate: { type: DataTypes.DATEONLY, allowNull: true },
+    valueDatedAdjustment: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+    source: { type: DataTypes.STRING(20), allowNull: false, defaultValue: 'ONLINE', comment: 'ONLINE / EOD' },
+    requestJson: { type: DataTypes.TEXT('long'), allowNull: true },
+    eventsJson: { type: DataTypes.TEXT('long'), allowNull: true },
+    effectsJson: { type: DataTypes.TEXT('long'), allowNull: true, comment: 'Subledger changes, undone by REVERSAL' },
+    remarks: { type: DataTypes.TEXT, allowNull: true }
   }, { freezeTableName: true, tableName: 'ln_transaction', timestamps: true,
     indexes: [
       { name: 'idx_tx_loan_event', fields: ['loanAccountId', 'eventCode'] }
@@ -41,8 +50,10 @@ module.exports = (sequelize, DataTypes) => {
     eventCode: { type: DataTypes.STRING(30), allowNull: false },
     amountTag: { type: DataTypes.STRING(50), allowNull: false },
     roleCode: { type: DataTypes.STRING(50), allowNull: false },
+    statusQualifier: { type: DataTypes.STRING(30), allowNull: true },
     chartAccountId: { type: DataTypes.INTEGER, allowNull: false },
     drCr: { type: DataTypes.STRING(10), allowNull: false },
+    currencyId: { type: DataTypes.INTEGER, allowNull: true },
     amount: { type: DataTypes.DECIMAL(20, 4), allowNull: false, defaultValue: 0.0000 },
     baseAmount: { type: DataTypes.DECIMAL(20, 4), allowNull: false, defaultValue: 0.0000 },
     exchangeRate: { type: DataTypes.DECIMAL(20, 8), allowNull: false, defaultValue: 1.00000000 },
@@ -80,7 +91,21 @@ module.exports = (sequelize, DataTypes) => {
       { name: 'idx_ah_loan', fields: ['loanAccountId'] }
     ] });
 
+  // Every POS row a loan transaction created (general_ledger, transactionEntry, ARReceiveHeader); used by REVERSAL
+  const lnPosLink = sequelize.define('lnPosLink', {
+    id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+    transactionId: { type: DataTypes.INTEGER, allowNull: false },
+    posTable: { type: DataTypes.STRING(50), allowNull: false },
+    posId: { type: DataTypes.INTEGER, allowNull: false },
+    role: { type: DataTypes.STRING(30), allowNull: false }
+  }, { freezeTableName: true, tableName: 'ln_pos_link', timestamps: true, updatedAt: false,
+    indexes: [
+      { name: 'idx_pos_link_tx', fields: ['transactionId'] },
+      { name: 'idx_pos_link_pos', fields: ['posTable', 'posId'] }
+    ] });
+
   return {
+    lnPosLink,
     lnTransaction,
     lnTransactionAllocation,
     lnJournalPosting,

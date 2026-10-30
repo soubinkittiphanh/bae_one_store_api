@@ -71,6 +71,7 @@ module.exports = (sequelize, DataTypes) => {
     batchNumber: { type: DataTypes.STRING(50), allowNull: false, unique: true },
     businessDate: { type: DataTypes.DATEONLY, allowNull: false },
     batchType: { type: DataTypes.STRING(50), allowNull: false, defaultValue: 'EOD_ACCRUAL' },
+    jobCode: { type: DataTypes.STRING(30), allowNull: true },
     totalDebit: { type: DataTypes.DECIMAL(20, 4), allowNull: false, defaultValue: 0.0000 },
     totalCredit: { type: DataTypes.DECIMAL(20, 4), allowNull: false, defaultValue: 0.0000 },
     currencyId: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 1 },

@@ -19,7 +19,9 @@ module.exports = (sequelize, DataTypes) => {
     amountDue: { type: DataTypes.DECIMAL(20, 4), allowNull: false, defaultValue: 0.0000 },
     amountPaid: { type: DataTypes.DECIMAL(20, 4), allowNull: false, defaultValue: 0.0000 },
     amountWaived: { type: DataTypes.DECIMAL(20, 4), allowNull: false, defaultValue: 0.0000 },
-    status: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'UNPAID' }
+    status: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'UNPAID' },
+    bucket: { type: DataTypes.STRING(20), allowNull: true, comment: 'Interest: BOOKED / SUSPENDED / UNBOOKED' },
+    amountRecognized: { type: DataTypes.DECIMAL(20, 4), allowNull: false, defaultValue: 0.0000 }
   }, { freezeTableName: true, tableName: 'ln_schedule_component', timestamps: true,
     indexes: [
       { name: 'uk_schedule_comp', unique: true, fields: ['scheduleId', 'componentId'] }

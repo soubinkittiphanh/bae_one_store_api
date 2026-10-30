@@ -31,7 +31,14 @@ module.exports = (sequelize, DataTypes) => {
     regulatoryClass: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'CLASS_A' },
     currentDpd: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
     closedAt: { type: DataTypes.DATE, allowNull: true },
-    optLockVersion: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 1 }
+    optLockVersion: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 1 },
+    // Phase 4 running balances kept by the posting engine
+    advanceBalance: { type: DataTypes.DECIMAL(20, 4), allowNull: false, defaultValue: 0.0000 },
+    writtenOffMemo: { type: DataTypes.DECIMAL(20, 4), allowNull: false, defaultValue: 0.0000 },
+    repossessedCarrying: { type: DataTypes.DECIMAL(20, 4), allowNull: false, defaultValue: 0.0000 },
+    onTimeStreak: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+    statusSince: { type: DataTypes.DATEONLY, allowNull: true },
+    lastEodDate: { type: DataTypes.DATEONLY, allowNull: true }
   }, { freezeTableName: true, tableName: 'ln_account', timestamps: true });
 
   const lnAccountParamSnapshot = sequelize.define('lnAccountParamSnapshot', {

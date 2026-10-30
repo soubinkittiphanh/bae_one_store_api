@@ -7,7 +7,8 @@
  *   node loan_migrate.js down --all --yes    # roll back everything (drops all ln_* tables)
  *
  * Refuses non-local databases unless ALLOW_REMOTE=1 and CONFIRM_DB=<database> (see src/loan/dbGuard.js).
- * Applied state is detected from marker tables, so databases migrated by hand are handled too.
+ * Applied state is detected from marker tables (or a JS migration's isApplied), so databases migrated
+ * by hand are handled too. JS migrations export { isApplied, up, down, assertCanRollBack? }.
  */
 const fs = require('fs');
 const path = require('path');
@@ -45,6 +46,19 @@ const MIGRATIONS = [
     marker: 'ln_currency_rule',
     dropsData: false,
     dropsAccounts: true
+  },
+  {
+    // POS table: transactionEntry.transactionType += LOAN_IN, LOAN_OUT (built from the live column)
+    name: '20261030_pos_transaction_entry_loan_types',
+    module: './20261030_pos_transaction_entry_loan_types.js'
+  },
+  {
+    name: '20261030_loan_phase4',
+    up: '20261030_loan_phase4.sql',
+    down: '20261030_loan_phase4_down.sql',
+    marker: 'ln_pos_link',
+    dropsData: false,
+    dropsTransactions: true
   }
 ];
 
@@ -62,9 +76,11 @@ const tableExists = async (conn, table) => {
   return Number(rows[0].n) > 0;
 };
 
+const jsModule = m => require(m.module);
+
 const appliedState = async (conn) => {
   const state = [];
-  for (const m of MIGRATIONS) state.push({ ...m, applied: await tableExists(conn, m.marker) });
+  for (const m of MIGRATIONS) state.push({ ...m, applied: m.module ? await jsModule(m).isApplied(conn) : await tableExists(conn, m.marker) });
   return state;
 };
 
@@ -72,6 +88,25 @@ const runFile = async (conn, file) => {
   const sql = fs.readFileSync(path.join(__dirname, file), 'utf8');
   console.log(`  executing ${file}`);
   await conn.query(sql);
+};
+
+const runUp = async (conn, m) => {
+  if (!m.module) return runFile(conn, m.up);
+  console.log(`  executing ${m.module} (up)`);
+  return jsModule(m).up(conn);
+};
+
+const runDown = async (conn, m) => {
+  if (!m.module) return runFile(conn, m.down);
+  console.log(`  executing ${m.module} (down)`);
+  return jsModule(m).down(conn);
+};
+
+// The Phase 4 DOWN removes posting columns; never while loan transactions exist
+const assertNoTransactions = async (conn) => {
+  if (!(await tableExists(conn, 'ln_transaction'))) return;
+  const rows = await conn.query('SELECT COUNT(*) AS n FROM ln_transaction');
+  if (Number(rows[0].n) > 0) throw new Error(`Refusing to roll back Phase 4: ln_transaction has ${rows[0].n} row(s).`);
 };
 
 const assertNoBusinessData = async (conn) => {
@@ -146,7 +181,7 @@ const main = async () => {
 
     if (command === 'up') {
       // UP scripts are idempotent, so applied migrations are re-run safely.
-      for (const m of state) await runFile(conn, m.up);
+      for (const m of state) await runUp(conn, m);
       console.log('loan_migrate up: done');
       return;
     }
@@ -162,13 +197,14 @@ const main = async () => {
       // Check every step before running any, so a refusal never leaves a partial rollback
       const refusals = [];
       for (const m of toRollBack) {
-        const checks = [m.dropsData && assertNoBusinessData, m.dropsSecurity && assertSecurityOnlyLoan, m.dropsEntryRules && assertNoEntryRules, m.dropsAccounts && assertNoAccounts];
+        const checks = [m.dropsData && assertNoBusinessData, m.dropsSecurity && assertSecurityOnlyLoan, m.dropsEntryRules && assertNoEntryRules, m.dropsAccounts && assertNoAccounts,
+          m.dropsTransactions && assertNoTransactions, m.module && jsModule(m).assertCanRollBack && (c => jsModule(m).assertCanRollBack(c))];
         for (const check of checks.filter(Boolean)) {
           try { await check(conn); } catch (err) { refusals.push(err.message); }
         }
       }
       if (refusals.length) throw new Error(refusals.join(' '));
-      for (const m of toRollBack) await runFile(conn, m.down);
+      for (const m of toRollBack) await runDown(conn, m);
       console.log(`loan_migrate down: rolled back ${toRollBack.map(m => m.name).join(', ')}`);
       return;
     }

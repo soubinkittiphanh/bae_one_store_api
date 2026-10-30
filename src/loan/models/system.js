@@ -8,11 +8,11 @@ module.exports = (sequelize, DataTypes) => {
     idempotencyKey: { type: DataTypes.STRING(100), allowNull: false },
     requestHash: { type: DataTypes.STRING(64), allowNull: false },
     responseBody: { type: DataTypes.TEXT('long'), allowNull: true },
-    status: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 200 }
-  }, { freezeTableName: true, tableName: 'ln_idempotency', timestamps: true, updatedAt: false,
-    indexes: [
-      { name: 'uk_endpoint_account_key', unique: true, fields: ['endpoint', 'accountId', 'idempotencyKey'] }
-    ] });
+    status: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 200 },
+    transactionId: { type: DataTypes.INTEGER, allowNull: true }
+  // UNIQUE uk_idempotency (endpoint, ukAccountId, idempotencyKey) is built on the PERSISTENT generated
+  // column ukAccountId = IFNULL(accountId, 0) in SQL only (20261030_loan_phase4.sql)
+  }, { freezeTableName: true, tableName: 'ln_idempotency', timestamps: true, updatedAt: false });
 
   const lnSystemDate = sequelize.define('lnSystemDate', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },

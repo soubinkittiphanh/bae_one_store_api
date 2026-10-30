@@ -81,7 +81,7 @@ const main = async () => {
   const conn = await mariadb.createConnection({ host: cfg.host, port: cfg.port, user: cfg.user, password: cfg.password, database: TEST_DB });
   const q = async (sql, params) => conn.query(sql, params);
   const snapshot = async () => {
-    const cols = await q("SELECT table_name, column_name, column_type, is_nullable, IFNULL(column_default,'-') d, column_comment FROM information_schema.columns WHERE table_schema = DATABASE() AND (table_name LIKE 'ln\\_%' OR table_name LIKE 'sec\\_%' OR table_name = 'chart_of_account') ORDER BY 1, 2");
+    const cols = await q("SELECT table_name, column_name, column_type, is_nullable, IFNULL(column_default,'-') d, column_comment, IFNULL(collation_name,'-') co FROM information_schema.columns WHERE table_schema = DATABASE() AND (table_name LIKE 'ln\\_%' OR table_name LIKE 'sec\\_%' OR table_name IN ('chart_of_account', 'transactionEntry')) ORDER BY 1, 2");
     const idx = await q("SELECT table_name, index_name, non_unique, GROUP_CONCAT(column_name ORDER BY seq_in_index) c FROM information_schema.statistics WHERE table_schema = DATABASE() AND (table_name LIKE 'ln\\_%' OR table_name LIKE 'sec\\_%') GROUP BY 1, 2, 3 ORDER BY 1, 2");
     return JSON.stringify([cols, idx], (k, v) => (typeof v === 'bigint' ? v.toString() : v));
   };
@@ -96,15 +96,33 @@ const main = async () => {
   await test('migrate up on a clean copy', async () => {
     runNode('loan_migrate.js', ['up']);
     const n = Number((await q("SELECT COUNT(*) n FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name LIKE 'ln\\_%'"))[0].n);
-    assert.strictEqual(n, 71, `expected 71 ln_* tables, found ${n}`);
+    assert.strictEqual(n, 72, `expected 72 ln_* tables, found ${n}`);
   });
-  await test('Phase 3, 2B and corrections DOWN, then UP, restore the schema exactly', async () => {
+  await test('Phase 4, POS loan types, Phase 3, 2B and corrections DOWN, then UP, restore the schema exactly', async () => {
     const before = await snapshot();
+    assert.match(runNode('loan_migrate.js', ['down', '--yes']), /20261030_loan_phase4/);
+    assert.match(runNode('loan_migrate.js', ['down', '--yes']), /20261030_pos_transaction_entry_loan_types/);
     assert.match(runNode('loan_migrate.js', ['down', '--yes']), /20261031_loan_phase3/);
     assert.match(runNode('loan_migrate.js', ['down', '--yes']), /20261030_loan_phase2b_accounting/);
     assert.match(runNode('loan_migrate.js', ['down', '--yes']), /20261029_loan_phase2a_corrections/);
     runNode('loan_migrate.js', ['up']);
     assert.strictEqual(await snapshot(), before);
+  });
+  await test('POS transactionEntry: LOAN_IN/LOAN_OUT appended from the live definition; UP idempotent; default and collation kept', async () => {
+    const colSql = "SELECT COLUMN_TYPE t, IS_NULLABLE n, IFNULL(COLUMN_DEFAULT,'-') d, IFNULL(COLLATION_NAME,'-') co, COLUMN_COMMENT c FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'transactionEntry' AND COLUMN_NAME = 'transactionType'";
+    const mig = require('../../20261030_pos_transaction_entry_loan_types');
+    const after = (await q(colSql))[0];
+    const values = mig.parseEnum(after.t);
+    assert.deepStrictEqual(values.slice(-2), ['LOAN_IN', 'LOAN_OUT']);
+    runNode('loan_migrate.js', ['up']);
+    assert.deepStrictEqual((await q(colSql))[0], after, 'second UP changes nothing');
+    runNode('loan_migrate.js', ['down', '--yes']); // Phase 4
+    runNode('loan_migrate.js', ['down', '--yes']); // POS loan types
+    const source = (await q(colSql))[0];
+    runNode('loan_migrate.js', ['up']);
+    assert.deepStrictEqual((await q(colSql))[0], after, 'UP after DOWN restores the same definition');
+    assert.deepStrictEqual(mig.parseEnum(source.t), values.filter(v => !['LOAN_IN', 'LOAN_OUT'].includes(v)), 'existing values and order unchanged');
+    assert.deepStrictEqual([after.n, after.d, after.co, after.c], [source.n, source.d, source.co, source.c], 'nullability, default, collation, comment kept');
   });
   await test('down refuses without --yes', async () => {
     assert.throws(() => runNode('loan_migrate.js', ['down']));
@@ -226,8 +244,8 @@ const main = async () => {
 
 // ----------------------------------------------------------------------------- parity
 
-const GENERATED_KEYS = new Set(['uk_accounting_entry_rule', 'uk_role_gl_mapping']);
-const GENERATED_COLS = new Set(['ukProductId', 'ukCategoryId', 'ukBranchId', 'ukCurrencyId', 'ukStatusQualifier']);
+const GENERATED_KEYS = new Set(['uk_accounting_entry_rule', 'uk_role_gl_mapping', 'uk_idempotency']);
+const GENERATED_COLS = new Set(['ukProductId', 'ukCategoryId', 'ukBranchId', 'ukCurrencyId', 'ukStatusQualifier', 'ukAccountId']);
 
 const parity = async (db) => {
   const Q = db.Sequelize.QueryTypes.SELECT;
