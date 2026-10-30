@@ -203,7 +203,12 @@ const ENTITIES = {
       dateOrder('effectiveFrom', 'effectiveTo', 'Entry rule')
     ]
   },
-  'role-gl-mapping': { model: 'lnRoleGlMapping', functionCode: 'LN_ACCOUNTING_SETUP' },
+  // Phase 4: role-to-GL mappings follow maker-checker under LN_GL_MAPPING (SUPER_ADMIN by default)
+  'role-gl-mapping': {
+    model: 'lnRoleGlMapping', functionCode: 'LN_GL_MAPPING',
+    fields: { roleCode: ref('lnAccountingRole', 'roleCode'), chartAccountId: ref('chartAccount'), productId: ref('lnProduct'), categoryId: ref('lnProductCategory'), branchId: ref('location'), currencyId: ref('currency') },
+    rules: [dateOrder('effectiveFrom', 'effectiveTo', 'GL mapping')]
+  },
 
   sequence: { model: 'lnNumberingSequence', functionCode: 'LN_SEQUENCE' },
   'batch-job': { model: 'lnBatchJob', functionCode: 'LN_BATCH_JOB', readOnly: ['lastRunDate', 'lastStatus'] }
