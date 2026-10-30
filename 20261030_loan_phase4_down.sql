@@ -1,6 +1,10 @@
 -- ==============================================================================
 -- DCommerce Loan Module - Phase 4 (DOWN). loan_migrate.js refuses while loan transactions exist.
 -- ==============================================================================
+ALTER TABLE `ln_amendment_history` DROP INDEX IF EXISTS `idx_ah_tx`;
+ALTER TABLE `ln_amendment_history`
+  DROP COLUMN IF EXISTS `makerId`, DROP COLUMN IF EXISTS `transactionId`, DROP COLUMN IF EXISTS `source`,
+  MODIFY COLUMN `approvedBy` INT NOT NULL;
 ALTER TABLE `ln_gl_batch` DROP COLUMN IF EXISTS `jobCode`;
 DROP TABLE IF EXISTS `ln_pos_link`;
 ALTER TABLE `ln_account`

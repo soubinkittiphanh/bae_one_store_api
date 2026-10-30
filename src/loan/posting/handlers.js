@@ -128,6 +128,10 @@ const vatFor = async (ctx, componentCode, date, transaction) => {
   return { rate: vat.rate, inclusive: Boolean(comp.taxInclusive) };
 };
 
+// Who and what caused a schedule amendment: the transaction and its maker always; approvedBy only
+// when a checker authorized the transaction (NULL for single-step kinds such as REPAYMENT)
+const amendmentOrigin = (txn, approverId) => ({ source: 'TRANSACTION', transactionId: txn.id, makerId: txn.makerId, approvedBy: approverId || null });
+
 const handlers = {
   async FEE_COLLECT(ctx, input, effects, { dates, transaction, txn }) {
     requireStage(ctx, ['BOOKED'], 'FEE_COLLECT');
@@ -169,7 +173,7 @@ const handlers = {
     return { eventCode: 'FEE_REFUND', events, amount: collectTags.TOTAL_PAID };
   },
 
-  async DISB(ctx, input, effects, { dates, transaction, ctxUser }) {
+  async DISB(ctx, input, effects, { dates, transaction, txn, approverId }) {
     requireStage(ctx, ['BOOKED'], 'DISB');
     const fees = E.fees.upfrontFees({ loanAmount: String(ctx.account.sanctionedAmount), components: ctx.snapshot.components, rounder: ctx.rounder });
     if (ctx.product.feeFinancingMode === 'UPFRONT' && N.cmp(fees.total, 0) > 0
@@ -191,7 +195,7 @@ const handlers = {
       await effects.set('lnAccount', ctx.account, 'valueDate', dates.valueDate);
       await effects.set('lnAccount', ctx.account, 'firstDueDate', schedule.firstDueDate);
       await effects.set('lnAccount', ctx.account, 'maturityDate', schedule.maturityDate);
-      await effects.create('lnAmendmentHistory', { loanAccountId: ctx.account.id, amendmentType: 'DISB_DATE', effectiveDate: dates.valueDate, oldValuesJson: JSON.stringify({ valueDate: String(ctx.snapshot.terms.valueDate) }), newValuesJson: JSON.stringify({ valueDate: dates.valueDate, installments: schedule.rows.length }), approvedBy: ctxUser.userId });
+      await effects.create('lnAmendmentHistory', { loanAccountId: ctx.account.id, amendmentType: 'DISB_DATE', effectiveDate: dates.valueDate, oldValuesJson: JSON.stringify({ valueDate: String(ctx.snapshot.terms.valueDate) }), newValuesJson: JSON.stringify({ valueDate: dates.valueDate, installments: schedule.rows.length }), ...amendmentOrigin(txn, approverId) });
     }
     const disb = events.find(e => e.event === 'DISB').tags;
     await effects.set('lnAccount', ctx.account, 'accountStage', 'DISBURSED');
@@ -201,7 +205,7 @@ const handlers = {
     return { eventCode: 'DISB', events, amount: disb.PRINCIPAL, settlesInvoice: ctx.product.disbursementTargetCode === 'SALE_INVOICE_SETTLEMENT' };
   },
 
-  async REPAYMENT(ctx, input, effects, { dates, transaction, txn, ctxUser }) {
+  async REPAYMENT(ctx, input, effects, { dates, transaction, txn, approverId }) {
     requireStage(ctx, ['DISBURSED'], 'REPAYMENT');
     requireLive(ctx, 'REPAYMENT');
     const amount = money(input.amount, 'amount');
@@ -246,7 +250,7 @@ const handlers = {
       }, calendar, ctx.rounder);
       await effects.replaceSchedules(future, futureComps, regen.rows, ctx);
       await effects.set('lnAccount', ctx.account, 'maturityDate', regen.rows[regen.rows.length - 1].dueDate);
-      await effects.create('lnAmendmentHistory', { loanAccountId: ctx.account.id, amendmentType: 'PARTIAL_PREPAYMENT', effectiveDate: dates.valueDate, oldValuesJson: JSON.stringify({ installments: future.length, outstanding: fromUnits(before) }), newValuesJson: JSON.stringify({ option: ctx.product.partialPrepayOption, installments: regen.rows.length, outstanding: regen.newOutstanding }), approvedBy: ctxUser.userId });
+      await effects.create('lnAmendmentHistory', { loanAccountId: ctx.account.id, amendmentType: 'PARTIAL_PREPAYMENT', effectiveDate: dates.valueDate, oldValuesJson: JSON.stringify({ installments: future.length, outstanding: fromUnits(before) }), newValuesJson: JSON.stringify({ option: ctx.product.partialPrepayOption, installments: regen.rows.length, outstanding: regen.newOutstanding }), ...amendmentOrigin(txn, approverId) });
     }
     const qualifier = qualifierOf(ctx, ctx.account.status);
     return {

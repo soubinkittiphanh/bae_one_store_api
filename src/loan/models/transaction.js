@@ -85,10 +85,15 @@ module.exports = (sequelize, DataTypes) => {
     effectiveDate: { type: DataTypes.DATEONLY, allowNull: false },
     oldValuesJson: { type: DataTypes.TEXT('long'), allowNull: false },
     newValuesJson: { type: DataTypes.TEXT('long'), allowNull: false },
-    approvedBy: { type: DataTypes.INTEGER, allowNull: false }
+    // Checker who authorized the change; NULL when nobody approved it (e.g. a cashier's partial prepayment)
+    approvedBy: { type: DataTypes.INTEGER, allowNull: true },
+    source: { type: DataTypes.STRING(20), allowNull: false, defaultValue: 'MANUAL' },
+    transactionId: { type: DataTypes.INTEGER, allowNull: true },
+    makerId: { type: DataTypes.INTEGER, allowNull: true }
   }, { freezeTableName: true, tableName: 'ln_amendment_history', timestamps: true, updatedAt: false,
     indexes: [
-      { name: 'idx_ah_loan', fields: ['loanAccountId'] }
+      { name: 'idx_ah_loan', fields: ['loanAccountId'] },
+      { name: 'idx_ah_tx', fields: ['transactionId'] }
     ] });
 
   // Every POS row a loan transaction created (general_ledger, transactionEntry, ARReceiveHeader); used by REVERSAL

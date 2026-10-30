@@ -55,3 +55,11 @@ CREATE TABLE IF NOT EXISTS `ln_pos_link` (
 
 -- 7. EOD batches carry their job
 ALTER TABLE `ln_gl_batch` ADD COLUMN IF NOT EXISTS `jobCode` VARCHAR(30) NULL AFTER `batchType`;
+
+-- 8. Amendments made by a loan transaction: approvedBy only when a second person authorized it
+ALTER TABLE `ln_amendment_history`
+  MODIFY COLUMN `approvedBy` INT NULL COMMENT 'Checker who authorized the change; NULL when nobody approved it',
+  ADD COLUMN IF NOT EXISTS `source` VARCHAR(20) NOT NULL DEFAULT 'MANUAL' COMMENT 'MANUAL / TRANSACTION / SYSTEM' AFTER `approvedBy`,
+  ADD COLUMN IF NOT EXISTS `transactionId` INT(11) NULL COMMENT 'ln_transaction that caused the change' AFTER `source`,
+  ADD COLUMN IF NOT EXISTS `makerId` INT(11) NULL COMMENT 'User who entered the transaction' AFTER `transactionId`;
+ALTER TABLE `ln_amendment_history` ADD INDEX IF NOT EXISTS `idx_ah_tx` (`transactionId`);
