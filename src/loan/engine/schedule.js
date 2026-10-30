@@ -191,3 +191,70 @@ const finish = (rows, rounder, principal, capitalized) => {
 };
 
 module.exports = { generateSchedule, monthsPerPeriod };
+
+/**
+ * Partial principal prepayment (pure): rebuild the unpaid future installments.
+ *   REDUCE_INSTALLMENT  same remaining due dates, smaller installments
+ *   REDUCE_TENOR        same regular installment (annuity) or principal (equal principal), fewer installments
+ * The interest of the current period is split at the prepayment date: the old balance until the
+ * date, the new balance after it. FLAT products and REDUCE_TENOR with a balloon are refused.
+ *
+ * input: { rows (future unpaid installments, in order), prevDate, outstandingBefore, prepaid, date,
+ *          annualRate, dayCount, frequency, repaymentMethod, balloonAmount, option, holidayHandling }
+ */
+const regenerateAfterPrepayment = (input, calendar, rounder) => {
+  const { rows, prevDate, date, option } = input;
+  if (input.repaymentMethod === 'FLAT') fail('Partial principal prepayment does not regenerate FLAT schedules');
+  if (!rows.length) fail('No future installments to regenerate');
+  if (!['REDUCE_INSTALLMENT', 'REDUCE_TENOR'].includes(option)) fail(`Unknown partial prepayment option ${option}`);
+  const before = N.of(input.outstandingBefore);
+  const prepaid = N.of(input.prepaid);
+  if (N.cmp(prepaid, 0) <= 0) fail('Prepaid principal must be positive');
+  if (N.cmp(prepaid, before) >= 0) fail('Prepayment covers the whole principal; use PREPAY (full settlement)');
+  const balloon = N.of(input.balloonAmount || 0);
+  if (option === 'REDUCE_TENOR' && !N.isZero(balloon)) fail('REDUCE_TENOR is not supported with a balloon');
+  const rate = N.of(input.annualRate);
+  const after = N.sub(before, prepaid);
+  const r = v => N.of(rounder.round(v));
+  const yf = (a, b) => yearFraction(a, b, input.dayCount);
+
+  const firstInterest = r(N.add(N.mul(N.mul(before, rate), yf(prevDate, date)), N.mul(N.mul(after, rate), yf(date, rows[0].originalDueDate))));
+  const k = rows.length;
+  const periodRate = N.div(rate, input.frequency.periodsPerYear);
+  let payment = null;
+  let principalPer = null;
+  if (input.repaymentMethod === 'EQUAL_PRINCIPAL') {
+    principalPer = option === 'REDUCE_INSTALLMENT' ? r(N.div(after, k)) : N.of(rows[0].principal);
+  } else if (option === 'REDUCE_INSTALLMENT') {
+    payment = N.isZero(periodRate) ? r(N.div(N.sub(after, balloon), k)) : (() => {
+      const growth = N.pow(N.add(1, periodRate), k);
+      return r(N.div(N.mul(N.sub(N.mul(after, growth), balloon), periodRate), N.sub(growth, 1)));
+    })();
+  } else {
+    payment = N.add(rows[0].principal, rows[0].interest);
+  }
+
+  const out = [];
+  let outstanding = after;
+  let prev = date;
+  for (let i = 0; i < k && N.cmp(outstanding, 0) > 0; i++) {
+    const due = rows[i].originalDueDate;
+    const interest = i === 0 ? firstInterest : r(N.mul(N.mul(outstanding, rate), yf(prev, due)));
+    let p = principalPer || N.max(N.ZERO, N.sub(payment, interest));
+    if (i === k - 1 || N.cmp(p, outstanding) >= 0) p = outstanding;
+    out.push({ no: rows[0].no + i, originalDueDate: due, dueDate: calendar.adjust(due, input.holidayHandling), opening: outstanding, principal: p, interest });
+    outstanding = N.sub(outstanding, p);
+    prev = due;
+  }
+  const fmt = v => N.toDecimal(v, rounder.decimals);
+  return {
+    rows: out.map(x => ({
+      no: x.no, dueDate: x.dueDate, originalDueDate: x.originalDueDate, openingBalance: fmt(x.opening),
+      principal: fmt(x.principal), interest: fmt(x.interest), total: fmt(N.add(x.principal, x.interest)), closingBalance: fmt(N.sub(x.opening, x.principal))
+    })),
+    removedInstallments: k - out.length,
+    newOutstanding: fmt(after)
+  };
+};
+
+module.exports.regenerateAfterPrepayment = regenerateAfterPrepayment;

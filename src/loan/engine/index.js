@@ -16,5 +16,6 @@ module.exports = {
   status: require('./status'),
   provision: require('./provision'),
   fees: require('./fees'),
-  snapshot: require('./snapshot')
+  snapshot: require('./snapshot'),
+  events: require('./events')
 };

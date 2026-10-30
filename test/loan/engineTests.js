@@ -304,6 +304,59 @@ const run = async (test) => {
     assertBalanced([...b.events, ...coll.events, ...c.events]);
   });
 
+  await test('partial prepayment regeneration (REDUCE_INSTALLMENT / REDUCE_TENOR) matches the independent values; FLAT refused', async () => {
+    const ann = E.schedule.generateSchedule({ ...F.LOAN_A, repaymentMethod: 'EQUAL_INSTALLMENT' }, NO_HOLIDAYS, LAK);
+    const future = ann.rows.slice(2);
+    const base = { rows: future, prevDate: ann.rows[1].originalDueDate, outstandingBefore: '202917556', prepaid: '50000000', date: E.dates.addDays(ann.rows[1].originalDueDate, 10),
+      annualRate: '0.18', dayCount: F.DAY_30_360, frequency: F.MONTHLY, repaymentMethod: 'EQUAL_INSTALLMENT', holidayHandling: 'EXACT_DATE' };
+    const ri = E.schedule.regenerateAfterPrepayment({ ...base, option: 'REDUCE_INSTALLMENT' }, NO_HOLIDAYS, LAK);
+    assert.deepStrictEqual([ri.rows.length, ri.rows[0].principal, ri.rows[0].interest, ri.rows[1].total], [10, '14037726', '2543763', '16581489']);
+    assert.deepStrictEqual([ri.rows[9].principal, ri.rows[9].interest], ['16618070', '249271']);
+    assert.strictEqual(N.toDecimal(N.sum(ri.rows.map(r => r.principal)), 0), '152917556');
+    assert.strictEqual(ri.rows[0].no, 3);
+    const rt = E.schedule.regenerateAfterPrepayment({ ...base, option: 'REDUCE_TENOR' }, NO_HOLIDAYS, LAK);
+    assert.deepStrictEqual([rt.rows.length, rt.removedInstallments, rt.rows[0].principal, rt.rows[7].principal, rt.rows[7].interest], [8, 2, '19459435', '8858841', '132883']);
+    assert.strictEqual(rt.rows[7].closingBalance, '0');
+    const ep = E.schedule.generateSchedule(F.LOAN_A, NO_HOLIDAYS, LAK);
+    const epBase = { ...base, rows: ep.rows.slice(2), prevDate: ep.rows[1].originalDueDate, outstandingBefore: '200000000', repaymentMethod: 'EQUAL_PRINCIPAL' };
+    const epRi = E.schedule.regenerateAfterPrepayment({ ...epBase, option: 'REDUCE_INSTALLMENT' }, NO_HOLIDAYS, LAK);
+    assert.deepStrictEqual([epRi.rows.length, epRi.rows[0].principal, epRi.rows[0].interest], [10, '15000000', '2500000']);
+    const epRt = E.schedule.regenerateAfterPrepayment({ ...epBase, option: 'REDUCE_TENOR' }, NO_HOLIDAYS, LAK);
+    assert.deepStrictEqual([epRt.rows.length, epRt.rows[7].principal], [8, '10000000']);
+    assert.throws(() => E.schedule.regenerateAfterPrepayment({ ...base, repaymentMethod: 'FLAT', option: 'REDUCE_INSTALLMENT' }, NO_HOLIDAYS, LAK), /FLAT/);
+    assert.throws(() => E.schedule.regenerateAfterPrepayment({ ...base, prepaid: '202917556', option: 'REDUCE_INSTALLMENT' }, NO_HOLIDAYS, LAK), /use PREPAY/);
+  });
+
+  await test('event builders: write-off (Example 6), repossession and resale (Example 5), fee refund (Example 8), waivers, remittance, advance refund; balanced', async () => {
+    const wo = E.events.writeOffEvents({ outstandingPrincipal: '80000000', reserve: '60000000', suspendedInterest: '6000000', rounder: LAK });
+    assert.deepStrictEqual(wo, [{ event: 'WRITE_OFF', tags: { PRIN_WO: '60000000', SHORTFALL: '20000000', SUSP_CLR: '6000000', MEMO_WO: '86000000' } }]);
+    assertBalanced(wo.map(e => ({ ...e, qualifiers: { CURRENT: 'LOSS' } })));
+    assert.deepStrictEqual(E.events.recoveryEvents({ amount: '10000000', memoBalance: '86000000', rounder: LAK }), [{ event: 'RECOVERY', tags: { REC_AMT: '10000000' } }]);
+    assert.throws(() => E.events.recoveryEvents({ amount: '90000000', memoBalance: '86000000', rounder: LAK }), /exceeds the written-off memo/);
+    const rep = E.events.repossessEvents({ outstandingPrincipal: '150000000', appraised: '125000000', reserve: '30000000', suspendedInterest: '9000000', rounder: LAK });
+    assert.deepStrictEqual(rep.events, [
+      { event: 'REPOSSESS', tags: { APPRAISED: '125000000', RESERVE_ABS: '25000000', OUT_PRIN: '150000000', SUSP_CLR: '9000000' } },
+      { event: 'PROV_WB', tags: { PROV_WB: '5000000' } }
+    ]);
+    assertBalanced(rep.events.map(e => ({ ...e, qualifiers: { CURRENT: 'SUBSTANDARD' } })));
+    const disp = E.events.disposeEvents({ salePrice: '118000000', carrying: rep.carrying, rounder: LAK });
+    assert.deepStrictEqual(disp, [{ event: 'VEH_DISPOSE', tags: { SALE_PRICE: '118000000', CARRYING: '125000000', LOSS: '7000000' } }]);
+    assertBalanced(disp);
+    const gain = E.events.disposeEvents({ salePrice: '130000000', carrying: '125000000', vat: { rate: '0.05', inclusive: true }, rounder: LAK });
+    assert.deepStrictEqual(gain[0].tags, { SALE_PRICE: '130000000', CARRYING: '125000000', VAT_OUT: '6190476', LOSS: '1190476' }, 'inclusive 5%: net 123,809,524 below carrying');
+    assertBalanced(gain);
+    const refund = E.events.feeRefundEvents({ collectTags: { TOTAL_PAID: '10000000', FEE_DOC: '3000000', INS_PREM: '7000000' }, rounder: LAK });
+    assert.deepStrictEqual(refund, [{ event: 'FEE_REFUND', tags: { FEE_DOC: '3000000', INS_PREM: '7000000', REFUND_AMT: '10000000' } }]);
+    assertBalanced(refund);
+    const iw = E.events.waiveEvents({ kind: 'INTEREST', allocations: [{ amount: '1000', bucket: 'BOOKED' }, { amount: '500', bucket: 'SUSPENDED' }, { amount: '200', bucket: 'UNBOOKED' }], rounder: LAK });
+    assert.deepStrictEqual(iw, [{ event: 'INT_WAIVE', tags: { INT_WAIVE: '1000', INT_WAIVE_SUSP: '500' } }]);
+    assertBalanced(iw);
+    assert.deepStrictEqual(E.events.waiveEvents({ kind: 'PENALTY', allocations: [{ amount: '233000' }], rounder: LAK }), [], 'memo penalty waiver posts nothing');
+    assertBalanced(E.events.insRemitEvents({ amount: '7000000', payable: '7000000', rounder: LAK }));
+    assert.throws(() => E.events.insRemitEvents({ amount: '8000000', payable: '7000000', rounder: LAK }), /exceeds the insurance payable/);
+    assertBalanced(E.events.advRefundEvents({ amount: '6400000', advanceBalance: '6400000', rounder: LAK }));
+  });
+
   await test('snapshot freezes product terms and schedule, not the live DPD/provision rules', async () => {
     const snap = E.snapshot.buildSnapshot({
       product: { id: 1, productCode: 'CAR-LOAN-DB', version: 1, feeFinancingMode: 'UPFRONT', earlySettlementRebateMethod: 'RULE_OF_78', dayCountCode: '30_360' },
