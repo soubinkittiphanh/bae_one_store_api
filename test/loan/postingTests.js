@@ -13,8 +13,11 @@ const E = require('../../src/loan/engine');
 
 const API_ROOT = path.resolve(__dirname, '../..');
 
-module.exports = async ({ test, call, q, db, runNode, users, L, expectStatus }) => {
+module.exports = async ({ test: runTest, call, q, db, runNode, users, L, expectStatus }) => {
   const { SUPER, ADMIN } = users;
+  // LOAN_POSTING_ONLY=<regex>: run only the setup and the matching posting tests (for running one case in isolation)
+  const only = process.env.LOAN_POSTING_ONLY ? new RegExp(process.env.LOAN_POSTING_ONLY) : null;
+  const test = (name, fn) => (!only || /^setup:/.test(name) || only.test(name) ? runTest(name, fn) : console.log(`  SKIP  ${name}`));
   const D = E.dates;
   const num = async (sql, params) => Number((await q(sql, params))[0].n);
   const setSpf = (code, value) => q('UPDATE SPF SET value = ? WHERE code = ?', [value, code]);
@@ -248,6 +251,43 @@ module.exports = async ({ test, call, q, db, runNode, users, L, expectStatus }) 
     assert.strictEqual(Number(out[0].n), 2);
   });
 
+  await test('isolated: ADV_REFUND larger than the advance is refused (2,000,000 against 1,000,000) and writes nothing; the exact advance can be refunded; DISB amendment records its checker', async () => {
+    // Self-contained (also runs alone with LOAN_POSTING_ONLY): posting on, tax profile confirmed
+    await setSpf('LOAN_POSTING_ENABLED', 'true');
+    await q("UPDATE ln_tax_profile SET confirmationStatus = 'CONFIRMED'");
+    const start = await businessDate();
+    const F = await makeLoan();
+    await feeCollect(F.account.id, '0');
+    // Disburse one day after booking: the schedule is regenerated and the amendment is approved by the DISB checker
+    await setBusinessDate(D.addDays(start, 1));
+    try {
+      const disb = await disburse(F.account.id);
+      const amend = await q("SELECT approvedBy, source, transactionId, makerId FROM ln_amendment_history WHERE loanAccountId = ? AND amendmentType = 'DISB_DATE'", [F.account.id]);
+      assert.deepStrictEqual(amend.map(a => [Number(a.approvedBy), a.source, Number(a.transactionId), Number(a.makerId)]), [[Number(SUPER), 'TRANSACTION', disb.transactionId, Number(ADMIN)]], 'DISB amendment: checker SUPER approved, maker ADMIN');
+
+      const pay = await post(ADMIN, F.account.id, { kind: 'REPAYMENT', amount: '1000000', bankAccountId: bank.id });
+      expectStatus(pay, 201, 'overpayment');
+      const advance = async () => (await q('SELECT CAST(advanceBalance AS CHAR) a FROM ln_account WHERE id = ?', [F.account.id]))[0].a;
+      assert.strictEqual(await advance(), '1000000.0000', 'precondition: the advance is exactly 1,000,000');
+
+      const before = { ...(await counts(bank.id)), pending: await num("SELECT COUNT(*) n FROM ln_transaction WHERE loanAccountId = ? AND postingStatus = 'PENDING_AUTH'", [F.account.id]) };
+      const over = await post(ADMIN, F.account.id, { kind: 'ADV_REFUND', amount: '2000000', bankAccountId: bank.id });
+      console.log(`        over-refund response: HTTP ${over.status} "${over.data.message}"`);
+      expectStatus(over, 400, 'over-refund');
+      assert.match(over.data.message, /^Refund 2000000 exceeds the customer advance of 1000000/);
+      const after = { ...(await counts(bank.id)), pending: await num("SELECT COUNT(*) n FROM ln_transaction WHERE loanAccountId = ? AND postingStatus = 'PENDING_AUTH'", [F.account.id]) };
+      assert.deepStrictEqual(after, before, 'nothing written: no pending transaction, journal, GL, bank entry, link or idempotency row; bank balance unchanged');
+      assert.strictEqual(await advance(), '1000000.0000', 'advance unchanged');
+      expectStatus(await post(ADMIN, F.account.id, { kind: 'ADV_REFUND', amount: '1000001', bankAccountId: bank.id }), 400, 'one kip over');
+
+      const exact = await makerChecker(F.account.id, { kind: 'ADV_REFUND', amount: '1000000', bankAccountId: bank.id }, 'exact refund');
+      assert.deepStrictEqual(tagsOf(exact, 'ADV_REFUND'), { REFUND_AMT: '1000000' });
+      assert.strictEqual(await advance(), '0.0000');
+    } finally {
+      await setBusinessDate(start);
+    }
+  });
+
   let prepayTx;
   await test('partial principal prepayment regenerates the remaining schedule (REDUCE_INSTALLMENT); LIFO reversal refuses older transactions and undoes the latest exactly', async () => {
     const rowsBefore = await q('SELECT s.installmentNo n, CAST(c.amountDue AS CHAR) a FROM ln_schedule s JOIN ln_schedule_component c ON c.scheduleId = s.id WHERE s.loanAccountId = ? ORDER BY s.installmentNo, c.componentId', [A.account.id]);
@@ -259,7 +299,10 @@ module.exports = async ({ test, call, q, db, runNode, users, L, expectStatus }) 
     assert.strictEqual(Number(future[0].n), 11, 'REDUCE_INSTALLMENT keeps the remaining count');
     const p2 = await q('SELECT CAST(c.amountDue AS CHAR) a FROM ln_schedule s JOIN ln_schedule_component c ON c.scheduleId = s.id WHERE s.loanAccountId = ? AND s.installmentNo = 2 AND c.componentId = (SELECT id FROM ln_component WHERE componentCode = "PRINCIPAL")', [A.account.id]);
     assert.ok(Number(p2[0].a) < 18679246, 'smaller principal installments after the prepayment');
-    assert.strictEqual(await num("SELECT COUNT(*) n FROM ln_amendment_history WHERE loanAccountId = ? AND amendmentType = 'PARTIAL_PREPAYMENT'", [A.account.id]), 1);
+    const amend = await q("SELECT approvedBy, source, transactionId, makerId FROM ln_amendment_history WHERE loanAccountId = ? AND amendmentType = 'PARTIAL_PREPAYMENT'", [A.account.id]);
+    assert.strictEqual(amend.length, 1);
+    // A cashier REPAYMENT has no checker: nobody approved the amendment, so approvedBy stays NULL
+    assert.deepStrictEqual([amend[0].approvedBy, amend[0].source, Number(amend[0].transactionId), Number(amend[0].makerId)], [null, 'TRANSACTION', prepayTx.transactionId, Number(ADMIN)]);
 
     const older = await post(ADMIN, A.account.id, { kind: 'REVERSAL', targetTransactionId: disbTx.transactionId });
     expectStatus(older, 409, 'non-LIFO reversal');
