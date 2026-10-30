@@ -216,6 +216,17 @@ const main = async () => {
     assert.strictEqual(fns.length, 3);
   });
 
+  await test('Phase 4 seed: switches OFF, LN_TRANSACTION / LN_EOD / LN_GL_MAPPING registered; runs twice with identical counts', async () => {
+    runNode('seed_loan_phase4.js');
+    const counts = await tableCounts();
+    runNode('seed_loan_phase4.js');
+    assert.deepStrictEqual(await tableCounts(), counts);
+    const spf = await q("SELECT code, value FROM SPF WHERE code IN ('LOAN_POSTING_ENABLED','BS_INCLUDE_LOAN_BOOK','LOAN_MAX_BACKDATE_DAYS') ORDER BY code");
+    assert.deepStrictEqual(spf.map(r => `${r.code}=${r.value}`), ['BS_INCLUDE_LOAN_BOOK=false', 'LOAN_MAX_BACKDATE_DAYS=0', 'LOAN_POSTING_ENABLED=false']);
+    const fns = await q("SELECT functionCode FROM sec_function WHERE functionCode IN ('LN_TRANSACTION','LN_EOD','LN_GL_MAPPING') ORDER BY 1");
+    assert.deepStrictEqual(fns.map(f => f.functionCode), ['LN_EOD', 'LN_GL_MAPPING', 'LN_TRANSACTION']);
+  });
+
   console.log('\n[schema parity]');
   const db = require('../../src/models');
   db.sequelize.options.logging = false;
@@ -304,7 +315,8 @@ const parity = async (db) => {
 // ----------------------------------------------------------------------------- API process
 
 const startApi = (port, env) => new Promise((resolve, reject) => {
-  const childEnv = { ...env, PORT: String(port), TZ: 'Asia/Vientiane' };
+  // LOAN_TEST_HOOKS lets the X-Loan-Test-Fail-At header inject failures (honoured only on a *_test database)
+  const childEnv = { ...env, PORT: String(port), TZ: 'Asia/Vientiane', LOAN_TEST_HOOKS: '1' };
   delete childEnv.NO_SYNC; // exercise the real startup path, including sync
   const child = spawn(process.execPath, [path.join(API_ROOT, 'src/index.js')], { cwd: RUN_DIR, env: childEnv });
   let ready = false;
@@ -477,10 +489,10 @@ const apiTests = async ({ port, q, db, runNode }) => {
   const CASHIER = pick('CASHIER');
 
   const leaks = [];
-  const call = async (userId, method, url, data) => {
+  const call = async (userId, method, url, data, headers = {}) => {
     const res = await axios({
       method, url: base + url, data, validateStatus: () => true,
-      headers: { Authorization: `Bearer ${jwt.sign({ id: userId, cus_name: `test${userId}` }, secret, { expiresIn: '1h' })}` }
+      headers: { Authorization: `Bearer ${jwt.sign({ id: userId, cus_name: `test${userId}` }, secret, { expiresIn: '1h' })}`, ...headers }
     });
     if (res.status >= 400 && /\b(SELECT|INSERT INTO|UPDATE `|sql:)/i.test(JSON.stringify(res.data))) leaks.push(`${method} ${url}`);
     return res;
@@ -881,6 +893,10 @@ const apiTests = async ({ port, q, db, runNode }) => {
     const stillNormal = await q('SELECT status, currentDpd FROM ln_account WHERE id = ?', [bookedAccount.id]);
     assert.deepStrictEqual([stillNormal[0].status, Number(stillNormal[0].currentDpd)], ['NORMAL', 0], 'previews persist nothing');
   });
+  console.log('\n[phase 4 posting, EOD, balance sheet]');
+  await require('./postingTests')({ test, call, q, db, runNode, users: { SUPER, ADMIN, CASHIER }, L, expectStatus });
+
+  console.log('\n[api, continued]');
   await test('banner status for any user, pending inbox filtered by grants, enums served by lookups', async () => {
     const st = await call(CASHIER, 'get', `${L}/status`);
     expectStatus(st, 200, 'status');
