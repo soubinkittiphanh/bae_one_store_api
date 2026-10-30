@@ -224,6 +224,23 @@ const main = async () => {
     assert.deepStrictEqual(diffs, []);
   });
 
+  await test('exact decimal reads (loan only): a DECIMAL(20,4) above 2^53/10^4 comes back as the exact string; normal reads lose digits', async () => {
+    const { findByPkExact, findAllExact } = require('../../src/loan/db/exact');
+    const big = '9876543210987.6543';
+    const row = await db.lnAccountBalance.create({ loanAccountId: 999999, componentId: 999999, outstandingAmount: big });
+    try {
+      const normal = await db.lnAccountBalance.findByPk(row.id);
+      assert.notStrictEqual(String(normal.outstandingAmount), big, 'the global driver returns a lossy number');
+      const exact = await findByPkExact(db.lnAccountBalance, row.id);
+      assert.strictEqual(exact.outstandingAmount, big);
+      assert.strictEqual(exact.totalPaid, '0.0000');
+      const listed = await findAllExact(db.lnAccountBalance, { where: { id: row.id } });
+      assert.strictEqual(listed[0].outstandingAmount, big);
+    } finally {
+      await row.destroy();
+    }
+  });
+
   console.log('\n[accounting validators]');
   await accountingTests({ db });
 
