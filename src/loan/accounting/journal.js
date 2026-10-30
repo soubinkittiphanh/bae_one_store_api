@@ -35,10 +35,15 @@ const resolveRuleSet = (rules, product, { asOfDate, includePending = false, incl
     && (r.productId == null || Number(r.productId) === Number(product.id))
     && (r.categoryId == null || Number(r.categoryId) === Number(product.categoryId))
   ));
+  // Effective dating: of identical legs (same key and scope) only the latest effectiveFrom applies
+  const legKey = r => [r.eventCode, r.amountTag, r.drCr, r.roleCode, r.qualifierSource, r.feeModeFilter, r.presentationFilter, r.targetFilter, r.productId, r.categoryId].join('|');
+  const latest = {};
+  for (const r of usable) if (!latest[legKey(r)] || String(r.effectiveFrom) > String(latest[legKey(r)].effectiveFrom)) latest[legKey(r)] = r;
+  const current = usable.filter(r => latest[legKey(r)] === r);
   const scopeOf = r => (r.productId != null ? 2 : (r.categoryId != null ? 1 : 0));
   const bestScope = {};
-  for (const r of usable) bestScope[r.eventCode] = Math.max(bestScope[r.eventCode] ?? 0, scopeOf(r));
-  return usable.filter(r => scopeOf(r) === bestScope[r.eventCode]);
+  for (const r of current) bestScope[r.eventCode] = Math.max(bestScope[r.eventCode] ?? 0, scopeOf(r));
+  return current.filter(r => scopeOf(r) === bestScope[r.eventCode]);
 };
 
 /**

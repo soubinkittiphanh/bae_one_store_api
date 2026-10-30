@@ -397,6 +397,48 @@ class AccountingPostingService {
       throw error;
     }
   }
+
+  /**
+   * Generic, additive: write balanced Dr/Cr pairs prepared by the caller (used by the loan module),
+   * always inside the CALLER'S transaction so the caller's other writes and these GL rows commit or
+   * roll back together. Amounts are decimal strings already rounded to at most 2 places (no floats).
+   *   pairs: [{ drAccountId, crAccountId, amount, localAmount, currencyId, rate, description? }]
+   *   meta:  { bookingDate, postingReference, description, glBatchId?, source? ('GL' by default) }
+   * Returns the created general_ledger rows in the same order as `pairs`.
+   */
+  static async postJournalPairs(pairs, meta, transaction) {
+    if (!transaction) {
+      throw new Error('postJournalPairs must run inside the caller\'s transaction');
+    }
+    const amountPattern = /^\d{1,13}(\.\d{1,2})?$/;
+    const rows = [];
+    for (const pair of pairs || []) {
+      if (!amountPattern.test(String(pair.amount)) || !amountPattern.test(String(pair.localAmount))) {
+        throw new Error(`postJournalPairs: amount must be a decimal string with at most 2 places (got ${pair.amount} / ${pair.localAmount})`);
+      }
+      if (!pair.drAccountId || !pair.crAccountId || pair.drAccountId === pair.crAccountId) {
+        throw new Error('postJournalPairs: each pair needs two different accounts');
+      }
+      const row = await db.gl.create({
+        bookingDate: meta.bookingDate,
+        postingReference: meta.postingReference,
+        debit: pair.amount,
+        credit: pair.amount,
+        description: String(pair.description || meta.description || '').slice(0, 255),
+        localDebit: pair.localAmount,
+        localCredit: pair.localAmount,
+        rate: pair.rate || 1,
+        source: meta.source || 'GL',
+        status: 'POSTED',
+        glBatchId: meta.glBatchId || null,
+        drAccountId: pair.drAccountId,
+        crAccountId: pair.crAccountId,
+        currencyId: pair.currencyId
+      }, { transaction });
+      rows.push(row);
+    }
+    return rows;
+  }
 }
 
 module.exports = AccountingPostingService;
