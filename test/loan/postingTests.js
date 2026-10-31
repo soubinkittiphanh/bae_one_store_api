@@ -578,6 +578,38 @@ module.exports = async ({ test: runTest, call, q, db, runNode, users, L, expectS
     }
   });
 
+  await test('POS defect 9 (evidence only, POS code unchanged): a credit sale with a USD line, invoiced from the order and posted by the AR batch', async () => {
+    // A future date: an invoice whose due date is already past is saved as 'overdue', and the AR batch only picks 'sent'/'paid'
+    const day = '2026-12-29';
+    assert.strictEqual(await num("SELECT COUNT(*) n FROM ARInvoiceHeader WHERE invoiceDate = ? AND glPostingStatus = 'unposted'", [day]), 0, 'fixture date is free');
+    const usd = (await q("SELECT id FROM currency WHERE code = 'USD' LIMIT 1"))[0];
+    const client = (await q('SELECT id FROM client ORDER BY id LIMIT 1'))[0];
+    const productId = (await q('SELECT id FROM product ORDER BY id LIMIT 1'))[0].id;
+    const arAcc = (await q("SELECT id FROM chart_of_account WHERE accountType = 'Asset' ORDER BY id LIMIT 1"))[0].id;
+    const revAcc = (await q("SELECT id FROM chart_of_account WHERE accountType = 'Revenue' ORDER BY id LIMIT 1"))[0].id;
+    // What the POS screen sends: the header in base (lines converted at their rate), the line in the product's currency
+    const sale = await db.saleHeader.create({ bookingDate: day, referenceNo: `DEF9-${Date.now()}`, total: 315000000, exchangeRate: 1, currencyId: lakId, isActive: true, clientId: client.id });
+    // Both keys, as sales/controller.js assignHeaderId sets them
+    await db.saleLine.create({ headerId: sale.id, saleHeaderId: sale.id, productId, quantity: 1, unitRate: 1, price: 15000, total: 15000, currencyId: usd.id, exchangeRate: 21000, isActive: true });
+    const inv = await call(SUPER, 'post', `/api/ar-invoices/from-order/${sale.id}`, { invoiceDate: day, DRglAccountId: arAcc, CRglAccountId: revAcc });
+    assert.ok([200, 201].includes(inv.status), `invoice from order: ${inv.status} ${JSON.stringify(inv.data && inv.data.message)}`);
+    const header = (await q("SELECT id, invoiceNumber, status, CAST(totalAmount AS CHAR) total, currencyId, CAST(exchangeRate AS CHAR) rate, glPostingStatus FROM ARInvoiceHeader WHERE saleHeaderId = ?", [sale.id]))[0];
+    assert.strictEqual(header.status, 'sent', 'fixture: invoice is sent (not yet overdue)');
+    const lines = await q('SELECT CAST(unitPrice AS CHAR) price, CAST(lineTotal AS CHAR) total FROM ARInvoiceLine WHERE invoiceHeaderId = ?', [header.id]);
+    const glBefore = await num('SELECT COUNT(*) n FROM general_ledger WHERE postingReference = ?', [header.invoiceNumber]);
+    const batch = await call(SUPER, 'post', '/api/gl/posting/batch', { startDate: day, endDate: day, module: 'AR' });
+    expectStatus(batch, 200, 'AR posting batch');
+    const gl = await q('SELECT CAST(debit AS CHAR) d, CAST(localDebit AS CHAR) ld, CAST(rate AS CHAR) r, currencyId FROM general_ledger WHERE postingReference = ? OR description LIKE ?', [header.invoiceNumber, `%${header.invoiceNumber}%`]);
+    const postedLocal = gl.reduce((s, r) => s + Number(r.ld), 0);
+    console.log(`        invoice ${header.invoiceNumber}: header ${header.total} (currency ${header.currencyId}, rate ${header.rate}); lines ${lines.map(l => l.total).join(', ')} (no currency column)`);
+    console.log(`        GL rows before batch: ${glBefore}; after AR batch: ${gl.length} row(s), localDebit total ${postedLocal} (currency ${gl.map(r => r.currencyId).join(',')}, rate ${gl.map(r => r.r).join(',')}); expected for the car: 315000000`);
+    console.log(`        invoice glPostingStatus after batch: ${(await q('SELECT glPostingStatus s FROM ARInvoiceHeader WHERE id = ?', [header.id]))[0].s}`);
+    // Record the observed behaviour exactly (POS code is not changed)
+    assert.strictEqual(header.total, '315000000.00');
+    assert.deepStrictEqual(lines.map(l => l.total), ['15000.00']);
+    assert.strictEqual(postedLocal, 15000, 'DEFECT 9 CONFIRMED: the AR batch posts the USD line amount as LAK');
+  });
+
   await test('switch back OFF: posting and EOD refuse again', async () => {
     await setSpf('LOAN_POSTING_ENABLED', 'false');
     expectStatus(await call(SUPER, 'post', `${L}/eod/run`), 409, 'eod off');
