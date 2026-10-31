@@ -49,6 +49,20 @@ module.exports = async ({ test: runTest, call, q, db, runNode, users, L, expectS
     bank: bankId ? (await q('SELECT CAST(balance AS CHAR) b FROM bankAccount WHERE id = ?', [bankId]))[0].b : null
   });
   const bankBalance = async id => Number((await q('SELECT balance b FROM bankAccount WHERE id = ?', [id]))[0].b);
+  // The balance sheet controller as it is on main (before the loan module), loaded from a temp copy with absolute requires
+  let mainBsController;
+  const loadMainBsController = () => {
+    if (mainBsController) return mainBsController;
+    const original = execFileSync('git', ['show', 'main:src/GL/adbReportController.js'], { cwd: API_ROOT }).toString()
+      .replace(/require\((['"])\.\.\//g, `require($1${path.join(API_ROOT, 'src')}/`)
+      .replace(/require\((['"])([^./'"][^'"]*)\1\)/g, (m, q, name) => `require(${JSON.stringify(require.resolve(name, { paths: [API_ROOT] }))})`);
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'bs-orig-'));
+    const origFile = path.join(tmp, 'adbReportController.js');
+    fs.writeFileSync(origFile, original);
+    mainBsController = require(origFile);
+    return mainBsController;
+  };
+  const callBs = async (Ctl) => { const r = {}; r.status = () => r; r.json = (b) => { r.body = b; return r; }; await Ctl.getBalanceSheet({ query: { asOfDate: '2100-12-31' } }, r); return r.body; };
 
   // ------------------------------------------------------------------ condition 2: bank snapshot and statement
   await test('POS bank: LOAN_IN of X raises the COB daily snapshot and the statement by X; LOAN_OUT lowers them (real POS functions)', async () => {
@@ -447,16 +461,8 @@ module.exports = async ({ test: runTest, call, q, db, runNode, users, L, expectS
     const Live = await makeLoan();
     await feeCollect(Live.account.id, '0');
     await disburse(Live.account.id);
-    // The POS file as it is on main (before Phase 4), loaded from a temp copy with its requires made absolute
-    const original = execFileSync('git', ['show', 'main:src/GL/adbReportController.js'], { cwd: API_ROOT }).toString()
-      .replace(/require\((['"])\.\.\//g, `require($1${path.join(API_ROOT, 'src')}/`)
-      .replace(/require\((['"])([^./'"][^'"]*)\1\)/g, (m, q, name) => `require(${JSON.stringify(require.resolve(name, { paths: [API_ROOT] }))})`);
-    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'bs-orig-'));
-    const origFile = path.join(tmp, 'adbReportController.js');
-    fs.writeFileSync(origFile, original);
-    const Orig = require(origFile);
+    const Orig = loadMainBsController();
     const Current = require('../../src/GL/adbReportController');
-    const callBs = async (Ctl) => { const r = {}; r.status = () => r; r.json = (b) => { r.body = b; return r; }; await Ctl.getBalanceSheet({ query: { asOfDate: '2100-12-31' } }, r); return r.body; };
     await setSpf('BS_INCLUDE_LOAN_BOOK', 'false');
     assert.deepStrictEqual(await callBs(Current), await callBs(Orig), 'switch off: identical to the original');
     await setSpf('BS_INCLUDE_LOAN_BOOK', 'true');
@@ -519,15 +525,13 @@ module.exports = async ({ test: runTest, call, q, db, runNode, users, L, expectS
     assert.ok(passed, 'ordinary receipt reaches the POS controller');
   });
 
-  await test('DISB reversal: balance sheet AR line and loan reconciliation (shows the current 240m understatement; proposal in phase4-report section 9)', async () => {
+  await test('DISB reversal: with the loan section on, the balance sheet AR line and the loan reconciliation return to zero; with it off, the output is identical to main (voided receipt on an open invoice)', async () => {
     await setSpf('LOAN_POSTING_ENABLED', 'true');
     await q("UPDATE ln_tax_profile SET confirmationStatus = 'CONFIRMED'");
     await setSpf('BS_INCLUDE_LOAN_BOOK', 'true');
     const Current = require('../../src/GL/adbReportController');
     const snapshot = async () => {
-      const r = {}; r.status = () => r; r.json = (b) => { r.body = b; return r; };
-      await Current.getBalanceSheet({ query: { asOfDate: '2100-12-31' } }, r);
-      const bs = r.body;
+      const bs = await callBs(Current);
       return {
         arLine: bs.assets.items.find(i => /^Accounts Receivable/.test(i.accountName)).balance,
         portfolio: bs.assets.items.filter(i => /\(loan\)/.test(i.accountName) && String(i.accountNumber) === '1211').reduce((s, i) => s + i.balance, 0),
@@ -555,10 +559,20 @@ module.exports = async ({ test: runTest, call, q, db, runNode, users, L, expectS
       console.log(`        invoice ${inv}; receipts ${recs.map(r => `${r.receiptNumber.replace(/-\d+$/, '')}=${r.status}:${r.amt}`).join(', ')}`);
       // DISB: the 240m moves from sale receivable to the portfolio in the GL and the invoice leaves the open AR list
       assert.deepStrictEqual(delta(before, afterDisb), { arLine: -240000000, portfolio: 240000000, reconGl: -240000000, reconSubledger: -240000000, reconDifference: 0 });
-      // REVERSAL today: the GL is restored, but the POS AR line still subtracts the voided 240m receipt from the reopened
-      // invoice, so the line stays 240m low and the reconciliation shows the 240m difference
-      assert.deepStrictEqual(delta(before, afterRev), { arLine: -240000000, portfolio: 0, reconGl: 0, reconSubledger: -240000000, reconDifference: 240000000 });
+      // REVERSAL: the GL is restored and, with the switch on, only active receipts reduce the reopened invoice,
+      // so the AR line and the reconciliation are back where they were
+      assert.deepStrictEqual(delta(before, afterRev), { arLine: 0, portfolio: 0, reconGl: 0, reconSubledger: 0, reconDifference: 0 });
       assert.notStrictEqual(inv, 'paid');
+
+      // Switch off: byte-for-byte what main returns, with the voided 240m receipt sitting on the open invoice
+      assert.deepStrictEqual(recs.map(r => r.status), ['active', 'voided'], 'fixture: a voided receipt on an open invoice');
+      await setSpf('BS_INCLUDE_LOAN_BOOK', 'false');
+      const offNow = await callBs(Current);
+      const offMain = await callBs(loadMainBsController());
+      assert.deepStrictEqual(offNow, offMain, 'switch off: identical to main');
+      const offAr = offNow.assets.items.find(i => /^Accounts Receivable/.test(i.accountName)).balance;
+      console.log(`        switch OFF       : identical to main; AR line ${offAr} (main still subtracts the voided receipt: ${afterRev.arLine - offAr} below the switch-on figure)`);
+      assert.ok(afterRev.arLine - offAr >= 240000000, 'switch off keeps the original behaviour (the voided 240m is still subtracted)');
     } finally {
       await setSpf('BS_INCLUDE_LOAN_BOOK', 'false');
     }

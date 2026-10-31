@@ -617,13 +617,19 @@ class ADBReportController {
                 }
                 const inventoryCostValue = convertToHomeCurrency(rawInventoryCostValue, 'LAK');
 
+                // Loan module switch (SPF BS_INCLUDE_LOAN_BOOK); off = the original report, unchanged
+                const loanBookSwitch = await db.spf.findOne({ where: { code: 'BS_INCLUDE_LOAN_BOOK' } });
+                const loanBookOn = !!loanBookSwitch && String(loanBookSwitch.value).trim() === 'true';
+
                 // 3. Assets: Accounts Receivable (AR)
+                // With the loan section on, only active receipts reduce an open invoice (a voided or cancelled
+                // receipt, e.g. after a loan DISB reversal, no longer settles it)
                 const unpaidARInvoices = await db.arInvoiceHeader.findAll({
                     where: {
                         invoiceDate: { [Op.lte]: asOfDate },
                         status: { [Op.notIn]: ['paid', 'cancelled'] }
                     },
-                    include: [{ model: db.arReceiveHeaderV2, as: 'receiveHeaders', required: false }]
+                    include: [{ model: db.arReceiveHeaderV2, as: 'receiveHeaders', required: false, ...(loanBookOn ? { where: { status: 'active' } } : {}) }]
                 });
                 let totalAR = 0;
                 unpaidARInvoices.forEach(inv => {
@@ -697,8 +703,7 @@ class ADBReportController {
                 // Loan module, opt-in (SPF BS_INCLUDE_LOAN_BOOK = 'true'): loan accounts from the GL, a separate
                 // "Loan result" line so the Other equity plug cannot absorb it, and a GL-vs-subledger check.
                 // When the switch is off this block does nothing and the response below is unchanged.
-                const loanBookSwitch = await db.spf.findOne({ where: { code: 'BS_INCLUDE_LOAN_BOOK' } });
-                if (loanBookSwitch && String(loanBookSwitch.value).trim() === 'true') {
+                if (loanBookOn) {
                     const loan = await require('../loan/reports/balanceSheetSection').build({ asOfDate, subledger: { cashAndBank: totalCashAndBank, ar: totalAR } });
                     const totalAssetsWithLoan = totalAssets + loan.totalAssets;
                     const totalLiabilitiesWithLoan = totalLiabilities + loan.totalLiabilities;
