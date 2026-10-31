@@ -192,7 +192,8 @@ const eodService = {
     const hook = G.makeTestHook(failAt);
     await acquireLock(`user ${ctxUser.userId}`);
     try {
-      const jobs = await db.lnBatchJob.findAll({ where: { isEnabled: true }, order: [['executionOrder', 'ASC']] });
+      // Only enabled AND authorized jobs run (the Phase 5 EOD_FX_REVAL job is seeded PENDING and disabled)
+      const jobs = await db.lnBatchJob.findAll({ where: { isEnabled: true, authStatus: 'AUTHORIZED' }, order: [['executionOrder', 'ASC']] });
       const accounts = await db.lnAccount.findAll({ where: { accountStage: 'DISBURSED' }, attributes: ['id', 'status'], order: [['id', 'ASC']] });
       const live = accounts.filter(a => !TERMINAL.includes(a.status));
       const report = [];

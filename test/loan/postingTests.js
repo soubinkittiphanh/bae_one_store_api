@@ -101,8 +101,16 @@ module.exports = async ({ test: runTest, call, q, db, runNode, users, L, expectS
   let product;
   let lakId;
   await test('setup: proposed accounts applied (sandbox) and mappings authorized by a second user; switches; bank account; dates', async () => {
-    const out = runNode('loan_propose_accounts.js', ['--apply', '--yes', '--features=VAT']);
-    assert.match(out, /Applied: 20 account\(s\) created, \d+ PENDING mapping/);
+    const out = runNode('loan_propose_accounts.js', ['--apply', '--yes', '--features=VAT,FX']);
+    assert.match(out, /Applied: 26 account\(s\) created, \d+ PENDING mapping/);
+    // Phase 5 FX roles and tags are seeded PENDING: a checker authorizes them like any parameter
+    for (const [entity, codes] of [['accounting-role', ['FX_GAIN_REALIZED', 'FX_LOSS_REALIZED', 'FX_GAIN_UNREALIZED', 'FX_LOSS_UNREALIZED', 'CCY_POSITION']], ['amount-tag', ['FX_DIFF', 'FX_REVAL']]]) {
+      const col = entity === 'accounting-role' ? 'roleCode' : 'tagCode';
+      const table = entity === 'accounting-role' ? 'ln_accounting_role' : 'ln_amount_tag';
+      const ids = (await q(`SELECT id FROM ${table} WHERE ${col} IN (${codes.map(() => '?').join(',')}) AND authStatus = 'PENDING'`, codes)).map(r => Number(r.id));
+      assert.strictEqual(ids.length, codes.length, `${entity}: pending FX rows`);
+      expectStatus(await call(SUPER, 'post', `${L}/params/${entity}/bulk-authorize`, { keys: ids }), 200, `authorize ${entity}`);
+    }
     expectStatus(await call(ADMIN, 'post', `${L}/params/role-gl-mapping/bulk-authorize`, { keys: [1] }), 403, 'admin cannot authorize GL mappings');
     const pending = (await call(SUPER, 'get', `${L}/params/role-gl-mapping?authStatus=PENDING&limit=500`)).data.data.items;
     assert.ok(pending.length >= 20);

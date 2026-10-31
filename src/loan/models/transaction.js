@@ -10,6 +10,9 @@ module.exports = (sequelize, DataTypes) => {
     amount: { type: DataTypes.DECIMAL(20, 4), allowNull: false, defaultValue: 0.0000 },
     currencyId: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 1 },
     exchangeRate: { type: DataTypes.DECIMAL(20, 8), allowNull: false, defaultValue: 1.00000000 },
+    // Phase 5: date of the rate used, and the warning when it is not the booking date's rate
+    exchangeRateDate: { type: DataTypes.DATEONLY, allowNull: true },
+    fxWarning: { type: DataTypes.STRING(255), allowNull: true },
     baseAmount: { type: DataTypes.DECIMAL(20, 4), allowNull: false, defaultValue: 0.0000 },
     paymentMethod: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'CASH' },
     paymentMethodId: { type: DataTypes.INTEGER, allowNull: true },
@@ -56,12 +59,15 @@ module.exports = (sequelize, DataTypes) => {
     currencyId: { type: DataTypes.INTEGER, allowNull: true },
     amount: { type: DataTypes.DECIMAL(20, 4), allowNull: false, defaultValue: 0.0000 },
     baseAmount: { type: DataTypes.DECIMAL(20, 4), allowNull: false, defaultValue: 0.0000 },
+    // Phase 5: FX_DIFF / FX_REVAL / ROUND_DIFF legs carry a base amount only (amount 0)
+    isBaseOnly: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
     exchangeRate: { type: DataTypes.DECIMAL(20, 8), allowNull: false, defaultValue: 1.00000000 },
     glRecordId: { type: DataTypes.INTEGER, allowNull: true }
   }, { freezeTableName: true, tableName: 'ln_journal_posting', timestamps: true,
     indexes: [
       { name: 'idx_jp_batch', fields: ['glBatchId'] },
-      { name: 'idx_jp_tx', fields: ['transactionId'] }
+      { name: 'idx_jp_tx', fields: ['transactionId'] },
+      { name: 'idx_jp_account_role', fields: ['loanAccountId', 'roleCode'] }
     ] });
 
   const lnStatusHistory = sequelize.define('lnStatusHistory', {

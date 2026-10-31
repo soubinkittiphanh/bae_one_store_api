@@ -101,7 +101,20 @@ module.exports = (sequelize, DataTypes) => {
   }, { freezeTableName: true, tableName: 'ln_currency_rule', timestamps: true,
     indexes: [{ name: 'uk_currency_rule', unique: true, fields: ['currencyId', 'effectiveFrom'] }] });
 
+  // Phase 5: dated, authorized exchange rates, base units per 1 unit of currencyId
+  const lnExchangeRate = sequelize.define('lnExchangeRate', {
+    id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+    currencyId: { type: DataTypes.INTEGER, allowNull: false, comment: 'currency.id (no FK)' },
+    rateDate: { type: DataTypes.DATEONLY, allowNull: false },
+    rate: { type: DataTypes.DECIMAL(20, 8), allowNull: false, comment: 'base units per 1 unit of currencyId' },
+    source: { type: DataTypes.STRING(20), allowNull: false, defaultValue: 'MANUAL', comment: 'MANUAL / POS_COPY' },
+    remarks: { type: DataTypes.STRING(255), allowNull: true },
+    ...makerChecker(DataTypes)
+  }, { freezeTableName: true, tableName: 'ln_exchange_rate', timestamps: true,
+    indexes: [{ name: 'uk_exchange_rate', unique: true, fields: ['currencyId', 'rateDate'] }] });
+
   return {
+    lnExchangeRate,
     lnLookupLoanType,
     lnLookupFrequency,
     lnLookupDisbursementTarget,

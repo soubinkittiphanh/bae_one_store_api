@@ -188,7 +188,26 @@ const ENTRY_RULES = [
   // REVERSAL has no rules: it mirrors the original journal lines (same chartAccountId)
 ];
 
+// Phase 5 multi-currency (addendum §8.10): roles and tags seeded PENDING by seed_loan_phase5.js.
+// FX legs have no entry rules: the poster adds them (base-only lines, amount 0).
+const FX_ROLES = [
+  { roleCode: 'FX_GAIN_REALIZED', name: 'Realized FX Gain on Loans', expectedType: 'Revenue', resolverType: 'MAPPING_TABLE' },
+  { roleCode: 'FX_LOSS_REALIZED', name: 'Realized FX Loss on Loans', expectedType: 'Expense', resolverType: 'MAPPING_TABLE' },
+  { roleCode: 'FX_GAIN_UNREALIZED', name: 'Unrealized FX Gain on Loans (revaluation)', expectedType: 'Revenue', resolverType: 'MAPPING_TABLE' },
+  { roleCode: 'FX_LOSS_UNREALIZED', name: 'Unrealized FX Loss on Loans (revaluation)', expectedType: 'Expense', resolverType: 'MAPPING_TABLE' },
+  { roleCode: 'CCY_POSITION', name: 'Currency Position (cross-currency settlement)', expectedType: 'Asset', resolverType: 'MAPPING_TABLE' }
+];
+const FX_TAGS = {
+  FX_DIFF: 'Realized FX difference',
+  FX_REVAL: 'FX revaluation (unrealized)'
+};
+// Tags that only ever appear on base-only legs
+const BASE_ONLY_TAGS = ['FX_DIFF', 'FX_REVAL', 'ROUND_DIFF'];
+
 module.exports = {
+  FX_ROLES,
+  FX_TAGS,
+  BASE_ONLY_TAGS,
   EVENTS,
   TAGS,
   INTEREST_RECOGNITION,

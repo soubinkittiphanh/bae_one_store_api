@@ -133,6 +133,12 @@ const ENTITIES = {
       dateOrder('effectiveFrom', 'effectiveTo', 'Currency rule')
     ]
   },
+  // Phase 5: dated exchange rates, base units per 1 unit of the currency (maker-checker; LOAN_ALLOW_SELF_AUTHORIZE applies)
+  'exchange-rate': {
+    model: 'lnExchangeRate', functionCode: 'LN_EXCHANGE_RATE',
+    fields: { currencyId: ref('currency'), source: enumOf('MANUAL', 'POS_COPY') },
+    rules: [(row) => (/^\d{1,12}(\.\d{1,8})?$/.test(String(row.rate)) && Number(row.rate) > 0 ? null : 'rate must be a positive decimal with at most 8 decimals')]
+  },
   'holiday-date': { model: 'lnHolidayDate', functionCode: 'LN_HOLIDAY', fields: { calendarId: ref('lnHolidayCalendar') } },
   fee: {
     model: 'lnFeeMaster', functionCode: 'LN_FEE',
@@ -172,7 +178,8 @@ const ENTITIES = {
   'document-checklist': { model: 'lnDocumentChecklist', functionCode: 'LN_DOC_CHECKLIST', fields: { productId: ref('lnProduct') } },
 
   // Accounting setup is view-only in Phase 2A (LN_ACCOUNTING_SETUP grants VIEW only; 2B held)
-  'accounting-role': { model: 'lnAccountingRole', functionCode: 'LN_ACCOUNTING_SETUP', fields: { resolverType: enumOf('MAPPING_TABLE', 'SYSTEM_PARAM', 'BANK_ACCOUNT') } },
+  // Phase 5: roles are reviewed with their GL mappings (LN_GL_MAPPING maker-checker); seeded FX roles start PENDING
+  'accounting-role': { model: 'lnAccountingRole', functionCode: 'LN_GL_MAPPING', fields: { resolverType: enumOf('MAPPING_TABLE', 'SYSTEM_PARAM', 'BANK_ACCOUNT') } },
   // Phase 2B: events, tags and entry rules are maintained under LN_ENTRY_RULE; roles and GL mappings stay view-only
   'amount-tag': { model: 'lnAmountTag', functionCode: 'LN_ENTRY_RULE' },
   event: { model: 'lnEventMaster', functionCode: 'LN_ENTRY_RULE' },

@@ -59,6 +59,14 @@ const MIGRATIONS = [
     marker: 'ln_pos_link',
     dropsData: false,
     dropsTransactions: true
+  },
+  {
+    name: '20261101_loan_phase5_fx',
+    up: '20261101_loan_phase5_fx.sql',
+    down: '20261101_loan_phase5_fx_down.sql',
+    marker: 'ln_exchange_rate',
+    dropsData: false,
+    dropsTransactions: true
   }
 ];
 

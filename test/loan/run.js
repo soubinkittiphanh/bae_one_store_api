@@ -96,10 +96,11 @@ const main = async () => {
   await test('migrate up on a clean copy', async () => {
     runNode('loan_migrate.js', ['up']);
     const n = Number((await q("SELECT COUNT(*) n FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name LIKE 'ln\\_%'"))[0].n);
-    assert.strictEqual(n, 72, `expected 72 ln_* tables, found ${n}`);
+    assert.strictEqual(n, 73, `expected 73 ln_* tables, found ${n}`);
   });
-  await test('Phase 4, POS loan types, Phase 3, 2B and corrections DOWN, then UP, restore the schema exactly', async () => {
+  await test('Phase 5 FX, Phase 4, POS loan types, Phase 3, 2B and corrections DOWN, then UP, restore the schema exactly', async () => {
     const before = await snapshot();
+    assert.match(runNode('loan_migrate.js', ['down', '--yes']), /20261101_loan_phase5_fx/);
     assert.match(runNode('loan_migrate.js', ['down', '--yes']), /20261030_loan_phase4/);
     assert.match(runNode('loan_migrate.js', ['down', '--yes']), /20261030_pos_transaction_entry_loan_types/);
     assert.match(runNode('loan_migrate.js', ['down', '--yes']), /20261031_loan_phase3/);
@@ -116,6 +117,7 @@ const main = async () => {
     assert.deepStrictEqual(values.slice(-2), ['LOAN_IN', 'LOAN_OUT']);
     runNode('loan_migrate.js', ['up']);
     assert.deepStrictEqual((await q(colSql))[0], after, 'second UP changes nothing');
+    runNode('loan_migrate.js', ['down', '--yes']); // Phase 5 FX
     runNode('loan_migrate.js', ['down', '--yes']); // Phase 4
     runNode('loan_migrate.js', ['down', '--yes']); // POS loan types
     const source = (await q(colSql))[0];
@@ -225,6 +227,26 @@ const main = async () => {
     assert.deepStrictEqual(spf.map(r => `${r.code}=${r.value}`), ['BS_INCLUDE_LOAN_BOOK=false', 'LOAN_MAX_BACKDATE_DAYS=0', 'LOAN_POSTING_ENABLED=false']);
     const fns = await q("SELECT functionCode FROM sec_function WHERE functionCode IN ('LN_TRANSACTION','LN_EOD','LN_GL_MAPPING') ORDER BY 1");
     assert.deepStrictEqual(fns.map(f => f.functionCode), ['LN_EOD', 'LN_GL_MAPPING', 'LN_TRANSACTION']);
+  });
+
+  await test('Phase 5 seed: FX roles and tags PENDING, EOD_FX_REVAL PENDING and disabled, FX switches at their defaults, LN_EXCHANGE_RATE registered; runs twice with identical counts; no GL account or mapping created', async () => {
+    const chartBefore = Number((await q('SELECT COUNT(*) n FROM chart_of_account'))[0].n);
+    const mappingsBefore = Number((await q('SELECT COUNT(*) n FROM ln_role_gl_mapping'))[0].n);
+    runNode('seed_loan_phase5.js');
+    const counts = await tableCounts();
+    runNode('seed_loan_phase5.js');
+    assert.deepStrictEqual(await tableCounts(), counts);
+    const roles = await q("SELECT roleCode r, authStatus s, expectedType t FROM ln_accounting_role WHERE roleCode IN ('FX_GAIN_REALIZED','FX_LOSS_REALIZED','FX_GAIN_UNREALIZED','FX_LOSS_UNREALIZED','CCY_POSITION') ORDER BY 1");
+    assert.deepStrictEqual(roles.map(r => `${r.r}:${r.s}:${r.t}`), ['CCY_POSITION:PENDING:Asset', 'FX_GAIN_REALIZED:PENDING:Revenue', 'FX_GAIN_UNREALIZED:PENDING:Revenue', 'FX_LOSS_REALIZED:PENDING:Expense', 'FX_LOSS_UNREALIZED:PENDING:Expense']);
+    const tags = await q("SELECT tagCode t, authStatus s FROM ln_amount_tag WHERE tagCode IN ('FX_DIFF','FX_REVAL') ORDER BY 1");
+    assert.deepStrictEqual(tags.map(t => `${t.t}:${t.s}`), ['FX_DIFF:PENDING', 'FX_REVAL:PENDING']);
+    const job = (await q("SELECT isEnabled e, authStatus s FROM ln_batch_job WHERE jobCode = 'EOD_FX_REVAL'"))[0];
+    assert.deepStrictEqual([Number(job.e), job.s], [0, 'PENDING']);
+    const spf = await q("SELECT code, value FROM SPF WHERE code LIKE 'LOAN\\_FX\\_%' ORDER BY code");
+    assert.deepStrictEqual(spf.map(r => `${r.code}=${r.value}`), ['LOAN_FX_IMPLIED_RATE_BREACH=REFUSE', 'LOAN_FX_IMPLIED_RATE_TOLERANCE_PCT=1.00', 'LOAN_FX_MAX_RATE_AGE_DAYS=3', 'LOAN_FX_MAX_ROUND_DIFF=1', 'LOAN_FX_OVERRIDE_TOLERANCE_PCT=0', 'LOAN_FX_REVAL_ENABLED=false']);
+    assert.strictEqual((await q("SELECT COUNT(*) n FROM sec_function WHERE functionCode = 'LN_EXCHANGE_RATE'"))[0].n, 1n);
+    assert.strictEqual(Number((await q('SELECT COUNT(*) n FROM chart_of_account'))[0].n), chartBefore, 'no GL account created');
+    assert.strictEqual(Number((await q('SELECT COUNT(*) n FROM ln_role_gl_mapping'))[0].n), mappingsBefore, 'no mapping created');
   });
 
   console.log('\n[schema parity]');
@@ -442,7 +464,7 @@ const accountingTests = async ({ db }) => {
     assert.strictEqual(resolveRuleSet(allRules, p, {}).length, 0, 'PENDING rules are not used unless includePending');
   });
 
-  await test('propose-accounts helper: 19 accounts by default (20 with VAT, 33 with every option); collisions and parameters checked; read-only', async () => {
+  await test('propose-accounts helper: 19 accounts by default (20 with VAT, 38 with every option incl. the Phase 5 FX accounts); collisions and parameters checked; read-only', async () => {
     const { proposeAccounts } = require('../../src/loan/accounting/accountProposals');
     const countBefore = await db.chartAccount.count();
     const base = await proposeAccounts(db);
@@ -450,7 +472,7 @@ const accountingTests = async ({ db }) => {
     assert.deepStrictEqual(base.accounts.filter(a => a.roleCode === 'LOAN_PORTFOLIO').map(a => `${a.number}:${a.qualifiers.join('+')}`), ['1211:NORMAL+WATCH', '1213:SUBSTANDARD+DOUBTFUL+LOSS']);
     assert.strictEqual((await proposeAccounts(db, { features: ['VAT'] })).accounts.length, 20);
     const all = await proposeAccounts(db, { features: ['VAT', 'BILL_PENALTY', 'BILLED_FEES', 'FX', 'DEFERRED_FEES', 'FIVE_PORTFOLIO'] });
-    assert.strictEqual(all.accounts.length, 33);
+    assert.strictEqual(all.accounts.length, 38);
     assert.strictEqual(all.accounts.filter(a => a.roleCode === 'LOAN_PORTFOLIO').length, 5);
     await assert.rejects(proposeAccounts(db, { features: ['NOPE'] }), /Unknown feature/);
 

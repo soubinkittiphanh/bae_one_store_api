@@ -38,6 +38,12 @@ const PROPOSALS = [
   { roleCode: 'FEE_WRITEOFF_EXPENSE', number: '5722', name: 'Fees written off', llname: 'ລາຍຈ່າຍຕັດໜີ້ສູນຄ່າທຳນຽມ', type: 'Expense', feature: 'BILLED_FEES' },
   { roleCode: 'LOSS_ON_REPOSSESSED_ASSET', number: '5731', name: 'Loss on sale of repossessed vehicles', llname: 'ຂາດທຶນຈາກການຂາຍລົດຍຶດ', type: 'Expense', feature: null },
   { roleCode: 'ROUNDING_DIFF', number: '5901', name: 'Currency rounding differences', llname: 'ຜົນຕ່າງການປັດເສດ', type: 'Expense', feature: 'FX' },
+  // Phase 5 multi-currency (addendum §8.10, Q27 and Q34): loan revaluation stays separate from the POS bank revaluation (4008/5108)
+  { roleCode: 'FX_GAIN_REALIZED', number: '4901', name: 'Realized FX gain on loans', llname: 'ກຳໄລອັດຕາແລກປ່ຽນ (ເງິນກູ້)', type: 'Revenue', feature: 'FX' },
+  { roleCode: 'FX_LOSS_REALIZED', number: '5902', name: 'Realized FX loss on loans', llname: 'ຂາດທຶນອັດຕາແລກປ່ຽນ (ເງິນກູ້)', type: 'Expense', feature: 'FX' },
+  { roleCode: 'FX_GAIN_UNREALIZED', number: '4902', name: 'Unrealized FX gain on loans', llname: 'ກຳໄລອັດຕາແລກປ່ຽນທີ່ຍັງບໍ່ຮັບຮູ້ (ເງິນກູ້)', type: 'Revenue', feature: 'FX' },
+  { roleCode: 'FX_LOSS_UNREALIZED', number: '5903', name: 'Unrealized FX loss on loans', llname: 'ຂາດທຶນອັດຕາແລກປ່ຽນທີ່ຍັງບໍ່ຮັບຮູ້ (ເງິນກູ້)', type: 'Expense', feature: 'FX' },
+  { roleCode: 'CCY_POSITION', number: '1990', name: 'Currency position (loans)', llname: 'ບັນຊີຖານະເງິນຕາ', type: 'Asset', feature: 'FX' },
   { roleCode: 'WRITTEN_OFF_MEMO_DR', number: '9001', name: 'Written-off loans - memo', llname: 'ໜີ້ສູນຕິດຕາມນອກງົບ', type: 'Off-Balance', feature: null },
   { roleCode: 'WRITTEN_OFF_MEMO_CR', number: '9002', name: 'Written-off loans - memo contra', llname: 'ໜີ້ສູນຕິດຕາມນອກງົບ (ກົງກັນຂ້າມ)', type: 'Off-Balance', feature: null }
 ];

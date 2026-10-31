@@ -66,6 +66,7 @@ const makeResolver = async ({ date, transaction }) => {
   return async (line, ctx) => {
     const role = roleOf[line.roleCode];
     if (!role) throw new LoanError(409, `Unknown accounting role ${line.roleCode}`);
+    if (role.authStatus && role.authStatus !== 'AUTHORIZED') throw new LoanError(409, `Accounting role ${line.roleCode} is ${role.authStatus}; a checker must authorize it before anything posts to it`);
     let id;
     if (role.resolverType === 'MAPPING_TABLE') id = fromMapping(line.roleCode, { ...ctx, qualifier: line.qualifier || null });
     else if (role.resolverType === 'SYSTEM_PARAM') id = await fromSystemParam(line.roleCode);
