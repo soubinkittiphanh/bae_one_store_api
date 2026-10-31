@@ -20,6 +20,8 @@ const MONEY_RE = /^\d{1,16}(\.\d{1,4})?$/;
 const RATE_RE = /^(0(\.\d{1,6})?|1(\.0{1,6})?)$/;
 const DECIMAL96_RE = /^\d{1,3}(\.\d{1,6})?$/;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+// Phase 5: exchange rates, DECIMAL(20,8)
+const FXRATE_RE = /^\d{1,12}(\.\d{1,8})?$/;
 const INACTIVE_STATUSES = ['REJECTED', 'CLOSED'];
 
 const authorizedHooks = [];
@@ -78,6 +80,7 @@ const checkValue = (spec, v) => {
   switch (spec.type) {
     case 'money': if (!MONEY_RE.test(s)) throw new Error('must be a non-negative decimal with up to 4 decimals'); break;
     case 'rate': if (!RATE_RE.test(s)) throw new Error('must be a rate between 0 and 1 with up to 6 decimals'); break;
+    case 'fxrate': if (!FXRATE_RE.test(s) || Number(s) <= 0) throw new Error('must be a positive exchange rate with up to 8 decimals'); break;
     case 'decimal96': if (!DECIMAL96_RE.test(s)) throw new Error('must be a decimal with up to 6 decimals'); break;
     case 'int': if (!/^\d+$/.test(s)) throw new Error('must be a non-negative integer'); break;
     case 'bool': if (![true, false, 'true', 'false', 0, 1, '0', '1'].includes(v)) throw new Error('must be true or false'); break;

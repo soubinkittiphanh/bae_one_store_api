@@ -13,6 +13,7 @@ const { paramController } = require('./controllers/paramController');
 const applicationController = require('./controllers/applicationController');
 const accountController = require('./controllers/accountController');
 const transactionController = require('./controllers/transactionController');
+const fxController = require('./controllers/fxController');
 
 // All loan endpoints require a valid token and a sec_group_grant for the function/action
 router.use(validateToken);
@@ -66,6 +67,11 @@ router.post('/accounts/:id/transactions', can('LN_TRANSACTION', 'CREATE'), trans
 router.post('/transactions/:txId/authorize', can('LN_TRANSACTION', 'AUTHORIZE'), transactionController.authorize);
 router.post('/transactions/:txId/reject', can('LN_TRANSACTION', 'AUTHORIZE'), transactionController.reject);
 router.get('/eod/status', can('LN_EOD', 'VIEW'), transactionController.eodStatus);
+
+// --- Phase 5: exchange rates (rows: Parameter Studio entity 'exchange-rate', maker-checker) ---
+router.get('/exchange-rates/effective', can('LN_EXCHANGE_RATE', 'VIEW'), fxController.effective);
+router.post('/exchange-rates/copy-pos', can('LN_EXCHANGE_RATE', 'CREATE'), fxController.copyPosRate);
+router.get('/sales/:saleHeaderId/financing-proposal', can('LN_APPLICATION', 'VIEW'), fxController.proposal);
 router.post('/eod/run', can('LN_EOD', 'CREATE'), transactionController.runEod);
 
 // --- Master data, lookups & rules ---

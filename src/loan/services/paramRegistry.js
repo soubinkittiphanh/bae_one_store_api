@@ -136,7 +136,7 @@ const ENTITIES = {
   // Phase 5: dated exchange rates, base units per 1 unit of the currency (maker-checker; LOAN_ALLOW_SELF_AUTHORIZE applies)
   'exchange-rate': {
     model: 'lnExchangeRate', functionCode: 'LN_EXCHANGE_RATE',
-    fields: { currencyId: ref('currency'), source: enumOf('MANUAL', 'POS_COPY') },
+    fields: { currencyId: ref('currency'), source: enumOf('MANUAL', 'POS_COPY'), rate: { type: 'fxrate' } },
     rules: [(row) => (/^\d{1,12}(\.\d{1,8})?$/.test(String(row.rate)) && Number(row.rate) > 0 ? null : 'rate must be a positive decimal with at most 8 decimals')]
   },
   'holiday-date': { model: 'lnHolidayDate', functionCode: 'LN_HOLIDAY', fields: { calendarId: ref('lnHolidayCalendar') } },
