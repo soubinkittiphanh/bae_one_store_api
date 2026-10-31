@@ -8,7 +8,7 @@
  *   validateProductRuleSet product rule set matches fee mode / presentation / disbursement target
  */
 const { toUnits, fromUnits } = require('./journal');
-const { TOTAL_CASH_TAGS, PRESENTATION_ROLE } = require('./catalog');
+const { TOTAL_CASH_TAGS, PRESENTATION_ROLE, BASE_ONLY_TAGS } = require('./catalog');
 
 const STATUS_CHANGE_EVENTS = ['STCH', 'STCH_CURE'];
 const legKey = r => `${r.eventCode} ${r.amountTag} ${r.drCr} ${r.roleCode}`;
@@ -21,6 +21,7 @@ const validateJournal = (lines, roleTypes) => {
     const type = roleTypes[l.roleCode];
     if (!type) { errors.push(`Unknown accounting role ${l.roleCode}`); continue; }
     if (!['DR', 'CR'].includes(l.drCr)) { errors.push(`${l.roleCode}: drCr must be DR or CR`); continue; }
+    if (l.isBaseOnly) continue; // Phase 5 base-only legs carry no contract amount (validateBase checks them)
     let units;
     try { units = toUnits(l.amount); } catch (e) { errors.push(e.message); continue; }
     if (units === 0n) { errors.push(`${l.eventCode} ${l.amountTag} ${l.roleCode}: zero amount line`); continue; }
@@ -35,6 +36,48 @@ const validateJournal = (lines, roleTypes) => {
       errors.push(`Unbalanced ${section} lines in ${currency}: debits ${fromUnits(s.DR)} != credits ${fromUnits(s.CR)}`);
     }
   }
+  return errors;
+};
+
+/**
+ * Phase 5 base amounts (addendum §8.1, §8.6 and §8.10). lines carry baseAmount (and isBaseOnly for
+ * FX_DIFF / FX_REVAL / ROUND_DIFF legs). opts: { loanCurrencyId, baseCurrencyId, baseDecimals, maxRoundDiff }
+ */
+const validateBase = (lines, roleTypes, opts) => {
+  const errors = [];
+  const step = 10n ** BigInt(4 - opts.baseDecimals);
+  const sums = {};
+  let position = 0n;
+  let roundDiff = 0n;
+  let contractLines = 0;
+  const foreign = Number(opts.loanCurrencyId) !== Number(opts.baseCurrencyId);
+  for (const l of lines) {
+    const label = `${l.eventCode} ${l.amountTag} ${l.roleCode}`;
+    let base;
+    try { base = toUnits(l.baseAmount); } catch (e) { errors.push(`${label}: base amount missing or invalid`); continue; }
+    if (base % step !== 0n) errors.push(`${label}: base amount ${fromUnits(base)} has more than ${opts.baseDecimals} decimals`);
+    const baseOnlyTag = BASE_ONLY_TAGS.includes(l.amountTag);
+    if (Boolean(l.isBaseOnly) !== baseOnlyTag) errors.push(`${label}: ${baseOnlyTag ? 'must be' : 'cannot be'} a base-only leg`);
+    if (l.isBaseOnly && toUnits(l.amount || '0') !== 0n) errors.push(`${label}: a base-only leg has no contract amount`);
+    if (!foreign && (baseOnlyTag || l.roleCode === 'CCY_POSITION')) errors.push(`${label}: not allowed in a base-currency journal`);
+    if (!foreign && !l.isBaseOnly && base !== toUnits(l.amount)) errors.push(`${label}: base amount must equal the amount in a base-currency journal`);
+    if (l.amountTag === 'FX_DIFF' && l.eventCode === 'DISB') errors.push('DISB carries the invoice base over: no FX_DIFF at disbursement');
+    if (l.roleCode === 'CCY_POSITION') {
+      if (!['DISB', 'REVERSAL'].includes(l.eventCode)) errors.push(`CCY_POSITION is only used by a cross-currency DISB (found on ${l.eventCode})`);
+      position += (l.drCr === 'DR' ? 1n : -1n) * base;
+    }
+    if (l.amountTag === 'ROUND_DIFF') roundDiff += base;
+    const section = roleTypes[l.roleCode] === 'Off-Balance' ? 'off-balance' : 'on-balance';
+    if (section === 'on-balance' && !l.isBaseOnly) contractLines++;
+    sums[section] = sums[section] || { DR: 0n, CR: 0n };
+    sums[section][l.drCr] += base;
+  }
+  for (const [section, s] of Object.entries(sums)) {
+    if (s.DR !== s.CR) errors.push(`Unbalanced ${section} lines in base: debits ${fromUnits(s.DR)} != credits ${fromUnits(s.CR)}`);
+  }
+  if (position !== 0n) errors.push(`CCY_POSITION does not net to zero in base (${fromUnits(position)})`);
+  const cap = BigInt(opts.maxRoundDiff ?? 1) * step * BigInt(contractLines);
+  if (roundDiff > cap) errors.push(`ROUND_DIFF ${fromUnits(roundDiff)} exceeds the cap ${fromUnits(cap)}`);
   return errors;
 };
 
@@ -195,4 +238,4 @@ const validateProductRuleSet = (product, activeRules, inactiveRules = []) => {
   return [...errors, ...validateRuleStructure(activeRules)];
 };
 
-module.exports = { validateJournal, validateTagAmounts, validateRuleStructure, validateProductRuleSet, requiredLegs };
+module.exports = { validateJournal, validateBase, validateTagAmounts, validateRuleStructure, validateProductRuleSet, requiredLegs };

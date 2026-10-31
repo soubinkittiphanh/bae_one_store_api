@@ -480,6 +480,11 @@ const run = async (test) => {
     assert.deepStrictEqual(show(on.lines.filter(l => l.isBaseOnly)), ['CR FX_GAIN_REALIZED FX_DIFF - 75000']);
     assert.deepStrictEqual(show(off.lines.filter(l => l.isBaseOnly)), ['DR FX_LOSS_REALIZED FX_DIFF - 50000']);
     assert.strictEqual(-1375000n * 25000n / 275000n + 75000n, -50000n, 'revaluation changes only when FX is recognized');
+    // Through applyBase (as the EOD posts them): the base-only legs keep their base and move the bucket
+    const viaApply = FX.applyBase(reval, fxOpts('665.00', buckets, THB_ID));
+    assert.deepStrictEqual(show(viaApply.lines), show(reval));
+    assert.strictEqual(viaApply.buckets.get('LOAN_PORTFOLIO|NORMAL').base, toUnits4('182875000'));
+    assert.strictEqual(viaApply.roundDiff, 0n);
   });
 
   await test('fx: status change moves the carrying base between qualifiers without FX; a relief that empties a bucket leaves no residue', async () => {
@@ -489,6 +494,25 @@ const run = async (test) => {
     assert.strictEqual(out.fx.length, 0);
     assert.deepStrictEqual([out.buckets.get('LOAN_PORTFOLIO|NORMAL').amount, out.buckets.get('LOAN_PORTFOLIO|NORMAL').base], [0n, 0n]);
     assert.strictEqual(out.buckets.get('LOAN_PORTFOLIO|SUBSTANDARD').base, toUnits4('21000213'));
+  });
+
+  await test('validateBase: FX journals pass; unbalanced base, FX on DISB, open currency position, rounding over the cap, FX legs in a LAK journal and a non-base-only FX leg are reported', async () => {
+    const vOpts = { loanCurrencyId: USD_ID, baseCurrencyId: LAK_ID, baseDecimals: 0, maxRoundDiff: 1 };
+    const RT = { ...ROLE_TYPES, CCY_POSITION: 'Asset', FX_GAIN_REALIZED: 'Revenue', FX_LOSS_REALIZED: 'Expense', ROUNDING_DIFF: 'Expense' };
+    const u2 = FX.applyBase(journalFor('LIQD', { TOTAL_PAID: '1100.1600', PRIN_PAID: '920.1600', INT_PAID: '180.0000' }, USD_ID), fxOpts('21500', bucketMap([['LOAN_PORTFOLIO|NORMAL', '12000', '252000000'], ['INTEREST_RECEIVABLE|', '180', '3861000']]))).lines;
+    assert.deepStrictEqual(V.validateBase(u2, ROLE_TYPES, vOpts), []);
+    const x1 = FX.applyBase(FX.carryOverSettlement(journalFor('DISB', { PRINCIPAL: '12000.0000' }, USD_ID), { loanCurrencyId: USD_ID, invoiceCurrencyId: LAK_ID, baseCurrencyId: LAK_ID, carryBaseUnits: toUnits4('252000000') }), fxOpts('21150', new Map())).lines;
+    assert.deepStrictEqual(V.validateBase(x1, ROLE_TYPES, vOpts), []);
+    assert.deepStrictEqual(V.validateJournal(x1, RT), [], 'each currency balances (USD and LAK)');
+    const t1 = FX.applyBase(journalFor('FEE_COLLECT', { TOTAL_PAID: '5250.0500', FEE_DOC: '4500.0000', VAT_OUT: '450.0000', INS_PREM: '300.0500' }, THB_ID), fxOpts('670.55', new Map(), THB_ID)).lines;
+    assert.deepStrictEqual(V.validateBase(t1, ROLE_TYPES, { ...vOpts, loanCurrencyId: THB_ID }), []);
+    const errs = (lines, o = vOpts) => V.validateBase(lines, ROLE_TYPES, o).join(' | ');
+    assert.match(errs(u2.map((l, i) => (i === 0 ? { ...l, baseAmount: '23653441.0000' } : l))), /Unbalanced on-balance lines in base/);
+    assert.match(errs([...x1, { eventCode: 'DISB', amountTag: 'FX_DIFF', drCr: 'CR', roleCode: 'FX_GAIN_REALIZED', amount: '0.0000', baseAmount: '1.0000', isBaseOnly: true }, { eventCode: 'DISB', amountTag: 'FX_DIFF', drCr: 'DR', roleCode: 'FX_LOSS_REALIZED', amount: '0.0000', baseAmount: '1.0000', isBaseOnly: true }]), /no FX_DIFF at disbursement/);
+    assert.match(errs(x1.map(l => (l.roleCode === 'CCY_POSITION' && l.drCr === 'DR' ? { ...l, baseAmount: '251000000.0000' } : (l.roleCode === 'SALE_RECEIVABLE' ? { ...l, baseAmount: '251000000.0000' } : l)))), /CCY_POSITION does not net to zero/);
+    assert.match(errs(t1.map(l => (l.amountTag === 'ROUND_DIFF' ? { ...l, baseAmount: '5.0000' } : (l.roleCode === 'CASH_BANK' ? { ...l, baseAmount: '3520417.0000' } : l))), { ...vOpts, loanCurrencyId: THB_ID }), /ROUND_DIFF 5.0000 exceeds the cap 4.0000/);
+    assert.match(errs(u2, { ...vOpts, loanCurrencyId: LAK_ID }), /not allowed in a base-currency journal/);
+    assert.match(errs(u2.map(l => (l.amountTag === 'FX_DIFF' ? { ...l, isBaseOnly: false } : l))), /FX_DIFF FX_GAIN_REALIZED: must be a base-only leg/);
   });
 };
 

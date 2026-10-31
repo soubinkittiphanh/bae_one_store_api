@@ -193,7 +193,8 @@ const applyBase = (input, opts) => {
     const l = lines[i];
     const amount = toUnits(l.amount);
     let base;
-    if (l.presetBase !== undefined) base = toUnits(l.presetBase);
+    if (l.isBaseOnly) base = toUnits(l.baseAmount); // prebuilt base-only legs (revaluation) keep their base
+    else if (l.presetBase !== undefined) base = toUnits(l.presetBase);
     else if (isBase(l)) base = amount;
     else if (transferOf.has(i)) { process(transferOf.get(i)); base = toUnits(lines[transferOf.get(i)].baseAmount); }
     else if (bucketOf(l) && l.drCr !== BUCKETS[l.roleCode]) {
