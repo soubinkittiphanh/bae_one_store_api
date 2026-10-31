@@ -367,6 +367,129 @@ const run = async (test) => {
     assert.strictEqual(snap.schedule.rows.length, 12);
     assert.ok(!('movementRules' in snap) && !('provisionRules' in snap));
   });
+
+  // ---------------------------------------------------------------- Phase 5 multi-currency (addendum §8.8)
+  const FX = require('../../src/loan/accounting/fx');
+  const USD_ID = 5;
+  const THB_ID = 6;
+  const LAK_ID = 1;
+  const usdSchedule = E.schedule.generateSchedule({ ...F.LOAN_A, principal: '12000', repaymentMethod: 'EQUAL_INSTALLMENT' }, NO_HOLIDAYS, USD);
+  const journalFor = (event, tags, currency, qualifiers = { CURRENT: 'NORMAL' }) => buildJournal({ rules: rulesFor(DEFAULT_PRODUCT), eventCode: event, tags, qualifiers, currency });
+  const bucketMap = (entries) => new Map(entries.map(([key, amount, base]) => [key, { amount: toUnits4(amount), base: toUnits4(base) }]));
+  const toUnits4 = v => require('../../src/loan/accounting/journal').toUnits(String(v).replace('-', '')) * (String(v).startsWith('-') ? -1n : 1n);
+  const fxOpts = (rate, buckets, loanCurrencyId = USD_ID) => ({ rate, loanCurrencyId, baseCurrencyId: LAK_ID, baseDecimals: 0, buckets, maxRoundDiff: 1 });
+  const show = lines => lines.map(l => `${l.drCr} ${l.roleCode}${l.qualifier ? `[${l.qualifier}]` : ''} ${l.amountTag} ${l.isBaseOnly ? '-' : N.toDecimal(l.amount, 2)} ${N.roundHalfUp(l.baseAmount, 0)}`).sort();
+  const baseBalanced = (lines) => {
+    const sum = side => lines.filter(l => l.drCr === side).reduce((s, l) => s + toUnits4(l.baseAmount), 0n);
+    assert.strictEqual(sum('DR'), sum('CR'), 'base balances');
+  };
+
+  await test('fx: the USD fixtures use the engine schedule (12,000 USD, 18%, 12 months, annuity): 1,100.16 x 11 + 1,100.19; installment 1 = 920.16 + 180.00', async () => {
+    const rows = usdSchedule.rows;
+    assert.deepStrictEqual([rows[0].principal, rows[0].interest, rows[0].total], ['920.16', '180.00', '1100.16']);
+    assert.deepStrictEqual([rows[1].principal, rows[1].interest], ['933.96', '166.20']);
+    assert.deepStrictEqual([rows[11].principal, rows[11].interest, rows[11].total], ['1083.93', '16.26', '1100.19']);
+    assert.ok(rows.slice(0, 11).every(r => r.total === '1100.16'));
+  });
+
+  await test('fx: rate normalization from the POS directions; toBase rounds half-up to the base decimals; implied-rate deviation', async () => {
+    assert.strictEqual(FX.rateString(FX.normalizePosRate(21200, 'foreign_to_local')), '21200.00000000');
+    assert.strictEqual(FX.rateString(FX.normalizePosRate('0.00004717', 'local_to_foreign')), '21199.91520034');
+    assert.strictEqual(FX.toBase(toUnits4('301747.5') / 670n * 0n + toUnits4('450.00'), FX.rateUnits('670.55'), 0), toUnits4('301748'));
+    assert.strictEqual(FX.toBase(toUnits4('5250.05'), FX.rateUnits('670.55'), 0), toUnits4('3520421'));
+    const implied = FX.impliedRate(toUnits4('252000000'), toUnits4('11500.00'));
+    assert.strictEqual(FX.rateString(implied), '21913.04347826');
+    assert.strictEqual(FX.pctString(FX.deviationPct(implied, FX.rateUnits('21000'))), '4.3478');
+    assert.strictEqual(FX.pctString(FX.deviationPct(FX.rateUnits('21000'), FX.rateUnits('21150'))), '0.7092');
+  });
+
+  await test('fx X1/X2: USD 12,000 loan settles the LAK invoice (252,000,000) through CCY_POSITION; table rate not used; no FX at DISB', async () => {
+    const lines = journalFor('DISB', { PRINCIPAL: '12000.0000' }, USD_ID);
+    const settled = FX.carryOverSettlement(lines, { loanCurrencyId: USD_ID, invoiceCurrencyId: LAK_ID, baseCurrencyId: LAK_ID, carryBaseUnits: toUnits4('252000000') });
+    const out = FX.applyBase(settled, fxOpts('21150', new Map()));
+    assert.deepStrictEqual(show(out.lines), [
+      'CR CCY_POSITION PRINCIPAL 12000.00 252000000',
+      'CR SALE_RECEIVABLE PRINCIPAL 252000000.00 252000000',
+      'DR CCY_POSITION PRINCIPAL 252000000.00 252000000',
+      'DR LOAN_PORTFOLIO[NORMAL] PRINCIPAL 12000.00 252000000'
+    ].sort());
+    assert.strictEqual(out.fx.length, 0);
+    assert.strictEqual(out.roundDiff, 0n);
+    baseBalanced(out.lines);
+    const pos = out.lines.filter(l => l.roleCode === 'CCY_POSITION').reduce((s, l) => s + (l.drCr === 'DR' ? 1n : -1n) * toUnits4(l.baseAmount), 0n);
+    assert.strictEqual(pos, 0n, 'CCY_POSITION nets to zero in base');
+    const p = out.buckets.get('LOAN_PORTFOLIO|NORMAL');
+    assert.deepStrictEqual([p.amount, p.base], [toUnits4('12000'), toUnits4('252000000')]);
+  });
+
+  await test('fx U2: installment 1 (920.16 + 180.00) paid at 21,500 -> realized gains 460,080 (principal) and 9,000 (interest)', async () => {
+    const buckets = bucketMap([['LOAN_PORTFOLIO|NORMAL', '12000', '252000000'], ['INTEREST_RECEIVABLE|', '180', '3861000']]);
+    const lines = journalFor('LIQD', { TOTAL_PAID: '1100.1600', PRIN_PAID: '920.1600', INT_PAID: '180.0000' }, USD_ID);
+    const out = FX.applyBase(lines, fxOpts('21500', buckets));
+    assert.deepStrictEqual(show(out.lines), [
+      'CR FX_GAIN_REALIZED FX_DIFF - 460080',
+      'CR FX_GAIN_REALIZED FX_DIFF - 9000',
+      'CR INTEREST_RECEIVABLE INT_PAID 180.00 3861000',
+      'CR LOAN_PORTFOLIO[NORMAL] PRIN_PAID 920.16 19323360',
+      'DR CASH_BANK TOTAL_PAID 1100.16 23653440'
+    ].sort());
+    baseBalanced(out.lines);
+    const p = out.buckets.get('LOAN_PORTFOLIO|NORMAL');
+    assert.deepStrictEqual([p.amount, p.base], [toUnits4('11079.84'), toUnits4('232676640')]);
+    assert.deepStrictEqual([out.buckets.get('INTEREST_RECEIVABLE|').amount, out.buckets.get('INTEREST_RECEIVABLE|').base], [0n, 0n], 'closed bucket has no base residue');
+  });
+
+  await test('fx U3: partial prepayment 2,000.00 at 20,900 -> realized loss 200,000; bucket 9,079.84 / 190,676,640', async () => {
+    const buckets = bucketMap([['LOAN_PORTFOLIO|NORMAL', '11079.84', '232676640']]);
+    const out = FX.applyBase(journalFor('LIQD', { TOTAL_PAID: '2000.0000', PRIN_PAID: '2000.0000' }, USD_ID), fxOpts('20900', buckets));
+    assert.deepStrictEqual(show(out.lines), ['CR LOAN_PORTFOLIO[NORMAL] PRIN_PAID 2000.00 42000000', 'DR CASH_BANK TOTAL_PAID 2000.00 41800000', 'DR FX_LOSS_REALIZED FX_DIFF - 200000'].sort());
+    baseBalanced(out.lines);
+    assert.strictEqual(out.buckets.get('LOAN_PORTFOLIO|NORMAL').base, toUnits4('190676640'));
+  });
+
+  await test('fx T1: THB fee collect at 670.55 -> 1 kip base residue to ROUND_DIFF; a residue above the cap is refused', async () => {
+    const lines = journalFor('FEE_COLLECT', { TOTAL_PAID: '5250.0500', FEE_DOC: '4500.0000', VAT_OUT: '450.0000', INS_PREM: '300.0500' }, THB_ID);
+    const out = FX.applyBase(lines, fxOpts('670.55', new Map(), THB_ID));
+    assert.deepStrictEqual(show(out.lines), [
+      'CR FEE_INCOME FEE_DOC 4500.00 3017475', 'CR INSURANCE_PAYABLE INS_PREM 300.05 201199', 'CR TAX_PAYABLE VAT_OUT 450.00 301748',
+      'DR CASH_BANK TOTAL_PAID 5250.05 3520421', 'DR ROUNDING_DIFF ROUND_DIFF - 1'
+    ].sort());
+    baseBalanced(out.lines);
+    assert.throws(() => FX.applyBase(lines, { ...fxOpts('670.55', new Map(), THB_ID), maxRoundDiff: 0 }), /exceeds the cap/);
+  });
+
+  await test('fx T2: THB late payment at 671.35 with memo penalty 125.48 (PEN_CASH income, no FX) -> gains 33,750 and 14,175', async () => {
+    const buckets = bucketMap([['LOAN_PORTFOLIO|NORMAL', '300000', '201000000'], ['INTEREST_RECEIVABLE|', '4500', '3006900']]);
+    const out = FX.applyBase(journalFor('LIQD', { TOTAL_PAID: '29625.4800', PRIN_PAID: '25000.0000', INT_PAID: '4500.0000', PEN_CASH: '125.4800' }, THB_ID), fxOpts('671.35', buckets, THB_ID));
+    assert.deepStrictEqual(show(out.lines), [
+      'CR FX_GAIN_REALIZED FX_DIFF - 14175', 'CR FX_GAIN_REALIZED FX_DIFF - 33750', 'CR INTEREST_RECEIVABLE INT_PAID 4500.00 3006900',
+      'CR LOAN_PORTFOLIO[NORMAL] PRIN_PAID 25000.00 16750000', 'CR PENALTY_INCOME PEN_CASH 125.48 84241', 'DR CASH_BANK TOTAL_PAID 29625.48 19889066'
+    ].sort());
+    baseBalanced(out.lines);
+  });
+
+  await test('fx T3/T4: month-end revaluation at 665.00 (carry forward) then payment at 668.00 -> gain 75,000; without revaluation -> loss 50,000; same total', async () => {
+    const buckets = bucketMap([['LOAN_PORTFOLIO|NORMAL', '275000', '184250000']]);
+    const reval = FX.revaluationLines({ buckets, rate: '665.00', baseDecimals: 0, loanCurrencyId: THB_ID });
+    assert.deepStrictEqual(show(reval), ['CR LOAN_PORTFOLIO[NORMAL] FX_REVAL - 1375000', 'DR FX_LOSS_UNREALIZED FX_REVAL - 1375000'].sort());
+    const after = FX.bucketsFromLegs([...[...buckets].map(([k, b]) => ({ roleCode: k.split('|')[0], qualifier: k.split('|')[1], drCr: 'DR', amount: N.toDecimal(require('../../src/loan/accounting/journal').fromUnits(b.amount), 4), baseAmount: require('../../src/loan/accounting/journal').fromUnits(b.base) })), ...reval]);
+    assert.strictEqual(after.get('LOAN_PORTFOLIO|NORMAL').base, toUnits4('182875000'));
+    const pay = journalFor('LIQD', { TOTAL_PAID: '25000.0000', PRIN_PAID: '25000.0000' }, THB_ID);
+    const on = FX.applyBase(pay, fxOpts('668.00', after, THB_ID));
+    const off = FX.applyBase(pay, fxOpts('668.00', buckets, THB_ID));
+    assert.deepStrictEqual(show(on.lines.filter(l => l.isBaseOnly)), ['CR FX_GAIN_REALIZED FX_DIFF - 75000']);
+    assert.deepStrictEqual(show(off.lines.filter(l => l.isBaseOnly)), ['DR FX_LOSS_REALIZED FX_DIFF - 50000']);
+    assert.strictEqual(-1375000n * 25000n / 275000n + 75000n, -50000n, 'revaluation changes only when FX is recognized');
+  });
+
+  await test('fx: status change moves the carrying base between qualifiers without FX; a relief that empties a bucket leaves no residue', async () => {
+    const buckets = bucketMap([['LOAN_PORTFOLIO|NORMAL', '1000.01', '21000213']]);
+    const stch = journalFor('STCH', { OUT_PRIN: '1000.0100' }, USD_ID, { NEW: 'SUBSTANDARD', PREVIOUS: 'NORMAL' });
+    const out = FX.applyBase(stch, fxOpts('25000', buckets));
+    assert.strictEqual(out.fx.length, 0);
+    assert.deepStrictEqual([out.buckets.get('LOAN_PORTFOLIO|NORMAL').amount, out.buckets.get('LOAN_PORTFOLIO|NORMAL').base], [0n, 0n]);
+    assert.strictEqual(out.buckets.get('LOAN_PORTFOLIO|SUBSTANDARD').base, toUnits4('21000213'));
+  });
 };
 
 module.exports = { run };
