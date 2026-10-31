@@ -1,3 +1,6 @@
+// Local overrides: DCOMMERCE_DB_<HOST|USER|PASSWORD|NAME|PORT>; the old DB_<...> names are still read as a fallback
+const dbEnv = (name) => process.env[`DCOMMERCE_DB_${name}`] !== undefined ? process.env[`DCOMMERCE_DB_${name}`] : process.env[`DB_${name}`];
+
 const clientDB = {
     "chithanh": {
         "host": "150.95.31.23",
@@ -36,13 +39,13 @@ const clientDB = {
     //     "port": 10087,
     // },
     "dev": {
-        "host": process.env.DB_HOST || "localhost",
-        "user": process.env.DB_USER || "root",
-        "password": process.env.DB_PASSWORD !== undefined ? process.env.DB_PASSWORD : "SDAT@3480",
+        "host": dbEnv('HOST') || "localhost",
+        "user": dbEnv('USER') || "root",
+        "password": dbEnv('PASSWORD') !== undefined ? dbEnv('PASSWORD') : "SDAT@3480",
         // "database": "dcommerce_pro_carcare_sokpaluang",
         // "database": "dcommerce_mpwt",
-        "database": process.env.DB_NAME || "dcommerce_dev",
-        "port": Number(process.env.DB_PORT) || 3306,
+        "database": dbEnv('NAME') || "dcommerce_dev",
+        "port": Number(dbEnv('PORT')) || 3306,
     },
     "payment_1": {
         "host": "150.95.31.23",
@@ -180,11 +183,11 @@ const clientDB = {
         "port": 3306,
     },
     "env_auto": {
-        "host": process.env.DB_HOST || "150.95.31.23",
-        "user": process.env.DB_USER || "root",
-        "password": process.env.DB_PASSWORD !== undefined ? process.env.DB_PASSWORD : "sdat@3480",
-        "database": process.env.DB_NAME || 'dcommerce_demo',
-        "port": Number(process.env.DB_PORT) || 3306,
+        "host": dbEnv('HOST') || "150.95.31.23",
+        "user": dbEnv('USER') || "root",
+        "password": dbEnv('PASSWORD') !== undefined ? dbEnv('PASSWORD') : "sdat@3480",
+        "database": dbEnv('NAME') || 'dcommerce_demo',
+        "port": Number(dbEnv('PORT')) || 3306,
     },
     "pro_sho": {
         "host": "150.95.31.23",

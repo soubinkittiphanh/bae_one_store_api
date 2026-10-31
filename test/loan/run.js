@@ -1,7 +1,7 @@
 /**
  * Loan module integration tests (Phase 2A and 2B). LOCAL DATABASE ONLY.
  *
- *   DB_HOST=127.0.0.1 DB_USER=<user> DB_PASSWORD=<pw> npm run test:loan
+ *   DCOMMERCE_DB_HOST=127.0.0.1 DCOMMERCE_DB_USER=<user> DCOMMERCE_DB_PASSWORD=<pw> npm run test:loan
  *
  * Environment:
  *   LOAN_TEST_DB          test database, rebuilt on every run; must end in "_test" (default dcommerce_loan_test)
@@ -57,7 +57,7 @@ const main = async () => {
   const port = await freePort();
   // Must be set before src/config is loaded: the JWT secret and the DB target depend on them
   process.env.PORT = String(port);
-  process.env.DB_NAME = TEST_DB;
+  process.env.DCOMMERCE_DB_NAME = TEST_DB;
   process.env.NO_SYNC = 'true';
 
   const target = require('../../src/loan/dbGuard').assertLocalDb('test:loan');

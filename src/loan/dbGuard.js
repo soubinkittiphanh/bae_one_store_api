@@ -24,7 +24,7 @@ const assertLocalDb = (scriptName = 'loan script') => {
   if (!isLocal && !remoteConfirmed) {
     throw new Error(
       `[${scriptName}] Refusing to run against non-local host ${target.host}. ` +
-      'Set DB_HOST to a local server, or set ALLOW_REMOTE=1 and CONFIRM_DB=<database> to override.'
+      'Set DCOMMERCE_DB_HOST to a local server, or set ALLOW_REMOTE=1 and CONFIRM_DB=<database> to override.'
     );
   }
   if (!isLocal) {
