@@ -51,6 +51,7 @@ module.exports = async ({ test, call, q, users, L, expectStatus }) => {
     const s = (await call(ADMIN, 'get', `${L}/accounts/${usdAccount.id}/summary`)).data.data;
     console.log(`        USD summary: outstanding ${s.outstanding.amount} = ${s.baseCurrency} ${s.outstanding.baseAmount} at ${s.fx.rate} (${s.fx.rateDate}); warning: ${s.fx.warning}`);
     assert.strictEqual(s.currency, 'USD');
+    assert.ok(s.account.accountNo === usdAccount.accountNo && /^\d{4}-\d{2}-\d{2}$/.test(s.account.valueDate) && s.account.accountStage === 'DISBURSED', 'plain account fields for the screen');
     assert.deepStrictEqual([s.fx.rate, s.fx.rateDate, s.fx.warning], ['21300.00000000', rateDate, `Rate of ${rateDate} used for booking date ${d} (2 days old)`]);
     assert.strictEqual(s.outstanding.baseAmount, toLak(s.outstanding.amount, s.fx.rate));
     assert.ok(Number(s.portfolioCarrying.baseAmount) >= 0);

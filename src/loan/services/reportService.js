@@ -166,7 +166,7 @@ const reportService = {
     const lastPayment = await findOneExact(db.lnTransaction, { where: { loanAccountId: account.id, eventCode: ['REPAYMENT', 'PREPAY', 'RECOVERY'], postingStatus: 'POSTED', isReversed: false }, order: [['id', 'DESC']] });
     const byComp = Object.fromEntries(Object.entries(state.byComponent.outstanding).map(([k, v]) => [k, money(v, fx, conv)]));
     return {
-      account: { ...account, sanctionedAmount: String(account.sanctionedAmount), disbursedAmount: String(account.disbursedAmount), advanceBalance: String(account.advanceBalance) },
+      account: { ...account.get({ plain: true }), valueDate: String(account.valueDate), firstDueDate: String(account.firstDueDate), maturityDate: String(account.maturityDate), sanctionedAmount: String(account.sanctionedAmount), disbursedAmount: String(account.disbursedAmount), advanceBalance: String(account.advanceBalance) },
       currency: ccy[account.currencyId] ? ccy[account.currencyId].code : null,
       baseCurrency: conv.base.code,
       customer,
