@@ -5,6 +5,7 @@ const logger = require("../../../api/logger");
 const { user, MOU, JobBatch, Agency, arReceiveHeaderV2, arInvoiceLine, arReceiveLine, sequelize, arInvoiceHeader, currency, Transaction, payment } = require('../../../models');
 const ReceiveHeader = require('../../../models').arReceiveHeaderV2;
 const { Op } = require('sequelize');
+const LoanReceipts = require('../../../loan/posting/posReceiptLink');
 
 class ReceiveHeaderController {
   static async resolvePaymentMethodEnum(paymentId, providedMethod, transaction = null) {
@@ -109,6 +110,9 @@ class ReceiveHeaderController {
         if (maxAmount) whereClause.totalReceivedAmount[Op.lte] = maxAmount;
       }
 
+      // Loan settlement receipts (not money received) only when includeLoanSettlement=1
+      await LoanReceipts.excludeUnlessRequested(whereClause, req.query);
+
       const { count, rows } = await ReceiveHeader.findAndCountAll({
         where: whereClause,
         include: [
@@ -163,6 +167,7 @@ class ReceiveHeaderController {
         distinct: true
       });
 
+      await LoanReceipts.labelIfRequested(rows, req.query);
       const totalPages = Math.ceil(count / limit);
 
       res.status(200).json({
@@ -326,6 +331,9 @@ class ReceiveHeaderController {
       if (maxAmount) whereClause.totalReceivedAmount[Op.lte] = maxAmount;
     }
 
+    // Loan settlement receipts (not money received) only when includeLoanSettlement=1
+    await LoanReceipts.excludeUnlessRequested(whereClause, req.query);
+
     const { count, rows } = await ReceiveHeader.findAndCountAll({
       where: whereClause,
       include: [
@@ -387,6 +395,7 @@ class ReceiveHeaderController {
       order: [[sortBy, sortOrder.toUpperCase()]],
       distinct: true
     });
+    await LoanReceipts.labelIfRequested(rows, req.query);
 
     res.status(200).json({
       success: true,

@@ -4,6 +4,8 @@
 const express = require('express');
 const router = express.Router();
 const ReceiveHeaderController = require('./controller');
+// Receipts that settle a loan (DISB) are changed only by the loan module
+const { refuseLoanReceipt } = require('../../../loan/posting/posReceiptLink');
 
 // ROUTES
 // GET /api/receive-headers - Get all receive headers with pagination and filtering
@@ -29,19 +31,19 @@ const { uploadFiles } = require('../../../middleware/multerConfig');
 router.post('/', uploadFiles, ReceiveHeaderController.create);
 
 // PUT /api/receive-headers/:id - Update receive header
-router.put('/:id', uploadFiles, ReceiveHeaderController.update);
+router.put('/:id', refuseLoanReceipt, uploadFiles, ReceiveHeaderController.update);
 
 // DELETE /api/receive-headers/:id - Delete receive header
-router.delete('/:id', ReceiveHeaderController.delete);
+router.delete('/:id', refuseLoanReceipt, ReceiveHeaderController.delete);
 
 // VOID RECEIPT
-router.post('/:id/void', ReceiveHeaderController.voidReceipt);
+router.post('/:id/void', refuseLoanReceipt, ReceiveHeaderController.voidReceipt);
 
 // CANCEL RECEIPT
-router.post('/:id/cancel', ReceiveHeaderController.cancelReceipt);
+router.post('/:id/cancel', refuseLoanReceipt, ReceiveHeaderController.cancelReceipt);
 
 // REACTIVATE RECEIPT
-router.post('/:id/reactivate', ReceiveHeaderController.reactivateReceipt);
+router.post('/:id/reactivate', refuseLoanReceipt, ReceiveHeaderController.reactivateReceipt);
 
 module.exports = router;
 
