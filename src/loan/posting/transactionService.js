@@ -10,8 +10,10 @@ const { LoanError } = require('../errors');
 const loanCtx = require('../services/loanContext');
 const { checkProductRow } = require('../services/accountingService');
 const { nextNumber } = require('../services/numberingService');
-const { validateJournal } = require('../accounting/validators');
-const { toUnits } = require('../accounting/journal');
+const { validateJournal, validateBase } = require('../accounting/validators');
+const { toUnits, fromUnits } = require('../accounting/journal');
+const FX = require('../accounting/fx');
+const { fxFor, settlementFor } = require('./fxContext');
 const { findAllExact } = require('../db/exact');
 const AccountingPostingService = require('../../GL/accountingPostingService');
 const G = require('./guards');
@@ -39,14 +41,9 @@ const audit = (txn, actionType, ctxUser, values, transaction) => db.lnAuditLog.c
 
 const selfAuthorizeAllowed = async transaction => (await G.spfValue('LOAN_ALLOW_SELF_AUTHORIZE', transaction)) === 'true';
 
-const baseCurrency = async (account, transaction) => {
-  const currency = await db.currency.findByPk(account.currencyId, { transaction });
-  if (!currency) throw new LoanError(409, `Currency ${account.currencyId} not found`);
-  if (!(currency.isLocalCCY === true || currency.isLocalCCY === 1)) {
-    throw new LoanError(409, `Posting supports base-currency loans only in Phase 4 (this loan is ${currency.code})`);
-  }
-  return currency;
-};
+// USE_BUSINESS_DATE = 'Y' (manual POS COB): loan bank entries carry the POS business date (Phase 4);
+// otherwise the POS date goes stale, so they carry the loan business date (Phase 5, decision D8)
+const bankBusinessDate = async (dates, transaction) => ((await G.spfValue('USE_BUSINESS_DATE', transaction)) === 'Y' ? undefined : dates.businessDate);
 
 const newTransactionRow = async ({ kind, ctx, input, dates, ctxUser, status, transaction }) => db.lnTransaction.create({
   txNo: await nextNumber('LOAN_TRANSACTION', dates.businessDate, transaction),
@@ -58,11 +55,12 @@ const newTransactionRow = async ({ kind, ctx, input, dates, ctxUser, status, tra
   makerId: ctxUser.userId, source: 'ONLINE', requestJson: JSON.stringify(input), remarks: input.remarks || null
 }, { transaction });
 
+const fxSummary = fx => (fx ? { rate: fx.rate, rateDate: fx.rateDate, baseCurrency: fx.baseCode, warnings: fx.warnings, warning: fx.warnings.join(' | ') || null } : undefined);
 const summary = (txn, out, journal, extra = {}) => ({
   transactionId: txn.id, txNo: txn.txNo, eventCode: txn.eventCode, postingStatus: txn.postingStatus,
   valueDate: String(txn.valueDate), bookingDate: txn.bookingDate ? String(txn.bookingDate) : null, valueDatedAdjustment: Boolean(txn.valueDatedAdjustment),
   amount: String(txn.amount), events: out ? out.events : [],
-  journal: journal ? journal.lines.map(l => ({ event: l.eventCode, tag: l.amountTag, drCr: l.drCr, role: l.roleCode, qualifier: l.qualifier, chartAccountId: l.chartAccountId, amount: l.amount })) : [],
+  journal: journal ? journal.lines.map(l => ({ event: l.eventCode, tag: l.amountTag, drCr: l.drCr, role: l.roleCode, qualifier: l.qualifier, chartAccountId: l.chartAccountId, amount: l.amount, ...(l.baseAmount !== undefined ? { currencyId: l.currency, baseAmount: l.baseAmount, isBaseOnly: Boolean(l.isBaseOnly) } : {}) })) : [],
   glRows: journal ? journal.glRows.map(r => r.id) : [],
   details: out ? out.details || null : null,
   ...extra
@@ -71,13 +69,14 @@ const summary = (txn, out, journal, extra = {}) => ({
 /**
  * Posts one transaction inside `transaction`. pending: an existing PENDING_AUTH row being authorized.
  */
-const post = async ({ kind, accountId, input, ctxUser, pending, transaction, hook, tamper }) => {
+const post = async ({ kind, accountId, input, ctxUser, pending, transaction, hook, tamper, dryRun }) => {
   await G.assertPostingEnabled(transaction);
   await G.assertTaxProfile(kind, transaction);
   const ctx = await S.loadAccount(accountId, transaction);
-  const currency = await baseCurrency(ctx.account, transaction);
   const productRow = await db.lnProduct.findByPk(ctx.snapshot.product.id, { transaction });
   const dates = await G.resolveDates({ kind, valueDate: input.valueDate, product: productRow, transaction });
+  // Phase 5: foreign-currency loans get the booking date's rate (fx = null for base-currency loans)
+  const { currency, fx } = await fxFor({ account: ctx.account, bookingDate: dates.bookingDate, input, pending, dryRun, transaction });
   ctx.live = await loanCtx.classification(dates.valueDate);
   if (!(ctx.account.status in ctx.live.statusMaster)) throw new LoanError(409, `Status ${ctx.account.status} is not AUTHORIZED in the status master`);
 
@@ -92,17 +91,25 @@ const post = async ({ kind, accountId, input, ctxUser, pending, transaction, hoo
   const check = await checkProductRow(ctx.product, { transaction, asOfDate: dates.valueDate });
   if (!check.ok) throw new LoanError(409, `${ctx.product.productCode} accounting entry rules are incomplete`, check.errors);
 
+  // Phase 5: DISB settling the invoice carries the invoice base over (cross-currency via CCY_POSITION)
+  let settled = null;
+  if (fx && out.settlesInvoice) {
+    const principal = ((out.events.find(e => e.event === 'DISB') || {}).tags || {}).PRINCIPAL;
+    settled = await settlementFor({ ctx, fx, currency, principal, input, pending, ctxUser, transaction });
+    fx.warnings.push(...settled.warnings);
+  }
+
   const resolver = await makeResolver({ date: dates.valueDate, transaction });
   const journal = await postJournal(out.events, {
     product: ctx.product, account: ctx.account, bankAccountId: input.bankAccountId, currencyId: ctx.account.currencyId,
     valueDate: dates.valueDate, bookingDate: dates.bookingDate, transactionId: txn.id, postingReference: txn.txNo,
     description: `Loan ${ctx.account.accountNo} ${out.eventCode}${dates.valueDatedAdjustment ? ` (value-dated adjustment for ${dates.valueDate})` : ''}`,
-    resolver, hook, tamper
+    resolver, hook, tamper, fx: fx ? { ...fx, settlement: settled ? settled.settlement : undefined } : undefined
   }, transaction);
 
   let bankEntry = null;
   if (journal.cashNetUnits !== 0n) {
-    bankEntry = await bankMovement({ transactionId: txn.id, txNo: txn.txNo, bankAccountId: input.bankAccountId, units: journal.cashNetUnits, currencyCode: currency.code, description: `${out.eventCode} ${ctx.account.accountNo}`, userId: ctxUser.userId }, transaction);
+    bankEntry = await bankMovement({ transactionId: txn.id, txNo: txn.txNo, bankAccountId: input.bankAccountId, units: journal.cashNetUnits, currencyCode: currency.code, description: `${out.eventCode} ${ctx.account.accountNo}`, userId: ctxUser.userId, businessDate: await bankBusinessDate(dates, transaction) }, transaction);
   }
   hook('AFTER_BANK');
   let receipt = null;
@@ -110,18 +117,24 @@ const post = async ({ kind, accountId, input, ctxUser, pending, transaction, hoo
     if (!ctx.account.saleHeaderId) throw new LoanError(409, 'The account has no vehicle sale to settle');
     const lp = journal.lines.find(l => l.roleCode === 'LOAN_PORTFOLIO' && l.drCr === 'DR');
     const ar = journal.lines.find(l => l.roleCode === 'SALE_RECEIVABLE' && l.drCr === 'CR');
-    receipt = await settleInvoice({ transactionId: txn.id, txNo: txn.txNo, saleHeaderId: ctx.account.saleHeaderId, units: journal.saleReceivableCreditUnits, downPayment: String(ctx.account.downPaymentAmount), date: dates.bookingDate, userId: ctxUser.userId, drAccountId: lp && lp.chartAccountId, crAccountId: ar && ar.chartAccountId, currencyId: ctx.account.currencyId }, transaction);
+    const cross = Boolean(settled && Number(settled.settlement.invoiceCurrencyId) !== Number(ctx.account.currencyId));
+    receipt = await settleInvoice({
+      transactionId: txn.id, txNo: txn.txNo, saleHeaderId: ctx.account.saleHeaderId, units: journal.saleReceivableCreditUnits, downPayment: String(ctx.account.downPaymentAmount), date: dates.bookingDate, userId: ctxUser.userId, drAccountId: lp && lp.chartAccountId, crAccountId: ar && ar.chartAccountId,
+      currencyId: cross ? settled.settlement.invoiceCurrencyId : ctx.account.currencyId, receiptRate: settled && !cross ? settled.settlement.invoiceRate : undefined, crossCurrency: cross
+    }, transaction);
   }
   hook('AFTER_AR');
 
+  const baseAmount = fx ? fromUnits(FX.toBase(toUnits(out.amount), FX.rateUnits(fx.rate), fx.baseDecimals)) : out.amount;
   await txn.update({
-    eventCode: out.eventCode, amount: out.amount, baseAmount: out.amount, postingStatus: 'POSTED', authStatus: 'AUTHORIZED',
+    eventCode: out.eventCode, amount: out.amount, baseAmount, postingStatus: 'POSTED', authStatus: 'AUTHORIZED',
     eventsJson: JSON.stringify(out.events), effectsJson: JSON.stringify(effects.list),
+    ...(fx ? { exchangeRate: fx.rate, exchangeRateDate: fx.rateDate, fxWarning: (fx.warnings.join(' | ') || null) && fx.warnings.join(' | ').slice(0, 255) } : {}),
     ...(pending ? { checkerId: ctxUser.userId, authorizedAt: new Date() } : {})
   }, { transaction });
-  await audit(txn, pending ? (ctxUser.self ? 'SELF_AUTH' : 'AUTH') : 'POST', ctxUser, { kind, amount: out.amount }, transaction);
+  await audit(txn, pending ? (ctxUser.self ? 'SELF_AUTH' : 'AUTH') : 'POST', ctxUser, { kind, amount: out.amount, ...(fx ? { rate: fx.rate, manualRate: fx.manual || undefined, rateDeviationReason: input.rateDeviationReason || undefined, acceptedRateDeviation: ctxUser.acceptRateDeviation || undefined } : {}) }, transaction);
   hook('BEFORE_COMMIT');
-  return summary(txn, out, journal, { bankEntryId: bankEntry ? bankEntry.id : null, arReceiptId: receipt ? receipt.id : null });
+  return summary(txn, out, journal, { bankEntryId: bankEntry ? bankEntry.id : null, arReceiptId: receipt ? receipt.id : null, ...(fx ? { fx: fxSummary(fx), implied: settled ? settled.implied : undefined } : {}) });
 };
 
 /**
@@ -131,7 +144,6 @@ const post = async ({ kind, accountId, input, ctxUser, pending, transaction, hoo
 const reverse = async ({ accountId, input, ctxUser, pending, transaction, hook }) => {
   await G.assertPostingEnabled(transaction);
   const ctx = await S.loadAccount(accountId, transaction);
-  await baseCurrency(ctx.account, transaction);
   const target = await db.lnTransaction.findByPk(input.targetTransactionId, { transaction, lock: transaction.LOCK.UPDATE });
   if (!target || Number(target.loanAccountId) !== Number(ctx.account.id)) throw new LoanError(404, `Transaction ${input.targetTransactionId} not found on this account`);
   if (target.postingStatus !== 'POSTED' || target.isReversed || target.eventCode === 'REVERSAL' || target.source !== 'ONLINE') {
@@ -150,12 +162,18 @@ const reverse = async ({ accountId, input, ctxUser, pending, transaction, hook }
   const legs = await findAllExact(db.lnJournalPosting, { where: { transactionId: target.id }, order: [['id', 'ASC']], transaction });
   const roles = await db.lnAccountingRole.findAll({ transaction });
   const roleTypes = Object.fromEntries(roles.map(r => [r.roleCode, r.expectedType]));
-  const mirrored = legs.map(l => ({ eventCode: 'REVERSAL', amountTag: l.amountTag, drCr: l.drCr === 'DR' ? 'CR' : 'DR', roleCode: l.roleCode, qualifier: l.statusQualifier, chartAccountId: l.chartAccountId, currency: l.currencyId, amount: l.amount }));
+  // Exact mirror: same chart account, currency, amount, rate and base amount (Phase 5: base-only legs too)
+  const mirrored = legs.map(l => ({ eventCode: 'REVERSAL', amountTag: l.amountTag, drCr: l.drCr === 'DR' ? 'CR' : 'DR', roleCode: l.roleCode, qualifier: l.statusQualifier, chartAccountId: l.chartAccountId, currency: l.currencyId, amount: l.amount, baseAmount: l.baseAmount, exchangeRate: l.exchangeRate, isBaseOnly: Boolean(l.isBaseOnly) }));
   const errors = validateJournal(mirrored, roleTypes);
+  const base = await require('../services/fxRateService').baseCurrency(transaction);
+  if (Number(ctx.account.currencyId) !== Number(base.id)) {
+    const baseDecimals = Number((await require('../services/loanContext').currencyRule(base.id, String(target.bookingDate || target.valueDate), false)).decimalPlaces);
+    errors.push(...validateBase(mirrored, roleTypes, { loanCurrencyId: ctx.account.currencyId, baseCurrencyId: base.id, baseDecimals, maxRoundDiff: Number.MAX_SAFE_INTEGER }));
+  }
   if (errors.length) throw new LoanError(409, `Reversal journal failed validation: ${errors.join('; ')}`, errors);
   const postings = [];
   for (const m of mirrored) {
-    postings.push(await db.lnJournalPosting.create({ transactionId: txn.id, loanAccountId: ctx.account.id, eventCode: 'REVERSAL', amountTag: m.amountTag, roleCode: m.roleCode, statusQualifier: m.qualifier, chartAccountId: m.chartAccountId, drCr: m.drCr, currencyId: m.currency, amount: m.amount, baseAmount: m.amount, exchangeRate: '1' }, { transaction }));
+    postings.push(await db.lnJournalPosting.create({ transactionId: txn.id, loanAccountId: ctx.account.id, eventCode: 'REVERSAL', amountTag: m.amountTag, roleCode: m.roleCode, statusQualifier: m.qualifier, chartAccountId: m.chartAccountId, drCr: m.drCr, currencyId: m.currency, amount: m.amount, baseAmount: m.baseAmount, exchangeRate: m.exchangeRate, isBaseOnly: m.isBaseOnly }, { transaction }));
   }
   hook('AFTER_JOURNAL');
 
@@ -171,7 +189,7 @@ const reverse = async ({ accountId, input, ctxUser, pending, transaction, hook }
   for (const l of links.filter(x => x.posTable === 'transactionEntry')) {
     const entry = await db.transactionEntry.findByPk(l.posId, { transaction });
     const units = l.role === 'BANK_IN' ? -toUnits(String(entry.credit)) : toUnits(String(entry.debit));
-    await bankMovement({ transactionId: txn.id, txNo: txn.txNo, bankAccountId: entry.bankAccountId, units, currencyCode: null, description: `REVERSAL of ${target.txNo}`, userId: ctxUser.userId }, transaction);
+    await bankMovement({ transactionId: txn.id, txNo: txn.txNo, bankAccountId: entry.bankAccountId, units, currencyCode: null, description: `REVERSAL of ${target.txNo}`, userId: ctxUser.userId, businessDate: await bankBusinessDate(dates, transaction) }, transaction);
   }
   hook('AFTER_BANK');
   for (const l of links.filter(x => x.posTable === 'ARReceiveHeader')) {
@@ -182,7 +200,7 @@ const reverse = async ({ accountId, input, ctxUser, pending, transaction, hook }
 
   await target.update({ isReversed: true }, { transaction });
   await txn.update({
-    eventCode: 'REVERSAL', reversalOfTxId: target.id, amount: target.amount, baseAmount: target.amount, postingStatus: 'POSTED', authStatus: 'AUTHORIZED',
+    eventCode: 'REVERSAL', reversalOfTxId: target.id, amount: target.amount, baseAmount: target.baseAmount, exchangeRate: target.exchangeRate, exchangeRateDate: target.exchangeRateDate, postingStatus: 'POSTED', authStatus: 'AUTHORIZED',
     eventsJson: JSON.stringify([{ event: 'REVERSAL', reverses: target.txNo }]), effectsJson: '[]',
     ...(pending ? { checkerId: ctxUser.userId, authorizedAt: new Date() } : {})
   }, { transaction });
@@ -216,12 +234,13 @@ const transactionService = {
         await G.assertPostingEnabled(transaction);
         let response;
         let status;
-        if (KINDS[kind].checker) {
+        // A manual exchange rate always needs a checker (Phase 5, D2)
+        if (KINDS[kind].checker || input.exchangeRate !== undefined) {
           // Dry run in a savepoint: every guard, engine step and validator runs; nothing is kept
           let preview = null;
           try {
             await db.sequelize.transaction({ transaction }, async (sp) => {
-              preview = await execute(kind, { accountId, input, ctxUser, pending: null, transaction: sp, hook: () => {} });
+              preview = await execute(kind, { accountId, input, ctxUser, pending: null, transaction: sp, hook: () => {}, dryRun: true });
               throw new DryRun();
             });
           } catch (err) {
@@ -232,7 +251,7 @@ const transactionService = {
           const txn = await newTransactionRow({ kind, ctx, input, dates, ctxUser, status: 'PENDING_AUTH', transaction });
           await txn.update({ amount: preview.amount, baseAmount: preview.amount, eventsJson: JSON.stringify(preview.events || []) }, { transaction });
           await audit(txn, 'CREATE', ctxUser, { kind, amount: preview.amount }, transaction);
-          response = { transactionId: txn.id, txNo: txn.txNo, eventCode: kind, postingStatus: 'PENDING_AUTH', amount: preview.amount, preview: { events: preview.events, journal: preview.journal } };
+          response = { transactionId: txn.id, txNo: txn.txNo, eventCode: kind, postingStatus: 'PENDING_AUTH', amount: preview.amount, preview: { events: preview.events, journal: preview.journal, ...(preview.fx ? { fx: preview.fx, implied: preview.implied } : {}) } };
           status = 202;
         } else {
           response = await execute(kind, { accountId, input, ctxUser, pending: null, transaction, hook, tamper: failAt === 'TAMPER_JOURNAL' });
@@ -252,7 +271,8 @@ const transactionService = {
     }
   },
 
-  async authorize(txId, ctxUser, failAt) {
+  // options.acceptRateDeviation: the checker accepts an implied-rate deviation (LOAN_FX_IMPLIED_RATE_BREACH = CHECKER_OVERRIDE)
+  async authorize(txId, ctxUser, failAt, options = {}) {
     const hook = G.makeTestHook(failAt);
     return db.sequelize.transaction(async (transaction) => {
       const txn = await db.lnTransaction.findByPk(txId, { transaction, lock: transaction.LOCK.UPDATE });
@@ -261,7 +281,7 @@ const transactionService = {
       const self = Number(txn.makerId) === Number(ctxUser.userId);
       if (self && !(await selfAuthorizeAllowed(transaction))) throw new LoanError(403, 'Maker cannot authorize their own transaction (LOAN_ALLOW_SELF_AUTHORIZE is off)');
       const input = JSON.parse(txn.requestJson || '{}');
-      const body = await execute(txn.eventCode, { accountId: txn.loanAccountId, input, ctxUser: { ...ctxUser, self }, pending: txn, transaction, hook });
+      const body = await execute(txn.eventCode, { accountId: txn.loanAccountId, input, ctxUser: { ...ctxUser, self, acceptRateDeviation: options.acceptRateDeviation === true }, pending: txn, transaction, hook });
       return { status: 200, body };
     });
   },

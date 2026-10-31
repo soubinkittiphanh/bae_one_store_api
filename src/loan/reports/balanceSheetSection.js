@@ -68,6 +68,11 @@ const build = async ({ asOfDate, subledger }) => {
   const subCash = N.of(Number(subledger.cashAndBank || 0).toFixed(4));
   const subAr = N.of(Number(subledger.ar || 0).toFixed(4));
 
+  // Phase 5: the currency position account (cross-currency DISB) must net to zero in base (addendum §8.4, Q34)
+  const positionIds = [...new Set(mappings.filter(m => m.roleCode === 'CCY_POSITION').map(m => m.chartAccountId))];
+  const posBal = positionIds.length ? await glBalances(positionIds, asOfDate) : {};
+  const glPosition = positionIds.reduce((s, id) => (posBal[id] ? N.add(s, N.sub(posBal[id].dr, posBal[id].cr)) : s), N.ZERO);
+
   const out = list => list.map(x => ({ ...x, balance: num(x.balance) }));
   return {
     assets: out(loanAssets),
@@ -78,6 +83,7 @@ const build = async ({ asOfDate, subledger }) => {
     reconciliation: {
       cashAndBank: { gl: num(glCash), subledger: num(subCash), difference: num(N.sub(glCash, subCash)) },
       accountsReceivable: { gl: num(glAr), subledger: num(subAr), difference: num(N.sub(glAr, subAr)) },
+      currencyPosition: { gl: num(glPosition), expected: 0, difference: num(glPosition), accounts: positionIds.length },
       note: 'Differences show postings that reached only the GL or only the subledger (POS or loan).'
     }
   };

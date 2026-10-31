@@ -87,5 +87,35 @@ const makeTestHook = (failAt) => {
   };
 };
 const testFailAt = req => (process.env.LOAN_TEST_HOOKS === '1' && isTestDatabase() ? req.get('X-Loan-Test-Fail-At') || null : null);
+// Test-only: the calendar date seen by the COB rule (X-Loan-Test-Today), same activation as the failure hook
+const testToday = req => (process.env.LOAN_TEST_HOOKS === '1' && isTestDatabase() ? req.get('X-Loan-Test-Today') || null : null);
 
-module.exports = { spfValue, assertPostingEnabled, assertTaxProfile, systemDate, posBusinessDate, resolveDates, requestHash, claimIdempotency, makeTestHook, testFailAt, TAX_GATED };
+const vientianeToday = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Vientiane' });
+
+/**
+ * Phase 5 (decisions D7, D8): may the loan EOD for loan business date `date` run?
+ *   USE_BUSINESS_DATE = 'Y' (manual POS COB): only when the POS business date is LATER than `date`
+ *   otherwise: only when the calendar date in Asia/Vientiane is later than `date` (the POS date goes stale)
+ * Loan EOD never moves the POS date.
+ */
+const cobCheck = async (date, { today } = {}) => {
+  const manual = (await spfValue('USE_BUSINESS_DATE')) === 'Y';
+  const pos = await posBusinessDate();
+  const calendarToday = today || vientianeToday();
+  if (manual) {
+    const canRun = Boolean(pos) && D.compare(pos, date) > 0;
+    return {
+      mode: 'MANUAL_COB', useBusinessDate: 'Y', posBusinessDate: pos, calendarToday, canRun,
+      reason: canRun ? null : `Loan EOD for ${date} cannot run: USE_BUSINESS_DATE = Y (manual POS close of business) and the POS business date is ${pos || 'not set'}, not later than the loan business date. `
+        + `Run the POS close of business (COB batch: POST /api/accountDailyBalance/batch) until the POS business date is after ${date}, then run the loan EOD again. Loan EOD never moves the POS business date.`
+    };
+  }
+  const canRun = D.compare(calendarToday, date) > 0;
+  return {
+    mode: 'CALENDAR', useBusinessDate: 'N', posBusinessDate: pos, calendarToday, canRun,
+    reason: canRun ? null : `Loan EOD for ${date} cannot run: USE_BUSINESS_DATE = N (no manual POS close of business), so the loan follows the calendar in Asia/Vientiane and ${date} is not over yet (today is ${calendarToday}). `
+      + 'Run it after the day has ended. Loan EOD never moves the POS business date.'
+  };
+};
+
+module.exports = { spfValue, assertPostingEnabled, assertTaxProfile, systemDate, posBusinessDate, resolveDates, requestHash, claimIdempotency, makeTestHook, testFailAt, testToday, cobCheck, vientianeToday, TAX_GATED };

@@ -14,7 +14,7 @@ const E = require('../../src/loan/engine');
 const API_ROOT = path.resolve(__dirname, '../..');
 
 module.exports = async ({ test: runTest, call, q, db, runNode, users, L, expectStatus }) => {
-  const { SUPER, ADMIN } = users;
+  const { SUPER, ADMIN, CASHIER } = users;
   // LOAN_POSTING_ONLY=<regex>: run only the setup and the matching posting tests (for running one case in isolation)
   const only = process.env.LOAN_POSTING_ONLY ? new RegExp(process.env.LOAN_POSTING_ONLY) : null;
   const test = (name, fn) => (!only || /^setup:/.test(name) || only.test(name) ? runTest(name, fn) : console.log(`  SKIP  ${name}`));
@@ -120,6 +120,8 @@ module.exports = async ({ test: runTest, call, q, db, runNode, users, L, expectS
     assert.ok(chart.id);
     bank = await db.bankAccount.create({ accountNumber: '1105', accountName: 'Loan test bank', accountType: 'Current', currency: 'LAK', isActive: true, balance: 5000000000 });
     await db.businessDate.create({ currentDate: '2030-12-31', status: 'OPEN' });
+    // Manual POS close of business: loan EOD for a date runs only once the POS date is later (Phase 5, D7)
+    await setSpf('USE_BUSINESS_DATE', 'Y');
     await setBusinessDate('2026-11-02');
     await q("UPDATE ln_system_date SET periodLockDate = '2026-10-01'");
     product = (await call(ADMIN, 'get', `${L}/products?search=CAR-LOAN-DB`)).data.data.find(p => p.authStatus === 'AUTHORIZED' && p.status === 'ACTIVE');
@@ -155,6 +157,47 @@ module.exports = async ({ test: runTest, call, q, db, runNode, users, L, expectS
 
   // ------------------------------------------------------------------ guard rails before anything posts
   let A;
+  // ------------------------------------------------------------------ Phase 5 A5: exchange rates
+  await test('exchange rates: copy POS rate (PENDING, normalized), maker-checker, self-authorize audited when allowed; effective rate up to 3 days old with a warning, older refused; base currency is 1', async () => {
+    const cur = async code => (await q('SELECT id FROM currency WHERE code = ? LIMIT 1', [code]))[0].id;
+    const usdId = await cur('USD');
+    const thbId = await cur('THB');
+    expectStatus(await call(CASHIER, 'post', `${L}/exchange-rates/copy-pos`, { currencyId: usdId, rateDate: '2030-01-10' }), 403, 'cashier');
+    expectStatus(await call(ADMIN, 'post', `${L}/exchange-rates/copy-pos`, { currencyId: lakId, rateDate: '2030-01-10' }), 400, 'base currency');
+    const copied = await call(ADMIN, 'post', `${L}/exchange-rates/copy-pos`, { currencyId: usdId, rateDate: '2030-01-10' });
+    expectStatus(copied, 201, 'copy USD');
+    const row = (await q("SELECT id, CAST(rate AS CHAR) rate, source, authStatus FROM ln_exchange_rate WHERE currencyId = ? AND rateDate = '2030-01-10'", [usdId]))[0];
+    assert.deepStrictEqual([row.rate, row.source, row.authStatus], ['21200.00000000', 'POS_COPY', 'PENDING']);
+    const selfAllowed = (await q("SELECT value v FROM SPF WHERE code = 'LOAN_ALLOW_SELF_AUTHORIZE'"))[0];
+    await setSpf('LOAN_ALLOW_SELF_AUTHORIZE', 'false');
+    expectStatus(await call(ADMIN, 'post', `${L}/params/exchange-rate/${row.id}/authorize`), 403, 'maker self-authorize refused');
+    expectStatus(await call(CASHIER, 'get', `${L}/exchange-rates/effective?currencyId=${usdId}&date=2030-01-10`), 403, 'cashier view');
+    expectStatus(await call(ADMIN, 'get', `${L}/exchange-rates/effective?currencyId=${usdId}&date=2030-01-10`), 409, 'pending rate is not used');
+    expectStatus(await call(SUPER, 'post', `${L}/params/exchange-rate/${row.id}/authorize`), 200, 'checker authorizes');
+    const eff = async date => call(ADMIN, 'get', `${L}/exchange-rates/effective?currencyId=${usdId}&date=${date}`);
+    const same = await eff('2030-01-10');
+    expectStatus(same, 200, 'same day');
+    assert.deepStrictEqual([same.data.data.rate, same.data.data.rateDate, same.data.data.warning], ['21200.00000000', '2030-01-10', null]);
+    const old2 = await eff('2030-01-12');
+    assert.strictEqual(old2.data.data.warning, 'Rate of 2030-01-10 used for booking date 2030-01-12 (2 days old)');
+    const old4 = await eff('2030-01-14');
+    expectStatus(old4, 409, 'four days old');
+    assert.match(old4.data.message, /2030-01-10, 4 days before the booking date 2030-01-14 \(LOAN_FX_MAX_RATE_AGE_DAYS = 3\)/);
+    const lak = await call(ADMIN, 'get', `${L}/exchange-rates/effective?currencyId=${lakId}&date=2030-01-14`);
+    assert.strictEqual(lak.data.data.rate, '1.00000000');
+    // LOAN_ALLOW_SELF_AUTHORIZE applies to exchange rates: allowed and audited
+    await setSpf('LOAN_ALLOW_SELF_AUTHORIZE', 'true');
+    try {
+      expectStatus(await call(ADMIN, 'post', `${L}/exchange-rates/copy-pos`, { currencyId: thbId, rateDate: '2030-01-10' }), 201, 'copy THB');
+      const thb = (await q("SELECT id, CAST(rate AS CHAR) rate FROM ln_exchange_rate WHERE currencyId = ? AND rateDate = '2030-01-10'", [thbId]))[0];
+      assert.strictEqual(thb.rate, '670.00000000');
+      expectStatus(await call(ADMIN, 'post', `${L}/params/exchange-rate/${thb.id}/authorize`), 200, 'self-authorize allowed');
+      assert.strictEqual(await num("SELECT COUNT(*) n FROM ln_audit_log WHERE entityName = 'exchange-rate' AND actionType = 'SELF_AUTH' AND userId = ?", [ADMIN]), 1, 'self-authorization audited');
+    } finally {
+      await setSpf('LOAN_ALLOW_SELF_AUTHORIZE', selfAllowed ? selfAllowed.v : 'false');
+    }
+  });
+
   await test('guards: switch OFF, unconfirmed tax profile and a missing Idempotency-Key refuse; nothing is written', async () => {
     A = await makeLoan();
     const before = await counts(bank.id);
@@ -224,7 +267,7 @@ module.exports = async ({ test: runTest, call, q, db, runNode, users, L, expectS
     const posRow = await db.businessDate.create({ currentDate: '2001-01-01', status: 'OPEN' });
     const refused = await call(SUPER, 'post', `${L}/eod/run`);
     expectStatus(refused, 409, 'POS date behind');
-    assert.match(refused.data.message, /POS business date is 2001-01-01, which is behind the loan business date\. Run the POS close of business/);
+    assert.match(refused.data.message, /USE_BUSINESS_DATE = Y \(manual POS close of business\) and the POS business date is 2001-01-01, not later than the loan business date\. Run the POS close of business/);
     await posRow.destroy();
     const run = await call(SUPER, 'post', `${L}/eod/run`);
     expectStatus(run, 200, 'eod');
@@ -584,6 +627,274 @@ module.exports = async ({ test: runTest, call, q, db, runNode, users, L, expectS
     } finally {
       await setSpf('BS_INCLUDE_LOAN_BOOK', 'false');
     }
+  });
+
+  // ------------------------------------------------------------------ Phase 5 Part A: multi-currency posting
+  const fxState = {};
+  const fxSetup = async () => {
+    if (fxState.ready) return fxState;
+    await setSpf('LOAN_POSTING_ENABLED', 'true');
+    await q("UPDATE ln_tax_profile SET confirmationStatus = 'CONFIRMED'");
+    fxState.usdId = Number((await q("SELECT id FROM currency WHERE code = 'USD' LIMIT 1"))[0].id);
+    // Test fixtures: the product offers USD; its amount limits are single-currency (LAK), so they are lowered here
+    if (!(await num('SELECT COUNT(*) n FROM ln_product_currency WHERE productId = ? AND currencyId = ?', [product.id, fxState.usdId]))) {
+      await q("INSERT INTO ln_product_currency (productId, currencyId, isDefault, authStatus, createdAt, updatedAt) VALUES (?, ?, 0, 'AUTHORIZED', NOW(), NOW())", [product.id, fxState.usdId]);
+    }
+    fxState.minAmount = (await q('SELECT CAST(minAmount AS CHAR) m FROM ln_product WHERE id = ?', [product.id]))[0].m;
+    await q('UPDATE ln_product SET minAmount = 1000 WHERE id = ?', [product.id]);
+    const chart = await db.chartAccount.create({ accountNumber: '1106', accountName: 'Loan test bank USD', accountLLName: 'Loan test bank USD', accountType: 'Asset', isActive: true });
+    assert.ok(chart.id);
+    fxState.bank = await db.bankAccount.create({ accountNumber: '1106', accountName: 'Loan test bank USD', accountType: 'Current', currency: 'USD', isActive: true, balance: 1000000 });
+    fxState.ready = true;
+    return fxState;
+  };
+  const setRate = (currencyId, date, rate) => q("INSERT INTO ln_exchange_rate (currencyId, rateDate, rate, source, authStatus, makerId, checkerId, authorizedAt) VALUES (?, ?, ?, 'MANUAL', 'AUTHORIZED', ?, ?, NOW()) ON DUPLICATE KEY UPDATE rate = VALUES(rate), authStatus = 'AUTHORIZED'", [currencyId, date, rate, ADMIN, SUPER]);
+  let usdSeq = 0;
+  // A USD car sold at the POS: header and invoice in LAK (315,000,000), the vehicle line USD 15,000.00 at 21,000;
+  // down payment LAK 63,000,000 received; loan in USD
+  const makeUsdLoan = async (requested = '12000') => {
+    usdSeq++;
+    const d = await businessDate();
+    const client = (await q('SELECT id FROM client ORDER BY id LIMIT 1'))[0];
+    const productId = (await q('SELECT id FROM product ORDER BY id LIMIT 1'))[0].id;
+    const sale = await db.saleHeader.create({ bookingDate: d, referenceNo: `USD-SALE-${usdSeq}-${Date.now()}`, total: 315000000, exchangeRate: 1, isActive: true, clientId: client.id, currencyId: lakId, isPostedToAR: true });
+    await db.saleLine.create({ headerId: sale.id, saleHeaderId: sale.id, productId, quantity: 1, unitRate: 1, price: 15000, total: 15000, currencyId: fxState.usdId, exchangeRate: 21000, isActive: true });
+    const invoice = await db.arInvoiceHeader.create({ invoiceNumber: `INV-USD-${usdSeq}-${Date.now()}`, invoiceDate: d, totalAmount: '315000000.00', netAmount: '315000000.00', taxAmount: 0, status: 'sent', clientId: client.id, currencyId: lakId, saleHeaderId: sale.id, sourceType: 'POS_ORDER', glPostingStatus: 'posted', exchangeRate: 1 });
+    const line = await db.arInvoiceLine.create({ lineNumber: 1, description: 'Vehicle (USD line)', quantity: 1, unitPrice: '15000.00', lineTotal: '15000.00', invoiceHeaderId: invoice.id });
+    await sale.update({ arInvoiceId: invoice.id });
+    const dp = await db.arReceiveHeaderV2.create({ receiptNumber: `DP-USD-${usdSeq}-${Date.now()}`, bookingDate: d, receivedDate: d, invoiceHeaderId: invoice.id, totalReceivedAmount: '63000000.00', paymentMethod: 'cash', status: 'active', currencyId: lakId, glPostingStatus: 'unposted', exchangeRate: 1 });
+    await db.arReceiveLine.create({ receiveHeaderId: dp.id, lineNumber: 1, invoiceLineId: line.id, allocatedAmount: '63000000.00', allocationDate: d });
+    const app = await call(ADMIN, 'post', `${L}/applications`, { customerId: client.id, productId: product.id, currencyId: fxState.usdId, vehicleSaleHeaderId: sale.id, vehiclePrice: '15000', downPaymentAmount: '3000', requestedAmount: requested, tenorMonths: 12, interestRate: '0.18', valueDate: d });
+    expectStatus(app, 201, 'USD application');
+    expectStatus(await call(ADMIN, 'post', `${L}/applications/${app.data.data.id}/submit`), 200, 'submit');
+    expectStatus(await call(SUPER, 'post', `${L}/applications/${app.data.data.id}/approve`), 200, 'approve');
+    const booked = await call(SUPER, 'post', `${L}/applications/${app.data.data.id}/book`);
+    expectStatus(booked, 201, 'book');
+    return { account: booked.data.data.account, sale, invoice };
+  };
+  const glBase = async accountNumber => num("SELECT (SELECT COALESCE(SUM(localDebit),0) FROM general_ledger WHERE drAccountId = a.id AND status = 'POSTED') - (SELECT COALESCE(SUM(localCredit),0) FROM general_ledger WHERE crAccountId = a.id AND status = 'POSTED') n FROM chart_of_account a WHERE accountNumber = ?", [accountNumber]);
+  const legBase = async (accountId, role) => num("SELECT COALESCE(SUM(CASE WHEN drCr = 'DR' THEN baseAmount ELSE -baseAmount END),0) n FROM ln_journal_posting WHERE loanAccountId = ? AND roleCode = ?", [accountId, role]);
+  const tbBalanced = async () => {
+    const tb = await call(SUPER, 'get', '/api/gl/reports/trial-balance?asOfDate=2100-12-31');
+    expectStatus(tb, 200, 'trial balance');
+    assert.strictEqual(tb.data.totalDebits, tb.data.totalCredits, 'trial balance balanced');
+  };
+
+  await test('FX X2: a USD 12,000 loan settles the LAK invoice of a POS sale (USD line 15,000 at 21,000) through CCY_POSITION; table rate 21,150 within tolerance posts with a warning; no FX at DISB; CCY_POSITION nets to zero in the GL; trial balance balanced', async () => {
+    await fxSetup();
+    const start = '2027-03-01';
+    await setBusinessDate(start);
+    await setRate(fxState.usdId, start, '21150');
+    const U = await makeUsdLoan();
+    fxState.U = U;
+    const prop = await call(ADMIN, 'get', `${L}/sales/${U.sale.id}/financing-proposal?currencyId=${fxState.usdId}&date=${start}`);
+    expectStatus(prop, 200, 'financing proposal');
+    assert.deepStrictEqual([prop.data.data.openBalance, prop.data.data.lineRate, prop.data.data.proposedPrincipal, prop.data.data.tableRate, prop.data.data.deviationTablePct, prop.data.data.withinTolerance],
+      ['252000000.0000', '21000.00000000', '12000.0000', '21150.00000000', '0.7092', true], 'principal proposed from the USD sale line');
+    const fee = await post(ADMIN, U.account.id, { kind: 'FEE_COLLECT', bankAccountId: fxState.bank.id, insurancePremium: '0' });
+    expectStatus(fee, 201, 'USD fee collect');
+    assert.strictEqual(fee.data.data.fx.rate, '21150.00000000');
+    assert.strictEqual(fee.data.data.fx.warning, null);
+    const feeLines = fee.data.data.journal;
+    assert.ok(feeLines.every(l => l.baseAmount !== undefined), 'base amounts on every line');
+    const cash = feeLines.find(l => l.role === 'CASH_BANK');
+    assert.strictEqual(cash.baseAmount, `${Math.round(Number(cash.amount) * 21150)}.0000`, 'cash at the table rate');
+    fxState.feeTotal = fee.data.data.amount;
+    const created = await post(ADMIN, U.account.id, { kind: 'DISB' });
+    expectStatus(created, 202, 'DISB pending');
+    const preview = created.data.data.preview;
+    console.log(`        DISB warning: ${preview.fx.warning}`);
+    assert.match(preview.fx.warning, /Implied rate 21,000\.00 differs from the table rate 21,150\.00 for 2027-03-01 by 0\.71% \(tolerance 1\.00%\)/);
+    assert.strictEqual(preview.implied.rate, '21000.00000000');
+    const done = await authorize(SUPER, created.data.data.transactionId);
+    expectStatus(done, 200, 'DISB authorize');
+    const lines = done.data.data.journal.map(l => `${l.drCr} ${l.role} ${l.currencyId === lakId ? 'LAK' : 'USD'} ${l.amount} ${l.baseAmount}`).sort();
+    assert.deepStrictEqual(lines, [
+      `CR CCY_POSITION USD 12000.0000 252000000.0000`, `CR SALE_RECEIVABLE LAK 252000000.0000 252000000.0000`,
+      `DR CCY_POSITION LAK 252000000.0000 252000000.0000`, `DR LOAN_PORTFOLIO USD 12000.0000 252000000.0000`
+    ].sort());
+    assert.ok(!done.data.data.journal.some(l => l.tag === 'FX_DIFF'), 'no FX at DISB');
+    const gl = await q("SELECT a.accountNumber dr, b.accountNumber cr, CAST(g.debit AS CHAR) amt, CAST(g.localDebit AS CHAR) loc, CAST(g.rate AS CHAR) r, c.code ccy FROM general_ledger g JOIN chart_of_account a ON a.id = g.drAccountId JOIN chart_of_account b ON b.id = g.crAccountId LEFT JOIN currency c ON c.id = g.currencyId WHERE g.postingReference = ? ORDER BY g.id", [done.data.data.txNo]);
+    console.log(`        DISB GL rows: ${gl.map(x => `${x.dr}>${x.cr} ${x.ccy} ${x.amt} / LAK ${x.loc} @${x.r}`).join('; ')}`);
+    assert.deepStrictEqual(gl.map(x => `${x.dr}>${x.cr} ${x.ccy} ${x.amt} ${x.loc} ${x.r}`), ['1211>1990 USD 12000.00 252000000.00 21000.000000', `1990>${gl[1].cr} LAK 252000000.00 252000000.00 1.000000`]);
+    assert.strictEqual(await glBase('1990'), 0, 'CCY_POSITION nets to zero in base');
+    assert.strictEqual(await legBase(U.account.id, 'LOAN_PORTFOLIO'), 252000000, 'portfolio carries the invoice base');
+    const inv = (await q('SELECT status FROM ARInvoiceHeader WHERE id = ?', [U.invoice.id]))[0].status;
+    const rec = (await q('SELECT CAST(totalReceivedAmount AS CHAR) amt, currencyId c, CAST(exchangeRate AS CHAR) r FROM ARReceiveHeader WHERE referenceNumber = ?', [done.data.data.txNo]))[0];
+    assert.deepStrictEqual([inv, rec.amt, Number(rec.c)], ['paid', '252000000.00', Number(lakId)]);
+    const txn = (await q('SELECT CAST(exchangeRate AS CHAR) r, DATE_FORMAT(exchangeRateDate, "%Y-%m-%d") d, fxWarning w FROM ln_transaction WHERE id = ?', [done.data.data.transactionId]))[0];
+    assert.deepStrictEqual([txn.r, txn.d], ['21150.00000000', start]);
+    assert.match(txn.w, /Implied rate 21,000\.00/);
+    await tbBalanced();
+  });
+
+  await test('FX U2: installment 1 (1,100.16 = 920.16 + 180.00) paid at 21,500 -> interest recognized at 21,500 (no FX), principal relieved at the carrying 21,000 -> realized gain 460,080; GL base row; REVERSAL restores the carrying base exactly', async () => {
+    await fxSetup();
+    const U = fxState.U;
+    const due1 = (await q("SELECT DATE_FORMAT(dueDate, '%Y-%m-%d') d FROM ln_schedule WHERE loanAccountId = ? AND installmentNo = 1", [U.account.id]))[0].d;
+    await setBusinessDate(due1);
+    await setRate(fxState.usdId, due1, '21500');
+    const pay = await post(ADMIN, U.account.id, { kind: 'REPAYMENT', amount: '1100.16', bankAccountId: fxState.bank.id });
+    expectStatus(pay, 201, 'USD repayment');
+    const show = pay.data.data.journal.map(l => `${l.drCr} ${l.role} ${l.tag} ${l.isBaseOnly ? '-' : l.amount} ${l.baseAmount}`).sort();
+    console.log(`        repayment journal: ${show.join('; ')}`);
+    assert.deepStrictEqual(show, [
+      'CR FX_GAIN_REALIZED FX_DIFF - 460080.0000', 'CR INTEREST_INCOME INT_ACCR 180.0000 3870000.0000', 'CR INTEREST_RECEIVABLE INT_PAID 180.0000 3870000.0000',
+      'CR LOAN_PORTFOLIO PRIN_PAID 920.1600 19323360.0000', 'DR CASH_BANK TOTAL_PAID 1100.1600 23653440.0000', 'DR INTEREST_RECEIVABLE INT_ACCR 180.0000 3870000.0000'
+    ].sort());
+    assert.strictEqual(await legBase(U.account.id, 'LOAN_PORTFOLIO'), 232676640, 'carrying base 11,079.84 x 21,000');
+    const gl = await q("SELECT a.accountNumber dr, b.accountNumber cr, CAST(g.debit AS CHAR) amt, CAST(g.localDebit AS CHAR) loc FROM general_ledger g JOIN chart_of_account a ON a.id = g.drAccountId JOIN chart_of_account b ON b.id = g.crAccountId WHERE g.postingReference = ? ORDER BY g.id", [pay.data.data.txNo]);
+    console.log(`        repayment GL rows: ${gl.map(x => `${x.dr}>${x.cr} ${x.amt} / ${x.loc}`).join('; ')}`);
+    assert.ok(gl.some(x => String(x.dr) === '1211' && String(x.cr) === '4901' && x.amt === '0.00' && x.loc === '460080.00'), 'base-only FX row Dr portfolio / Cr realized gain');
+    const expectedBank = (1000000 + Number(fxState.feeTotal) + 1100.16).toFixed(2);
+    assert.strictEqual(Number((await q('SELECT balance b FROM bankAccount WHERE id = ?', [fxState.bank.id]))[0].b).toFixed(2), expectedBank, 'USD bank moved by the fee and the payment, in USD');
+    await tbBalanced();
+    const rev = await makerChecker(U.account.id, { kind: 'REVERSAL', targetTransactionId: pay.data.data.transactionId }, 'REVERSAL of USD repayment');
+    assert.strictEqual(rev.reverses, pay.data.data.txNo);
+    assert.strictEqual(await legBase(U.account.id, 'LOAN_PORTFOLIO'), 252000000, 'carrying base restored');
+    assert.strictEqual(await legBase(U.account.id, 'INTEREST_RECEIVABLE'), 0);
+    assert.strictEqual(await num("SELECT COALESCE(SUM(CASE WHEN drCr = 'DR' THEN baseAmount ELSE -baseAmount END),0) n FROM ln_journal_posting WHERE transactionId IN (?, ?) AND roleCode = 'FX_GAIN_REALIZED'", [pay.data.data.transactionId, rev.transactionId]), 0, 'gain reversed');
+    await tbBalanced();
+  });
+
+  await test('FX refusals and warnings: wrong principal (implied 21,913.04, 4.35%) refused, or accepted only by the checker under CHECKER_OVERRIDE; rate older than 3 days refused; 2-day-old rate posts with a warning; LAK bank for a USD loan refused; manual rate off, out of tolerance refused, within tolerance needs a checker', async () => {
+    await fxSetup();
+    const U = fxState.U;
+    const d = await businessDate();
+    // Wrong principal: USD 11,500 against the LAK 252,000,000 balance
+    const W = await makeUsdLoan('11500');
+    await setRate(fxState.usdId, d, '21000');
+    expectStatus(await post(ADMIN, W.account.id, { kind: 'FEE_COLLECT', bankAccountId: fxState.bank.id, insurancePremium: '0' }), 201, 'fee W');
+    const refused = await post(ADMIN, W.account.id, { kind: 'DISB' });
+    expectStatus(refused, 409, 'wrong principal');
+    console.log(`        refusal: ${refused.data.message}`);
+    assert.strictEqual(refused.data.message, 'Implied rate 21,913.04 (LAK 252,000,000 / USD 11,500.00) differs from the sale line rate 21,000.00 by 4.35% and from the table rate 21,000.00 by 4.35% (tolerance 1.00%). Check the principal: proposed USD 12,000.00.');
+    await setSpf('LOAN_FX_IMPLIED_RATE_BREACH', 'CHECKER_OVERRIDE');
+    try {
+      expectStatus(await post(ADMIN, W.account.id, { kind: 'DISB' }), 409, 'reason required');
+      const pend = await post(ADMIN, W.account.id, { kind: 'DISB', rateDeviationReason: 'Customer agreed USD 11,500; dealer absorbs the difference' });
+      expectStatus(pend, 202, 'pending with reason');
+      const noAccept = await authorize(SUPER, pend.data.data.transactionId);
+      expectStatus(noAccept, 409, 'checker did not accept');
+      assert.match(noAccept.data.message, /The checker must accept the deviation/);
+      const ok = await call(SUPER, 'post', `${L}/transactions/${pend.data.data.transactionId}/authorize`, { acceptRateDeviation: true });
+      expectStatus(ok, 200, 'checker accepts');
+      assert.match(ok.data.data.fx.warning, /Accepted rate deviation/);
+      assert.strictEqual(await legBase(W.account.id, 'LOAN_PORTFOLIO'), 252000000, 'the invoice base is carried over');
+      assert.strictEqual(await num("SELECT COUNT(*) n FROM ln_audit_log WHERE entityName = 'loan-transaction' AND entityId = ? AND actionType = 'AUTH' AND newValuesJson LIKE '%acceptedRateDeviation%'", [pend.data.data.transactionId]), 1, 'acceptance audited');
+    } finally {
+      await setSpf('LOAN_FX_IMPLIED_RATE_BREACH', 'REFUSE');
+    }
+    // Rate age: 4 days old refused; 2 days old posts with the warning
+    const later4 = D.addDays(d, 4);
+    await setBusinessDate(later4);
+    const stale = await post(ADMIN, U.account.id, { kind: 'REPAYMENT', amount: '10', bankAccountId: fxState.bank.id });
+    expectStatus(stale, 409, 'stale rate');
+    assert.match(stale.data.message, /4 days before the booking date .* \(LOAN_FX_MAX_RATE_AGE_DAYS = 3\)/);
+    const later2 = D.addDays(d, 2);
+    await setBusinessDate(later2);
+    const warned = await post(ADMIN, U.account.id, { kind: 'REPAYMENT', amount: '10', bankAccountId: fxState.bank.id });
+    expectStatus(warned, 201, 'two-day-old rate');
+    assert.strictEqual(warned.data.data.fx.warning, `Rate of ${d} used for booking date ${later2} (2 days old)`);
+    assert.strictEqual((await q('SELECT fxWarning w FROM ln_transaction WHERE id = ?', [warned.data.data.transactionId]))[0].w, warned.data.data.fx.warning);
+    // Wrong bank currency
+    const lakBank = await post(ADMIN, U.account.id, { kind: 'REPAYMENT', amount: '10', bankAccountId: bank.id });
+    expectStatus(lakBank, 400, 'LAK bank');
+    assert.match(lakBank.data.message, /is LAK; the loan is USD/);
+    // Manual rate: off by default; out of tolerance refused; within tolerance -> checker
+    await setRate(fxState.usdId, later2, '21000');
+    expectStatus(await post(ADMIN, U.account.id, { kind: 'REPAYMENT', amount: '10', bankAccountId: fxState.bank.id, exchangeRate: '21100' }), 409, 'manual rates off');
+    await setSpf('LOAN_FX_OVERRIDE_TOLERANCE_PCT', '1.00');
+    try {
+      expectStatus(await post(ADMIN, U.account.id, { kind: 'REPAYMENT', amount: '10', bankAccountId: fxState.bank.id, exchangeRate: '21300' }), 409, 'outside tolerance');
+      const manual = await post(ADMIN, U.account.id, { kind: 'REPAYMENT', amount: '10', bankAccountId: fxState.bank.id, exchangeRate: '21100' });
+      expectStatus(manual, 202, 'manual rate needs a checker');
+      expectStatus(await authorize(ADMIN, manual.data.data.transactionId), 403, 'maker cannot authorize');
+      const done = await authorize(SUPER, manual.data.data.transactionId);
+      expectStatus(done, 200, 'checker authorizes manual rate');
+      assert.strictEqual(done.data.data.fx.rate, '21100.00000000');
+      assert.match(done.data.data.fx.warning, /Manual rate 21100\.00000000 instead of the table rate 21000\.00000000/);
+    } finally {
+      await setSpf('LOAN_FX_OVERRIDE_TOLERANCE_PCT', '0');
+    }
+    await tbBalanced();
+  });
+
+  await test('FX month-end revaluation (switch on, carry forward) posts FX_REVAL legs and a summarized base-only GL row; off by default; COB rules: USE_BUSINESS_DATE Y needs a POS date strictly later, N follows the Vientiane calendar; loan EOD never moves the POS date', async () => {
+    await fxSetup();
+    const U = fxState.U;
+    assert.strictEqual(await num("SELECT COUNT(*) n FROM ln_journal_posting WHERE amountTag = 'FX_REVAL'"), 0, 'no revaluation while the job is disabled and the switch off');
+    // A month-end no earlier test has run EOD for (EOD batches are unique per date, job, branch and currency)
+    const monthEnd = '2028-01-31';
+    await setBusinessDate(monthEnd);
+    await setRate(fxState.usdId, monthEnd, '20800');
+    // COB rules through the status endpoint (X-Loan-Test-Today sets the calendar date the rule sees)
+    const status = async (today) => (await call(SUPER, 'get', `${L}/eod/status`, undefined, today ? { 'X-Loan-Test-Today': today } : {})).data.data;
+    const y = await status();
+    assert.deepStrictEqual([y.cob.mode, y.cob.canRun], ['MANUAL_COB', true], 'POS date 2030-12-31 is later');
+    assert.match(y.cob.warning, /microfinance module EOD also moves the POS business date/);
+    const posRow = await db.businessDate.create({ currentDate: monthEnd, status: 'OPEN' });
+    const equal = await status();
+    assert.strictEqual(equal.cob.canRun, false, 'POS date equal to the loan date: day not closed');
+    assert.match(equal.cob.reason, /not later than the loan business date/);
+    await posRow.destroy();
+    await setSpf('USE_BUSINESS_DATE', 'N');
+    try {
+      const n1 = await status(monthEnd);
+      assert.deepStrictEqual([n1.cob.mode, n1.cob.canRun], ['CALENDAR', false]);
+      const refusedN = await call(SUPER, 'post', `${L}/eod/run`, undefined, { 'X-Loan-Test-Today': monthEnd });
+      expectStatus(refusedN, 409, 'calendar day not over');
+      assert.strictEqual(refusedN.data.message, `Loan EOD for ${monthEnd} cannot run: USE_BUSINESS_DATE = N (no manual POS close of business), so the loan follows the calendar in Asia/Vientiane and ${monthEnd} is not over yet (today is ${monthEnd}). Run it after the day has ended. Loan EOD never moves the POS business date.`);
+      assert.strictEqual((await status(D.addDays(monthEnd, 1))).cob.canRun, true);
+    } finally {
+      await setSpf('USE_BUSINESS_DATE', 'Y');
+    }
+    // Revaluation: switch on and job enabled + authorized
+    await setSpf('LOAN_FX_REVAL_ENABLED', 'true');
+    await q("UPDATE ln_batch_job SET isEnabled = 1, authStatus = 'AUTHORIZED' WHERE jobCode = 'EOD_FX_REVAL'");
+    const posBefore = (await q("SELECT COUNT(*) n, MAX(id) m FROM businessDate"))[0];
+    try {
+      const carryBefore = await legBase(U.account.id, 'LOAN_PORTFOLIO');
+      const prinBefore = await num("SELECT COALESCE(SUM(CASE WHEN drCr = 'DR' THEN amount ELSE -amount END),0) n FROM ln_journal_posting WHERE loanAccountId = ? AND roleCode = 'LOAN_PORTFOLIO'", [U.account.id]);
+      const run = await call(SUPER, 'post', `${L}/eod/run`);
+      expectStatus(run, 200, 'month-end EOD');
+      const reval = await q("SELECT drCr, roleCode r, CAST(baseAmount AS CHAR) b FROM ln_journal_posting WHERE loanAccountId = ? AND amountTag = 'FX_REVAL' ORDER BY id", [U.account.id]);
+      console.log(`        revaluation legs (USD loan): ${reval.map(x => `${x.drCr} ${x.r} ${x.b}`).join('; ')}`);
+      const expected = Math.round(prinBefore * 20800) - carryBefore;
+      const portfolioLeg = reval.find(x => x.r === 'LOAN_PORTFOLIO');
+      assert.ok(portfolioLeg, 'portfolio revalued');
+      assert.strictEqual((portfolioLeg.drCr === 'DR' ? 1 : -1) * Number(portfolioLeg.b), expected, 'carrying base moved to balance x 20,800');
+      assert.strictEqual(await legBase(U.account.id, 'LOAN_PORTFOLIO'), Math.round(prinBefore * 20800), 'carry forward');
+      const batch = run.data.data.batches.find(b => /EOD_FX_REVAL/.test(b.batchNumber));
+      assert.ok(batch, 'revaluation batch summarized');
+      const gl = await q("SELECT CAST(debit AS CHAR) d, CAST(localDebit AS CHAR) l FROM general_ledger WHERE postingReference = ?", [batch.batchNumber]);
+      assert.ok(gl.length && gl.every(r => r.d === '0.00'), 'base-only GL rows');
+      const after = (await q("SELECT COUNT(*) n, MAX(id) m FROM businessDate"))[0];
+      assert.deepStrictEqual([after.n, after.m], [posBefore.n, posBefore.m], 'loan EOD did not move the POS business date');
+    } finally {
+      await setSpf('LOAN_FX_REVAL_ENABLED', 'false');
+      await q("UPDATE ln_batch_job SET isEnabled = 0 WHERE jobCode = 'EOD_FX_REVAL'");
+    }
+    await tbBalanced();
+    assert.strictEqual(await glBase('1990'), 0, 'CCY_POSITION still nets to zero');
+  });
+
+  await test('FX books: balance sheet with the loan section shows the currency position check at zero and the portfolio at its carrying base; trial balance balanced; LAK journals have no base-only legs and rate 1', async () => {
+    await fxSetup();
+    const Current = require('../../src/GL/adbReportController');
+    await setSpf('BS_INCLUDE_LOAN_BOOK', 'true');
+    try {
+      const bs = await callBs(Current);
+      assert.ok(bs.loanReconciliation.currencyPosition, 'currency position check present');
+      assert.strictEqual(bs.loanReconciliation.currencyPosition.gl, 0, 'currency position nets to zero');
+      const portfolio = bs.assets.items.filter(i => /\(loan\)/.test(i.accountName) && String(i.accountNumber) === '1211').reduce((s, i) => s + i.balance, 0);
+      assert.strictEqual(portfolio, await glBase('1211'), 'portfolio line equals the GL base balance');
+    } finally {
+      await setSpf('BS_INCLUDE_LOAN_BOOK', 'false');
+    }
+    await tbBalanced();
+    assert.strictEqual(await num("SELECT COUNT(*) n FROM ln_journal_posting j JOIN ln_account a ON a.id = j.loanAccountId JOIN currency c ON c.id = a.currencyId WHERE c.isLocalCCY = 1 AND (j.isBaseOnly = 1 OR j.baseAmount <> j.amount OR j.exchangeRate <> 1)"), 0, 'LAK journals unchanged by Phase 5');
+    await q('UPDATE ln_product SET minAmount = ? WHERE id = ?', [fxState.minAmount, product.id]);
   });
 
   await test('POS defect 9 (evidence only, POS code unchanged): a credit sale with a USD line, invoiced from the order and posted by the AR batch', async () => {

@@ -7,8 +7,10 @@ const db = require('../../models');
 const AccountingPostingService = require('../../GL/accountingPostingService');
 const { LoanError } = require('../errors');
 const { resolveRuleSet, buildJournal, toUnits } = require('../accounting/journal');
-const { validateJournal, validateTagAmounts } = require('../accounting/validators');
-const { pairLegs } = require('./pairing');
+const { validateJournal, validateBase, validateTagAmounts } = require('../accounting/validators');
+const FX = require('../accounting/fx');
+const { findAllExact } = require('../db/exact');
+const { pairLegs, glRows } = require('./pairing');
 
 const ruleSetFor = async (product, date, transaction) => {
   const rules = (await db.lnAccountingEntryRule.findAll({ transaction })).map(r => r.get({ plain: true }));
@@ -17,7 +19,12 @@ const ruleSetFor = async (product, date, transaction) => {
 
 /**
  * events: [{ event, tags, qualifiers }]; ctx: { product, account, bankAccountId, currencyId, valueDate,
- * bookingDate, transactionId, glBatchId, postingReference, description, deferGl, resolver, hook, tamper }
+ * bookingDate, transactionId, glBatchId, postingReference, description, deferGl, resolver, hook, tamper,
+ * fx?, extraLines? }
+ * ctx.fx (foreign-currency loans only, Phase 5): { rate, baseCurrencyId, baseDecimals, maxRoundDiff,
+ *   settlement?: { invoiceCurrencyId, carryBaseUnits } }. Without it (base-currency loans) every line has
+ *   base = amount and rate 1, exactly as in Phase 4.
+ * ctx.extraLines: prebuilt base-only lines (month-end revaluation).
  */
 const postJournal = async (events, ctx, transaction) => {
   const rules = ctx.rules || await ruleSetFor(ctx.product, ctx.valueDate, transaction);
@@ -30,31 +37,48 @@ const postJournal = async (events, ctx, transaction) => {
   if (ctx.tamper && lines.length) lines[0] = { ...lines[0], amount: String(toUnits(lines[0].amount) / 10000n + 1n) }; // test hook only
   const resolverCtx = { productId: ctx.product.id, categoryId: ctx.product.categoryId, branchId: ctx.account.branchId, currencyId: ctx.currencyId, bankAccountId: ctx.bankAccountId };
   const roleTypes = {};
-  for (const line of lines) {
-    const resolved = await ctx.resolver(line, resolverCtx);
+  const resolve = async (line) => {
+    const resolved = await ctx.resolver(line, { ...resolverCtx, currencyId: line.currency || ctx.currencyId });
     line.chartAccountId = resolved.chartAccountId;
+    line.offBalance = resolved.roleType === 'Off-Balance';
     roleTypes[line.roleCode] = resolved.roleType;
+  };
+  let journalLines = lines;
+  if (ctx.fx) {
+    // Phase 5: carry-over settlement, then base amounts, realized FX and rounding (addendum §8)
+    if (ctx.fx.settlement) journalLines = FX.carryOverSettlement(journalLines, { loanCurrencyId: ctx.currencyId, baseCurrencyId: ctx.fx.baseCurrencyId, ...ctx.fx.settlement });
+    journalLines = [...journalLines, ...(ctx.extraLines || [])];
+    for (const line of journalLines) await resolve(line);
+    const history = await findAllExact(db.lnJournalPosting, { where: { loanAccountId: ctx.account.id, roleCode: Object.keys(FX.BUCKETS) }, transaction });
+    const converted = FX.applyBase(journalLines, { rate: ctx.fx.rate, loanCurrencyId: ctx.currencyId, baseCurrencyId: ctx.fx.baseCurrencyId, baseDecimals: ctx.fx.baseDecimals, buckets: FX.bucketsFromLegs(history), maxRoundDiff: ctx.fx.maxRoundDiff });
+    for (const line of converted.lines.slice(journalLines.length)) await resolve(line);
+    journalLines = converted.lines;
+    errors.push(...validateJournal(journalLines, roleTypes));
+    errors.push(...validateBase(journalLines, roleTypes, { loanCurrencyId: ctx.currencyId, baseCurrencyId: ctx.fx.baseCurrencyId, baseDecimals: ctx.fx.baseDecimals, maxRoundDiff: ctx.fx.maxRoundDiff }));
+  } else {
+    for (const line of lines) await resolve(line);
+    errors.push(...validateJournal(lines, roleTypes));
   }
-  errors.push(...validateJournal(lines, roleTypes));
   if (errors.length) throw new LoanError(409, `Journal failed validation; nothing was posted: ${errors.join('; ')}`, errors);
 
   const postings = [];
-  for (const l of lines) {
+  for (const l of journalLines) {
     postings.push(await db.lnJournalPosting.create({
       transactionId: ctx.transactionId || null, glBatchId: ctx.glBatchId || null, loanAccountId: ctx.account.id,
       eventCode: l.eventCode, amountTag: l.amountTag, roleCode: l.roleCode, statusQualifier: l.qualifier || null,
-      chartAccountId: l.chartAccountId, drCr: l.drCr, currencyId: ctx.currencyId, amount: l.amount, baseAmount: l.amount, exchangeRate: '1'
+      chartAccountId: l.chartAccountId, drCr: l.drCr, currencyId: ctx.fx ? (l.currency || ctx.currencyId) : ctx.currencyId, amount: l.amount,
+      baseAmount: ctx.fx ? l.baseAmount : l.amount, exchangeRate: ctx.fx ? l.exchangeRate : '1', isBaseOnly: Boolean(l.isBaseOnly)
     }, { transaction }));
   }
   if (ctx.hook) ctx.hook('AFTER_JOURNAL');
 
-  let glRows = [];
-  if (!ctx.deferGl && lines.length) glRows = await writeGlPairs(lines, postings, ctx, transaction);
-  const sumRole = (role, side) => lines.filter(l => l.roleCode === role && l.drCr === side).reduce((s, l) => s + toUnits(l.amount), 0n);
+  let writtenGl = [];
+  if (!ctx.deferGl && journalLines.length) writtenGl = ctx.fx ? await writeGlRowsFx(journalLines, postings, ctx, transaction) : await writeGlPairs(journalLines, postings, ctx, transaction);
+  const sumRole = (role, side) => journalLines.filter(l => l.roleCode === role && l.drCr === side && !l.isBaseOnly).reduce((s, l) => s + toUnits(l.amount), 0n);
   return {
-    lines,
+    lines: journalLines,
     postings,
-    glRows,
+    glRows: writtenGl,
     cashNetUnits: sumRole('CASH_BANK', 'DR') - sumRole('CASH_BANK', 'CR'),
     saleReceivableCreditUnits: sumRole('SALE_RECEIVABLE', 'CR') - sumRole('SALE_RECEIVABLE', 'DR')
   };
@@ -84,4 +108,26 @@ const writeGlPairs = async (lines, postings, ctx, transaction) => {
   return rows;
 };
 
-module.exports = { postJournal, writeGlPairs, ruleSetFor };
+// Phase 5 (foreign-currency loans): rows carry the contract amount, the base amount and the rate; FX and
+// base corrections are base-only rows (debit = credit = 0)
+const writeGlRowsFx = async (lines, postings, ctx, transaction) => {
+  const step = 10n ** BigInt(4 - ctx.fx.baseDecimals);
+  const { rows, legRow } = glRows(lines.map(l => ({ ...l, currencyId: l.currency || ctx.currencyId })), { baseStep: step < 100n ? 100n : step, rowCurrencyId: ctx.currencyId });
+  const toWrite = rows.filter(r => !r.sameAccount);
+  const written = await AccountingPostingService.postJournalPairs(toWrite.map(r => ({
+    drAccountId: r.drAccountId, crAccountId: r.crAccountId, amount: r.amount, localAmount: r.localAmount, currencyId: r.currencyId, rate: r.rate,
+    description: `${ctx.description || 'Loan'} ${lines[r.drIndex].eventCode} ${r.baseOnly ? 'base' : `${lines[r.drIndex].amountTag}/${lines[r.crIndex].amountTag}`}`
+  })), { bookingDate: ctx.bookingDate, postingReference: ctx.postingReference, description: ctx.description }, transaction);
+  const rowOf = new Map(toWrite.map((r, i) => [r, written[i]]));
+  for (let i = 0; i < postings.length; i++) {
+    const row = legRow[i] === null ? null : rowOf.get(rows[legRow[i]]);
+    if (row) await postings[i].update({ glRecordId: row.id }, { transaction });
+  }
+  if (ctx.transactionId) {
+    for (const row of written) await db.lnPosLink.create({ transactionId: ctx.transactionId, posTable: 'general_ledger', posId: row.id, role: 'GL' }, { transaction });
+  }
+  if (ctx.hook) ctx.hook('AFTER_GL');
+  return written;
+};
+
+module.exports = { postJournal, writeGlPairs, writeGlRowsFx, ruleSetFor };

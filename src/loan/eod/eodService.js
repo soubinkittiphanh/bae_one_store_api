@@ -25,6 +25,9 @@ const { postJournal } = require('../posting/journalWriter');
 const { pairLegs } = require('../posting/pairing');
 const { recognizeDue, updatePenalties, applyAllocations, setStatus, latestReserve } = require('../posting/handlers');
 const { nextNumber } = require('../services/numberingService');
+const FX = require('../accounting/fx');
+const { fxFor } = require('../posting/fxContext');
+const fxRates = require('../services/fxRateService');
 
 const LOCK_NAME = 'LOAN_EOD';
 const LOCK_HOURS = 2;
@@ -53,13 +56,17 @@ const runAccountJob = async ({ job, accountId, date, ctxUser, hook }) => db.sequ
   hook(`EOD_ACCOUNT_${accountId}`);
   const ctx = await S.loadAccount(accountId, transaction);
   ctx.live = await loanCtx.classification(date);
+  // Phase 5: foreign-currency accounts post at the EOD date's rate (fx = null for base-currency accounts)
+  const { fx } = await fxFor({ account: ctx.account, bookingDate: date, transaction });
+  let extraLines = [];
   const effects = new S.Effects(transaction);
   const qualifier = (ctx.live.statusMaster[ctx.account.status] || {}).glQualifier;
   let events = [];
   let sched = await S.loadSchedule(ctx, transaction);
   const txn = await db.lnTransaction.create({
     txNo: await nextNumber('LOAN_TRANSACTION', date, transaction), branchId: ctx.account.branchId, loanAccountId: ctx.account.id, eventCode: job,
-    valueDate: date, postingDate: date, bookingDate: date, amount: 0, baseAmount: 0, currencyId: ctx.account.currencyId, exchangeRate: '1',
+    valueDate: date, postingDate: date, bookingDate: date, amount: 0, baseAmount: 0, currencyId: ctx.account.currencyId, exchangeRate: fx ? fx.rate : '1',
+    ...(fx ? { exchangeRateDate: fx.rateDate, fxWarning: fx.warnings.join(' | ').slice(0, 255) || null } : {}),
     paymentMethod: 'NONE', postingStatus: 'POSTED', authStatus: 'AUTHORIZED', makerId: ctxUser.userId, source: 'EOD'
   }, { transaction });
 
@@ -122,27 +129,68 @@ const runAccountJob = async ({ job, accountId, date, ctxUser, hook }) => db.sequ
       await effects.create('lnProvisionLedger', { loanAccountId: ctx.account.id, evaluationDate: date, outstandingPrincipal: principal, eligibleCollateralValue: N.toDecimal(N.sum(collateral.map(c => c.allocatedValue)), 4), netExposure: prov.netExposure, provisionRate: prov.provisionRate, requiredProvision: prov.required, bookedProvision: prov.required, deltaProvision: prov.delta, glBatchId: batchNumber(date, job, ctx.account.branchId, ctx.account.currencyId), status: 'POSTED' });
       events = prov.events;
     }
+  } else if (job === 'EOD_FX_REVAL' && fx && isMonthEnd(date) && (await fxRates.spfValue('LOAN_FX_REVAL_ENABLED', 'false', transaction)) === 'true') {
+    // Month-end revaluation, carry forward (addendum §8.7): base-only legs move each bucket to balance x rate
+    const history = await findAllExact(db.lnJournalPosting, { where: { loanAccountId: ctx.account.id, roleCode: Object.keys(FX.BUCKETS) }, transaction });
+    extraLines = FX.revaluationLines({ buckets: FX.bucketsFromLegs(history), rate: fx.rate, baseDecimals: fx.baseDecimals, loanCurrencyId: ctx.account.currencyId });
   }
 
   let journal = null;
-  if (events.length) {
+  if (events.length || extraLines.length) {
     const glBatchId = batchNumber(date, job, ctx.account.branchId, ctx.account.currencyId);
     const [batch] = await db.lnGlBatch.findOrCreate({ where: { batchNumber: glBatchId }, defaults: { batchNumber: glBatchId, businessDate: date, batchType: 'EOD', jobCode: job, totalDebit: 0, totalCredit: 0, currencyId: ctx.account.currencyId, branchId: ctx.account.branchId, status: 'OPEN' }, transaction });
     if (batch.status !== 'OPEN') throw new LoanError(409, `GL batch ${glBatchId} is already ${batch.status}`);
     const resolver = await makeResolver({ date, transaction });
     journal = await postJournal(events.map(e => ({ ...e, qualifiers: e.qualifiers || { CURRENT: qualifier } })), {
       product: ctx.product, account: ctx.account, currencyId: ctx.account.currencyId, valueDate: date, bookingDate: date,
-      transactionId: txn.id, glBatchId, postingReference: txn.txNo, description: `Loan EOD ${job} ${ctx.account.accountNo}`, deferGl: true, resolver, hook: () => {}
+      transactionId: txn.id, glBatchId, postingReference: txn.txNo, description: `Loan EOD ${job} ${ctx.account.accountNo}`, deferGl: true, resolver, hook: () => {},
+      fx: fx || undefined, extraLines
     }, transaction);
   }
-  if (!events.length && !effects.list.length) {
+  if (!events.length && !extraLines.length && !effects.list.length) {
     await txn.destroy({ transaction });
   } else {
-    await txn.update({ eventsJson: JSON.stringify(events), effectsJson: JSON.stringify(effects.list) }, { transaction });
+    await txn.update({ eventsJson: JSON.stringify(events.length ? events : (extraLines.length ? [{ event: job, revaluationLegs: extraLines.length }] : [])), effectsJson: JSON.stringify(effects.list) }, { transaction });
   }
-  await claim.row.update({ status: 200, responseBody: JSON.stringify({ events: events.length }), transactionId: events.length || effects.list.length ? txn.id : null }, { transaction });
-  return { skipped: false, events: events.length, legs: journal ? journal.lines.length : 0 };
+  const posted = events.length + (extraLines.length ? 1 : 0);
+  await claim.row.update({ status: 200, responseBody: JSON.stringify({ events: posted }), transactionId: posted || effects.list.length ? txn.id : null }, { transaction });
+  return { skipped: false, events: posted, legs: journal ? journal.lines.length : 0 };
 });
+
+// Phase 5: a foreign-currency batch sums contract and base per account, side and currency (base-only legs
+// separately) and writes rows with their local amounts; FX and corrections are base-only rows
+const summarizeForeign = async ({ batch, legs, locked, date, baseCurrencyId, transaction }) => {
+  const baseDecimals = Number((await loanCtx.currencyRule(baseCurrencyId, date, false)).decimalPlaces);
+  const keyOf = l => `${l.chartAccountId}|${l.drCr}|${l.currencyId || batch.currencyId}|${l.isBaseOnly ? 1 : 0}`;
+  const sums = new Map();
+  for (const l of legs) {
+    const k = keyOf(l);
+    const s = sums.get(k) || { amount: 0n, base: 0n };
+    s.amount += toUnits(l.amount);
+    s.base += toUnits(l.baseAmount);
+    sums.set(k, s);
+  }
+  const keys = [...sums.keys()].sort();
+  const agg = keys.map((k) => {
+    const [chartAccountId, drCr, currencyId, baseOnly] = k.split('|');
+    return { eventCode: batch.jobCode, amountTag: 'SUMMARY', drCr, chartAccountId: Number(chartAccountId), currencyId: Number(currencyId), amount: fromUnits(sums.get(k).amount), baseAmount: fromUnits(sums.get(k).base), isBaseOnly: baseOnly === '1' };
+  });
+  const step = 10n ** BigInt(4 - baseDecimals);
+  const { glRows, toGlAmount } = require('../posting/pairing');
+  const { rows, legRow } = glRows(agg, { baseStep: step < 100n ? 100n : step, rowCurrencyId: batch.currencyId });
+  const toWrite = rows.filter(r => !r.sameAccount);
+  const written = await AccountingPostingService.postJournalPairs(toWrite.map(r => ({ drAccountId: r.drAccountId, crAccountId: r.crAccountId, amount: r.amount, localAmount: r.localAmount, currencyId: r.currencyId, rate: r.rate, description: `Loan EOD ${batch.jobCode} ${date} (summary${r.baseOnly ? ', base' : ''})` })),
+    { bookingDate: date, postingReference: batch.batchNumber, description: `Loan EOD ${batch.jobCode} ${date}` }, transaction);
+  const rowOf = new Map(toWrite.map((r, i) => [r, written[i]]));
+  for (const l of legs) {
+    const i = keys.indexOf(keyOf(l));
+    const row = legRow[i] === null ? null : rowOf.get(rows[legRow[i]]);
+    if (row) await db.lnJournalPosting.update({ glRecordId: row.id }, { where: { id: l.id }, transaction });
+  }
+  const total = fromUnits(agg.filter(a => a.drCr === 'DR' && !a.isBaseOnly).reduce((s, a) => s + toUnits(a.amount), 0n));
+  await locked.update({ status: 'POSTED', totalDebit: total, totalCredit: total }, { transaction });
+  return { batchNumber: batch.batchNumber, legs: legs.length, glRows: written.length, total, baseTotal: toGlAmount(agg.filter(a => a.drCr === 'DR').reduce((s, a) => s + toUnits(a.baseAmount), 0n)) };
+};
 
 // Summarized GL per OPEN batch: legs summed per account and side, then paired; legs linked to their GL row
 const summarizeBatches = async (date) => {
@@ -153,6 +201,11 @@ const summarizeBatches = async (date) => {
       const locked = await db.lnGlBatch.findByPk(batch.id, { transaction, lock: transaction.LOCK.UPDATE });
       if (locked.status !== 'OPEN') return;
       const legs = await findAllExact(db.lnJournalPosting, { where: { glBatchId: batch.batchNumber, glRecordId: null }, transaction });
+      const base = await fxRates.baseCurrency(transaction);
+      if (Number(batch.currencyId) !== Number(base.id)) {
+        out.push(await summarizeForeign({ batch, legs, locked, date, baseCurrencyId: base.id, transaction }));
+        return;
+      }
       const sums = {};
       for (const l of legs) {
         const key = `${l.chartAccountId}|${l.drCr}`;
@@ -179,16 +232,13 @@ const summarizeBatches = async (date) => {
 };
 
 const eodService = {
-  async run(ctxUser, { failAt } = {}) {
+  async run(ctxUser, { failAt, today } = {}) {
     await G.assertPostingEnabled();
     const sd = await G.systemDate();
     const date = String(sd.currentBusinessDate);
-    const pos = await G.posBusinessDate();
-    if (!pos || E.dates.compare(date, pos) > 0) {
-      throw new LoanError(409, `Loan EOD for ${date} cannot run: the POS business date is ${pos || 'not set'}, which is behind the loan business date. `
-        + `Run the POS close of business (COB batch: POST /api/accountDailyBalance/batch) until the POS business date is ${date} or later, then run the loan EOD again. `
-        + 'This keeps loan cash in the bank balances of the same business day.');
-    }
+    // Phase 5 (D7, D8): the POS USE_BUSINESS_DATE switch decides whether day `date` is over
+    const cob = await G.cobCheck(date, { today });
+    if (!cob.canRun) throw new LoanError(409, cob.reason);
     const hook = G.makeTestHook(failAt);
     await acquireLock(`user ${ctxUser.userId}`);
     try {
@@ -223,14 +273,18 @@ const eodService = {
     }
   },
 
-  async status() {
+  async status({ today } = {}) {
     const sd = await G.systemDate();
     const [logs, lock, pos] = await Promise.all([
       db.lnBatchLog.findAll({ order: [['id', 'DESC']], limit: 20 }),
       db.lnBatchLock.findByPk(LOCK_NAME),
       G.posBusinessDate()
     ]);
-    return { loanBusinessDate: String(sd.currentBusinessDate), posBusinessDate: pos, running: Boolean(lock && new Date(lock.expiresAt) > new Date()), recent: logs };
+    const cob = await G.cobCheck(String(sd.currentBusinessDate), { today });
+    return {
+      loanBusinessDate: String(sd.currentBusinessDate), posBusinessDate: pos, running: Boolean(lock && new Date(lock.expiresAt) > new Date()), recent: logs,
+      cob: { ...cob, warning: 'The microfinance module EOD also moves the POS business date; loan EOD never moves it.' }
+    };
   }
 };
 

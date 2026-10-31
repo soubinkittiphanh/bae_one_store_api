@@ -61,4 +61,79 @@ const pairLegs = (legs) => {
   };
 };
 
-module.exports = { pairLegs, toGlAmount };
+/**
+ * Phase 5: POS general_ledger rows when legs carry base amounts (each row has ONE local amount).
+ * legs: [{ drCr, chartAccountId, currencyId, amount, baseAmount, isBaseOnly }]
+ * 1. Contract legs are paired per currency as above; each piece takes its share of the DEBIT leg's base
+ *    (the last piece of a leg takes the remainder), so every debit leg receives exactly its base.
+ * 2. A credit leg's base minus what its pieces carried, and every base-only leg (FX_DIFF, FX_REVAL,
+ *    ROUND_DIFF), are paired in base as rows with debit = credit = 0 (the POS revaluation pattern).
+ * With base = amount (base-currency loans) step 2 is empty and the rows equal pairLegs' rows exactly.
+ * Returns { rows: [{ drIndex, crIndex, drAccountId, crAccountId, amount, localAmount, rate, currencyId, baseOnly, sameAccount }], legRow }
+ */
+const RATE_ONE = 10n ** 6n;
+const rateOf = (local, amount) => {
+  if (amount === 0n) return '1.000000';
+  const r = (local * RATE_ONE * 2n + amount) / (amount * 2n);
+  return `${r / RATE_ONE}.${(r % RATE_ONE).toString().padStart(6, '0')}`;
+};
+const glRows = (legs, { baseStep = 100n, rowCurrencyId = null } = {}) => {
+  const contractIdx = legs.map((l, i) => i).filter(i => !legs[i].isBaseOnly && toUnits(legs[i].amount) > 0n);
+  const contract = contractIdx.map(i => legs[i]);
+  const { pairs } = pairLegs(contract);
+  const base = legs.map(l => toUnits(l.baseAmount === undefined ? l.amount : l.baseAmount));
+  const amountLeft = contract.map(l => toUnits(l.amount));
+  const baseLeft = contractIdx.map(i => base[i]);
+  const received = new Array(legs.length).fill(0n);
+  const rows = [];
+  const legRow = new Array(legs.length).fill(null);
+  const note = (legIndex, rowIndex) => { if (legRow[legIndex] === null) legRow[legIndex] = rowIndex; };
+  for (const p of pairs) {
+    const d = p.drIndex;
+    let share;
+    if (p.units === amountLeft[d]) share = baseLeft[d];
+    else {
+      const raw = (p.units * baseLeft[d]) / amountLeft[d];
+      share = ((raw + baseStep / 2n) / baseStep) * baseStep;
+    }
+    amountLeft[d] -= p.units;
+    baseLeft[d] -= share;
+    const dLeg = contractIdx[d];
+    const cLeg = contractIdx[p.crIndex];
+    received[dLeg] += share;
+    received[cLeg] += share;
+    rows.push({ drIndex: dLeg, crIndex: cLeg, drAccountId: p.drAccountId, crAccountId: p.crAccountId, amount: p.amount, localAmount: toGlAmount(share), rate: rateOf(share, p.units), currencyId: p.currencyId, baseOnly: false, sameAccount: p.sameAccount });
+    note(dLeg, rows.length - 1);
+    note(cLeg, rows.length - 1);
+  }
+  // Base corrections: what each contract leg still needs, plus the base-only legs
+  const pool = [];
+  legs.forEach((l, i) => {
+    if (l.isBaseOnly) { if (base[i] > 0n) pool.push({ i, side: l.drCr, left: base[i] }); return; }
+    const delta = base[i] - received[i];
+    if (delta === 0n) return;
+    const side = delta > 0n ? l.drCr : (l.drCr === 'DR' ? 'CR' : 'DR');
+    pool.push({ i, side, left: delta > 0n ? delta : -delta });
+  });
+  const order = side => pool.filter(x => x.side === side).sort((a, b) => (a.left === b.left ? a.i - b.i : (a.left > b.left ? -1 : 1)));
+  const debits = order('DR');
+  const credits = order('CR');
+  while (debits.length && credits.length) {
+    const dr = debits[0];
+    const cr = credits[0];
+    const amount = dr.left < cr.left ? dr.left : cr.left;
+    const drAccountId = legs[dr.i].chartAccountId;
+    const crAccountId = legs[cr.i].chartAccountId;
+    rows.push({ drIndex: dr.i, crIndex: cr.i, drAccountId, crAccountId, amount: '0.00', localAmount: toGlAmount(amount), rate: '1.000000', currencyId: rowCurrencyId, baseOnly: true, sameAccount: drAccountId === crAccountId });
+    note(dr.i, rows.length - 1);
+    note(cr.i, rows.length - 1);
+    dr.left -= amount;
+    cr.left -= amount;
+    if (dr.left === 0n) debits.shift();
+    if (cr.left === 0n) credits.shift();
+  }
+  if (debits.length || credits.length) throw new LoanError(409, 'Journal does not balance in base; nothing was posted');
+  return { rows, legRow };
+};
+
+module.exports = { pairLegs, toGlAmount, glRows };

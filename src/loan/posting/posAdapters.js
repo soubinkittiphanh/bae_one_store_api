@@ -29,7 +29,8 @@ const balanceUnits = (balance) => {
 };
 
 // units: positive = money in, negative = money out (BigInt, 4 decimals)
-const bankMovement = async ({ transactionId, txNo, bankAccountId, units, currencyCode, description, userId }, transaction) => {
+// businessDate: the loan business date when USE_BUSINESS_DATE is not 'Y' (Phase 5, D8); otherwise the POS date
+const bankMovement = async ({ transactionId, txNo, bankAccountId, units, currencyCode, description, userId, businessDate: loanDate }, transaction) => {
   if (units === 0n) return null;
   const bank = await db.bankAccount.findByPk(bankAccountId, { transaction, lock: transaction.LOCK.UPDATE });
   if (!bank || bank.isActive === false) throw new LoanError(400, `Bank account ${bankAccountId} not found or inactive`);
@@ -38,7 +39,7 @@ const bankMovement = async ({ transactionId, txNo, bankAccountId, units, currenc
   if (units < 0n && balanceUnits(bank.balance) < -units) {
     throw new LoanError(409, `Bank account ${bank.accountName} has ${bank.balance}, less than the ${amount} to pay out`);
   }
-  const businessDate = await posBusinessDate(transaction);
+  const businessDate = loanDate || await posBusinessDate(transaction);
   const entry = await db.transactionEntry.create({
     referenceId: uuidv4(),
     bankAccountId: bank.id,
@@ -73,11 +74,15 @@ const invoiceForSale = async (saleHeaderId, transaction) => {
  * invoice's open balance equals the amount the loan settles. Then an AR receipt is created already
  * marked glPostingStatus 'posted' (the loan posted the GL), so the POS cash batch never posts it again.
  */
-const settleInvoice = async ({ transactionId, txNo, saleHeaderId, units, downPayment, date, userId, drAccountId, crAccountId, currencyId }, transaction) => {
+// Phase 5: currencyId / receiptRate are the invoice's (a foreign loan may settle a base-currency invoice:
+// crossCurrency). Then the down payment is in the invoice currency and is enforced by the implied-rate check,
+// and the receipt is allocated as one header-balance line, because POS invoice lines may hold amounts in
+// another currency than the header (pos-defects.md #9).
+const settleInvoice = async ({ transactionId, txNo, saleHeaderId, units, downPayment, date, userId, drAccountId, crAccountId, currencyId, receiptRate, crossCurrency }, transaction) => {
   const { invoice, paidUnits, openUnits } = await invoiceForSale(saleHeaderId, transaction);
-  if (paidUnits < toUnits(downPayment || '0')) throw new LoanError(409, `Down payment not received: ${fromUnits(paidUnits)} paid, ${downPayment} required`);
+  if (!crossCurrency && paidUnits < toUnits(downPayment || '0')) throw new LoanError(409, `Down payment not received: ${fromUnits(paidUnits)} paid, ${downPayment} required`);
   if (openUnits !== units) throw new LoanError(409, `Invoice ${invoice.invoiceNumber} open balance ${fromUnits(openUnits)} does not equal the loan settlement ${fromUnits(units)}`);
-  const lines = await findAllExact(db.arInvoiceLine, { where: { invoiceHeaderId: invoice.id }, order: [['lineNumber', 'ASC']], transaction });
+  const lines = crossCurrency ? [] : await findAllExact(db.arInvoiceLine, { where: { invoiceHeaderId: invoice.id }, order: [['lineNumber', 'ASC']], transaction });
   const activeReceipts = await db.arReceiveHeaderV2.findAll({ where: { invoiceHeaderId: invoice.id, status: 'active' }, attributes: ['id'], transaction });
   const allocated = activeReceipts.length && lines.length
     ? await findAllExact(db.arReceiveLine, { where: { invoiceLineId: lines.map(l => l.id), receiveHeaderId: activeReceipts.map(r => r.id) }, transaction })
@@ -90,7 +95,7 @@ const settleInvoice = async ({ transactionId, txNo, saleHeaderId, units, downPay
     invoiceHeaderId: invoice.id,
     totalReceivedAmount: amount,
     paymentMethod: 'other',
-    exchangeRate: 1,
+    exchangeRate: receiptRate || 1,
     currencyId,
     referenceNumber: txNo,
     notes: `Settled by loan disbursement ${txNo}`,
