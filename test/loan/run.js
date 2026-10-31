@@ -96,10 +96,11 @@ const main = async () => {
   await test('migrate up on a clean copy', async () => {
     runNode('loan_migrate.js', ['up']);
     const n = Number((await q("SELECT COUNT(*) n FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name LIKE 'ln\\_%'"))[0].n);
-    assert.strictEqual(n, 75, `expected 75 ln_* tables, found ${n}`);
+    assert.strictEqual(n, 76, `expected 76 ln_* tables, found ${n}`);
   });
-  await test('Phase 5 documents, currency limits, FX, Phase 4, POS loan types, Phase 3, 2B and corrections DOWN, then UP, restore the schema exactly', async () => {
+  await test('Phase 5 print templates, documents, currency limits, FX, Phase 4, POS loan types, Phase 3, 2B and corrections DOWN, then UP, restore the schema exactly', async () => {
     const before = await snapshot();
+    assert.match(runNode('loan_migrate.js', ['down', '--yes']), /20261104_loan_phase5_print_templates/);
     assert.match(runNode('loan_migrate.js', ['down', '--yes']), /20261103_loan_phase5_documents/);
     assert.match(runNode('loan_migrate.js', ['down', '--yes']), /20261102_loan_phase5_ccy_limits/);
     assert.match(runNode('loan_migrate.js', ['down', '--yes']), /20261101_loan_phase5_fx/);
@@ -119,6 +120,7 @@ const main = async () => {
     assert.deepStrictEqual(values.slice(-2), ['LOAN_IN', 'LOAN_OUT']);
     runNode('loan_migrate.js', ['up']);
     assert.deepStrictEqual((await q(colSql))[0], after, 'second UP changes nothing');
+    runNode('loan_migrate.js', ['down', '--yes']); // Phase 5 print templates
     runNode('loan_migrate.js', ['down', '--yes']); // Phase 5 documents
     runNode('loan_migrate.js', ['down', '--yes']); // Phase 5 currency limits
     runNode('loan_migrate.js', ['down', '--yes']); // Phase 5 FX
@@ -263,8 +265,10 @@ const main = async () => {
     for (const l of limits) assert.deepStrictEqual(Number(l.base) ? [l.mn, l.mx] : [null, null], Number(l.base) ? [l.pmn, l.pmx] : [null, null], `${l.code} limits`);
     const fees = await q("SELECT p.productCode code, a.itemCode item, CAST(a.defaultValue AS CHAR) v, a.authStatus s FROM ln_product_amount a JOIN ln_product p ON p.id = a.productId ORDER BY 1");
     assert.deepStrictEqual(fees.map(f => `${f.code}:${f.item}:${f.v}:${f.s}`), ['CAR-LOAN-BALLOON:DOCUMENTATION_FEE:300000.0000:PENDING', 'CAR-LOAN-DB:DOCUMENTATION_FEE:300000.0000:PENDING', 'CAR-LOAN-FLAT:DOCUMENTATION_FEE:300000.0000:PENDING']);
-    const grants = await q("SELECT g.code grp, s.functionCode f FROM sec_group_grant s JOIN userGroup g ON g.id = s.userGroupId WHERE s.functionCode IN ('LN_COLLECTION','LN_REPORT','LN_DOCUMENT') GROUP BY 1, 2 ORDER BY 1, 2");
-    assert.deepStrictEqual(grants.map(r => `${r.grp}:${r.f}`), ['SUPER_ADMIN:LN_COLLECTION', 'SUPER_ADMIN:LN_DOCUMENT', 'SUPER_ADMIN:LN_REPORT']);
+    const grants = await q("SELECT g.code grp, s.functionCode f FROM sec_group_grant s JOIN userGroup g ON g.id = s.userGroupId WHERE s.functionCode IN ('LN_COLLECTION','LN_REPORT','LN_DOCUMENT','LN_PRINT_TEMPLATE') GROUP BY 1, 2 ORDER BY 1, 2");
+    assert.deepStrictEqual(grants.map(r => `${r.grp}:${r.f}`), ['SUPER_ADMIN:LN_COLLECTION', 'SUPER_ADMIN:LN_DOCUMENT', 'SUPER_ADMIN:LN_PRINT_TEMPLATE', 'SUPER_ADMIN:LN_REPORT']);
+    const tpl = await q("SELECT templateCode c, authStatus s FROM ln_print_template");
+    assert.deepStrictEqual(tpl.map(t => `${t.c}:${t.s}`), ['CONTRACT_SUMMARY:PENDING'], 'draft contract wording waits for a checker');
   });
 
   console.log('\n[schema parity]');
@@ -979,6 +983,8 @@ const apiTests = async ({ port, q, db, runNode }) => {
   });
   console.log('\n[phase 4 posting, EOD, balance sheet]');
   await require('./postingTests')({ test, call, q, db, runNode, users: { SUPER, ADMIN, CASHIER }, L, expectStatus });
+  console.log('\n[phase 5 part B: screen APIs]');
+  await require('./screenApiTests')({ test, call, q, users: { SUPER, ADMIN, CASHIER }, L, expectStatus });
 
   console.log('\n[api, continued]');
   await test('banner status for any user, pending inbox filtered by grants, enums served by lookups', async () => {

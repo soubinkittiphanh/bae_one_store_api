@@ -83,6 +83,14 @@ const MIGRATIONS = [
     marker: 'ln_account_document',
     dropsData: false,
     dropsDocuments: true
+  },
+  {
+    name: '20261104_loan_phase5_print_templates',
+    up: '20261104_loan_phase5_print_templates.sql',
+    down: '20261104_loan_phase5_print_templates_down.sql',
+    marker: 'ln_print_template',
+    dropsData: false,
+    dropsTemplates: true
   }
 ];
 
@@ -196,6 +204,13 @@ const assertNoDocuments = async (conn) => {
   if (Number(rows[0].n) > 0) throw new Error(`Refusing to roll back Phase 5 B1: ln_account_document has ${rows[0].n} row(s).`);
 };
 
+// The Phase 5 B7 DOWN drops print templates; never while one has been authorized (wording approved by people)
+const assertNoAuthorizedTemplates = async (conn) => {
+  if (!(await tableExists(conn, 'ln_print_template'))) return;
+  const rows = await conn.query("SELECT COUNT(*) AS n FROM ln_print_template WHERE authStatus = 'AUTHORIZED'");
+  if (Number(rows[0].n) > 0) throw new Error(`Refusing to roll back Phase 5 B7: ${rows[0].n} authorized print template(s) exist.`);
+};
+
 const main = async () => {
   const [command = 'status', ...flags] = process.argv.slice(2);
   const target = assertLocalDb('loan_migrate');
@@ -237,7 +252,7 @@ const main = async () => {
       const refusals = [];
       for (const m of toRollBack) {
         const checks = [m.dropsData && assertNoBusinessData, m.dropsSecurity && assertSecurityOnlyLoan, m.dropsEntryRules && assertNoEntryRules, m.dropsAccounts && assertNoAccounts,
-          m.dropsTransactions && assertNoTransactions, m.dropsCurrencyAmounts && assertNoForeignAmounts, m.dropsDocuments && assertNoDocuments, m.module && jsModule(m).assertCanRollBack && (c => jsModule(m).assertCanRollBack(c))];
+          m.dropsTransactions && assertNoTransactions, m.dropsCurrencyAmounts && assertNoForeignAmounts, m.dropsDocuments && assertNoDocuments, m.dropsTemplates && assertNoAuthorizedTemplates, m.module && jsModule(m).assertCanRollBack && (c => jsModule(m).assertCanRollBack(c))];
         for (const check of checks.filter(Boolean)) {
           try { await check(conn); } catch (err) { refusals.push(err.message); }
         }

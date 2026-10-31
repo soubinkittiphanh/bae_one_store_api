@@ -12,6 +12,18 @@ const { nextNumber } = require('./numberingService');
 const { applyCurrencyAmounts, assertNoMissing } = require('./currencyAmounts');
 
 const N = E.num;
+// Phase 5 B3: the rate a payment on this date would use (indicative; posting re-reads it), its warning and the base amounts
+const previewFx = async (account, date, amount, cashRequired) => {
+  const { indicativeFx } = require('./reportService');
+  const fxRates = require('./fxRateService');
+  const FX = require('../accounting/fx');
+  const { toUnits, fromUnits } = require('../accounting/journal');
+  const fx = await indicativeFx(account.currencyId, date);
+  if (fx === null) return null;
+  const decimals = await fxRates.baseDecimals(date);
+  const base = v => (v && fx.rate ? fromUnits(FX.toBase(toUnits(String(v)), FX.rateUnits(fx.rate), decimals)) : null);
+  return { ...fx, baseCurrency: (await fxRates.baseCurrency()).code, baseAmount: base(amount), cashRequiredBase: base(cashRequired) };
+};
 const currencyCode = async (id, transaction) => { const c = await db.currency.findByPk(id, { transaction }); return c ? c.code : `currency ${id}`; };
 const PREVIEWS = ['due-date', 'payment', 'prepayment', 'status'];
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -183,7 +195,7 @@ const accountService = {
       result = { events: [...st.events, ...(provision ? provision.events : [])], details: { status: st, provision } };
     }
     const journal = await previewJournal(product, result.events, { currency: account.currencyId, asOfDate: date });
-    return { kind, date, accountNo: account.accountNo, ...result, journal };
+    return { kind, date, accountNo: account.accountNo, ...result, journal, fx: await previewFx(account, date, kind === 'payment' ? body.amount : null, result.details && result.details.cashRequired) };
   }
 };
 

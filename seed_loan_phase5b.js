@@ -7,11 +7,31 @@
  *   unset, so a product offering them cannot be authorized until someone enters them.
  * - Security: LN_COLLECTION (VIEW), LN_REPORT (VIEW), LN_DOCUMENT (VIEW, CREATE), granted to SUPER_ADMIN only.
  * - SPF LOAN_DOC_MAX_MB = 5 (largest account document accepted).
+ * - Print templates (D11): a DRAFT contract summary wording, PENDING; nothing prints until a checker authorizes
+ *   wording reviewed by the company's legal adviser. LN_PRINT_TEMPLATE is granted to SUPER_ADMIN only.
  */
 process.env.NO_SYNC = 'true';
 require('./src/loan/dbGuard').assertLocalDb('seed_loan_phase5b');
 const db = require('./src/models');
 const { registerFunctions, grantToGroupCodes } = require('./src/security/grantService');
+
+// DRAFT wording for review; the company replaces it before authorizing (placeholders: paramRegistry PRINT_PLACEHOLDERS)
+const CONTRACT_DRAFT = [
+  'ສະຫຼຸບສັນຍາສິນເຊື່ອ / Loan contract summary (DRAFT, to be reviewed before use)',
+  '',
+  'ຜູ້ໃຫ້ກູ້ / Lender: {{companyName}}',
+  'ຜູ້ກູ້ / Borrower: {{customerName}} ({{customerPhone}})',
+  'ເລກບັນຊີ / Account: {{accountNo}} · {{productName}}',
+  'ວົງເງິນກູ້ / Principal: {{currency}} {{principal}}',
+  'ອັດຕາດອກເບ້ຍ / Interest rate: {{interestRatePct}}% ຕໍ່ປີ / per year',
+  'ໄລຍະ / Term: {{tenorMonths}} ເດືອນ / months, {{installmentCount}} ງວດ / installments of {{currency}} {{installmentAmount}}',
+  'ວັນເບີກ / Value date: {{valueDate}} · ງວດທຳອິດ / First due: {{firstDueDate}} · ຄົບກຳນົດ / Maturity: {{maturityDate}}',
+  '',
+  'ສັນຍາສະບັບເຕັມ ແລະ ເງື່ອນໄຂ ຢູ່ໃນເອກະສານສັນຍາທີ່ລົງນາມ. / The full contract and its conditions are in the signed contract document.',
+  '',
+  'ລາຍເຊັນຜູ້ກູ້ / Borrower signature: ____________________     ລາຍເຊັນຜູ້ໃຫ້ກູ້ / Lender signature: ____________________',
+  'ພິມວັນທີ / Printed: {{printDate}}'
+].join('\n');
 
 const BACKFILL = [
   `UPDATE ln_product_currency pc
@@ -43,12 +63,17 @@ async function seedPhase5b() {
       changed += Number((meta && (meta.affectedRows !== undefined ? meta.affectedRows : meta)) || 0);
     }
     await db.spf.findOrCreate({ where: { code: 'LOAN_DOC_MAX_MB' }, defaults: { code: 'LOAN_DOC_MAX_MB', value: '5', remark: 'Loan module: largest account document accepted (MB); PDF, JPG and PNG only.', isActive: true } });
+    await db.lnPrintTemplate.findOrCreate({
+      where: { templateCode: 'CONTRACT_SUMMARY', effectiveFrom: '2026-01-01' },
+      defaults: { templateCode: 'CONTRACT_SUMMARY', title: 'Loan contract summary (DRAFT)', body: CONTRACT_DRAFT, effectiveFrom: '2026-01-01', authStatus: 'PENDING', makerId: null }
+    });
     await registerFunctions(db, 'LN', [
       { functionCode: 'LN_COLLECTION', name: 'Loan collection list', llname: 'ລາຍການຕິດຕາມໜີ້', actions: ['VIEW'] },
       { functionCode: 'LN_REPORT', name: 'Loan reports', llname: 'ລາຍງານສິນເຊື່ອ', actions: ['VIEW'] },
-      { functionCode: 'LN_DOCUMENT', name: 'Loan account documents', llname: 'ເອກະສານບັນຊີສິນເຊື່ອ', actions: ['VIEW', 'CREATE'] }
+      { functionCode: 'LN_DOCUMENT', name: 'Loan account documents', llname: 'ເອກະສານບັນຊີສິນເຊື່ອ', actions: ['VIEW', 'CREATE'] },
+      { functionCode: 'LN_PRINT_TEMPLATE', name: 'Loan print templates', llname: 'ແບບຟອມພິມສິນເຊື່ອ', actions: ['VIEW', 'CREATE', 'EDIT', 'DELETE', 'AUTHORIZE'] }
     ]);
-    const grants = await grantToGroupCodes(db, ['SUPER_ADMIN'], ['LN_COLLECTION', 'LN_REPORT', 'LN_DOCUMENT']);
+    const grants = await grantToGroupCodes(db, ['SUPER_ADMIN'], ['LN_COLLECTION', 'LN_REPORT', 'LN_DOCUMENT', 'LN_PRINT_TEMPLATE']);
     console.log(`Phase 5B base-currency amounts filled: ${changed} row(s); grants: ${grants.join(', ') || 'none'}`);
     console.log('--- Phase 5 Part B Seeding Completed ---');
     process.exit(0);

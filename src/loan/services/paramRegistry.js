@@ -36,6 +36,10 @@ const dateOrder = (fromField, toField, label) => (row) => (
   row[fromField] && row[toField] && String(row[toField]) < String(row[fromField]) ? `${label}: ${toField} is before ${fromField}` : null
 );
 
+// Values a print template may use (filled by the screen from the account; nothing else is substituted)
+const PRINT_PLACEHOLDERS = ['companyName', 'printDate', 'customerName', 'customerPhone', 'accountNo', 'productName', 'currency', 'principal',
+  'interestRatePct', 'tenorMonths', 'installmentCount', 'installmentAmount', 'valueDate', 'firstDueDate', 'maturityDate'];
+
 const ENTITIES = {
   ...Object.fromEntries(Object.entries(LOOKUPS).map(([name, model]) => [name, {
     model, functionCode: 'LN_LOOKUP', key: 'code',
@@ -224,6 +228,20 @@ const ENTITIES = {
     rules: [dateOrder('effectiveFrom', 'effectiveTo', 'GL mapping')]
   },
 
+  // Phase 5 B7: print wording (D11); placeholders must come from PRINT_PLACEHOLDERS
+  'print-template': {
+    model: 'lnPrintTemplate', functionCode: 'LN_PRINT_TEMPLATE',
+    fields: { templateCode: enumOf('CONTRACT_SUMMARY', 'RECEIPT_FOOTER', 'STATEMENT_FOOTER') },
+    rules: [
+      (row) => {
+        if (row.body === undefined || row.body === null) return null;
+        const unknown = [...String(row.body).matchAll(/{{\s*([^}]*?)\s*}}/g)].map(m => m[1]).filter(p => !PRINT_PLACEHOLDERS.includes(p));
+        return unknown.length ? `Unknown placeholder(s): ${[...new Set(unknown)].join(', ')}; allowed: ${PRINT_PLACEHOLDERS.join(', ')}` : null;
+      },
+      dateOrder('effectiveFrom', 'effectiveTo', 'Print template')
+    ]
+  },
+
   sequence: { model: 'lnNumberingSequence', functionCode: 'LN_SEQUENCE' },
   'batch-job': { model: 'lnBatchJob', functionCode: 'LN_BATCH_JOB', readOnly: ['lastRunDate', 'lastStatus'] }
 };
@@ -238,4 +256,4 @@ const getEntity = (name) => {
 
 const entityForModel = (modelName) => Object.keys(ENTITIES).find(n => ENTITIES[n].model === modelName);
 
-module.exports = { ENTITIES, SYSTEM_FIELDS, getEntity, entityForModel };
+module.exports = { ENTITIES, SYSTEM_FIELDS, PRINT_PLACEHOLDERS, getEntity, entityForModel };

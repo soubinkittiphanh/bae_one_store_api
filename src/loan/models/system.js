@@ -59,6 +59,20 @@ module.exports = (sequelize, DataTypes) => {
     executionTimeMs: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 }
   }, { freezeTableName: true, tableName: 'ln_batch_log', timestamps: true, updatedAt: false });
 
+  // Phase 5 B7: editable print wording (decision D11), maker-checker, effective-dated
+  const lnPrintTemplate = sequelize.define('lnPrintTemplate', {
+    id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+    templateCode: { type: DataTypes.STRING(40), allowNull: false },
+    title: { type: DataTypes.STRING(150), allowNull: false },
+    body: { type: DataTypes.TEXT, allowNull: false },
+    effectiveFrom: { type: DataTypes.DATEONLY, allowNull: false },
+    effectiveTo: { type: DataTypes.DATEONLY, allowNull: true },
+    ...makerChecker(DataTypes)
+  }, { freezeTableName: true, tableName: 'ln_print_template', timestamps: true,
+    indexes: [
+      { name: 'uk_print_template', unique: true, fields: ['templateCode', 'effectiveFrom'] }
+    ] });
+
   const lnBatchLock = sequelize.define('lnBatchLock', {
     lockName: { type: DataTypes.STRING(50), primaryKey: true },
     acquiredAt: { type: DataTypes.DATE, allowNull: false },
@@ -72,6 +86,7 @@ module.exports = (sequelize, DataTypes) => {
     lnNumberingSequence,
     lnBatchJob,
     lnBatchLog,
-    lnBatchLock
+    lnBatchLock,
+    lnPrintTemplate
   };
 };

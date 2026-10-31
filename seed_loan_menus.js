@@ -84,7 +84,15 @@ async function seedLoanMenus() {
         target_systems: 'ALL',
         isActive: true,
         order: 7
-      }
+      },
+      // Phase 5 Part B: operational screens (each page checks its own permission; the API enforces it)
+      { name: 'Loan Applications', llname: 'ຄຳຮ້ອງສິນເຊື່ອ', icon: 'mdi-file-document-edit-outline', path: '/admin/loan/applications', target_systems: 'ALL', isActive: true, order: 8 },
+      { name: 'Loan Accounts', llname: 'ບັນຊີສິນເຊື່ອ', icon: 'mdi-folder-account-outline', path: '/admin/loan/accounts', target_systems: 'ALL', isActive: true, order: 9 },
+      { name: 'Loan Transactions to Authorize', llname: 'ລາຍການສິນເຊື່ອລໍຖ້າອະນຸມັດ', icon: 'mdi-account-check', path: '/admin/loan/pending', target_systems: 'ALL', isActive: true, order: 10 },
+      { name: 'Loan End of Day', llname: 'ປິດທ້າຍວັນສິນເຊື່ອ', icon: 'mdi-calendar-clock', path: '/admin/loan/eod', target_systems: 'ALL', isActive: true, order: 11 },
+      { name: 'Collection List', llname: 'ລາຍການຕິດຕາມໜີ້', icon: 'mdi-phone-alert-outline', path: '/admin/loan/collection', target_systems: 'ALL', isActive: true, order: 12 },
+      { name: 'Loan Reports', llname: 'ລາຍງານສິນເຊື່ອ', icon: 'mdi-chart-box-outline', path: '/admin/loan/reports', target_systems: 'ALL', isActive: true, order: 13 },
+      { name: 'Loan Exchange Rates', llname: 'ອັດຕາແລກປ່ຽນສິນເຊື່ອ', icon: 'mdi-swap-horizontal', path: '/admin/loan/exchange-rates', target_systems: 'ALL', isActive: true, order: 14 }
     ];
 
     for (const item of linesData) {

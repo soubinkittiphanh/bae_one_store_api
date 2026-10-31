@@ -14,6 +14,7 @@ const applicationController = require('./controllers/applicationController');
 const accountController = require('./controllers/accountController');
 const transactionController = require('./controllers/transactionController');
 const fxController = require('./controllers/fxController');
+const { reportController, uploadOne } = require('./controllers/reportController');
 
 // All loan endpoints require a valid token and a sec_group_grant for the function/action
 router.use(validateToken);
@@ -57,7 +58,8 @@ router.post('/applications/:id/submit', can('LN_APPLICATION', 'EDIT'), applicati
 router.post('/applications/:id/approve', can('LN_APPLICATION', 'AUTHORIZE'), applicationController.approve);
 router.post('/applications/:id/reject', can('LN_APPLICATION', 'AUTHORIZE'), applicationController.reject);
 router.post('/applications/:id/book', can('LN_ACCOUNT', 'CREATE'), applicationController.book);
-router.get('/accounts', can('LN_ACCOUNT', 'VIEW'), accountController.list);
+// Phase 5 B1: the list takes filters (search, status, stage, currencyId) and returns customer and product
+router.get('/accounts', can('LN_ACCOUNT', 'VIEW'), reportController.accounts);
 router.get('/accounts/:id', can('LN_ACCOUNT', 'VIEW'), accountController.get);
 router.post('/accounts/:id/preview/:kind', can('LN_ACCOUNT', 'VIEW'), accountController.preview);
 
@@ -73,6 +75,24 @@ router.get('/exchange-rates/effective', can('LN_EXCHANGE_RATE', 'VIEW'), fxContr
 router.post('/exchange-rates/copy-pos', can('LN_EXCHANGE_RATE', 'CREATE'), fxController.copyPosRate);
 router.get('/sales/:saleHeaderId/financing-proposal', can('LN_APPLICATION', 'VIEW'), fxController.proposal);
 router.post('/eod/run', can('LN_EOD', 'CREATE'), transactionController.runEod);
+
+// --- Phase 5 Part B1: read-only views for the loan screens; account documents (D10); print templates (D11) ---
+router.get('/accounts/:id/summary', can('LN_ACCOUNT', 'VIEW'), reportController.summary);
+router.get('/accounts/:id/schedule', can('LN_ACCOUNT', 'VIEW'), reportController.schedule);
+router.get('/accounts/:id/history', can('LN_ACCOUNT', 'VIEW'), reportController.history);
+router.get('/accounts/:id/statement', can('LN_ACCOUNT', 'VIEW'), reportController.statement);
+router.get('/accounts/:id/documents', can('LN_DOCUMENT', 'VIEW'), reportController.documents);
+router.post('/accounts/:id/documents', can('LN_DOCUMENT', 'CREATE'), uploadOne, reportController.uploadDocument);
+router.get('/documents/:docId/file', can('LN_DOCUMENT', 'VIEW'), reportController.documentFile);
+router.get('/print-templates/:code', can('LN_ACCOUNT', 'VIEW'), reportController.printTemplate);
+router.get('/transactions/pending', can('LN_TRANSACTION', 'VIEW'), reportController.pending);
+router.get('/eod/logs', can('LN_EOD', 'VIEW'), reportController.eodLogs);
+router.get('/reports/overdue', can('LN_COLLECTION', 'VIEW'), reportController.overdue);
+router.get('/reports/portfolio', can('LN_REPORT', 'VIEW'), reportController.portfolio);
+router.get('/reports/aging', can('LN_REPORT', 'VIEW'), reportController.aging);
+router.get('/reports/npl', can('LN_REPORT', 'VIEW'), reportController.npl);
+router.get('/reports/provisions', can('LN_REPORT', 'VIEW'), reportController.provisions);
+router.get('/reports/gl-tieout', can('LN_REPORT', 'VIEW'), reportController.glTieout);
 
 // --- Master data, lookups & rules ---
 router.get('/lookups', can('LN_LOOKUP', 'VIEW'), masterController.getLookups);

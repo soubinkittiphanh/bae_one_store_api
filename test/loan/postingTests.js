@@ -32,6 +32,10 @@ module.exports = async ({ test: runTest, call, q, db, runNode, users, L, expectS
   const makerChecker = async (accountId, body, label) => {
     const created = await post(ADMIN, accountId, body);
     expectStatus(created, 202, `${label} pending`);
+    // Phase 5 B4: the checker queue lists it with its maker
+    const queued = (await call(SUPER, 'get', `${L}/transactions/pending`)).data.data.find(t => t.transactionId === created.data.data.transactionId);
+    assert.ok(queued && Number(queued.makerId) === Number(ADMIN) && queued.amount !== undefined, `${label} in the pending queue`);
+    if (queued.currency !== 'LAK') assert.ok(queued.fx && 'warning' in queued.fx, `${label}: foreign pending shows its rate block`);
     expectStatus(await authorize(ADMIN, created.data.data.transactionId), 403, `${label} self authorize`);
     const done = await authorize(SUPER, created.data.data.transactionId);
     expectStatus(done, 200, `${label} authorize`);
