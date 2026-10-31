@@ -476,6 +476,94 @@ module.exports = async ({ test: runTest, call, q, db, runNode, users, L, expectS
     await setSpf('BS_INCLUDE_LOAN_BOOK', 'false');
   });
 
+  await test('POS AR receipt API: loan settlement receipts are left out of both list endpoints unless includeLoanSettlement=1 (then labelled); edit, delete, void, cancel and reactivate are refused', async () => {
+    await setSpf('LOAN_POSTING_ENABLED', 'true');
+    await q("UPDATE ln_tax_profile SET confirmationStatus = 'CONFIRMED'");
+    const G = await makeLoan();
+    await feeCollect(G.account.id, '0');
+    const disb = await disburse(G.account.id);
+    const loanRec = (await q('SELECT id, status FROM ARReceiveHeader WHERE referenceNumber = ?', [disb.txNo]))[0];
+    const dpRec = (await q("SELECT id FROM ARReceiveHeader WHERE invoiceHeaderId = ? AND receiptNumber LIKE 'DP-%'", [G.invoice.id]))[0];
+    const ids = res => res.data.data.receiveHeaders.map(r => Number(r.id)).sort((a, b) => a - b);
+    const AR = '/api/ar-receive-headers';
+    for (const ep of [AR, `${AR}/pl`]) {
+      const plain = await call(SUPER, 'get', `${ep}?invoiceHeaderId=${G.invoice.id}&limit=50`);
+      expectStatus(plain, 200, `${ep} default`);
+      assert.deepStrictEqual(ids(plain), [Number(dpRec.id)], `${ep}: only the down payment by default`);
+      const withLoan = await call(SUPER, 'get', `${ep}?invoiceHeaderId=${G.invoice.id}&limit=50&includeLoanSettlement=1`);
+      expectStatus(withLoan, 200, `${ep} includeLoanSettlement`);
+      assert.deepStrictEqual(ids(withLoan), [Number(dpRec.id), Number(loanRec.id)].sort((a, b) => a - b), `${ep}: both with the flag`);
+      const label = Object.fromEntries(withLoan.data.data.receiveHeaders.map(r => [Number(r.id), r.loanSettlementTxNo]));
+      assert.deepStrictEqual(label, { [dpRec.id]: null, [loanRec.id]: disb.txNo }, `${ep}: loanSettlementTxNo`);
+    }
+    const message = `This receipt settles loan ${disb.txNo}; reverse it from the loan module.`;
+    const attempts = [
+      ['put', `${AR}/${loanRec.id}`, { notes: 'edited in POS' }],
+      ['delete', `${AR}/${loanRec.id}`],
+      ['post', `${AR}/${loanRec.id}/void`, { reason: 'test' }],
+      ['post', `${AR}/${loanRec.id}/cancel`, { reason: 'test' }],
+      ['post', `${AR}/${loanRec.id}/reactivate`, { reason: 'test' }]
+    ];
+    for (const [method, url, body] of attempts) {
+      const r = await call(SUPER, method, url, body);
+      expectStatus(r, 409, `${method} ${url}`);
+      assert.strictEqual(r.data.message, message);
+    }
+    console.log(`        refusal: HTTP 409 "${message}"`);
+    assert.deepStrictEqual(await q('SELECT id, status FROM ARReceiveHeader WHERE id = ?', [loanRec.id]), [loanRec], 'receipt unchanged');
+    assert.strictEqual((await q('SELECT status FROM ARInvoiceHeader WHERE id = ?', [G.invoice.id]))[0].status, 'paid');
+    // An ordinary receipt passes the guard
+    const { refuseLoanReceipt } = require('../../src/loan/posting/posReceiptLink');
+    let passed = false;
+    await refuseLoanReceipt({ params: { id: String(dpRec.id) } }, { status: () => { throw new Error('refused an ordinary receipt'); } }, () => { passed = true; });
+    assert.ok(passed, 'ordinary receipt reaches the POS controller');
+  });
+
+  await test('DISB reversal: balance sheet AR line and loan reconciliation (shows the current 240m understatement; proposal in phase4-report section 9)', async () => {
+    await setSpf('LOAN_POSTING_ENABLED', 'true');
+    await q("UPDATE ln_tax_profile SET confirmationStatus = 'CONFIRMED'");
+    await setSpf('BS_INCLUDE_LOAN_BOOK', 'true');
+    const Current = require('../../src/GL/adbReportController');
+    const snapshot = async () => {
+      const r = {}; r.status = () => r; r.json = (b) => { r.body = b; return r; };
+      await Current.getBalanceSheet({ query: { asOfDate: '2100-12-31' } }, r);
+      const bs = r.body;
+      return {
+        arLine: bs.assets.items.find(i => /^Accounts Receivable/.test(i.accountName)).balance,
+        portfolio: bs.assets.items.filter(i => /\(loan\)/.test(i.accountName) && String(i.accountNumber) === '1211').reduce((s, i) => s + i.balance, 0),
+        recon: bs.loanReconciliation.accountsReceivable
+      };
+    };
+    const delta = (a, b) => ({
+      arLine: b.arLine - a.arLine, portfolio: b.portfolio - a.portfolio,
+      reconGl: b.recon.gl - a.recon.gl, reconSubledger: b.recon.subledger - a.recon.subledger, reconDifference: b.recon.difference - a.recon.difference
+    });
+    try {
+      const H = await makeLoan();
+      await feeCollect(H.account.id, '0');
+      const before = await snapshot();
+      const disb = await disburse(H.account.id);
+      const afterDisb = await snapshot();
+      const rev = await makerChecker(H.account.id, { kind: 'REVERSAL', targetTransactionId: disb.transactionId }, 'REVERSAL of DISB');
+      assert.strictEqual(rev.reverses, disb.txNo);
+      const afterRev = await snapshot();
+      const inv = (await q('SELECT status FROM ARInvoiceHeader WHERE id = ?', [H.invoice.id]))[0].status;
+      const recs = await q('SELECT receiptNumber, status, CAST(totalReceivedAmount AS CHAR) amt FROM ARReceiveHeader WHERE invoiceHeaderId = ? ORDER BY id', [H.invoice.id]);
+      console.log(`        before DISB      : AR line ${before.arLine}, AR recon gl ${before.recon.gl} / subledger ${before.recon.subledger} / difference ${before.recon.difference}`);
+      console.log(`        after DISB       : ${JSON.stringify(delta(before, afterDisb))}`);
+      console.log(`        after REVERSAL   : ${JSON.stringify(delta(before, afterRev))} (deltas against before DISB)`);
+      console.log(`        invoice ${inv}; receipts ${recs.map(r => `${r.receiptNumber.replace(/-\d+$/, '')}=${r.status}:${r.amt}`).join(', ')}`);
+      // DISB: the 240m moves from sale receivable to the portfolio in the GL and the invoice leaves the open AR list
+      assert.deepStrictEqual(delta(before, afterDisb), { arLine: -240000000, portfolio: 240000000, reconGl: -240000000, reconSubledger: -240000000, reconDifference: 0 });
+      // REVERSAL today: the GL is restored, but the POS AR line still subtracts the voided 240m receipt from the reopened
+      // invoice, so the line stays 240m low and the reconciliation shows the 240m difference
+      assert.deepStrictEqual(delta(before, afterRev), { arLine: -240000000, portfolio: 0, reconGl: 0, reconSubledger: -240000000, reconDifference: 240000000 });
+      assert.notStrictEqual(inv, 'paid');
+    } finally {
+      await setSpf('BS_INCLUDE_LOAN_BOOK', 'false');
+    }
+  });
+
   await test('switch back OFF: posting and EOD refuse again', async () => {
     await setSpf('LOAN_POSTING_ENABLED', 'false');
     expectStatus(await call(SUPER, 'post', `${L}/eod/run`), 409, 'eod off');
