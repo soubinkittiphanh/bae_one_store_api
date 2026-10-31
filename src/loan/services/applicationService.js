@@ -9,6 +9,7 @@ const { LoanError } = require('../errors');
 const E = require('../engine');
 const ctx = require('./loanContext');
 const { productTerms, limitProblems } = require('./simulationService');
+const { productCurrency } = require('./currencyAmounts');
 const { nextNumber } = require('./numberingService');
 
 const N = E.num;
@@ -41,14 +42,15 @@ const validateTerms = async (values) => {
   const product = await db.lnProduct.findByPk(values.productId);
   if (!product || product.authStatus !== 'AUTHORIZED' || product.status !== 'ACTIVE') throw new LoanError(400, 'Product must be an AUTHORIZED, ACTIVE version');
   if (!(await db.client.findByPk(values.customerId))) throw new LoanError(400, `Customer (client) ${values.customerId} not found`);
-  const currencies = await db.lnProductCurrency.findAll({ where: { productId: product.id } });
-  if (!currencies.some(c => Number(c.currencyId) === Number(values.currencyId))) throw new LoanError(400, `Currency ${values.currencyId} is not offered by ${product.productCode}`);
+  const pc = await productCurrency(product.id, values.currencyId);
+  const currency = await db.currency.findByPk(values.currencyId);
+  if (!pc || !currency) throw new LoanError(400, `Currency ${values.currencyId} is not offered by ${product.productCode}`);
   const valueDate = values.valueDate ? String(values.valueDate) : await ctx.businessDate();
   const look = await ctx.lookups(product);
   const terms = productTerms(product, look, { principal: String(values.requestedAmount), interestRate: String(values.interestRate), tenorMonths: values.tenorMonths,
     firstDueDate: values.firstDueDate ? String(values.firstDueDate) : undefined, graceType: values.graceType, gracePeriods: values.gracePeriods,
     balloonAmount: values.balloonAmount !== undefined && values.balloonAmount !== null ? String(values.balloonAmount) : '0' }, valueDate);
-  const problems = limitProblems(product, terms);
+  const problems = limitProblems(product, terms, pc, currency.code);
   const p = ctx.dec(product.get({ plain: true }));
   const price = String(values.vehiclePrice || 0);
   if (N.cmp(price, 0) > 0) {

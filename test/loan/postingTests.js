@@ -636,12 +636,11 @@ module.exports = async ({ test: runTest, call, q, db, runNode, users, L, expectS
     await setSpf('LOAN_POSTING_ENABLED', 'true');
     await q("UPDATE ln_tax_profile SET confirmationStatus = 'CONFIRMED'");
     fxState.usdId = Number((await q("SELECT id FROM currency WHERE code = 'USD' LIMIT 1"))[0].id);
-    // Test fixtures: the product offers USD; its amount limits are single-currency (LAK), so they are lowered here
+    // Test fixtures: the product offers USD with its own amount limits and fixed fee (Phase 5 B0)
     if (!(await num('SELECT COUNT(*) n FROM ln_product_currency WHERE productId = ? AND currencyId = ?', [product.id, fxState.usdId]))) {
-      await q("INSERT INTO ln_product_currency (productId, currencyId, isDefault, authStatus, createdAt, updatedAt) VALUES (?, ?, 0, 'AUTHORIZED', NOW(), NOW())", [product.id, fxState.usdId]);
+      await q("INSERT INTO ln_product_currency (productId, currencyId, isDefault, minAmount, maxAmount, authStatus, createdAt, updatedAt) VALUES (?, ?, 0, 1000, 200000, 'AUTHORIZED', NOW(), NOW())", [product.id, fxState.usdId]);
+      await q("INSERT INTO ln_product_amount (productId, currencyId, itemType, itemCode, defaultValue, `minValue`, `maxValue`, authStatus, createdAt, updatedAt) VALUES (?, ?, 'COMPONENT', 'DOCUMENTATION_FEE', 15, 0, 100, 'AUTHORIZED', NOW(), NOW())", [product.id, fxState.usdId]);
     }
-    fxState.minAmount = (await q('SELECT CAST(minAmount AS CHAR) m FROM ln_product WHERE id = ?', [product.id]))[0].m;
-    await q('UPDATE ln_product SET minAmount = 1000 WHERE id = ?', [product.id]);
     const chart = await db.chartAccount.create({ accountNumber: '1106', accountName: 'Loan test bank USD', accountLLName: 'Loan test bank USD', accountType: 'Asset', isActive: true });
     assert.ok(chart.id);
     fxState.bank = await db.bankAccount.create({ accountNumber: '1106', accountName: 'Loan test bank USD', accountType: 'Current', currency: 'USD', isActive: true, balance: 1000000 });
@@ -894,7 +893,6 @@ module.exports = async ({ test: runTest, call, q, db, runNode, users, L, expectS
     }
     await tbBalanced();
     assert.strictEqual(await num("SELECT COUNT(*) n FROM ln_journal_posting j JOIN ln_account a ON a.id = j.loanAccountId JOIN currency c ON c.id = a.currencyId WHERE c.isLocalCCY = 1 AND (j.isBaseOnly = 1 OR j.baseAmount <> j.amount OR j.exchangeRate <> 1)"), 0, 'LAK journals unchanged by Phase 5');
-    await q('UPDATE ln_product SET minAmount = ? WHERE id = ?', [fxState.minAmount, product.id]);
   });
 
   await test('POS defect 9 (evidence only, POS code unchanged): a credit sale with a USD line, invoiced from the order and posted by the AR batch', async () => {

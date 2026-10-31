@@ -29,6 +29,7 @@ module.exports = (sequelize, DataTypes) => {
     feeType: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'PROCESSING' },
     calcMethod: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'FLAT' },
     basisAmountType: { type: DataTypes.STRING(50), allowNull: false, defaultValue: 'ORIGINAL_SANCTIONED' },
+    currencyId: { type: DataTypes.INTEGER, allowNull: true, comment: 'currency.id of minAmount/maxAmount; NULL = base' },
     minAmount: { type: DataTypes.DECIMAL(20, 4), allowNull: false, defaultValue: 0.0000 },
     maxAmount: { type: DataTypes.DECIMAL(20, 4), allowNull: false, defaultValue: 100000000.0000 },
     isEirAmortized: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },

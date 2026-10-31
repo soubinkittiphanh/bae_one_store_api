@@ -350,7 +350,9 @@ const markAuthorized = (ctx) => ({ authStatus: 'AUTHORIZED', checkerId: ctx.user
 const assertProductAccounting = async (row, transaction) => {
   const check = await checkProductRow(row, { transaction });
   if (!check.ok) {
-    throw new LoanError(409, `${row.productCode} v${row.version} cannot be authorized: ${check.errors.length} accounting entry rule problem(s); authorize the entry rules first`, check.errors);
+    const parts = [check.ruleErrors.length && `${check.ruleErrors.length} accounting entry rule problem(s) (authorize the entry rules first)`,
+      check.currencyErrors.length && `${check.currencyErrors.length} currency amount problem(s) (set the limits and fixed amounts for every offered currency)`].filter(Boolean);
+    throw new LoanError(409, `${row.productCode} v${row.version} cannot be authorized: ${parts.join('; ')}`, check.errors);
   }
 };
 

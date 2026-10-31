@@ -88,7 +88,7 @@ const post = async ({ kind, accountId, input, ctxUser, pending, transaction, hoo
     // A checker approved only when an existing PENDING_AUTH row is being authorized
   const approverId = pending ? ctxUser.userId : null;
   const out = await handlers[kind](ctx, input, effects, { dates, transaction, txn, ctxUser, approverId });
-  const check = await checkProductRow(ctx.product, { transaction, asOfDate: dates.valueDate });
+  const check = await checkProductRow(ctx.product, { transaction, asOfDate: dates.valueDate, currencies: false });
   if (!check.ok) throw new LoanError(409, `${ctx.product.productCode} accounting entry rules are incomplete`, check.errors);
 
   // Phase 5: DISB settling the invoice carries the invoice base over (cross-currency via CCY_POSITION)

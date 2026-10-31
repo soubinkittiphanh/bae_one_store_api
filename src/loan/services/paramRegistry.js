@@ -49,7 +49,7 @@ const ENTITIES = {
     functionCode: 'LN_PRODUCT',
     versioned: true,
     readOnly: ['version', 'status'],
-    children: ['lnProductCurrency', 'lnProductComponent', 'lnProductUde', 'lnWaterfallRule', 'lnDocumentChecklist'],
+    children: ['lnProductCurrency', 'lnProductAmount', 'lnProductComponent', 'lnProductUde', 'lnWaterfallRule', 'lnDocumentChecklist'],
     fields: {
       categoryId: ref('lnProductCategory'),
       loanTypeCode: ref('lnLookupLoanType', 'code'),
@@ -90,7 +90,14 @@ const ENTITIES = {
 
   'product-currency': {
     model: 'lnProductCurrency', functionCode: 'LN_PRODUCT',
-    fields: { productId: ref('lnProduct'), currencyId: ref('currency') }
+    fields: { productId: ref('lnProduct'), currencyId: ref('currency') },
+    rules: [minMax('minAmount', 'maxAmount', 'Amount')]
+  },
+  // Phase 5 B0: fixed amounts per currency (a component with a fixed-amount formula, a UDE of dataType AMOUNT)
+  'product-amount': {
+    model: 'lnProductAmount', functionCode: 'LN_PRODUCT',
+    fields: { productId: ref('lnProduct'), currencyId: ref('currency'), itemType: enumOf('COMPONENT', 'UDE') },
+    rules: [minMax('minValue', 'maxValue', 'Value'), minMax('minValue', 'defaultValue', 'Default'), minMax('defaultValue', 'maxValue', 'Default')]
   },
   component: {
     model: 'lnComponent', functionCode: 'LN_COMPONENT',
@@ -115,8 +122,8 @@ const ENTITIES = {
   'rate-index-value': { model: 'lnRateIndexValue', functionCode: 'LN_RATE_INDEX', fields: { rateIndexId: ref('lnRateIndex') } },
   'rate-tier': {
     model: 'lnRateTier', functionCode: 'LN_PRODUCT',
-    fields: { productComponentId: ref('lnProductComponent'), tierBasis: enumOf('AMOUNT', 'TENOR') },
-    rules: [minMax('fromValue', 'toValue', 'Tier')]
+    fields: { productComponentId: ref('lnProductComponent'), tierBasis: enumOf('AMOUNT', 'TENOR'), currencyId: ref('currency') },
+    rules: [minMax('fromValue', 'toValue', 'Tier'), (row) => (row.tierBasis === 'AMOUNT' && !row.currencyId ? 'An AMOUNT tier needs its currencyId' : null)]
   },
   'holiday-calendar': {
     model: 'lnHolidayCalendar', functionCode: 'LN_HOLIDAY',
@@ -142,7 +149,7 @@ const ENTITIES = {
   'holiday-date': { model: 'lnHolidayDate', functionCode: 'LN_HOLIDAY', fields: { calendarId: ref('lnHolidayCalendar') } },
   fee: {
     model: 'lnFeeMaster', functionCode: 'LN_FEE',
-    fields: { componentId: ref('lnComponent'), triggerEventCode: ref('lnEventMaster', 'eventCode'), accountingRoleCode: ref('lnAccountingRole', 'roleCode') },
+    fields: { currencyId: ref('currency'), componentId: ref('lnComponent'), triggerEventCode: ref('lnEventMaster', 'eventCode'), accountingRoleCode: ref('lnAccountingRole', 'roleCode') },
     rules: [minMax('minAmount', 'maxAmount', 'Amount')]
   },
   'tax-master': {
@@ -172,7 +179,7 @@ const ENTITIES = {
   },
   'approval-matrix': {
     model: 'lnApprovalMatrix', functionCode: 'LN_APPROVAL_MATRIX',
-    fields: { entityType: enumOf('APPLICATION', 'WRITE_OFF', 'AMENDMENT') },
+    fields: { entityType: enumOf('APPLICATION', 'WRITE_OFF', 'AMENDMENT'), currencyId: ref('currency') },
     rules: [minMax('minAmount', 'maxAmount', 'Amount')]
   },
   'document-checklist': { model: 'lnDocumentChecklist', functionCode: 'LN_DOC_CHECKLIST', fields: { productId: ref('lnProduct') } },

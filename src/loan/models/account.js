@@ -73,10 +73,30 @@ module.exports = (sequelize, DataTypes) => {
       { name: 'uk_account_component_balance', unique: true, fields: ['loanAccountId', 'componentId'] }
     ] });
 
+  // Phase 5 B1: documents attached to a loan account (stored under a random name; see 20261103_loan_phase5_documents.sql)
+  const lnAccountDocument = sequelize.define('lnAccountDocument', {
+    id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+    loanAccountId: { type: DataTypes.INTEGER, allowNull: false },
+    docType: { type: DataTypes.STRING(30), allowNull: false },
+    storedName: { type: DataTypes.STRING(80), allowNull: false },
+    fileExt: { type: DataTypes.STRING(10), allowNull: false },
+    mimeType: { type: DataTypes.STRING(80), allowNull: false },
+    sizeBytes: { type: DataTypes.INTEGER, allowNull: false },
+    sha256: { type: DataTypes.CHAR(64), allowNull: false },
+    remarks: { type: DataTypes.STRING(255), allowNull: true },
+    uploadedBy: { type: DataTypes.INTEGER, allowNull: false },
+    isActive: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true }
+  }, { freezeTableName: true, tableName: 'ln_account_document', timestamps: true,
+    indexes: [
+      { name: 'uk_account_document_stored', unique: true, fields: ['storedName'] },
+      { name: 'idx_account_document_account', fields: ['loanAccountId'] }
+    ] });
+
   return {
     lnAccount,
     lnAccountParamSnapshot,
     lnAccountUde,
-    lnAccountBalance
+    lnAccountBalance,
+    lnAccountDocument
   };
 };

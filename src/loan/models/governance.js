@@ -4,6 +4,7 @@ module.exports = (sequelize, DataTypes) => {
   const lnApprovalMatrix = sequelize.define('lnApprovalMatrix', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     entityType: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'APPLICATION' },
+    currencyId: { type: DataTypes.INTEGER, allowNull: true, comment: 'currency.id of minAmount/maxAmount; NULL = base' },
     minAmount: { type: DataTypes.DECIMAL(20, 4), allowNull: false, defaultValue: 0.0000 },
     maxAmount: { type: DataTypes.DECIMAL(20, 4), allowNull: false, defaultValue: 1000000000.0000 },
     requiredLevel: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 1 },

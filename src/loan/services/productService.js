@@ -7,6 +7,7 @@ const productIncludes = (withWaterfall) => [
   { model: db.lnProductCurrency, as: 'allowedCurrencies', include: [{ model: db.currency, as: 'currency' }] },
   { model: db.lnProductComponent, as: 'components', include: [{ model: db.lnComponent, as: 'componentMaster' }] },
   { model: db.lnProductUde, as: 'udes' },
+  { model: db.lnProductAmount, as: 'currencyAmounts' },
   ...(withWaterfall ? [{ model: db.lnWaterfallRule, as: 'waterfallRules', include: [{ model: db.lnComponent, as: 'component' }] }] : [])
 ];
 

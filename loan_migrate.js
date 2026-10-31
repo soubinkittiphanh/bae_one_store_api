@@ -67,6 +67,22 @@ const MIGRATIONS = [
     marker: 'ln_exchange_rate',
     dropsData: false,
     dropsTransactions: true
+  },
+  {
+    name: '20261102_loan_phase5_ccy_limits',
+    up: '20261102_loan_phase5_ccy_limits.sql',
+    down: '20261102_loan_phase5_ccy_limits_down.sql',
+    marker: 'ln_product_amount',
+    dropsData: false,
+    dropsCurrencyAmounts: true
+  },
+  {
+    name: '20261103_loan_phase5_documents',
+    up: '20261103_loan_phase5_documents.sql',
+    down: '20261103_loan_phase5_documents_down.sql',
+    marker: 'ln_account_document',
+    dropsData: false,
+    dropsDocuments: true
   }
 ];
 
@@ -165,6 +181,21 @@ const assertNoAccounts = async (conn) => {
   }
 };
 
+// The Phase 5 B0 DOWN removes per-currency amounts; never while a non-base currency has any (entered by people)
+const assertNoForeignAmounts = async (conn) => {
+  if (!(await tableExists(conn, 'ln_product_amount'))) return;
+  const rows = await conn.query(`SELECT (SELECT COUNT(*) FROM ln_product_amount a JOIN currency c ON c.id = a.currencyId WHERE c.isLocalCCY = 0)
+    + (SELECT COUNT(*) FROM ln_product_currency pc JOIN currency c ON c.id = pc.currencyId WHERE c.isLocalCCY = 0 AND (pc.minAmount IS NOT NULL OR pc.maxAmount IS NOT NULL)) AS n`);
+  if (Number(rows[0].n) > 0) throw new Error(`Refusing to roll back Phase 5 B0: ${rows[0].n} per-currency limit or amount row(s) exist for non-base currencies.`);
+};
+
+// The Phase 5 B1 DOWN drops the document register; never while documents exist (the files would be orphaned)
+const assertNoDocuments = async (conn) => {
+  if (!(await tableExists(conn, 'ln_account_document'))) return;
+  const rows = await conn.query('SELECT COUNT(*) AS n FROM ln_account_document');
+  if (Number(rows[0].n) > 0) throw new Error(`Refusing to roll back Phase 5 B1: ln_account_document has ${rows[0].n} row(s).`);
+};
+
 const main = async () => {
   const [command = 'status', ...flags] = process.argv.slice(2);
   const target = assertLocalDb('loan_migrate');
@@ -206,7 +237,7 @@ const main = async () => {
       const refusals = [];
       for (const m of toRollBack) {
         const checks = [m.dropsData && assertNoBusinessData, m.dropsSecurity && assertSecurityOnlyLoan, m.dropsEntryRules && assertNoEntryRules, m.dropsAccounts && assertNoAccounts,
-          m.dropsTransactions && assertNoTransactions, m.module && jsModule(m).assertCanRollBack && (c => jsModule(m).assertCanRollBack(c))];
+          m.dropsTransactions && assertNoTransactions, m.dropsCurrencyAmounts && assertNoForeignAmounts, m.dropsDocuments && assertNoDocuments, m.module && jsModule(m).assertCanRollBack && (c => jsModule(m).assertCanRollBack(c))];
         for (const check of checks.filter(Boolean)) {
           try { await check(conn); } catch (err) { refusals.push(err.message); }
         }

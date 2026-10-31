@@ -3,6 +3,7 @@ const defineLoanAssociations = (models) => {
     lnProductCategory,
     lnProduct,
     lnProductCurrency,
+    lnProductAmount,
     lnComponent,
     lnProductComponent,
     lnWaterfallRule,
@@ -67,6 +68,9 @@ const defineLoanAssociations = (models) => {
   if (currency) {
     lnProductCurrency.belongsTo(currency, { foreignKey: 'currencyId', as: 'currency' });
   }
+
+  lnProduct.hasMany(lnProductAmount, { foreignKey: 'productId', as: 'currencyAmounts' });
+  lnProductAmount.belongsTo(lnProduct, { foreignKey: 'productId', as: 'product' });
 
   // Product Components
   lnProduct.hasMany(lnProductComponent, { foreignKey: 'productId', as: 'components' });

@@ -7,6 +7,7 @@ const { LoanError } = require('../errors');
 const E = require('../engine');
 const ctx = require('./loanContext');
 const { previewJournal } = require('./accountingService');
+const { productCurrency, limitProblemsFor, applyCurrencyAmounts } = require('./currencyAmounts');
 
 const N = E.num;
 const INACTIVE = ['REJECTED', 'CLOSED'];
@@ -31,11 +32,11 @@ const productTerms = (product, look, body, valueDate) => ({
   holidayHandling: product.holidayHandlingCode
 });
 
-// Product limits shared by the simulation (warnings) and applications (errors)
-const limitProblems = (productRow, terms) => {
+// Product limits shared by the simulation (warnings) and applications (errors). Amount limits are per
+// currency (Phase 5 B0): pc is the offered ln_product_currency row (null when not offered), code its currency code.
+const limitProblems = (productRow, terms, pc, code) => {
   const product = ctx.dec(productRow.get ? productRow.get({ plain: true }) : productRow);
-  const out = [];
-  if (N.cmp(terms.principal, product.minAmount) < 0 || N.cmp(terms.principal, product.maxAmount) > 0) out.push(`Amount must be between ${product.minAmount} and ${product.maxAmount}`);
+  const out = [...limitProblemsFor(pc, terms.principal, code)];
   if (terms.tenorMonths < product.minTenorMonths || terms.tenorMonths > product.maxTenorMonths) out.push(`Tenor must be ${product.minTenorMonths}-${product.maxTenorMonths} months`);
   if (N.cmp(terms.annualRate, product.minInterestRate) < 0 || N.cmp(terms.annualRate, product.maxInterestRate) > 0) out.push(`Interest rate must be between ${product.minInterestRate} and ${product.maxInterestRate}`);
   return out;
@@ -80,9 +81,12 @@ const simulationService = {
     const rounder = E.rounding.makeRounder(rule);
     const look = await ctx.lookups(product);
     const { calendar, calendarCode } = await ctx.calendarFor(body.branchId || null);
-    const children = await ctx.productChildren(product.id);
+    const children = await applyCurrencyAmounts(await ctx.productChildren(product.id), product.id, currencyId, { includePending: preview });
     const terms = productTerms(product, look, body, valueDate);
-    warnings.push(...limitProblems(product, terms));
+    const currency = await db.currency.findByPk(currencyId);
+    const code = currency ? currency.code : `currency ${currencyId}`;
+    warnings.push(...limitProblems(product, terms, await productCurrency(product.id, currencyId, { includePending: preview }), code));
+    if (children.missingCurrencyAmounts.length) throw new LoanError(409, `The product has no fixed amount in ${code} for ${children.missingCurrencyAmounts.join(', ')}`);
 
     const schedule = E.schedule.generateSchedule(terms, calendar, rounder);
     const fees = E.fees.upfrontFees({ loanAmount: terms.principal, components: children.components, rounder });

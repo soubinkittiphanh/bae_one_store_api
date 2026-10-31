@@ -9,8 +9,10 @@ const ctx = require('./loanContext');
 const { productTerms } = require('./simulationService');
 const { checkProductRow, previewJournal } = require('./accountingService');
 const { nextNumber } = require('./numberingService');
+const { applyCurrencyAmounts, assertNoMissing } = require('./currencyAmounts');
 
 const N = E.num;
+const currencyCode = async (id, transaction) => { const c = await db.currency.findByPk(id, { transaction }); return c ? c.code : `currency ${id}`; };
 const PREVIEWS = ['due-date', 'payment', 'prepayment', 'status'];
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -68,14 +70,15 @@ const accountService = {
       const product = await db.lnProduct.findByPk(app.productId, { transaction });
       if (!product || product.authStatus !== 'AUTHORIZED') throw new LoanError(409, 'The application product is not AUTHORIZED');
       const check = await checkProductRow(product, { transaction });
-      if (!check.ok) throw new LoanError(409, `${product.productCode} has incomplete accounting entry rules`, check.errors);
+      if (!check.ok) throw new LoanError(409, `${product.productCode} has incomplete accounting entry rules or currency amounts`, check.errors);
 
       const valueDate = app.valueDate ? String(app.valueDate) : await ctx.businessDate();
       const rule = await ctx.currencyRule(app.currencyId, valueDate, false);
       const rounder = E.rounding.makeRounder(rule);
       const look = await ctx.lookups(product);
       const { calendar } = await ctx.calendarFor(app.branchId);
-      const children = await ctx.productChildren(product.id);
+      const children = await applyCurrencyAmounts(await ctx.productChildren(product.id), product.id, app.currencyId);
+      assertNoMissing(children, await currencyCode(app.currencyId, transaction));
       const terms = productTerms(product, look, {
         principal: String(app.requestedAmount), interestRate: String(app.interestRate), tenorMonths: app.tenorMonths,
         firstDueDate: app.firstDueDate ? String(app.firstDueDate) : undefined, graceType: app.graceType, gracePeriods: app.gracePeriods,

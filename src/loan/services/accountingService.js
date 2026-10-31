@@ -2,16 +2,21 @@ const db = require('../../models');
 const { LoanError } = require('../errors');
 const { resolveRuleSet, buildJournal } = require('../accounting/journal');
 const { validateProductRuleSet, validateJournal, validateTagAmounts } = require('../accounting/validators');
+const { currencyProblems } = require('./currencyAmounts');
 
 const today = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Vientiane' });
 
 // Checks a product row's resolved entry-rule set against its fee mode, presentation and target.
 // Only AUTHORIZED rules count unless includePending (used to preview before go-live).
-const checkProductRow = async (product, { includePending = false, asOfDate = today(), transaction } = {}) => {
+// Phase 5 B0: also every offered currency needs its amount limits and fixed amounts (currencyErrors);
+// posting on existing accounts passes currencies: false (their amounts are frozen in the snapshot).
+const checkProductRow = async (product, { includePending = false, asOfDate = today(), transaction, currencies = true } = {}) => {
   const rules = (await db.lnAccountingEntryRule.findAll({ transaction })).map(r => r.get({ plain: true }));
   const active = resolveRuleSet(rules, product, { asOfDate, includePending });
   const withInactive = resolveRuleSet(rules, product, { asOfDate, includePending, includeInactive: true });
-  const errors = validateProductRuleSet(product, active, withInactive);
+  const ruleErrors = validateProductRuleSet(product, active, withInactive);
+  const currencyErrors = currencies ? await currencyProblems(product, { transaction }) : [];
+  const errors = [...ruleErrors, ...currencyErrors];
   // Rules still waiting for a checker that would satisfy a failing leg (helps the UI point at them)
   const pendingThatWouldHelp = includePending ? 0 : resolveRuleSet(rules, product, { asOfDate, includePending: true })
     .filter(r => r.authStatus === 'PENDING').length;
@@ -30,6 +35,8 @@ const checkProductRow = async (product, { includePending = false, asOfDate = tod
     activeRules: active.length,
     pendingRules: pendingThatWouldHelp,
     ok: errors.length === 0,
+    ruleErrors,
+    currencyErrors,
     errors
   };
 };

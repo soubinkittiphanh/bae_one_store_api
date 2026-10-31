@@ -48,6 +48,7 @@ module.exports = (sequelize, DataTypes) => {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     productComponentId: { type: DataTypes.INTEGER, allowNull: false },
     tierBasis: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'AMOUNT' },
+    currencyId: { type: DataTypes.INTEGER, allowNull: true, comment: 'currency.id; required for tierBasis AMOUNT' },
     fromValue: { type: DataTypes.DECIMAL(20, 4), allowNull: false, defaultValue: 0.0000 },
     toValue: { type: DataTypes.DECIMAL(20, 4), allowNull: false, defaultValue: 0.0000 },
     tierRate: { type: DataTypes.DECIMAL(9, 6), allowNull: false, defaultValue: 0.000000 },

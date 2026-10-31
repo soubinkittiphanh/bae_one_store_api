@@ -63,6 +63,9 @@ module.exports = (sequelize, DataTypes) => {
     productId: { type: DataTypes.INTEGER, allowNull: false },
     currencyId: { type: DataTypes.INTEGER, allowNull: false },
     isDefault: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+    // Phase 5 B0: amount limits in this currency (NULL = not set; the product check blocks authorization)
+    minAmount: { type: DataTypes.DECIMAL(20, 4), allowNull: true },
+    maxAmount: { type: DataTypes.DECIMAL(20, 4), allowNull: true },
     ...makerChecker(DataTypes)
   }, { freezeTableName: true, tableName: 'ln_product_currency', timestamps: true,
     indexes: [
@@ -101,6 +104,22 @@ module.exports = (sequelize, DataTypes) => {
       { name: 'uk_product_component', unique: true, fields: ['productId', 'componentId'] }
     ] });
 
+  // Phase 5 B0: fixed amounts per currency (components with a fixed-amount formula, UDEs of dataType AMOUNT)
+  const lnProductAmount = sequelize.define('lnProductAmount', {
+    id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+    productId: { type: DataTypes.INTEGER, allowNull: false },
+    currencyId: { type: DataTypes.INTEGER, allowNull: false },
+    itemType: { type: DataTypes.STRING(20), allowNull: false },
+    itemCode: { type: DataTypes.STRING(30), allowNull: false },
+    defaultValue: { type: DataTypes.DECIMAL(20, 4), allowNull: false, defaultValue: 0.0000 },
+    minValue: { type: DataTypes.DECIMAL(20, 4), allowNull: false, defaultValue: 0.0000 },
+    maxValue: { type: DataTypes.DECIMAL(20, 4), allowNull: false, defaultValue: 0.0000 },
+    ...makerChecker(DataTypes)
+  }, { freezeTableName: true, tableName: 'ln_product_amount', timestamps: true,
+    indexes: [
+      { name: 'uk_product_amount', unique: true, fields: ['productId', 'currencyId', 'itemType', 'itemCode'] }
+    ] });
+
   const lnWaterfallRule = sequelize.define('lnWaterfallRule', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     productId: { type: DataTypes.INTEGER, allowNull: false },
@@ -117,6 +136,7 @@ module.exports = (sequelize, DataTypes) => {
     lnProductCategory,
     lnProduct,
     lnProductCurrency,
+    lnProductAmount,
     lnComponent,
     lnProductComponent,
     lnWaterfallRule

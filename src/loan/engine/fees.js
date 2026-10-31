@@ -2,7 +2,7 @@
  * Upfront fees and disbursement events (pure) -> FEE_COLLECT / DISB tags per feeFinancingMode.
  * Fee formulas (ln_product_component.formulaCode, timing UPFRONT_COLLECTED):
  *   UPFRONT_PCT         defaultValue x loan amount
- *   FIXED_CONTRACT_FEE  defaultValue
+ *   FIXED_CONTRACT_FEE  defaultValue (the contract currency's value from ln_product_amount, Phase 5 B0)
  */
 const N = require('./num');
 const { clean } = require('./prepayment');
@@ -15,7 +15,11 @@ const upfrontFees = ({ loanAmount, components = [], rounder }) => {
   for (const c of components.filter(x => x.timing === UPFRONT_TIMING)) {
     let amount;
     if (c.formulaCode === 'UPFRONT_PCT') amount = rounder.round(N.mul(loanAmount, c.defaultValue));
-    else if (c.formulaCode === 'FIXED_CONTRACT_FEE') amount = rounder.round(c.defaultValue);
+    else if (c.formulaCode === 'FIXED_CONTRACT_FEE') {
+      // Phase 5 B0: the value is the contract currency's (ln_product_amount); none means the product is incomplete
+      if (c.currencyMissing || c.defaultValue === null || c.defaultValue === undefined) throw new LoanError(409, `${c.componentCode} has no fixed amount in the contract currency`);
+      amount = rounder.round(c.defaultValue);
+    }
     else throw new LoanError(400, `Unsupported upfront fee formula ${c.formulaCode} (${c.componentCode})`);
     lines.push({ componentCode: c.componentCode, formulaCode: c.formulaCode, amount });
   }

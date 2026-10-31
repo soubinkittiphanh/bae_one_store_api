@@ -96,10 +96,12 @@ const main = async () => {
   await test('migrate up on a clean copy', async () => {
     runNode('loan_migrate.js', ['up']);
     const n = Number((await q("SELECT COUNT(*) n FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name LIKE 'ln\\_%'"))[0].n);
-    assert.strictEqual(n, 73, `expected 73 ln_* tables, found ${n}`);
+    assert.strictEqual(n, 75, `expected 75 ln_* tables, found ${n}`);
   });
-  await test('Phase 5 FX, Phase 4, POS loan types, Phase 3, 2B and corrections DOWN, then UP, restore the schema exactly', async () => {
+  await test('Phase 5 documents, currency limits, FX, Phase 4, POS loan types, Phase 3, 2B and corrections DOWN, then UP, restore the schema exactly', async () => {
     const before = await snapshot();
+    assert.match(runNode('loan_migrate.js', ['down', '--yes']), /20261103_loan_phase5_documents/);
+    assert.match(runNode('loan_migrate.js', ['down', '--yes']), /20261102_loan_phase5_ccy_limits/);
     assert.match(runNode('loan_migrate.js', ['down', '--yes']), /20261101_loan_phase5_fx/);
     assert.match(runNode('loan_migrate.js', ['down', '--yes']), /20261030_loan_phase4/);
     assert.match(runNode('loan_migrate.js', ['down', '--yes']), /20261030_pos_transaction_entry_loan_types/);
@@ -117,6 +119,8 @@ const main = async () => {
     assert.deepStrictEqual(values.slice(-2), ['LOAN_IN', 'LOAN_OUT']);
     runNode('loan_migrate.js', ['up']);
     assert.deepStrictEqual((await q(colSql))[0], after, 'second UP changes nothing');
+    runNode('loan_migrate.js', ['down', '--yes']); // Phase 5 documents
+    runNode('loan_migrate.js', ['down', '--yes']); // Phase 5 currency limits
     runNode('loan_migrate.js', ['down', '--yes']); // Phase 5 FX
     runNode('loan_migrate.js', ['down', '--yes']); // Phase 4
     runNode('loan_migrate.js', ['down', '--yes']); // POS loan types
@@ -247,6 +251,20 @@ const main = async () => {
     assert.strictEqual((await q("SELECT COUNT(*) n FROM sec_function WHERE functionCode = 'LN_EXCHANGE_RATE'"))[0].n, 1n);
     assert.strictEqual(Number((await q('SELECT COUNT(*) n FROM chart_of_account'))[0].n), chartBefore, 'no GL account created');
     assert.strictEqual(Number((await q('SELECT COUNT(*) n FROM ln_role_gl_mapping'))[0].n), mappingsBefore, 'no mapping created');
+  });
+
+  await test('Phase 5B seed: base-currency limits and fixed amounts copied from the product (other currencies unset); LN_COLLECTION / LN_REPORT / LN_DOCUMENT for SUPER_ADMIN only; runs twice with identical counts', async () => {
+    runNode('seed_loan_phase5b.js');
+    const counts = await tableCounts();
+    runNode('seed_loan_phase5b.js');
+    assert.deepStrictEqual(await tableCounts(), counts);
+    const limits = await q("SELECT p.productCode code, CAST(pc.minAmount AS CHAR) mn, CAST(pc.maxAmount AS CHAR) mx, CAST(p.minAmount AS CHAR) pmn, CAST(p.maxAmount AS CHAR) pmx, c.isLocalCCY base FROM ln_product_currency pc JOIN ln_product p ON p.id = pc.productId JOIN currency c ON c.id = pc.currencyId ORDER BY 1");
+    assert.ok(limits.length >= 3);
+    for (const l of limits) assert.deepStrictEqual(Number(l.base) ? [l.mn, l.mx] : [null, null], Number(l.base) ? [l.pmn, l.pmx] : [null, null], `${l.code} limits`);
+    const fees = await q("SELECT p.productCode code, a.itemCode item, CAST(a.defaultValue AS CHAR) v, a.authStatus s FROM ln_product_amount a JOIN ln_product p ON p.id = a.productId ORDER BY 1");
+    assert.deepStrictEqual(fees.map(f => `${f.code}:${f.item}:${f.v}:${f.s}`), ['CAR-LOAN-BALLOON:DOCUMENTATION_FEE:300000.0000:PENDING', 'CAR-LOAN-DB:DOCUMENTATION_FEE:300000.0000:PENDING', 'CAR-LOAN-FLAT:DOCUMENTATION_FEE:300000.0000:PENDING']);
+    const grants = await q("SELECT g.code grp, s.functionCode f FROM sec_group_grant s JOIN userGroup g ON g.id = s.userGroupId WHERE s.functionCode IN ('LN_COLLECTION','LN_REPORT','LN_DOCUMENT') GROUP BY 1, 2 ORDER BY 1, 2");
+    assert.deepStrictEqual(grants.map(r => `${r.grp}:${r.f}`), ['SUPER_ADMIN:LN_COLLECTION', 'SUPER_ADMIN:LN_DOCUMENT', 'SUPER_ADMIN:LN_REPORT']);
   });
 
   console.log('\n[schema parity]');
@@ -847,6 +865,50 @@ const apiTests = async ({ port, q, db, runNode }) => {
     await authorizeAll('currency-rule');
     const after = await call(ADMIN, 'post', `${L}/products/${product.id}/simulate`, SIM);
     assert.strictEqual(after.data.data.preview, false);
+  });
+  await test('per-currency amounts (Phase 5 B0): a product offering USD without USD limits and USD fixed fee cannot be authorized; with them, USD simulation and applications use the USD values', async () => {
+    const usdId = Number((await q("SELECT id FROM currency WHERE code = 'USD' LIMIT 1"))[0].id);
+    const thbId = Number((await q("SELECT id FROM currency WHERE code = 'THB' LIMIT 1"))[0].id);
+    const p = (await call(ADMIN, 'get', `${L}/products?search=CAR-LOAN-BALLOON`)).data.data.find(x => x.authStatus === 'PENDING');
+    const pc = await call(ADMIN, 'post', `${L}/params/product-currency`, { productId: p.id, currencyId: usdId, isDefault: false });
+    expectStatus(pc, 201, 'offer USD without limits');
+    const check = (await call(SUPER, 'get', `${L}/products/${p.id}/accounting-check`)).data.data;
+    console.log(`        check: ${check.currencyErrors.join(' | ')}`);
+    assert.deepStrictEqual(check.currencyErrors, ['USD: amount limits (minAmount, maxAmount) are not set', 'USD: DOCUMENTATION_FEE (FIXED_CONTRACT_FEE) has no fixed amount in this currency']);
+    assert.strictEqual(check.ok, false);
+    const blocked = await call(SUPER, 'post', `${L}/params/product/${p.id}/authorize`);
+    expectStatus(blocked, 409, 'USD limits missing');
+    assert.match(blocked.data.message, /cannot be authorized: 2 currency amount problem\(s\)/);
+    expectStatus(await call(ADMIN, 'put', `${L}/params/product-currency/${pc.data.data.id}`, { minAmount: '2000', maxAmount: '1000' }), 400, 'min above max');
+    expectStatus(await call(ADMIN, 'put', `${L}/params/product-currency/${pc.data.data.id}`, { minAmount: '1000', maxAmount: '150000' }), 200, 'USD limits');
+    const fee = { productId: p.id, currencyId: usdId, itemType: 'COMPONENT', itemCode: 'DOCUMENTATION_FEE', defaultValue: '15', minValue: '0', maxValue: '100' };
+    expectStatus(await call(ADMIN, 'post', `${L}/params/product-amount`, { ...fee, defaultValue: '150' }), 400, 'default above max');
+    expectStatus(await call(ADMIN, 'post', `${L}/params/product-amount`, fee), 201, 'USD documentation fee');
+    const stray = await call(ADMIN, 'post', `${L}/params/product-amount`, { ...fee, currencyId: thbId, defaultValue: '500', maxValue: '1000' });
+    expectStatus(stray, 201, 'THB amount on a product that does not offer THB');
+    assert.deepStrictEqual((await call(SUPER, 'get', `${L}/products/${p.id}/accounting-check`)).data.data.currencyErrors, ['THB: fixed amount COMPONENT DOCUMENTATION_FEE is set for a currency the product does not offer']);
+    expectStatus(await call(ADMIN, 'delete', `${L}/params/product-amount/${stray.data.data.id}`), 200, 'remove the THB amount');
+    expectStatus(await call(SUPER, 'post', `${L}/params/product/${p.id}/authorize`), 200, 'authorize with USD limits and fee');
+    const kids = [...await q('SELECT authStatus s FROM ln_product_currency WHERE productId = ?', [p.id]), ...await q('SELECT authStatus s FROM ln_product_amount WHERE productId = ?', [p.id])];
+    assert.ok(kids.every(k => k.s === 'AUTHORIZED'), 'children authorized with the product');
+
+    const simUsd = (await call(ADMIN, 'post', `${L}/products/${p.id}/simulate`, { principal: '12000', interestRate: '0.12', tenorMonths: 12, valueDate: businessDate, currencyId: usdId })).data.data;
+    const docFee = simUsd.fees.lines.find(l => l.componentCode === 'DOCUMENTATION_FEE');
+    console.log(`        USD simulation fees: ${simUsd.fees.lines.map(l => `${l.componentCode} ${l.amount}`).join(', ')}; warnings: ${simUsd.warnings.join(' | ') || 'none'}`);
+    assert.strictEqual(docFee.amount, '15.00', 'USD fee, not LAK 300,000');
+    assert.ok(!simUsd.warnings.some(w => /Amount must be/.test(w)), 'USD 12,000 is within the USD limits');
+    const low = (await call(ADMIN, 'post', `${L}/products/${p.id}/simulate`, { principal: '500', interestRate: '0.12', tenorMonths: 12, valueDate: businessDate, currencyId: usdId })).data.data;
+    assert.ok(low.warnings.includes('Amount must be between USD 1000.0000 and 150000.0000'), low.warnings.join(' | '));
+    const lak = (await call(ADMIN, 'post', `${L}/products/${p.id}/simulate`, { principal: '5000000', interestRate: '0.12', tenorMonths: 12, valueDate: businessDate })).data.data;
+    assert.ok(lak.warnings.some(w => /^Amount must be between LAK 10000000\.0000 and 3000000000\.0000$/.test(w)), lak.warnings.join(' | '));
+    assert.strictEqual(lak.fees.lines.find(l => l.componentCode === 'DOCUMENTATION_FEE').amount, '300000');
+
+    const client = (await q('SELECT id FROM client ORDER BY id LIMIT 1'))[0];
+    const app = { customerId: client.id, productId: p.id, currencyId: usdId, requestedAmount: '500', tenorMonths: 12, interestRate: '0.12', valueDate: businessDate };
+    const refused = await call(ADMIN, 'post', `${L}/applications`, app);
+    expectStatus(refused, 400, 'below the USD minimum');
+    assert.match(refused.data.message, /Amount must be between USD 1000\.0000 and 150000\.0000/);
+    expectStatus(await call(ADMIN, 'post', `${L}/applications`, { ...app, currencyId: thbId }), 400, 'THB not offered');
   });
   let bookedAccount;
   await test('application: limits checked, maker-checker approval audited, booking freezes the snapshot and stores the engine schedule; no GL rows', async () => {
