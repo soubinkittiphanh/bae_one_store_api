@@ -37,7 +37,11 @@ const masterService = {
         if (spec.enum) enums[`${entity}.${field}`] = spec.enum;
       }
     }
-    return { ...Object.fromEntries(entries), enums };
+    // Operational switches the screens need to decide what to show (the API still enforces each call).
+    // Exposed here, behind LN_LOOKUP VIEW, not on the ungated /status banner.
+    const selfAuth = await db.spf.findOne({ where: { code: 'LOAN_ALLOW_SELF_AUTHORIZE' }, attributes: ['value'] });
+    const settings = { allowSelfAuthorize: Boolean(selfAuth && selfAuth.value === 'true') };
+    return { ...Object.fromEntries(entries), enums, settings };
   },
 
   async getUdes(query) {

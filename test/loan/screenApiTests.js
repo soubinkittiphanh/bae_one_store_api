@@ -195,4 +195,19 @@ module.exports = async ({ test, call, q, users, L, expectStatus }) => {
     const audit = Number((await one("SELECT COUNT(*) n FROM ln_audit_log WHERE entityName = 'account-document'")).n);
     assert.strictEqual(audit, 1, 'upload audited');
   });
+
+  await test('B1 /lookups exposes settings.allowSelfAuthorize (gated by LN_LOOKUP VIEW) and it tracks the SPF; /status still carries only the two banner fields', async () => {
+    const prior = (await one("SELECT value v FROM SPF WHERE code = 'LOAN_ALLOW_SELF_AUTHORIZE'")).v;
+    await q("UPDATE SPF SET value = 'false' WHERE code = 'LOAN_ALLOW_SELF_AUTHORIZE'");
+    let res = await call(SUPER, 'get', `${L}/lookups`);
+    expectStatus(res, 200, 'lookups');
+    assert.strictEqual(res.data.data.settings.allowSelfAuthorize, false, 'switch off');
+    await q("UPDATE SPF SET value = 'true' WHERE code = 'LOAN_ALLOW_SELF_AUTHORIZE'");
+    res = await call(SUPER, 'get', `${L}/lookups`);
+    assert.strictEqual(res.data.data.settings.allowSelfAuthorize, true, 'switch on');
+    await q('UPDATE SPF SET value = ? WHERE code = ?', [prior, 'LOAN_ALLOW_SELF_AUTHORIZE']);
+    // The switch is not leaked through the ungated banner route.
+    const status = await call(SUPER, 'get', `${L}/status`);
+    assert.deepStrictEqual(Object.keys(status.data.data).sort(), ['confirmationStatus', 'warningBannerActive'], '/status still only the banner fields');
+  });
 };
