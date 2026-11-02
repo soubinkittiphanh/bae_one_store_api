@@ -1183,6 +1183,16 @@ const ensureARAndAPColumns = async () => {
       logger.info("Successfully created annual_expense_budget table.");
     }
 
+    // Ensure composite index on annual_expense_budget for fast list queries
+    try {
+      await sequelize.query(`
+        ALTER TABLE \`annual_expense_budget\` 
+        ADD INDEX IF NOT EXISTS \`idx_budget_year_active\` (\`year\`, \`isActive\`, \`id\`);
+      `, { type: QueryTypes.BULKUPDATE });
+    } catch (idxErr) {
+      logger.warn(`Could not add index idx_budget_year_active: ${idxErr.message}`);
+    }
+
     // 10. revenue_target table
     if (!(await getActualTableName('revenue_target'))) {
       logger.info("Creating revenue_target table...");

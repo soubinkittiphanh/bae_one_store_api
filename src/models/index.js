@@ -872,6 +872,77 @@ const ensureCriticalColumns = async (sequelizeInstance) => {
           );
           logger.info("Successfully added isPackagingAsset to product table.");
         }
+
+        // Automatic cleanup of legacy invalid customer_packaging_ledger entries
+        if (await tableExists('customer_packaging_ledger')) {
+          try {
+            await sequelizeInstance.query(`
+              DELETE cpl FROM customer_packaging_ledger cpl
+              LEFT JOIN product p ON cpl.packagingProductId = p.id
+              LEFT JOIN category cat ON p.pro_category = cat.categ_id
+              WHERE p.id IS NULL 
+                 OR ((p.isPackagingAsset = 0 OR p.isPackagingAsset IS NULL)
+                     AND (cat.isPackaging = 0 OR cat.isPackaging IS NULL))
+            `, { type: QueryTypes.BULKUPDATE });
+            logger.info("Cleaned up any non-packaging entries from customer_packaging_ledger table.");
+
+            // Deduplicate double-posted POS packaging movements:
+            // 1. Delete duplicate 'Packaging Borrowed / Delivered' if 'Sold/Delivered Out' or 'Returned/Bought Back' exists for the same sale & product
+            await sequelizeInstance.query(`
+              DELETE cpl_dup FROM customer_packaging_ledger cpl_dup
+              INNER JOIN customer_packaging_ledger cpl_orig 
+                ON cpl_dup.saleHeaderId = cpl_orig.saleHeaderId 
+               AND cpl_dup.packagingProductId = cpl_orig.packagingProductId
+               AND cpl_dup.id > cpl_orig.id
+              WHERE cpl_dup.saleHeaderId IS NOT NULL
+                AND cpl_dup.notes LIKE '%Packaging Borrowed / Delivered%'
+                AND (cpl_orig.notes LIKE '%Packaging Sold/Delivered Out%' OR cpl_orig.notes LIKE '%Packaging Returned/Bought Back%')
+            `, { type: QueryTypes.BULKUPDATE });
+
+            // 2. Delete duplicate 'Packaging Borrowed / Delivered' if multiple exist for the exact same sale & product
+            await sequelizeInstance.query(`
+              DELETE cpl_dup FROM customer_packaging_ledger cpl_dup
+              INNER JOIN customer_packaging_ledger cpl_orig 
+                ON cpl_dup.saleHeaderId = cpl_orig.saleHeaderId 
+               AND cpl_dup.packagingProductId = cpl_orig.packagingProductId
+               AND cpl_dup.id > cpl_orig.id
+              WHERE cpl_dup.saleHeaderId IS NOT NULL
+                AND cpl_dup.notes LIKE '%Packaging Borrowed / Delivered%'
+                AND cpl_orig.notes LIKE '%Packaging Borrowed / Delivered%'
+            `, { type: QueryTypes.BULKUPDATE });
+
+            // 3. Recalculate balanceAfter for affected customer_packaging_ledger records
+            const clientPkgPairs = await sequelizeInstance.query(`
+              SELECT DISTINCT clientId, packagingProductId
+              FROM customer_packaging_ledger
+            `, { type: QueryTypes.SELECT });
+
+            for (const pair of clientPkgPairs) {
+              const entries = await sequelizeInstance.query(`
+                SELECT id, qtyChange FROM customer_packaging_ledger
+                WHERE clientId = :clientId AND packagingProductId = :pkgId
+                ORDER BY id ASC
+              `, {
+                replacements: { clientId: pair.clientId, pkgId: pair.packagingProductId },
+                type: QueryTypes.SELECT
+              });
+
+              let runningBalance = 0;
+              for (const e of entries) {
+                runningBalance += e.qtyChange;
+                await sequelizeInstance.query(`
+                  UPDATE customer_packaging_ledger SET balanceAfter = :runningBalance WHERE id = :id
+                `, {
+                  replacements: { runningBalance, id: e.id },
+                  type: QueryTypes.BULKUPDATE
+                });
+              }
+            }
+            logger.info("Successfully reconciled customer_packaging_ledger balances.");
+          } catch (cleanErr) {
+            logger.warn(`Non-blocking note during customer_packaging_ledger cleanup: ${cleanErr.message}`);
+          }
+        }
       }
     } catch (err) {
       logger.warn(`Could not ensure product columns: ${err.message}`);

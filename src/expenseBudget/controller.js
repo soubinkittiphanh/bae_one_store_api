@@ -32,18 +32,31 @@ const getAllBudgets = async (req, res) => {
             order: [['year', 'DESC'], ['id', 'ASC']]
         });
 
-        // Compute spent amounts for each budget
-        const result = await Promise.all(budgets.map(async (budget) => {
-            const budgetData = budget.toJSON();
+        // Batch compute spent amounts to prevent N+1 queries
+        const budgetIds = budgets.map(b => b.id);
+        const paymentsByBudgetId = {};
+
+        if (budgetIds.length > 0) {
             const payments = await ApPaymentHeader.findAll({
                 where: {
-                    budgetId: budget.id,
+                    budgetId: { [Op.in]: budgetIds },
                     expenseSource: 'BUDGET',
                     isActive: true
                 },
-                attributes: ['id', 'paymentNumber', 'bookingDate', 'payee', 'totalAmount', 'rate', 'notes']
+                attributes: ['id', 'budgetId', 'paymentNumber', 'bookingDate', 'payee', 'totalAmount', 'rate', 'notes']
             });
 
+            for (const p of payments) {
+                if (!paymentsByBudgetId[p.budgetId]) {
+                    paymentsByBudgetId[p.budgetId] = [];
+                }
+                paymentsByBudgetId[p.budgetId].push(p);
+            }
+        }
+
+        const result = budgets.map((budget) => {
+            const budgetData = budget.toJSON();
+            const payments = paymentsByBudgetId[budget.id] || [];
             const spentAmount = payments.reduce((sum, p) => sum + (parseFloat(p.totalAmount) || 0), 0);
             const allocatedAmount = parseFloat(budget.allocatedAmount) || 0;
             const remainingAmount = allocatedAmount - spentAmount;
@@ -59,8 +72,9 @@ const getAllBudgets = async (req, res) => {
                 paymentCount: payments.length,
                 payments
             };
-        }));
+        });
 
+        return res.status(200).json(result);
     } catch (error) {
         logger.error(`Error in getAllBudgets: ${error.message}`);
         if (error.original?.errno === 1146 || error.message?.includes("doesn't exist") || error.original?.code === 'ER_NO_SUCH_TABLE') {
@@ -258,15 +272,29 @@ const getBudgetSummary = async (req, res) => {
             ]
         });
 
-        const budgetItems = await Promise.all(budgets.map(async (b) => {
+        const budgetIds = budgets.map(b => b.id);
+        const paymentsByBudgetId = {};
+
+        if (budgetIds.length > 0) {
             const payments = await ApPaymentHeader.findAll({
                 where: {
-                    budgetId: b.id,
+                    budgetId: { [Op.in]: budgetIds },
                     expenseSource: 'BUDGET',
                     isActive: true
-                }
+                },
+                attributes: ['id', 'budgetId', 'totalAmount']
             });
 
+            for (const p of payments) {
+                if (!paymentsByBudgetId[p.budgetId]) {
+                    paymentsByBudgetId[p.budgetId] = [];
+                }
+                paymentsByBudgetId[p.budgetId].push(p);
+            }
+        }
+
+        const budgetItems = budgets.map((b) => {
+            const payments = paymentsByBudgetId[b.id] || [];
             const spentAmount = payments.reduce((sum, p) => sum + (parseFloat(p.totalAmount) || 0), 0);
             const allocatedAmount = parseFloat(b.allocatedAmount) || 0;
             const remainingAmount = allocatedAmount - spentAmount;
@@ -288,7 +316,7 @@ const getBudgetSummary = async (req, res) => {
                 isWarning: percentSpent >= (b.thresholdWarningPercent || 80),
                 paymentCount: payments.length
             };
-        }));
+        });
 
         // POS Operational Expenses in the same year (for source comparison)
         const startOfYear = `${year}-01-01`;

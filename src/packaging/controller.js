@@ -53,10 +53,20 @@ const packagingController = {
         try {
             const clientId = req.params.clientId || req.query.clientId || null;
             const { startDate, endDate } = req.query;
-            const data = await packagingService.getCustomerPackagingLedger(clientId, startDate, endDate);
+            const data = await packagingService.getCustomerPackagingLedger({ clientId, startDate, endDate });
             return res.status(200).json(data);
         } catch (error) {
             logger.error(`Error in getCustomerPackagingLedger: ${error.message}`);
+            return res.status(500).json({ success: false, message: error.message });
+        }
+    },
+
+    cleanUpInvalidPackagingRecords: async (req, res) => {
+        try {
+            const result = await packagingService.cleanUpInvalidPackagingRecords();
+            return res.status(200).json(result);
+        } catch (error) {
+            logger.error(`Error in cleanUpInvalidPackagingRecords: ${error.message}`);
             return res.status(500).json({ success: false, message: error.message });
         }
     },

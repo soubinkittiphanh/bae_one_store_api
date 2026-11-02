@@ -64,6 +64,12 @@ module.exports = (sequelize, DataTypes) => {
         createdAt: true,
         updatedAt: 'updateTimestamp',
         freezeTableName: true,
+        indexes: [
+            {
+                name: 'idx_budget_year_active',
+                fields: ['year', 'isActive', 'id']
+            }
+        ]
     });
 
     return AnnualExpenseBudget;

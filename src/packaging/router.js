@@ -17,6 +17,7 @@ router.get('/customer/balance/:clientId', controller.getCustomerPackagingBalance
 router.get('/customer/ledger', controller.getCustomerPackagingLedger);
 router.get('/customer/ledger/:clientId', controller.getCustomerPackagingLedger);
 router.post('/customer/return', controller.processWholesaleEmptiesReturn);
+router.post('/cleanup', controller.cleanUpInvalidPackagingRecords);
 
 // 3. Supplier Packaging (Beerlao Factory) routes
 router.get('/supplier/balance/:vendorId', controller.getSupplierPackagingBalance);

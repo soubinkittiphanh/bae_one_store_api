@@ -23,16 +23,20 @@ const checkRole = (allowedRoles = ['admin']) => {
       }
 
       const user = await db.user.findByPk(req.user.id, {
-        include: [{ model: db.role, as: 'role' }]
+        include: db.group ? [{ model: db.group, as: 'userGroup', required: false }] : []
       });
 
       if (!user) {
         return res.status(401).json({ success: false, message: 'User not found' });
       }
 
-      // Group 1 or level >= 100 or role name = admin
-      const isSuperAdmin = user.groupId === 1 || (user.role && user.role.level >= 100);
-      const roleName = user.role ? user.role.name.toLowerCase() : (user.groupId === 1 ? 'admin' : 'staff');
+      // Group 1, Group 12, or cus_name contains admin, or groupName contains admin
+      const groupName = user.userGroup ? (user.userGroup.name || user.userGroup.group_name || '').toLowerCase() : '';
+      const isSuperAdmin = user.groupId === 1 || 
+                           user.groupId === 12 || 
+                           (user.cus_name && user.cus_name.toLowerCase().includes('admin')) ||
+                           groupName.includes('admin');
+      const roleName = isSuperAdmin ? 'admin' : 'staff';
 
       if (isSuperAdmin || allowedRoles.includes(roleName) || allowedRoles.includes('*')) {
         req.currentUser = user;

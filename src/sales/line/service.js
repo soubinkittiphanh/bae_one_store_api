@@ -14,6 +14,27 @@ const handleLinePackagingMovement = async (iterator) => {
   if (!isReturn && !isSoldPackaging) return false;
 
   try {
+    // Strictly verify that iterator.productId is a genuine packaging product
+    const targetProduct = await db.product.findByPk(iterator.productId, {
+      attributes: ['id', 'pro_name', 'isPackagingAsset', 'pro_category']
+    });
+    if (!targetProduct) return false;
+
+    let isPackaging = targetProduct.isPackagingAsset === true || targetProduct.isPackagingAsset === 1;
+    if (!isPackaging && targetProduct.pro_category) {
+      const cat = await db.category.findByPk(targetProduct.pro_category, {
+        attributes: ['categ_id', 'isPackaging']
+      });
+      if (cat && (cat.isPackaging === true || cat.isPackaging === 1)) {
+        isPackaging = true;
+      }
+    }
+
+    // Non-packaging merchandise returns/sales must NEVER be recorded in customer packaging ledger
+    if (!isPackaging) {
+      return false;
+    }
+
     const saleHeader = await db.saleHeader.findByPk(iterator.headerId || iterator.saleHeaderId);
     const locationId = (saleHeader && saleHeader.locationId) || 1;
     const currencyId = (saleHeader && saleHeader.currencyId) || 1;
@@ -35,35 +56,53 @@ const handleLinePackagingMovement = async (iterator) => {
 
       // 2. Record in customer packaging ledger if client is attached
       if (saleHeader && saleHeader.clientId) {
-        const packagingService = require('../../packaging/service');
-        await packagingService.recordCustomerPackaging({
-          clientId: saleHeader.clientId,
-          saleHeaderId: saleHeader.id,
-          packagingProductId: iterator.productId,
-          transactionType: 'RETURNED_IN',
-          qtyChange: -qty,
-          depositAmount: Math.abs(iterator.total || (iterator.price * qty)),
-          notes: `POS Sale #${saleHeader.id} - Packaging Returned/Bought Back`,
-          userId: saleHeader.userId || 1,
-          companyId: (saleHeader && saleHeader.companyId) || 1
+        const existingReturn = await db.customerPackagingLedger.findOne({
+          where: {
+            saleHeaderId: saleHeader.id,
+            packagingProductId: iterator.productId,
+            transactionType: 'RETURNED_IN'
+          }
         });
+        if (!existingReturn) {
+          const packagingService = require('../../packaging/service');
+          await packagingService.recordCustomerPackaging({
+            clientId: saleHeader.clientId,
+            saleHeaderId: saleHeader.id,
+            packagingProductId: iterator.productId,
+            transactionType: 'RETURNED_IN',
+            qtyChange: -qty,
+            depositAmount: Math.abs(iterator.total || (iterator.price * qty)),
+            notes: `POS Sale #${saleHeader.id} - Packaging Returned/Bought Back`,
+            userId: saleHeader.userId || 1,
+            companyId: (saleHeader && saleHeader.companyId) || 1
+          });
+        }
       }
       return true; // Handled return
     } else if (isSoldPackaging) {
       // Record sold packaging in customer packaging ledger if client is attached
       if (saleHeader && saleHeader.clientId) {
-        const packagingService = require('../../packaging/service');
-        await packagingService.recordCustomerPackaging({
-          clientId: saleHeader.clientId,
-          saleHeaderId: saleHeader.id,
-          packagingProductId: iterator.productId,
-          transactionType: 'DELIVERED_OUT',
-          qtyChange: qty,
-          depositAmount: Math.abs(iterator.total || (iterator.price * qty)),
-          notes: `POS Sale #${saleHeader.id} - Packaging Sold/Delivered Out`,
-          userId: saleHeader.userId || 1,
-          companyId: (saleHeader && saleHeader.companyId) || 1
+        const existingDelivered = await db.customerPackagingLedger.findOne({
+          where: {
+            saleHeaderId: saleHeader.id,
+            packagingProductId: iterator.productId,
+            transactionType: 'DELIVERED_OUT'
+          }
         });
+        if (!existingDelivered) {
+          const packagingService = require('../../packaging/service');
+          await packagingService.recordCustomerPackaging({
+            clientId: saleHeader.clientId,
+            saleHeaderId: saleHeader.id,
+            packagingProductId: iterator.productId,
+            transactionType: 'DELIVERED_OUT',
+            qtyChange: qty,
+            depositAmount: Math.abs(iterator.total || (iterator.price * qty)),
+            notes: `POS Sale #${saleHeader.id} - Packaging Sold/Delivered Out`,
+            userId: saleHeader.userId || 1,
+            companyId: (saleHeader && saleHeader.companyId) || 1
+          });
+        }
       }
       return false; // Normal card consumption continues for sold packaging
     }

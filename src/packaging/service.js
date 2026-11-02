@@ -6,6 +6,7 @@ const {
     supplierPackagingLedger,
     packagingDamageLog,
     product,
+    category,
     client,
     vendor,
     card,
@@ -15,7 +16,42 @@ const {
 const { Op } = require('sequelize');
 const cardService = require('../card/service');
 
+/**
+ * Validate whether a product ID belongs to a genuine packaging asset product
+ * (either has isPackagingAsset = 1 or belongs to a category where isPackaging = 1).
+ */
+const isPackagingAssetProduct = async (productId, transaction = null) => {
+    if (!productId) return false;
+    try {
+        const targetProduct = await product.findByPk(productId, {
+            attributes: ['id', 'pro_name', 'isPackagingAsset', 'pro_category'],
+            transaction
+        });
+        if (!targetProduct) return false;
+
+        if (targetProduct.isPackagingAsset === true || targetProduct.isPackagingAsset === 1) {
+            return true;
+        }
+
+        if (targetProduct.pro_category) {
+            const cat = await category.findByPk(targetProduct.pro_category, {
+                attributes: ['categ_id', 'isPackaging'],
+                transaction
+            });
+            if (cat && (cat.isPackaging === true || cat.isPackaging === 1)) {
+                return true;
+            }
+        }
+
+        return false;
+    } catch (err) {
+        logger.error(`Error checking packaging asset product for #${productId}: ${err.message}`);
+        return false;
+    }
+};
+
 const packagingService = {
+    isPackagingAssetProduct,
     // =========================================================================
     // 1. PRODUCT PACKAGING DEFINITION (BOM)
     // =========================================================================
@@ -45,9 +81,26 @@ const packagingService = {
      */
     getPackagingAssets: async (companyId = 1) => {
         try {
+            const pkgCategories = await category.findAll({
+                where: { isPackaging: true },
+                attributes: ['categ_id']
+            });
+            const pkgCategoryIds = pkgCategories.map(c => c.categ_id);
+
+            const whereClause = {
+                isActive: true,
+                [Op.or]: [
+                    { isPackagingAsset: true }
+                ]
+            };
+
+            if (pkgCategoryIds.length > 0) {
+                whereClause[Op.or].push({ pro_category: { [Op.in]: pkgCategoryIds } });
+            }
+
             return await product.findAll({
-                where: { isPackagingAsset: true, isActive: true },
-                attributes: ['id', 'pro_name', 'pro_price', 'barCode', 'cost_price']
+                where: whereClause,
+                attributes: ['id', 'pro_name', 'pro_price', 'barCode', 'cost_price', 'isPackagingAsset', 'pro_category']
             });
         } catch (error) {
             logger.error(`Error in getPackagingAssets: ${error.message}`);
@@ -122,6 +175,13 @@ const packagingService = {
         companyId = 1
     }, t = null) => {
         const execute = async (transaction) => {
+            // Validate that packagingProductId is truly a packaging product
+            const isValidPkg = await isPackagingAssetProduct(packagingProductId, transaction);
+            if (!isValidPkg) {
+                logger.warn(`[Packaging] Refused customerPackagingLedger insertion: Product #${packagingProductId} is NOT a packaging asset or under a packaging category.`);
+                return null;
+            }
+
             // Find current latest balance for this client and this packaging product
             const latestEntry = await customerPackagingLedger.findOne({
                 where: { clientId, packagingProductId },
@@ -181,7 +241,9 @@ const packagingService = {
                     GROUP BY packagingProductId
                 ) latest ON cpl.id = latest.maxId
                 INNER JOIN product p ON cpl.packagingProductId = p.id
+                LEFT JOIN category cat ON p.pro_category = cat.categ_id
                 WHERE cpl.balanceAfter != 0
+                  AND (p.isPackagingAsset = 1 OR cat.isPackaging = 1)
             `;
 
             const balances = await sequelize.query(query, {
@@ -220,7 +282,9 @@ const packagingService = {
                 ) latest ON cpl.id = latest.maxId
                 INNER JOIN client cl ON cpl.clientId = cl.id
                 INNER JOIN product p ON cpl.packagingProductId = p.id
+                LEFT JOIN category cat ON p.pro_category = cat.categ_id
                 WHERE cpl.balanceAfter != 0
+                  AND (p.isPackagingAsset = 1 OR cat.isPackaging = 1)
                 ORDER BY cl.name ASC, p.pro_name ASC
             `;
 
@@ -236,8 +300,22 @@ const packagingService = {
     /**
      * Get customer packaging transaction ledger statement
      */
-    getCustomerPackagingLedger: async (clientId = null, startDate = null, endDate = null) => {
+    getCustomerPackagingLedger: async (paramsOrClientId = null, maybeStartDate = null, maybeEndDate = null) => {
         try {
+            let clientId = null;
+            let startDate = null;
+            let endDate = null;
+
+            if (paramsOrClientId && typeof paramsOrClientId === 'object') {
+                clientId = paramsOrClientId.clientId || null;
+                startDate = paramsOrClientId.startDate || null;
+                endDate = paramsOrClientId.endDate || null;
+            } else {
+                clientId = paramsOrClientId;
+                startDate = maybeStartDate;
+                endDate = maybeEndDate;
+            }
+
             const whereCondition = {};
             if (clientId && clientId !== 'all') {
                 whereCondition.clientId = clientId;
@@ -248,13 +326,13 @@ const packagingService = {
                 };
             }
 
-            return await customerPackagingLedger.findAll({
+            const rows = await customerPackagingLedger.findAll({
                 where: whereCondition,
                 include: [
                     {
                         model: product,
                         as: 'packagingProduct',
-                        attributes: ['id', 'pro_name', 'barCode']
+                        attributes: ['id', 'pro_name', 'barCode', 'isPackagingAsset', 'pro_category']
                     },
                     {
                         model: client,
@@ -263,6 +341,21 @@ const packagingService = {
                     }
                 ],
                 order: [['id', 'DESC']]
+            });
+
+            // Get packaging category IDs to filter results strictly
+            const pkgCategories = await category.findAll({
+                where: { isPackaging: true },
+                attributes: ['categ_id']
+            });
+            const pkgCatIdSet = new Set(pkgCategories.map(c => Number(c.categ_id)));
+
+            return rows.filter(row => {
+                const pItem = row.packagingProduct;
+                if (!pItem) return false;
+                if (pItem.isPackagingAsset === true || pItem.isPackagingAsset === 1) return true;
+                if (pItem.pro_category && pkgCatIdSet.has(Number(pItem.pro_category))) return true;
+                return false;
             });
         } catch (error) {
             logger.error(`Error fetching customer packaging ledger for client ${clientId}: ${error.message}`);
@@ -288,6 +381,13 @@ const packagingService = {
                 const qty = parseInt(item.quantity, 10);
                 if (qty <= 0) continue;
 
+                // Validate that item is truly a packaging asset
+                const isValidPkg = await isPackagingAssetProduct(item.packagingProductId, t);
+                if (!isValidPkg) {
+                    logger.warn(`[Packaging Wholesale Empties] Skipping non-packaging product #${item.packagingProductId}`);
+                    continue;
+                }
+
                 // 1. Credit customer packaging debt
                 const ledgerEntry = await packagingService.recordCustomerPackaging({
                     clientId,
@@ -311,7 +411,9 @@ const packagingService = {
                     }
                 ], locationId, 1, t);
 
-                results.push(ledgerEntry);
+                if (ledgerEntry) {
+                    results.push(ledgerEntry);
+                }
             }
 
             return results;
@@ -593,7 +695,30 @@ const packagingService = {
                 const depositRate = parseFloat(item.depositPrice) || 0;
                 const totalDeposit = parseFloat(item.totalDeposit) || (qty * depositRate);
 
+                // Strictly validate that this product is a packaging asset or under a packaging category
+                const isValidPkg = await isPackagingAssetProduct(item.packagingProductId, t);
+                if (!isValidPkg) {
+                    logger.warn(`[Packaging POS Sale] Ignored non-packaging product #${item.packagingProductId} from client payload.`);
+                    continue;
+                }
+
                 if (resolvedClientId) {
+                    // Deduplication protection: Check if DELIVERED_OUT already exists for this saleHeaderId & packagingProductId
+                    if (saleHeaderId) {
+                        const existingEntry = await customerPackagingLedger.findOne({
+                            where: {
+                                saleHeaderId: parseInt(saleHeaderId, 10),
+                                packagingProductId: item.packagingProductId,
+                                transactionType: transactionType || 'DELIVERED_OUT'
+                            },
+                            transaction: t
+                        });
+                        if (existingEntry) {
+                            logger.warn(`[Packaging POS Sale] Skipped duplicate delivery for saleHeader #${saleHeaderId}, packagingProduct #${item.packagingProductId}`);
+                            continue;
+                        }
+                    }
+
                     const entry = await packagingService.recordCustomerPackaging({
                         clientId: resolvedClientId,
                         saleHeaderId,
@@ -605,7 +730,9 @@ const packagingService = {
                         userId,
                         companyId
                     }, t);
-                    results.push(entry);
+                    if (entry) {
+                        results.push(entry);
+                    }
                 }
             }
 
@@ -977,21 +1104,22 @@ const packagingService = {
                         THEN sl.total ELSE 0 END), 0) AS soldAmount,
                     -- BOUGHT / REFUNDED
                     COALESCE(SUM(CASE 
-                        WHEN sl.packagingAction = 'RETURNED' OR sl.isReturn = 1
+                        WHEN sl.packagingAction = 'RETURNED' OR ((p.isPackagingAsset = 1 OR cat.isPackaging = 1) AND sl.isReturn = 1)
                         THEN sl.quantity ELSE 0 END), 0) AS boughtQty,
                     COALESCE(SUM(CASE 
-                        WHEN sl.packagingAction = 'RETURNED' OR sl.isReturn = 1
+                        WHEN sl.packagingAction = 'RETURNED' OR ((p.isPackagingAsset = 1 OR cat.isPackaging = 1) AND sl.isReturn = 1)
                         THEN ABS(sl.total) ELSE 0 END), 0) AS boughtAmount
                 FROM saleLine sl
                 INNER JOIN saleHeader sh ON sl.headerId = sh.id
                 INNER JOIN product p ON sl.productId = p.id
+                LEFT JOIN category cat ON p.pro_category = cat.categ_id
                 LEFT JOIN currency curr ON sh.currencyId = curr.id
                 LEFT JOIN location loc ON sh.locationId = loc.id
                 WHERE sh.createdAt BETWEEN :startDateTime AND :endDateTime
                   AND (loc.companyId = :companyId OR loc.companyId IS NULL)
                   AND sh.isActive = 1
                   AND sl.isActive = 1
-                  AND (p.isPackagingAsset = 1 OR sl.packagingAction IN ('SOLD', 'RETURNED') OR sl.isReturn = 1)
+                  AND (p.isPackagingAsset = 1 OR cat.isPackaging = 1)
                   ${saleLocationClause}
                   ${saleClientClause}
                 GROUP BY p.id, p.pro_name, p.barCode, curr.code, curr.symbol
@@ -1061,9 +1189,11 @@ const packagingService = {
                         cpl.notes
                     FROM customer_packaging_ledger cpl
                     INNER JOIN product p ON cpl.packagingProductId = p.id
+                    LEFT JOIN category cat ON p.pro_category = cat.categ_id
                     INNER JOIN client cl ON cpl.clientId = cl.id
                     WHERE cpl.createdAt BETWEEN :startDateTime AND :endDateTime
                       AND cpl.companyId = :companyId
+                      AND (p.isPackagingAsset = 1 OR cat.isPackaging = 1)
                       ${ledgerClientClause}
                     ORDER BY cpl.id DESC
                     LIMIT 200
@@ -1184,6 +1314,33 @@ const packagingService = {
             };
         } catch (error) {
             logger.error(`Error in getOwnerPackagingSalesReport: ${error.message}`);
+            throw error;
+        }
+    },
+
+    /**
+     * Purge legacy invalid records from customer_packaging_ledger where the product is not
+     * a packaging asset and not in a packaging category.
+     */
+    cleanUpInvalidPackagingRecords: async () => {
+        try {
+            const cleanupQuery = `
+                DELETE cpl FROM customer_packaging_ledger cpl
+                LEFT JOIN product p ON cpl.packagingProductId = p.id
+                LEFT JOIN category cat ON p.pro_category = cat.categ_id
+                WHERE p.id IS NULL 
+                   OR ((p.isPackagingAsset = 0 OR p.isPackagingAsset IS NULL)
+                       AND (cat.isPackaging = 0 OR cat.isPackaging IS NULL))
+            `;
+            const [result] = await sequelize.query(cleanupQuery);
+            const affected = result?.affectedRows || 0;
+            logger.info(`[Packaging Cleanup] Purged invalid customer_packaging_ledger records. Affected rows: ${affected}`);
+            return {
+                success: true,
+                affectedRows: affected
+            };
+        } catch (error) {
+            logger.error(`[Packaging Cleanup] Error executing cleanup query: ${error.message}`);
             throw error;
         }
     }
