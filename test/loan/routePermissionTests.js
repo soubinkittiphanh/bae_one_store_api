@@ -1,0 +1,329 @@
+/**
+ * T4: route permissions of the loan module (security checklist 1.1, 1.2, 1.6, 1.12), run from run.js.
+ *
+ *  - auditRouter walks the real router against routeManifest.js: token first, every route guarded,
+ *    the guard before anything that parses a request, the action fits the verb.
+ *  - No token, bad token and no grant are sent to the running API on every route: each is refused before
+ *    a controller runs, so this is safe for POST /eod/run and the like.
+ *  - The role matrix runs the real validateToken and requirePermission against the real sec_group_grant
+ *    rows with the controllers replaced by a stub: allowed routes are reached without changing any data.
+ */
+const assert = require('assert');
+const net = require('net');
+const express = require('express');
+const axios = require('axios');
+const { ROUTES, TOKEN_ONLY, READ_ONLY_POSTS, GROUPS } = require('./routeManifest');
+
+const key = (method, path) => `${method} ${path}`;
+
+// Load src/loan/router.js with requirePermission tagging its middleware; production code has no such tag.
+const loadTaggedRouter = () => {
+  const security = require('../../src/security/middleware');
+  const original = security.requirePermission;
+  const routerPath = require.resolve('../../src/loan/router');
+  delete require.cache[routerPath];
+  security.requirePermission = (functionCode, actionCode) => {
+    const middleware = original(functionCode, actionCode);
+    middleware.permission = { functionCode, actionCode };
+    return middleware;
+  };
+  try {
+    return require(routerPath);
+  } finally {
+    security.requirePermission = original;
+    delete require.cache[routerPath];
+  }
+};
+
+const dynamicName = (functionCode) => {
+  if (typeof functionCode !== 'function') return functionCode;
+  if (functionCode.name === 'entityFunction') return '{entity}';
+  if (functionCode.name === 'changeFunction') return '{change}';
+  return `{unknown:${functionCode.name || 'anonymous'}}`;
+};
+
+// Returns a list of problems; empty means the router matches the rules. Pure, so it can be tested on bad routers.
+const auditRouter = (router, { validateToken, routes = ROUTES, tokenOnly = TOKEN_ONLY, readOnlyPosts = READ_ONLY_POSTS }) => {
+  const problems = [];
+  const seen = new Map();
+  let tokenChecked = false;
+
+  for (const layer of router.stack) {
+    if (!layer.route) {
+      if (layer.handle === validateToken) tokenChecked = true;
+      continue;
+    }
+    if (!tokenChecked) problems.push(`${layer.route.path}: declared before router.use(validateToken)`);
+    for (const method of Object.keys(layer.route.methods).map(m => m.toUpperCase())) {
+      const id = key(method, layer.route.path);
+      const handlers = layer.route.stack.map(s => s.handle);
+      const guards = handlers.filter(h => h.permission);
+      const permission = guards[0] ? guards[0].permission : null;
+      if (seen.has(id)) problems.push(`${id}: declared twice`);
+      seen.set(id, permission ? { fn: dynamicName(permission.functionCode), action: permission.actionCode } : { fn: null, action: null });
+      if (guards.length > 1) problems.push(`${id}: more than one permission middleware`);
+      if (permission && handlers[0] !== guards[0]) problems.push(`${id}: something runs before the permission check`);
+      if (!permission && !tokenOnly[id]) problems.push(`${id}: no permission middleware and not on the token-only list`);
+      if (!permission && method !== 'GET') problems.push(`${id}: a token-only route must be GET`);
+      if (permission) {
+        const { actionCode: action } = permission;
+        if (method === 'GET' && action !== 'VIEW') problems.push(`${id}: GET must use VIEW, uses ${action}`);
+        if (method === 'PUT' && action !== 'EDIT') problems.push(`${id}: PUT must use EDIT, uses ${action}`);
+        if (method === 'DELETE' && action !== 'DELETE') problems.push(`${id}: DELETE must use DELETE, uses ${action}`);
+        if (method === 'POST' && action === 'VIEW' && !readOnlyPosts.includes(id)) problems.push(`${id}: POST with VIEW is not on the read-only list`);
+      }
+    }
+  }
+
+  const declared = new Map(routes.map(([method, path, fn, action]) => [key(method, path), { fn, action }]));
+  for (const [id, want] of declared) {
+    const got = seen.get(id);
+    if (!got) problems.push(`${id}: in the manifest, not in the router`);
+    else if (got.fn !== want.fn || got.action !== want.action) problems.push(`${id}: router has ${got.fn} ${got.action}, manifest has ${want.fn} ${want.action}`);
+  }
+  for (const id of seen.keys()) if (!declared.has(id)) problems.push(`${id}: in the router, not in the manifest`);
+  for (const id of Object.keys(tokenOnly)) if (!declared.has(id) || declared.get(id).fn !== null) problems.push(`${id}: on the token-only list but not a token-only route`);
+  return problems;
+};
+
+const freePort = () => new Promise((resolve, reject) => {
+  const srv = net.createServer();
+  srv.listen(0, '127.0.0.1', () => { const { port } = srv.address(); srv.close(() => resolve(port)); });
+  srv.on('error', reject);
+});
+
+module.exports = async ({ test, call, q, baseUrl, users, L, expectStatus }) => {
+  const { SUPER } = users;
+  const { validateToken } = require('../../src/api/jwtApi');
+  const { ENTITIES } = require('../../src/loan/services/paramRegistry');
+  const entities = Object.entries(ENTITIES).map(([name, def]) => ({ name, functionCode: def.functionCode }));
+  const samplePath = (path, entity = entities[0].name, changeId = 1) => path
+    .replace(':entity', entity)
+    .replace(':itemKey', 'x')
+    .replace(':code', 'x')
+    .replace(':kind', 'status')
+    .replace('/changes/:id', `/changes/${changeId}`)
+    .replace(/:\w+/g, '1');
+  const axiosMethod = m => m.toLowerCase();
+  let router;
+
+  await test('T4 the route audit catches a bad router: no token first, unguarded route, guard after a parser, wrong action, unlisted or missing route', async () => {
+    const guard = (fn, action) => { const h = (req, res, next) => next(); h.permission = { functionCode: fn, actionCode: action }; return h; };
+    const handler = (req, res) => res.end();
+    const opts = (routes, extra = {}) => ({ validateToken, routes, tokenOnly: {}, readOnlyPosts: [], ...extra });
+    const audit = (build, routes, extra) => { const r = express.Router(); build(r); return auditRouter(r, opts(routes, extra)); };
+    const has = (problems, text) => assert.ok(problems.some(p => p.includes(text)), `expected "${text}" in ${JSON.stringify(problems)}`);
+
+    assert.deepStrictEqual(audit((r) => { r.use(validateToken); r.get('/a', guard('F', 'VIEW'), handler); }, [['GET', '/a', 'F', 'VIEW']]), [], 'a correct router passes');
+    has(audit((r) => { r.get('/a', guard('F', 'VIEW'), handler); r.use(validateToken); }, [['GET', '/a', 'F', 'VIEW']]), 'before router.use(validateToken)');
+    has(audit((r) => { r.get('/a', guard('F', 'VIEW'), handler); }, [['GET', '/a', 'F', 'VIEW']]), 'before router.use(validateToken)');
+    has(audit((r) => { r.use(validateToken); r.post('/a', handler); }, [['POST', '/a', null, null]]), 'no permission middleware');
+    has(audit((r) => { r.use(validateToken); r.post('/a', handler); }, [['POST', '/a', null, null]], { tokenOnly: { 'POST /a': 'x' } }), 'token-only route must be GET');
+    has(audit((r) => { r.use(validateToken); r.post('/a', handler, guard('F', 'CREATE'), handler); }, [['POST', '/a', 'F', 'CREATE']]), 'before the permission check');
+    has(audit((r) => { r.use(validateToken); r.get('/a', guard('F', 'CREATE'), handler); }, [['GET', '/a', 'F', 'CREATE']]), 'GET must use VIEW');
+    has(audit((r) => { r.use(validateToken); r.put('/a', guard('F', 'VIEW'), handler); }, [['PUT', '/a', 'F', 'VIEW']]), 'PUT must use EDIT');
+    has(audit((r) => { r.use(validateToken); r.delete('/a', guard('F', 'EDIT'), handler); }, [['DELETE', '/a', 'F', 'EDIT']]), 'DELETE must use DELETE');
+    has(audit((r) => { r.use(validateToken); r.post('/a', guard('F', 'VIEW'), handler); }, [['POST', '/a', 'F', 'VIEW']]), 'not on the read-only list');
+    has(audit((r) => { r.use(validateToken); r.get('/new', guard('F', 'VIEW'), handler); }, []), 'in the router, not in the manifest');
+    has(audit((r) => { r.use(validateToken); }, [['GET', '/gone', 'F', 'VIEW']]), 'in the manifest, not in the router');
+    has(audit((r) => { r.use(validateToken); r.get('/a', guard('G', 'VIEW'), handler); }, [['GET', '/a', 'F', 'VIEW']]), 'router has G VIEW, manifest has F VIEW');
+  });
+
+  await test(`T4 the real router matches the manifest (${ROUTES.length} routes): token first, permission before any parser, action fits the verb, only /status and /pending are token-only`, async () => {
+    router = loadTaggedRouter();
+    assert.deepStrictEqual(auditRouter(router, { validateToken }), []);
+    assert.strictEqual(ROUTES.filter(r => r[2] === null).length, 2);
+    assert.strictEqual(Object.keys(TOKEN_ONLY).length, 2);
+  });
+
+  await test('T4 every function and action a route needs exists, is active and is applicable; so does every parameter entity\'s function', async () => {
+    const rows = await q("SELECT functionCode f, applicableActions a, isActive i FROM sec_function WHERE moduleCode = 'LN'");
+    const fns = new Map(rows.map(r => [r.f, { active: Boolean(r.i), actions: r.a.split(',').map(x => x.trim()) }]));
+    const missing = [];
+    const need = (fn, action, where) => {
+      const def = fns.get(fn);
+      if (!def || !def.active || !def.actions.includes(action)) missing.push(`${where}: ${fn} ${action}`);
+    };
+    for (const [method, path, fn, action] of ROUTES) {
+      if (fn && !fn.startsWith('{')) need(fn, action, key(method, path));
+      if (fn === '{entity}' || fn === '{change}') for (const e of entities) need(e.functionCode, action, `${key(method, path)} [${e.name}]`);
+    }
+    assert.deepStrictEqual(missing, []);
+  });
+
+  await test('T4 no token on every route: 401; a tampered token: 403; no controller is reached', async () => {
+    for (const [method, path] of ROUTES) {
+      const url = `${baseUrl}${L}${samplePath(path)}`;
+      const none = await axios({ method: axiosMethod(method), url, validateStatus: () => true });
+      assert.strictEqual(none.status, 401, `${key(method, path)} without a token: ${none.status}`);
+      const bad = await axios({ method: axiosMethod(method), url, validateStatus: () => true, headers: { Authorization: 'Bearer not.a.token' } });
+      assert.strictEqual(bad.status, 403, `${key(method, path)} with a bad token: ${bad.status}`);
+    }
+  });
+
+  // Test users and groups: one per proposed role, one with no grants, one inactive user holding full manager grants.
+  const addGroup = async (code) => {
+    await q("INSERT INTO userGroup (name, code, isActive, createdAt, updateTimestamp, homePage) VALUES (?, ?, 1, NOW(), NOW(), '/')", [code, code]);
+    return Number((await q('SELECT id FROM userGroup WHERE code = ?', [code]))[0].id);
+  };
+  const addUser = async (name, groupId, isActive = 1) => {
+    await q('INSERT INTO user (cus_id, cus_pass, cus_name, isActive, createdAt, updateTimestamp, groupId) VALUES (?, ?, ?, ?, NOW(), NOW(), ?)', [name, '!not-a-login', name, isActive, groupId]);
+    return Number((await q('SELECT id FROM user WHERE cus_id = ?', [name]))[0].id);
+  };
+  const sec = await q("SELECT functionCode f, applicableActions a FROM sec_function WHERE moduleCode = 'LN'");
+  const ownRowFunctions = new Set(Object.values(GROUPS).flatMap(g => Object.keys(g)).filter(f => f !== '*params'));
+  const fullParam = 'VIEW,CREATE,EDIT,DELETE,AUTHORIZE';
+  const paramFunctions = sec.filter(r => r.a === fullParam && !ownRowFunctions.has(r.f)).map(r => r.f);
+
+  const grantsOf = (role) => {
+    const set = new Set();
+    for (const [fn, actions] of Object.entries(GROUPS[role])) {
+      for (const f of fn === '*params' ? paramFunctions : [fn]) for (const a of actions) set.add(`${f}:${a}`);
+    }
+    return set;
+  };
+
+  const userIds = {};
+  await test('T4 the proposed groups keep the UAT rule: nobody holds CREATE or EDIT and AUTHORIZE on the same function', async () => {
+    for (const role of Object.keys(GROUPS)) {
+      const grants = grantsOf(role);
+      const both = [...grants].filter(g => g.endsWith(':AUTHORIZE') && (grants.has(g.replace(':AUTHORIZE', ':CREATE')) || grants.has(g.replace(':AUTHORIZE', ':EDIT'))));
+      assert.deepStrictEqual(both, [], `${role}`);
+      const groupId = await addGroup(`T4_${role}`);
+      for (const g of grants) {
+        const [f, a] = g.split(':');
+        await q('INSERT INTO sec_group_grant (userGroupId, functionCode, actionCode) VALUES (?, ?, ?)', [groupId, f, a]);
+      }
+      userIds[role] = await addUser(`t4_${role.toLowerCase()}`, groupId);
+    }
+    userIds.NONE = await addUser('t4_none', await addGroup('T4_NONE'));
+    const inactiveGroup = await addGroup('T4_INACTIVE');
+    for (const g of grantsOf('LOAN_MANAGER')) {
+      const [f, a] = g.split(':');
+      await q('INSERT INTO sec_group_grant (userGroupId, functionCode, actionCode) VALUES (?, ?, ?)', [inactiveGroup, f, a]);
+    }
+    userIds.INACTIVE = await addUser('t4_inactive', inactiveGroup, 0);
+    userIds.NOGROUP = await addUser('t4_nogroup', null);
+  });
+
+  // A real change row, so '/changes/:id/*' resolves its function like production does
+  let change;
+  const changeFunction = async () => {
+    if (change) return change;
+    const rows = await q('SELECT id, entityName FROM ln_param_change ORDER BY id LIMIT 1');
+    assert.ok(rows.length, 'earlier tests leave at least one ln_param_change row');
+    const def = entities.find(e => e.name === rows[0].entityName);
+    assert.ok(def, `entity ${rows[0].entityName} is in the registry`);
+    change = { id: Number(rows[0].id), functionCode: def.functionCode };
+    return change;
+  };
+
+  await test('T4 a user with no grants, no group, or inactive is refused on every guarded route of the running API (403); /status and /pending answer with no parameter data', async () => {
+    const c = await changeFunction();
+    for (const who of ['NONE', 'NOGROUP', 'INACTIVE']) {
+      for (const [method, path, fn] of ROUTES) {
+        const res = await call(userIds[who], axiosMethod(method), `${L}${samplePath(path, entities[0].name, c.id)}`);
+        if (fn) expectStatus(res, 403, `${who} ${key(method, path)}`);
+      }
+      const status = await call(userIds[who], 'get', `${L}/status`);
+      expectStatus(status, 200, `${who} status`);
+      assert.deepStrictEqual(Object.keys(status.data.data).sort(), ['confirmationStatus', 'warningBannerActive'], 'the banner returns only these two fields');
+      assert.deepStrictEqual((await call(userIds[who], 'get', `${L}/pending`)).data.data, [], `${who} sees no pending records`);
+    }
+  });
+
+  await test('T4 unknown parameter entity and unknown change id: 404 from the guard, even for SUPER_ADMIN', async () => {
+    expectStatus(await call(SUPER, 'get', `${L}/params/no-such-entity`), 404, 'entity');
+    expectStatus(await call(SUPER, 'post', `${L}/changes/99999999/authorize`), 404, 'change');
+  });
+
+  await test('T4 role matrix: for LOAN_CASHIER, LOAN_MANAGER and LOAN_CHECKER, every route for every parameter entity is reached or refused exactly as phase6-uat.md section 1 says, on the real guard with stub controllers', async () => {
+    const c = await changeFunction();
+    const app = express();
+    const reached = (req, res) => res.status(200).json({ reached: true });
+    for (const layer of router.stack) {
+      if (!layer.route) continue;
+      const guards = layer.route.stack.map(s => s.handle).filter(h => h.permission);
+      for (const method of Object.keys(layer.route.methods)) app[method](layer.route.path, validateToken, ...guards, reached);
+    }
+    const port = await freePort();
+    const server = await new Promise((resolve) => { const s = app.listen(port, '127.0.0.1', () => resolve(s)); });
+    const jwt = require('jsonwebtoken');
+    const secret = require('../../src/config').actksecret;
+    const send = (userId, method, path) => axios({
+      method: axiosMethod(method), url: `http://127.0.0.1:${port}${path}`, validateStatus: () => true,
+      headers: { Authorization: `Bearer ${jwt.sign({ id: userId, cus_name: 't4' }, secret, { expiresIn: '1h' })}` }
+    });
+    const wrong = [];
+    const totals = {};
+    try {
+      for (const role of Object.keys(GROUPS)) {
+        const grants = grantsOf(role);
+        const count = { allowed: 0, refused: 0 };
+        for (const [method, path, fn, action] of ROUTES) {
+          const cases = fn === '{entity}'
+            ? entities.map(e => ({ path: samplePath(path, e.name, c.id), functionCode: e.functionCode, label: e.name }))
+            : [{ path: samplePath(path, entities[0].name, c.id), functionCode: fn === '{change}' ? c.functionCode : fn, label: '' }];
+          for (const one of cases) {
+            const expected = one.functionCode === null || grants.has(`${one.functionCode}:${action}`) ? 200 : 403;
+            const res = await send(userIds[role], method, one.path);
+            count[expected === 200 ? 'allowed' : 'refused'] += 1;
+            if (res.status !== expected) wrong.push(`${role} ${key(method, path)} ${one.label}: expected ${expected}, got ${res.status}`);
+          }
+        }
+        totals[role] = count;
+      }
+    } finally {
+      await new Promise(resolve => server.close(resolve));
+    }
+    console.log(`        role matrix: ${Object.entries(totals).map(([r, n]) => `${r} ${n.allowed} allowed, ${n.refused} refused`).join('; ')}`);
+    assert.deepStrictEqual(wrong, []);
+    assert.ok(totals.LOAN_CASHIER.allowed < totals.LOAN_CHECKER.allowed && totals.LOAN_CASHIER.allowed < totals.LOAN_MANAGER.allowed, 'a cashier reaches the fewest routes');
+  });
+
+  await test('T4 every route each proposed role is refused by the matrix is also refused by the running API (403)', async () => {
+    const c = await changeFunction();
+    for (const role of Object.keys(GROUPS)) {
+      const grants = grantsOf(role);
+      for (const [method, path, fn, action] of ROUTES) {
+        const functionCode = fn === '{entity}' ? entities[0].functionCode : fn === '{change}' ? c.functionCode : fn;
+        if (functionCode && !grants.has(`${functionCode}:${action}`)) expectStatus(await call(userIds[role], axiosMethod(method), `${L}${samplePath(path, entities[0].name, c.id)}`), 403, `${role} ${key(method, path)}`);
+      }
+    }
+  });
+
+  await test('T4 GET /pending shows each role only entities whose function it may VIEW', async () => {
+    for (const role of Object.keys(GROUPS)) {
+      const grants = grantsOf(role);
+      const rows = (await call(userIds[role], 'get', `${L}/pending`)).data.data;
+      for (const row of rows) {
+        const def = entities.find(e => e.name === (row.entity || row.entityName));
+        assert.ok(def, `${role}: unknown pending row ${JSON.stringify(Object.keys(row))}`);
+        assert.ok(grants.has(`${def.functionCode}:VIEW`), `${role} sees ${def.name} without VIEW on ${def.functionCode}`);
+      }
+    }
+    assert.ok((await call(SUPER, 'get', `${L}/pending`)).data.data.length > 0, 'the test has pending rows to filter');
+  });
+
+  await test('T4 the two read-only POSTs write nothing: simulate and all four previews leave every ln_ table, sequence and POS ledger unchanged', async () => {
+    const tables = (await q("SELECT table_name t FROM information_schema.tables WHERE table_schema = DATABASE() AND (table_name LIKE 'ln\\_%' OR table_name IN ('general_ledger', 'transactionEntry'))")).map(r => r.t);
+    const state = async () => {
+      const counts = {};
+      for (const t of tables) counts[t] = Number((await q(`SELECT COUNT(*) n FROM \`${t}\``))[0].n);
+      const checksums = await q('CHECKSUM TABLE ln_account, ln_schedule, ln_numbering_sequence, ln_account_balance EXTENDED');
+      return JSON.stringify({ counts, checksums }, (k, v) => (typeof v === 'bigint' ? v.toString() : v));
+    };
+    const account = (await q("SELECT id FROM ln_account WHERE accountStage = 'DISBURSED' ORDER BY id LIMIT 1"))[0];
+    const product = (await q("SELECT p.id FROM ln_product p WHERE p.authStatus = 'AUTHORIZED' AND p.status = 'ACTIVE' ORDER BY p.id LIMIT 1"))[0];
+    const date = (await q("SELECT DATE_FORMAT(currentBusinessDate, '%Y-%m-%d') d FROM ln_system_date LIMIT 1"))[0].d;
+    assert.ok(account && product, 'earlier tests leave an account and a product');
+    const before = await state();
+    expectStatus(await call(SUPER, 'post', `${L}/products/${product.id}/simulate`, { principal: '240000000', interestRate: '0.18', tenorMonths: 12, valueDate: date }), 200, 'simulate');
+    for (const [kind, body] of [['due-date', { date }], ['payment', { date, amount: '1000' }], ['prepayment', { date }], ['status', { date }]]) {
+      expectStatus(await call(SUPER, 'post', `${L}/accounts/${account.id}/preview/${kind}`, body), 200, `preview ${kind}`);
+    }
+    assert.strictEqual(await state(), before);
+  });
+};
+
+module.exports.auditRouter = auditRouter;

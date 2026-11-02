@@ -998,6 +998,9 @@ const apiTests = async ({ port, q, db, runNode }) => {
     assert.deepStrictEqual(enums['product.feeFinancingMode'], ['CAPITALIZED', 'UPFRONT', 'DEDUCTED']);
   });
 
+  console.log('\n[T4: route permissions]');
+  await require('./routePermissionTests')({ test, call, q, baseUrl: base, users: { SUPER, ADMIN, CASHIER }, L, expectStatus });
+
   console.log('\n[regression & safety]');
   await test('existing POS routes still respond (currency, product, trial balance)', async () => {
     expectStatus(await call(SUPER, 'get', '/api/currency/findAll'), 200, 'currency');
