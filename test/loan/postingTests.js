@@ -931,6 +931,48 @@ module.exports = async ({ test: runTest, call, q, db, runNode, users, L, expectS
     assert.strictEqual(postedLocal, 15000, 'DEFECT 9 CONFIRMED: the AR batch posts the USD line amount as LAK');
   });
 
+  await test('preview/:kind (write kinds): the pre-submit journal matches what posting produces, writes nothing (every ln_ table, audit, idempotency and the number sequences), releases the lock at once, and reports clearly when posting is off', async () => {
+    await setSpf('LOAN_POSTING_ENABLED', 'true');
+    const preview = (accountId, kind, body = {}) => call(ADMIN, 'post', `${L}/accounts/${accountId}/preview/${kind}`, body);
+    // Snapshot of every ln_ table plus the POS ledgers, with a content checksum of the number sequences:
+    // a consumed document number would change ln_numbering_sequence even if no row were added anywhere.
+    const tables = (await q("SELECT table_name t FROM information_schema.tables WHERE table_schema = DATABASE() AND (table_name LIKE 'ln\\_%' OR table_name IN ('general_ledger', 'transactionEntry'))")).map(r => r.t);
+    const state = async () => {
+      const c = {};
+      for (const t of tables) c[t] = Number((await q(`SELECT COUNT(*) n FROM \`${t}\``))[0].n);
+      const checksums = await q('CHECKSUM TABLE ln_numbering_sequence, ln_idempotency, ln_audit_log, ln_account, ln_schedule EXTENDED');
+      return JSON.stringify({ c, checksums }, (k, v) => (typeof v === 'bigint' ? v.toString() : v));
+    };
+
+    // A fresh BOOKED loan: preview DISB, then actually disburse, and prove the preview journal equals the posted one.
+    const loan = await makeLoan();
+    await feeCollect(loan.account.id);
+    const before = await state();
+    const pv = await preview(loan.account.id, 'DISB', {});
+    expectStatus(pv, 200, 'preview DISB on a BOOKED account');
+    assert.strictEqual(pv.data.data.dryRun, true, 'preview is flagged dryRun');
+    assert.ok(pv.data.data.previewedAt, 'preview reports the time it was computed');
+    assert.strictEqual(await state(), before, 'preview DISB wrote nothing (no row, no consumed number, no audit, no idempotency)');
+    const disb = await disburse(loan.account.id);
+    assert.strictEqual(JSON.stringify(pv.data.data.events), JSON.stringify(disb.events), 'preview events == posted events');
+    assert.deepStrictEqual(pv.data.data.journal.map(l => `${l.drCr} ${l.role} ${l.amount}`), disb.journal.map(l => `${l.drCr} ${l.role} ${l.amount}`), 'preview journal legs == posted legs');
+
+    // Lock released at once: a repayment posts on the SAME account immediately after a preview (would hang/deadlock otherwise).
+    await preview(loan.account.id, 'WAIVE', { component: 'INTEREST', amount: '1', remarks: 'preview only' });
+    const rep = await post(ADMIN, loan.account.id, { kind: 'REPAYMENT', amount: '1000000', bankAccountId: bank.id });
+    expectStatus(rep, 201, 'repayment posts right after a preview on the same account');
+
+    // Posting switch off: the preview reports it clearly and still writes nothing (same guard as create).
+    const s2 = await state();
+    await setSpf('LOAN_POSTING_ENABLED', 'false');
+    const off = await preview(loan.account.id, 'DISB', {});
+    expectStatus(off, 409, 'preview refused while posting is off');
+    assert.match(off.data.message, /posting/i, 'the message points at the posting switch');
+    await setSpf('LOAN_POSTING_ENABLED', 'true');
+    assert.strictEqual(await state(), s2, 'a refused preview wrote nothing');
+    console.log(`        preview wrote nothing across ${tables.length} ln_/POS tables; preview journal matched the posted DISB`);
+  });
+
   await test('switch back OFF: posting and EOD refuse again', async () => {
     await setSpf('LOAN_POSTING_ENABLED', 'false');
     expectStatus(await call(SUPER, 'post', `${L}/eod/run`), 409, 'eod off');

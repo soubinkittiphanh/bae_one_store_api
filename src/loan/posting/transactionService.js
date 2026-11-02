@@ -271,6 +271,44 @@ const transactionService = {
     }
   },
 
+  // Read-only pre-submit preview for the 12 write/checker kinds. It runs the SAME guards, engine and
+  // validators as create() (posting switch, tax gate, dates, FX / rate-age / implied-rate) inside a
+  // transaction that is ALWAYS rolled back, so nothing is written: no idempotency claim, no PENDING_AUTH
+  // row, no consumed document number (nextNumber uses the same transaction, so the rollback un-consumes
+  // it). No FOR UPDATE lock is taken and the transaction ends at once, so a repayment can post on the
+  // same account immediately after. The four simulation previews (due-date/payment/prepayment/status)
+  // stay in accountService.preview; this serves the transaction kinds.
+  async previewKind(accountId, body, ctxUser) {
+    const kind = body && body.kind;
+    if (!KINDS[kind]) throw new LoanError(400, `kind must be one of ${Object.keys(KINDS).join(', ')}`);
+    const input = { ...body };
+    delete input.kind;
+    if (kind === 'REVERSAL' && !input.targetTransactionId) throw new LoanError(400, 'targetTransactionId is required for REVERSAL');
+    let preview = null;
+    try {
+      await db.sequelize.transaction(async (transaction) => {
+        const acct = await db.lnAccount.findByPk(accountId, { attributes: ['id'], transaction });
+        if (!acct) throw new LoanError(404, `Account ${accountId} not found`);
+        await G.assertPostingEnabled(transaction); // same posting-switch gate as create(), incl. REVERSAL
+        preview = await execute(kind, { accountId, input, ctxUser, pending: null, transaction, hook: () => {}, dryRun: true });
+        throw new DryRun(); // roll the whole transaction back: persist nothing, release the account at once
+      });
+    } catch (err) {
+      if (!(err instanceof DryRun)) throw err;
+    }
+    return {
+      status: 200,
+      body: {
+        kind, dryRun: true, previewedAt: new Date().toISOString(),
+        eventCode: preview.eventCode, valueDate: preview.valueDate, bookingDate: preview.bookingDate,
+        amount: preview.amount, events: preview.events, journal: preview.journal,
+        ...(preview.fx ? { fx: preview.fx } : {}),
+        ...(preview.implied ? { implied: preview.implied } : {}),
+        ...(preview.reverses ? { reverses: preview.reverses } : {})
+      }
+    };
+  },
+
   // options.acceptRateDeviation: the checker accepts an implied-rate deviation (LOAN_FX_IMPLIED_RATE_BREACH = CHECKER_OVERRIDE)
   async authorize(txId, ctxUser, failAt, options = {}) {
     const hook = G.makeTestHook(failAt);

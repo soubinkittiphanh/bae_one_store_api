@@ -357,6 +357,65 @@ module.exports = async ({ test, call, q, baseUrl, users, L, expectStatus }) => {
     }
     assert.strictEqual(await state(), before);
   });
+
+  await test('T4 preview/:kind for a write kind needs LN_TRANSACTION CREATE (not just LN_ACCOUNT VIEW); the four simulation kinds keep LN_ACCOUNT VIEW', async () => {
+    const account = (await q("SELECT id FROM ln_account ORDER BY id LIMIT 1"))[0];
+    assert.ok(account, 'earlier tests leave an account');
+    // LOAN_ACCOUNTANT holds LN_ACCOUNT VIEW but not LN_TRANSACTION CREATE; LOAN_CASHIER holds both.
+    const accountant = userIds.LOAN_ACCOUNTANT;
+    const cashier = userIds.LOAN_CASHIER;
+    assert.ok(accountant && cashier, 'the role users exist from the matrix setup');
+    // A write kind: the accountant (VIEW only) is refused by the in-handler permission check...
+    expectStatus(await call(accountant, 'post', `${L}/accounts/${account.id}/preview/DISB`, {}), 403, 'accountant cannot preview a write kind');
+    // ...while the cashier (CREATE) passes the permission check (then meets the posting switch, never 403/401).
+    const cashierPv = await call(cashier, 'post', `${L}/accounts/${account.id}/preview/DISB`, {});
+    assert.ok(![401, 403].includes(cashierPv.status), `cashier passes the preview permission check, got ${cashierPv.status}`);
+    // A simulation kind stays LN_ACCOUNT VIEW: the accountant may run it.
+    const disbursed = (await q("SELECT id FROM ln_account WHERE accountStage = 'DISBURSED' ORDER BY id LIMIT 1"))[0];
+    if (disbursed) {
+      const date = (await q("SELECT DATE_FORMAT(currentBusinessDate, '%Y-%m-%d') d FROM ln_system_date LIMIT 1"))[0].d;
+      expectStatus(await call(accountant, 'post', `${L}/accounts/${disbursed.id}/preview/status`, { date }), 200, 'accountant may run a simulation preview with LN_ACCOUNT VIEW');
+    }
+  });
+
+  await test('T4 preview/:kind for every one of the 12 write kinds writes nothing, whether it computes a journal or is refused by a business rule (every ln_ table, audit, idempotency and the number sequences)', async () => {
+    const { KINDS } = require('../../src/loan/posting/transactionService');
+    const setSpf = (code, value) => q('UPDATE SPF SET value = ? WHERE code = ?', [value, code]);
+    const tables = (await q("SELECT table_name t FROM information_schema.tables WHERE table_schema = DATABASE() AND (table_name LIKE 'ln\\_%' OR table_name IN ('general_ledger', 'transactionEntry'))")).map(r => r.t);
+    const state = async () => {
+      const counts = {};
+      for (const t of tables) counts[t] = Number((await q(`SELECT COUNT(*) n FROM \`${t}\``))[0].n);
+      const checksums = await q('CHECKSUM TABLE ln_numbering_sequence, ln_idempotency, ln_audit_log, ln_account, ln_schedule, ln_account_balance EXTENDED');
+      return JSON.stringify({ counts, checksums }, (k, v) => (typeof v === 'bigint' ? v.toString() : v));
+    };
+    const account = (await q("SELECT id FROM ln_account WHERE accountStage = 'DISBURSED' ORDER BY id LIMIT 1"))[0] || (await q("SELECT id FROM ln_account ORDER BY id LIMIT 1"))[0];
+    assert.ok(account, 'earlier tests leave an account');
+    const target = (await q("SELECT id FROM ln_transaction WHERE postingStatus = 'POSTED' AND isReversed = 0 ORDER BY id DESC LIMIT 1"))[0];
+    const bodyFor = (kind) => {
+      const b = { INS_REMIT: { amount: '1' }, ADV_REFUND: { amount: '1' }, RECOVERY: { amount: '1' },
+        WAIVE: { component: 'INTEREST', amount: '1', remarks: 'x' }, REPOSSESS: { appraisedValue: '1', remarks: 'x' },
+        VEH_DISPOSE: { salePrice: '1', remarks: 'x' }, WRITE_OFF: { remarks: 'x' },
+        REVERSAL: { targetTransactionId: target ? target.id : 999999999, remarks: 'x' } }[kind];
+      return b || {};
+    };
+    const prior = (await q("SELECT value v FROM SPF WHERE code = 'LOAN_POSTING_ENABLED'"))[0].v;
+    await setSpf('LOAN_POSTING_ENABLED', 'true');
+    const before = await state();
+    const results = [];
+    for (const kind of Object.keys(KINDS).filter(k => KINDS[k].checker)) { // the 9 checker kinds + FEE_COLLECT/RECOVERY previews below
+      const res = await call(SUPER, 'post', `${L}/accounts/${account.id}/preview/${kind}`, bodyFor(kind));
+      assert.ok(res.status < 500, `preview ${kind} is a clean result, not a crash (${res.status})`);
+      results.push(`${kind}:${res.status}`);
+    }
+    for (const kind of ['FEE_COLLECT', 'RECOVERY']) { // the maker-only kinds also preview read-only
+      const res = await call(SUPER, 'post', `${L}/accounts/${account.id}/preview/${kind}`, bodyFor(kind));
+      assert.ok(res.status < 500, `preview ${kind} is a clean result, not a crash (${res.status})`);
+      results.push(`${kind}:${res.status}`);
+    }
+    assert.strictEqual(await state(), before, 'no write-kind preview changed any ln_ table, audit row, idempotency row or number sequence');
+    await setSpf('LOAN_POSTING_ENABLED', prior);
+    console.log(`        write-kind previews (status): ${results.join(' ')}`);
+  });
 };
 
 module.exports.auditRouter = auditRouter;

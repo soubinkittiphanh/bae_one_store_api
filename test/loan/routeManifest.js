@@ -34,6 +34,9 @@ const ROUTES = [
   ['POST', '/applications/:id/book', 'LN_ACCOUNT', 'CREATE'],
   ['GET', '/accounts', 'LN_ACCOUNT', 'VIEW'],
   ['GET', '/accounts/:id', 'LN_ACCOUNT', 'VIEW'],
+  // Route grant is LN_ACCOUNT VIEW for the four simulation kinds (due-date/payment/prepayment/status).
+  // For the 12 transaction kinds the controller additionally requires LN_TRANSACTION CREATE in-handler
+  // (see PREVIEW_WRITE_KIND_EXTRA below); both are read-only and write nothing.
   ['POST', '/accounts/:id/preview/:kind', 'LN_ACCOUNT', 'VIEW'],
   ['GET', '/accounts/:id/transactions', 'LN_TRANSACTION', 'VIEW'],
   ['POST', '/accounts/:id/transactions', 'LN_TRANSACTION', 'CREATE'],
@@ -93,6 +96,12 @@ const TOKEN_ONLY = {
 // POST routes allowed to use VIEW because they compute and write nothing (the test proves it)
 const READ_ONLY_POSTS = ['POST /products/:id/simulate', 'POST /accounts/:id/preview/:kind'];
 
+// POST /accounts/:id/preview/:kind, when :kind is one of the 12 transaction kinds, is the read-only
+// pre-submit journal for a write transaction. It writes nothing, but it would reveal the computed
+// journal of a transaction the caller may not be allowed to make, so the controller requires this
+// permission in addition to the route's LN_ACCOUNT VIEW. The four simulation kinds do not.
+const PREVIEW_WRITE_KIND_EXTRA = { pathSuffix: '/preview/:kind', function: 'LN_TRANSACTION', action: 'CREATE' };
+
 /**
  * Proposed groups, copied from docs/loan/phase6-uat.md section 1. A change there needs a change here.
  * '*params' means every parameter function (all five actions applicable) that has no row of its own here.
@@ -141,4 +150,4 @@ const GROUPS = {
   }
 };
 
-module.exports = { ROUTES, TOKEN_ONLY, READ_ONLY_POSTS, GROUPS };
+module.exports = { ROUTES, TOKEN_ONLY, READ_ONLY_POSTS, PREVIEW_WRITE_KIND_EXTRA, GROUPS };
