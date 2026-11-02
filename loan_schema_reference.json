@@ -15,7 +15,7 @@
   {
    "table": "ln_account_document",
    "engine": "InnoDB",
-   "collation": "utf8mb4_general_ci"
+   "collation": "utf8mb4_unicode_ci"
   },
   {
    "table": "ln_account_param_snapshot",
@@ -130,7 +130,7 @@
   {
    "table": "ln_exchange_rate",
    "engine": "InnoDB",
-   "collation": "utf8mb4_general_ci"
+   "collation": "utf8mb4_unicode_ci"
   },
   {
    "table": "ln_fee_master",
@@ -250,7 +250,7 @@
   {
    "table": "ln_print_template",
    "engine": "InnoDB",
-   "collation": "utf8mb4_general_ci"
+   "collation": "utf8mb4_unicode_ci"
   },
   {
    "table": "ln_product",
@@ -260,7 +260,7 @@
   {
    "table": "ln_product_amount",
    "engine": "InnoDB",
-   "collation": "utf8mb4_general_ci"
+   "collation": "utf8mb4_unicode_ci"
   },
   {
    "table": "ln_product_category",
@@ -920,7 +920,7 @@
    "type": "varchar(30)",
    "nullable": "NO",
    "default": "<null>",
-   "collation": "utf8mb4_general_ci",
+   "collation": "utf8mb4_unicode_ci",
    "key": "",
    "extra": ""
   },
@@ -930,7 +930,7 @@
    "type": "varchar(10)",
    "nullable": "NO",
    "default": "<null>",
-   "collation": "utf8mb4_general_ci",
+   "collation": "utf8mb4_unicode_ci",
    "key": "",
    "extra": ""
   },
@@ -970,7 +970,7 @@
    "type": "varchar(80)",
    "nullable": "NO",
    "default": "<null>",
-   "collation": "utf8mb4_general_ci",
+   "collation": "utf8mb4_unicode_ci",
    "key": "",
    "extra": ""
   },
@@ -980,7 +980,7 @@
    "type": "varchar(255)",
    "nullable": "YES",
    "default": "NULL",
-   "collation": "utf8mb4_general_ci",
+   "collation": "utf8mb4_unicode_ci",
    "key": "",
    "extra": ""
   },
@@ -990,7 +990,7 @@
    "type": "char(64)",
    "nullable": "NO",
    "default": "<null>",
-   "collation": "utf8mb4_general_ci",
+   "collation": "utf8mb4_unicode_ci",
    "key": "",
    "extra": ""
   },
@@ -1010,7 +1010,7 @@
    "type": "varchar(80)",
    "nullable": "NO",
    "default": "<null>",
-   "collation": "utf8mb4_general_ci",
+   "collation": "utf8mb4_unicode_ci",
    "key": "UNI",
    "extra": ""
   },
@@ -3600,7 +3600,7 @@
    "type": "varchar(30)",
    "nullable": "NO",
    "default": "'PENDING'",
-   "collation": "utf8mb4_general_ci",
+   "collation": "utf8mb4_unicode_ci",
    "key": "",
    "extra": ""
   },
@@ -3690,7 +3690,7 @@
    "type": "varchar(255)",
    "nullable": "YES",
    "default": "NULL",
-   "collation": "utf8mb4_general_ci",
+   "collation": "utf8mb4_unicode_ci",
    "key": "",
    "extra": ""
   },
@@ -3700,7 +3700,7 @@
    "type": "varchar(20)",
    "nullable": "NO",
    "default": "'MANUAL'",
-   "collation": "utf8mb4_general_ci",
+   "collation": "utf8mb4_unicode_ci",
    "key": "",
    "extra": ""
   },
@@ -6130,7 +6130,7 @@
    "type": "varchar(30)",
    "nullable": "NO",
    "default": "'PENDING'",
-   "collation": "utf8mb4_general_ci",
+   "collation": "utf8mb4_unicode_ci",
    "key": "",
    "extra": ""
   },
@@ -6150,7 +6150,7 @@
    "type": "text",
    "nullable": "NO",
    "default": "<null>",
-   "collation": "utf8mb4_general_ci",
+   "collation": "utf8mb4_unicode_ci",
    "key": "",
    "extra": ""
   },
@@ -6220,7 +6220,7 @@
    "type": "varchar(40)",
    "nullable": "NO",
    "default": "<null>",
-   "collation": "utf8mb4_general_ci",
+   "collation": "utf8mb4_unicode_ci",
    "key": "MUL",
    "extra": ""
   },
@@ -6230,7 +6230,7 @@
    "type": "varchar(150)",
    "nullable": "NO",
    "default": "<null>",
-   "collation": "utf8mb4_general_ci",
+   "collation": "utf8mb4_unicode_ci",
    "key": "",
    "extra": ""
   },
@@ -6730,7 +6730,7 @@
    "type": "varchar(30)",
    "nullable": "NO",
    "default": "'PENDING'",
-   "collation": "utf8mb4_general_ci",
+   "collation": "utf8mb4_unicode_ci",
    "key": "",
    "extra": ""
   },
@@ -6800,7 +6800,7 @@
    "type": "varchar(30)",
    "nullable": "NO",
    "default": "<null>",
-   "collation": "utf8mb4_general_ci",
+   "collation": "utf8mb4_unicode_ci",
    "key": "",
    "extra": ""
   },
@@ -6810,7 +6810,7 @@
    "type": "varchar(20)",
    "nullable": "NO",
    "default": "<null>",
-   "collation": "utf8mb4_general_ci",
+   "collation": "utf8mb4_unicode_ci",
    "key": "",
    "extra": ""
   },

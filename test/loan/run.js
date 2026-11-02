@@ -98,8 +98,9 @@ const main = async () => {
     const n = Number((await q("SELECT COUNT(*) n FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name LIKE 'ln\\_%'"))[0].n);
     assert.strictEqual(n, 76, `expected 76 ln_* tables, found ${n}`);
   });
-  await test('Phase 5 print templates, documents, currency limits, FX, Phase 4, POS loan types, Phase 3, 2B and corrections DOWN, then UP, restore the schema exactly', async () => {
+  await test('collation align, Phase 5 print templates, documents, currency limits, FX, Phase 4, POS loan types, Phase 3, 2B and corrections DOWN, then UP, restore the schema exactly', async () => {
     const before = await snapshot();
+    assert.match(runNode('loan_migrate.js', ['down', '--yes']), /20261105_loan_phase5_collation_align/);
     assert.match(runNode('loan_migrate.js', ['down', '--yes']), /20261104_loan_phase5_print_templates/);
     assert.match(runNode('loan_migrate.js', ['down', '--yes']), /20261103_loan_phase5_documents/);
     assert.match(runNode('loan_migrate.js', ['down', '--yes']), /20261102_loan_phase5_ccy_limits/);
@@ -120,6 +121,7 @@ const main = async () => {
     assert.deepStrictEqual(values.slice(-2), ['LOAN_IN', 'LOAN_OUT']);
     runNode('loan_migrate.js', ['up']);
     assert.deepStrictEqual((await q(colSql))[0], after, 'second UP changes nothing');
+    runNode('loan_migrate.js', ['down', '--yes']); // collation align
     runNode('loan_migrate.js', ['down', '--yes']); // Phase 5 print templates
     runNode('loan_migrate.js', ['down', '--yes']); // Phase 5 documents
     runNode('loan_migrate.js', ['down', '--yes']); // Phase 5 currency limits
@@ -134,6 +136,45 @@ const main = async () => {
   });
   await test('down refuses without --yes', async () => {
     assert.throws(() => runNode('loan_migrate.js', ['down']));
+  });
+  await test('collation align: the four Phase 5 tables are utf8mb4_unicode_ci like the rest; every loan table matches; UP idempotent; DOWN returns them to general_ci and keeps row data; isApplied tracks it', async () => {
+    const mig = require('../../20261105_loan_phase5_collation_align');
+    const tableCollations = async () => {
+      const rows = await q("SELECT table_name t, table_collation c FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name LIKE 'ln\\_%'");
+      return Object.fromEntries(rows.map(r => [r.t, r.c]));
+    };
+    const colCollations = async (table) => (await q("SELECT column_name n, collation_name c FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = ? AND collation_name IS NOT NULL ORDER BY 1", [table]));
+    // State now: migrations are fully applied (the previous tests ended with UP).
+    const all = await tableCollations();
+    assert.strictEqual(Object.keys(all).length, 76);
+    const offenders = Object.entries(all).filter(([, c]) => c !== 'utf8mb4_unicode_ci').map(([t]) => t);
+    assert.deepStrictEqual(offenders, [], `every ln_ table should be utf8mb4_unicode_ci; off: ${offenders.join(', ')}`);
+    for (const t of mig.TABLES) {
+      assert.strictEqual(all[t], 'utf8mb4_unicode_ci', `${t} table collation`);
+      const cols = await colCollations(t);
+      assert.ok(cols.length > 0 && cols.every(c => c.c === 'utf8mb4_unicode_ci'), `${t} columns all unicode_ci`);
+    }
+    assert.strictEqual(await mig.isApplied(conn), true, 'isApplied true when aligned');
+
+    // UP is idempotent: running it again converts nothing and leaves the schema identical.
+    const before = await snapshot();
+    runNode('loan_migrate.js', ['up']);
+    assert.strictEqual(await snapshot(), before, 'second UP changes nothing');
+
+    // DOWN returns the four tables to general_ci without touching data, and isApplied flips to false.
+    const docRowsBefore = Number((await q('SELECT COUNT(*) n FROM ln_print_template'))[0].n);
+    const printBodyBefore = await q('SELECT templateCode, body FROM ln_print_template ORDER BY templateCode');
+    assert.match(runNode('loan_migrate.js', ['down', '--yes']), /20261105_loan_phase5_collation_align/);
+    const downState = await tableCollations();
+    for (const t of mig.TABLES) assert.strictEqual(downState[t], 'utf8mb4_general_ci', `${t} back to general_ci on DOWN`);
+    assert.strictEqual(Number((await q('SELECT COUNT(*) n FROM ln_print_template'))[0].n), docRowsBefore, 'DOWN keeps rows');
+    assert.deepStrictEqual(await q('SELECT templateCode, body FROM ln_print_template ORDER BY templateCode'), printBodyBefore, 'DOWN keeps row data');
+    assert.strictEqual(await mig.isApplied(conn), false, 'isApplied false after DOWN');
+
+    // UP realigns and is the recorded restore for the suite's later state.
+    runNode('loan_migrate.js', ['up']);
+    assert.strictEqual(await snapshot(), before, 'UP after DOWN restores the aligned schema exactly');
+    assert.strictEqual(await mig.isApplied(conn), true);
   });
 
   let countsAfterFirstSeed;

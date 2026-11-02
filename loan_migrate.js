@@ -91,6 +91,11 @@ const MIGRATIONS = [
     marker: 'ln_print_template',
     dropsData: false,
     dropsTemplates: true
+  },
+  {
+    // Collation alignment: the four Phase 5 tables -> utf8mb4_unicode_ci (JS, idempotent, reversible)
+    name: '20261105_loan_phase5_collation_align',
+    module: './20261105_loan_phase5_collation_align.js'
   }
 ];
 
