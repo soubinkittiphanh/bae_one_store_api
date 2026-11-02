@@ -227,7 +227,8 @@ const main = async () => {
     user: cfg.user,
     password: cfg.password,
     database: target.database,
-    multipleStatements: true
+    multipleStatements: true,
+    connectTimeout: 10000 // 10 s: a slower customer server can take longer than the 1 s driver default
   });
 
   try {

@@ -128,6 +128,16 @@ const GROUPS = {
     LN_EXCHANGE_RATE: ['VIEW', 'AUTHORIZE'],
     LN_AUDIT_LOG: ['VIEW'],
     '*params': ['VIEW', 'AUTHORIZE']
+  },
+  // View-only accountant: reports, VAT report, GL tie-out (all under LN_REPORT/LN_VAT_REPORT) and the
+  // tax profile (VIEW only). Tax-profile changes, the checklist and accounting setup stay SUPER_ADMIN only.
+  LOAN_ACCOUNTANT: {
+    LN_ACCOUNT: ['VIEW'],
+    LN_COLLECTION: ['VIEW'],
+    LN_REPORT: ['VIEW'],
+    LN_VAT_REPORT: ['VIEW'],
+    LN_TAX_PROFILE: ['VIEW'],
+    LN_AUDIT_LOG: ['VIEW']
   }
 };
 

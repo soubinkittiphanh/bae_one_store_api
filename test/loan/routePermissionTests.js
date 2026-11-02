@@ -136,6 +136,39 @@ module.exports = async ({ test, call, q, baseUrl, users, L, expectStatus }) => {
     assert.strictEqual(Object.keys(TOKEN_ONLY).length, 2);
   });
 
+  await test('T4 negative: when the real router is tampered with, the audit fails — a permission guard stripped from a live route, and a fresh unguarded route added', async () => {
+    // A separate tagged instance so the shared `router` used by later tests is untouched.
+    const strip = (findPath) => {
+      const r = loadTaggedRouter();
+      const layer = r.stack.find(l => l.route && l.route.path === findPath);
+      assert.ok(layer, `route ${findPath} exists to tamper with`);
+      // Remove the permission middleware, as if someone deleted the can(...) from this line.
+      layer.route.stack = layer.route.stack.filter(s => !s.handle.permission);
+      return r;
+    };
+    // 1. A real guarded GET loses its permission guard: it is now token-only but not on the allow-list.
+    const stripped = strip('/reports/portfolio');
+    const p1 = auditRouter(stripped, { validateToken });
+    assert.ok(p1.some(p => p.includes('GET /reports/portfolio') && p.includes('no permission middleware and not on the token-only list')), `expected an unguarded-route problem, got ${JSON.stringify(p1)}`);
+
+    // 2. A new route is mounted with no guard at all (e.g. a careless addition).
+    const added = loadTaggedRouter();
+    added.get('/reports/secret-leak', (req, res) => res.json({}));
+    const p2 = auditRouter(added, { validateToken });
+    assert.ok(p2.some(p => p.includes('GET /reports/secret-leak') && p.includes('in the router, not in the manifest')), `expected an unlisted-route problem, got ${JSON.stringify(p2)}`);
+
+    // 3. A guarded route whose action is downgraded (AUTHORIZE -> VIEW on a mutation) is caught as a mismatch.
+    const downgraded = loadTaggedRouter();
+    const authLayer = downgraded.stack.find(l => l.route && l.route.path === '/transactions/:txId/authorize');
+    const guardLayer = authLayer.route.stack.find(s => s.handle.permission);
+    guardLayer.handle.permission = { functionCode: 'LN_TRANSACTION', actionCode: 'VIEW' };
+    const p3 = auditRouter(downgraded, { validateToken });
+    assert.ok(p3.some(p => p.includes('POST /transactions/:txId/authorize: router has LN_TRANSACTION VIEW, manifest has LN_TRANSACTION AUTHORIZE')), `expected a permission-mismatch problem, got ${JSON.stringify(p3)}`);
+
+    // The shared router is still clean after all this tampering on separate instances.
+    assert.deepStrictEqual(auditRouter(router, { validateToken }), [], 'the shared router was not affected');
+  });
+
   await test('T4 every function and action a route needs exists, is active and is applicable; so does every parameter entity\'s function', async () => {
     const rows = await q("SELECT functionCode f, applicableActions a, isActive i FROM sec_function WHERE moduleCode = 'LN'");
     const fns = new Map(rows.map(r => [r.f, { active: Boolean(r.i), actions: r.a.split(',').map(x => x.trim()) }]));
@@ -237,7 +270,7 @@ module.exports = async ({ test, call, q, baseUrl, users, L, expectStatus }) => {
     expectStatus(await call(SUPER, 'post', `${L}/changes/99999999/authorize`), 404, 'change');
   });
 
-  await test('T4 role matrix: for LOAN_CASHIER, LOAN_MANAGER and LOAN_CHECKER, every route for every parameter entity is reached or refused exactly as phase6-uat.md section 1 says, on the real guard with stub controllers', async () => {
+  await test('T4 role matrix: for each proposed group (LOAN_CASHIER, LOAN_MANAGER, LOAN_CHECKER, LOAN_ACCOUNTANT), every route for every parameter entity is reached or refused exactly as phase6-uat.md section 1 says, on the real guard with stub controllers', async () => {
     const c = await changeFunction();
     const app = express();
     const reached = (req, res) => res.status(200).json({ reached: true });
