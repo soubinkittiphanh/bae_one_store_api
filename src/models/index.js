@@ -495,6 +495,11 @@ const defineSalesAssociations = (db) => {
   // db.saleLine.belongsTo(db.unit, { foreignKey: 'unitId', as: 'unit' });
   // db.saleLine.belongsTo(db.priceList, { foreignKey: 'priceListId', as: 'priceList' });
   // db.saleLine.hasMany(db.card, { as: 'cards' });
+  if (db.saleLine && db.card) {
+    if (!db.saleLine.associations || !db.saleLine.associations.returnedCards) {
+      db.saleLine.hasMany(db.card, { foreignKey: 'returnSaleLineId', as: 'returnedCards' });
+    }
+  }
 
   // Related associations
   db.orderTable.hasMany(db.saleHeader, { as: 'saleHeader' });

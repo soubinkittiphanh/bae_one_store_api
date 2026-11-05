@@ -186,10 +186,17 @@ module.exports = (sequelize, DataTypes) => {
         // SaleLine -> Card (One-to-Many)
         // Note: This assumes SaleLine has multiple cards
         // If it's Many-to-One, change to belongsTo
-        SaleLine.hasMany(models.card, {
-            foreignKey: 'saleLineId', // Add the foreign key that exists in card table
-            as: 'cards'
-        });
+        if (models.card) {
+            SaleLine.hasMany(models.card, {
+                foreignKey: 'saleLineId', // Add the foreign key that exists in card table
+                as: 'cards'
+            });
+
+            SaleLine.hasMany(models.card, {
+                foreignKey: 'returnSaleLineId', // Cards returned/bought back into stock via this sale line
+                as: 'returnedCards'
+            });
+        }
 
         // SaleLine -> Color (Many-to-One)
         if (models.Color) {
