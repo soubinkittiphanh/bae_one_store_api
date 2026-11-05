@@ -744,6 +744,72 @@ const packagingService = {
         });
     },
 
+    /**
+     * Reverses / voids customer packaging ledger entries when a saleHeader is cancelled or reversed,
+     * and sequentially recalculates running balanceAfter for all affected customer packaging accounts.
+     */
+    reverseCustomerPackagingForSaleHeader: async (saleHeaderId, t = null) => {
+        const execute = async (transaction) => {
+            const entries = await customerPackagingLedger.findAll({
+                where: { saleHeaderId: parseInt(saleHeaderId, 10) },
+                transaction
+            });
+
+            if (!entries || entries.length === 0) {
+                return { reversedCount: 0 };
+            }
+
+            // Collect unique client & packagingProduct pairs
+            const affectedPairs = [];
+            for (const entry of entries) {
+                const exists = affectedPairs.some(
+                    p => p.clientId === entry.clientId && p.packagingProductId === entry.packagingProductId
+                );
+                if (!exists) {
+                    affectedPairs.push({
+                        clientId: entry.clientId,
+                        packagingProductId: entry.packagingProductId
+                    });
+                }
+            }
+
+            // Remove the ledger entries created by this sale
+            await customerPackagingLedger.destroy({
+                where: { saleHeaderId: parseInt(saleHeaderId, 10) },
+                transaction
+            });
+
+            // Recalculate sequential running balanceAfter for each affected customer + packagingProduct pair
+            for (const pair of affectedPairs) {
+                const remainingEntries = await customerPackagingLedger.findAll({
+                    where: {
+                        clientId: pair.clientId,
+                        packagingProductId: pair.packagingProductId
+                    },
+                    order: [['id', 'ASC']],
+                    transaction
+                });
+
+                let runningBalance = 0;
+                for (const row of remainingEntries) {
+                    runningBalance += row.qtyChange;
+                    if (row.balanceAfter !== runningBalance) {
+                        await row.update({ balanceAfter: runningBalance }, { transaction });
+                    }
+                }
+            }
+
+            logger.info(`Reversed ${entries.length} customer packaging ledger records for saleHeader #${saleHeaderId}`);
+            return { reversedCount: entries.length };
+        };
+
+        if (t) {
+            return await execute(t);
+        } else {
+            return await sequelize.transaction(execute);
+        }
+    },
+
     // =========================================================================
     // 5. PACKAGING DAMAGE & LOSS LOGGING (Breakages / Crushed Crates)
     // =========================================================================

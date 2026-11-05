@@ -608,6 +608,22 @@ const ensurePackagingColumns = async () => {
       logger.warn("Could not ensure poLine/receivingLine focQty:", lineErr.message);
     }
 
+    // 5. Ensure card.returnSaleLineId column exists
+    try {
+      if (await tableExists('card')) {
+        if (!(await hasColumn('card', 'returnSaleLineId'))) {
+          logger.info("Adding card.returnSaleLineId column...");
+          await sequelize.query(
+            "ALTER TABLE `card` ADD COLUMN `returnSaleLineId` INT(11) DEFAULT NULL COMMENT 'Reference to SaleLine table for items bought back / returned into stock'",
+            { type: QueryTypes.BULKUPDATE }
+          );
+          logger.info("Successfully added returnSaleLineId to card table.");
+        }
+      }
+    } catch (cardErr) {
+      logger.warn("Could not ensure card returnSaleLineId column:", cardErr.message);
+    }
+
   } catch (error) {
     logger.warn("Could not ensure packaging columns/enums:", error.message);
   }

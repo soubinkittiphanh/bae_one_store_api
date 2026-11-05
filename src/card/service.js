@@ -592,7 +592,8 @@ const createCardFromReceiving = async (receivingLines, locationId, currencyId, t
         lotNumber = null,
         expiryDate = null,
         hasExpiry = false,
-        hasLot = false
+        hasLot = false,
+        returnSaleLineId = null
     } = additionalData;
 
     let cardTemplate = {
@@ -650,6 +651,7 @@ const createCardFromReceiving = async (receivingLines, locationId, currencyId, t
             newCardTemplate.update_time = new Date();
             newCardTemplate.receivingLineId = iterator['id'];
             newCardTemplate.unitId = iterator['unitId'] || null;
+            newCardTemplate.returnSaleLineId = iterator['returnSaleLineId'] || returnSaleLineId || null;
 
             // Assign unique serial number if provided
             if (serialNo) {

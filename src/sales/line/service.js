@@ -49,10 +49,11 @@ const handleLinePackagingMovement = async (iterator) => {
           quantity: qty,
           qty: qty,
           rate: 1,
-          price: iterator.price || 0
+          price: iterator.price || 0,
+          returnSaleLineId: iterator.id
         }
-      ], locationId, currencyId, null);
-      logger.info(`Inflowed ${qty} packaging stock cards for returned line ${iterator.id} (product: ${iterator.productId})`);
+      ], locationId, currencyId, null, { returnSaleLineId: iterator.id });
+      logger.info(`Inflowed ${qty} packaging stock cards for returned line ${iterator.id} (product: ${iterator.productId}) with returnSaleLineId=${iterator.id}`);
 
       // 2. Record in customer packaging ledger if client is attached
       if (saleHeader && saleHeader.clientId) {

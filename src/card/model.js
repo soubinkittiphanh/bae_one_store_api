@@ -143,6 +143,11 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: true,
             comment: 'Reference to SaleLine table'
         },
+        returnSaleLineId: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            comment: 'Reference to SaleLine table for items bought back / returned into stock'
+        },
         ticketLineId: {
             type: DataTypes.INTEGER,
             allowNull: true,
@@ -384,6 +389,10 @@ module.exports = (sequelize, DataTypes) => {
             Card.belongsTo(models.saleLine, {
                 foreignKey: 'saleLineId',
                 as: 'saleLine'
+            });
+            Card.belongsTo(models.saleLine, {
+                foreignKey: 'returnSaleLineId',
+                as: 'returnSaleLine'
             });
         }
         

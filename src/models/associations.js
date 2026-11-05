@@ -364,12 +364,20 @@ module.exports = (db) => {
         as: 'unit'
     })
     db.saleLine.hasMany(db.card, {
+        foreignKey: 'saleLineId',
         as: 'cards'
+    })
+    db.saleLine.hasMany(db.card, {
+        foreignKey: 'returnSaleLineId',
+        as: 'returnedCards'
     })
     db.card.belongsTo(db.saleLine, {
         foreignKey: 'saleLineId',
         as: 'saleLine'
-
+    })
+    db.card.belongsTo(db.saleLine, {
+        foreignKey: 'returnSaleLineId',
+        as: 'returnSaleLine'
     })
 
     // Quotation mapping //

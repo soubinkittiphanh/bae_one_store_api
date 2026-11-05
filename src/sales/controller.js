@@ -1206,7 +1206,8 @@ exports.reverseSaleHeader = async (req, res) => {
             model: Product,
             as: "product"
           },
-          'cards'
+          'cards',
+          'returnedCards'
         ]
       }]
     });
@@ -1230,32 +1231,71 @@ exports.reverseSaleHeader = async (req, res) => {
     }
     logger.info(`SaleLine len: ${saleHeader['lines'].length}`)
     logger.info(`SaleLine product len: ${saleHeader['lines'].length}`)
-    // Collect card id to reverse back
-    // const cardIds = [];
-    // for (const iterator of saleHeader['lines']) {
-    //   logger.info(`product id ${iterator['product']['id']}`)
-    //   cardIds.concat(iterator['cards'].map(card => card['id']))
-    // }
-    const cardIds = saleHeader['lines'].flatMap(iterator => iterator['cards'].map(card => card['id']));
-    const lineIds = saleHeader['lines'].map(line => line.id)
+
+    // Partition lines into sold lines and return/buyback lines
+    const soldLines = (saleHeader['lines'] || []).filter(
+      l => !l.isReturn && l.packagingAction !== 'RETURNED'
+    );
+    const returnLines = (saleHeader['lines'] || []).filter(
+      l => l.isReturn === true || l.isReturn === 1 || l.packagingAction === 'RETURNED'
+    );
+
+    const soldCardIds = soldLines.flatMap(iterator => (iterator['cards'] || []).map(card => card['id']));
+    const returnLineIds = returnLines.map(line => line.id);
+    const lineIds = saleHeader['lines'].map(line => line.id);
+
     const result = await sequelize.transaction(async (t) => {
       const updatedRecord = await saleHeader.update({ isActive, remark }, { transaction: t });
       await SalePayment.update({ isActive }, { where: { saleHeaderId: id }, transaction: t });
       const updatedSaleLineRecord = await SaleLine.update({ isActive }, { where: { 'id': { [Op.in]: lineIds } } }, { transaction: t });
-      const [numUpdated] = await Card.update(
-        {
-          card_isused: 0,
-          saleLineId: null,
-          isActive: true,
-        },
-        {
-          where: {
-            id: {
-              [Op.in]: cardIds,
+
+      // 1. Restore cards consumed by normal sales back into inventory
+      let numUpdated = 0;
+      if (soldCardIds.length > 0) {
+        const [soldCount] = await Card.update(
+          {
+            card_isused: 0,
+            saleLineId: null,
+            isActive: true,
+          },
+          {
+            where: {
+              id: { [Op.in]: soldCardIds },
             },
           },
-        }, { transaction: t }
-      );
+          { transaction: t }
+        );
+        numUpdated += soldCount;
+      }
+
+      // 2. Void / deactivate cards created from return / packaging buyback lines
+      // Since these cards were introduced into stock by this ticket, cancelling the ticket must remove them from available stock.
+      if (returnLineIds.length > 0) {
+        const [returnCount] = await Card.update(
+          {
+            card_isused: 2,
+            isActive: false,
+          },
+          {
+            where: {
+              returnSaleLineId: { [Op.in]: returnLineIds },
+              saleLineId: null // only deactivate if not subsequently sold
+            },
+          },
+          { transaction: t }
+        );
+        logger.info(`Deactivated ${returnCount} returned packaging cards for return lines: ${returnLineIds.join(',')}`);
+      }
+
+      // 3. REVERSE CUSTOMER PACKAGING LEDGER & RESTORE INVARIANT BALANCE
+      try {
+        const packagingService = require('../packaging/service');
+        if (packagingService && typeof packagingService.reverseCustomerPackagingForSaleHeader === 'function') {
+          await packagingService.reverseCustomerPackagingForSaleHeader(id, t);
+        }
+      } catch (pkgErr) {
+        logger.error('Failed to reverse customer packaging ledger: ' + pkgErr.message);
+      }
 
       // REVERSE LOYALTY POINTS
       await loyaltyService.reversePointsForSale(id, t);
@@ -1270,17 +1310,13 @@ exports.reverseSaleHeader = async (req, res) => {
       }
 
       return { updatedRecord, numUpdated };
-    })
-
-
-
+    });
 
     logger.info("Reversal is on going...")
-    // ********** Clasify new or old saleLine ********** //
-    logger.info(`Reversal transaction completed ${saleHeader}`)
+    logger.info(`Reversal transaction completed ${saleHeader.id}`)
 
     // ************* TAKE THE PRODUC ID FOR UPDATE STOCK COUNT IN PRODUCT TABLE *************//
-    updateProductStockCount(saleHeader['lines'])
+    await updateProductStockCount(saleHeader['lines'])
     // ************* TAKE THE PRODUC ID FOR UPDATE STOCK COUNT IN PRODUCT TABLE *************//
     // *********** SET CANCELATION CHARGE ***********
     if (cancel_fee > 0) {
@@ -1634,7 +1670,13 @@ exports.getSaleHeadersByDate = async (req, res) => {
           include: [
             {
               model: Product,
-              as: "product"
+              as: "product",
+              include: [
+                {
+                  model: Category,
+                  as: "category"
+                }
+              ]
             }
           ]
         },
@@ -1676,7 +1718,13 @@ exports.getSaleHeadersByDate = async (req, res) => {
               include: [
                 {
                   model: Product,
-                  as: "product"
+                  as: "product",
+                  include: [
+                    {
+                      model: Category,
+                      as: "category"
+                    }
+                  ]
                 }
               ]
             },
@@ -1930,7 +1978,13 @@ exports.getSaleHeadersByDateAndUser = async (req, res) => {
           include: [
             {
               model: Product,
-              as: "product"
+              as: "product",
+              include: [
+                {
+                  model: Category,
+                  as: "category"
+                }
+              ]
             },
             {
               model: SaleHeader,
@@ -1984,7 +2038,13 @@ exports.getSaleHeadersByDateAndUser = async (req, res) => {
               include: [
                 {
                   model: Product,
-                  as: "product"
+                  as: "product",
+                  include: [
+                    {
+                      model: Category,
+                      as: "category"
+                    }
+                  ]
                 },
                 {
                   model: SaleHeader,
@@ -2061,7 +2121,13 @@ exports.getSaleHeadersByDateAndCustomer = async (req, res) => {
           include: [
             {
               model: Product,
-              as: "product"
+              as: "product",
+              include: [
+                {
+                  model: Category,
+                  as: "category"
+                }
+              ]
             },
             {
               model: Card,
@@ -2105,7 +2171,13 @@ exports.getSaleHeadersByDateAndCustomer = async (req, res) => {
               include: [
                 {
                   model: Product,
-                  as: "product"
+                  as: "product",
+                  include: [
+                    {
+                      model: Category,
+                      as: "category"
+                    }
+                  ]
                 },
                 {
                   model: Card,
@@ -2504,7 +2576,13 @@ exports.getSaleHeadersByDateWithGifts = async (req, res) => {
           include: [
             {
               model: Product,
-              as: "product"
+              as: "product",
+              include: [
+                {
+                  model: Category,
+                  as: "category"
+                }
+              ]
             }
           ]
         },
@@ -2588,7 +2666,13 @@ exports.getSaleHeadersByDateAndUserWithGifts = async (req, res) => {
           include: [
             {
               model: Product,
-              as: "product"
+              as: "product",
+              include: [
+                {
+                  model: Category,
+                  as: "category"
+                }
+              ]
             },
             {
               model: SaleHeader,
