@@ -135,7 +135,7 @@ exports.getAllAccountStatements = async (req, res) => {
                     // attributes: ['id', 'username', 'firstName', 'lastName']
                 }
             ],
-            order: [[sortBy, sortOrder]],
+            order: [[sortBy, sortOrder], ['id', sortOrder]],
             limit: parseInt(limit),
             offset: parseInt(offset)
         });
@@ -358,7 +358,7 @@ exports.getAccountBalanceSummary = async (req, res) => {
 
         const statements = await AccountStatement.findAll({
             where: whereClause,
-            order: [['bookingDate', 'ASC']],
+            order: [['bookingDate', 'ASC'], ['id', 'ASC']],
             attributes: ['bookingDate', 'creditAmount', 'debitAmount', 'endingBalance', 'exchangeRate']
         });
 
@@ -493,7 +493,7 @@ exports.getExchangeRateAnalysis = async (req, res) => {
 
         const statements = await AccountStatement.findAll({
             where: whereClause,
-            order: [['bookingDate', 'ASC']],
+            order: [['bookingDate', 'ASC'], ['id', 'ASC']],
             attributes: ['bookingDate', 'exchangeRate', 'creditAmount', 'debitAmount']
         });
 

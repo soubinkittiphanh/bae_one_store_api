@@ -32,9 +32,10 @@
 ## 3. Specialized Multi-Industry Verticals
 
 ### A. Beerlao Agency Returnable Packaging
-- **Path**: [src/packaging/](file:///Users/soubinkittiphanh/Desktop/Pro/dcommerce/dc_api/src/packaging)
+- **Path**: [src/packaging/](file:///Users/soubinkittiphanh/Desktop/Pro/dcommerce/dc_api/src/packaging), [src/sales/line/service.js](file:///Users/soubinkittiphanh/Desktop/Pro/dcommerce/dc_api/src/sales/line/service.js) (`handleLinePackagingMovement`)
 - **Models**: `productPackaging`, `customerPackagingLedger`, `supplierPackagingLedger`, `packagingDamageLog`
-- **Purpose**: Tracks returnable glass bottle crates, plastic pallets, keg deposits, and bottle returns for Beerlao beverage distributors.
+- **Purpose**: Tracks returnable glass bottle crates, plastic pallets, keg deposits, customer debt ledgers, and bottle returns for Beerlao beverage distributors.
+- **Critical Rule**: Enforce idempotency across `customer_packaging_ledger`. Direct packaging line sales are auto-logged by `handleLinePackagingMovement()`, while finished case BOM requirements are posted via `/api/packaging/pos/sale`. Never log duplicate `DELIVERED_OUT` entries for the same sale header. (See `inventory-stock` skill for detailed architecture).
 
 ### B. Car Parking Management
 - **Path**: [src/parking/](file:///Users/soubinkittiphanh/Desktop/Pro/dcommerce/dc_api/src/parking)

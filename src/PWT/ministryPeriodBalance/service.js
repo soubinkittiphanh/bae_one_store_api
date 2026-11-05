@@ -135,11 +135,26 @@ class MinistryPeriodBalanceService {
         order: [['bookingDate', 'ASC']]
       });
 
-      // 5. Build Balance Forward Structures
+      // 5. Build Balance Forward Structures (Pre-seed with all active Ministries)
+      const allMinistries = await Ministry.findAll({
+        attributes: ['id', 'ministryCode', 'ministryName'],
+        order: [['id', 'ASC']]
+      });
+
       const bfMinistryMap = new Map();
       const bfBankAccountMap = new Map();
       const bfCurrencyTotals = {};
       let bfTotalLak = 0;
+
+      allMinistries.forEach(min => {
+        bfMinistryMap.set(min.id, {
+          ministryId: min.id,
+          ministryCode: min.ministryCode || 'N/A',
+          ministryName: min.ministryName || 'Unknown Ministry',
+          amounts: {},
+          totalLakEquivalent: 0
+        });
+      });
 
       openingAdvRows.forEach(row => {
         const mId = row.ministryId;
@@ -227,6 +242,17 @@ class MinistryPeriodBalanceService {
       const advCurrencyTotals = {};
       let advTotalLak = 0;
 
+      allMinistries.forEach(min => {
+        advMinistryMap.set(min.id, {
+          ministryId: min.id,
+          ministryCode: min.ministryCode || 'N/A',
+          ministryName: min.ministryName || 'Unknown Ministry',
+          count: 0,
+          amounts: {},
+          totalLakEquivalent: 0
+        });
+      });
+
       currentAdvances.forEach(item => {
         const m = item.ministry;
         const b = item.bankAccount;
@@ -242,11 +268,13 @@ class MinistryPeriodBalanceService {
             ministryId: mId,
             ministryCode: m?.ministryCode || 'NO_MINISTRY',
             ministryName: m?.ministryName || 'ລາຍການບໍ່ລະບຸກົມ (Unassigned)',
+            count: 0,
             amounts: {},
             totalLakEquivalent: 0
           });
         }
         const mEntry = advMinistryMap.get(mId);
+        mEntry.count = (mEntry.count || 0) + 1;
         mEntry.amounts[cCode] = (mEntry.amounts[cCode] || 0) + amt;
         mEntry.totalLakEquivalent += lakEq;
 
@@ -257,11 +285,13 @@ class MinistryPeriodBalanceService {
             accountNumber: b?.accountNumber || 'N/A',
             accountName: b?.accountName || 'Cash',
             bankName: b?.bankName || 'Cash Drawer',
+            count: 0,
             amounts: {},
             totalLakEquivalent: 0
           });
         }
         const bEntry = advBankAccountMap.get(bId);
+        bEntry.count = (bEntry.count || 0) + 1;
         bEntry.amounts[cCode] = (bEntry.amounts[cCode] || 0) + amt;
         bEntry.totalLakEquivalent += lakEq;
 
@@ -274,6 +304,17 @@ class MinistryPeriodBalanceService {
       const setBankAccountMap = new Map();
       const setCurrencyTotals = {};
       let setTotalLak = 0;
+
+      allMinistries.forEach(min => {
+        setMinistryMap.set(min.id, {
+          ministryId: min.id,
+          ministryCode: min.ministryCode || 'N/A',
+          ministryName: min.ministryName || 'Unknown Ministry',
+          count: 0,
+          amounts: {},
+          totalLakEquivalent: 0
+        });
+      });
 
       currentSettlements.forEach(item => {
         const m = item.ministry;
@@ -290,11 +331,13 @@ class MinistryPeriodBalanceService {
             ministryId: mId,
             ministryCode: m?.ministryCode || 'NO_MINISTRY',
             ministryName: m?.ministryName || 'ລາຍການບໍ່ລະບຸກົມ (Unassigned)',
+            count: 0,
             amounts: {},
             totalLakEquivalent: 0
           });
         }
         const mEntry = setMinistryMap.get(mId);
+        mEntry.count = (mEntry.count || 0) + 1;
         mEntry.amounts[cCode] = (mEntry.amounts[cCode] || 0) + amt;
         mEntry.totalLakEquivalent += lakEq;
 
@@ -305,11 +348,13 @@ class MinistryPeriodBalanceService {
             accountNumber: b?.accountNumber || 'N/A',
             accountName: b?.accountName || 'Cash',
             bankName: b?.bankName || 'Cash Drawer',
+            count: 0,
             amounts: {},
             totalLakEquivalent: 0
           });
         }
         const bEntry = setBankAccountMap.get(bId);
+        bEntry.count = (bEntry.count || 0) + 1;
         bEntry.amounts[cCode] = (bEntry.amounts[cCode] || 0) + amt;
         bEntry.totalLakEquivalent += lakEq;
 
@@ -408,7 +453,7 @@ class MinistryPeriodBalanceService {
         success: true,
         period: periodStatus,
         balanceForward: {
-          byMinistry: Array.from(bfMinistryMap.values()).filter(m => Math.abs(m.totalLakEquivalent) > 0.01 || Object.values(m.amounts).some(v => Math.abs(v) > 0.01)),
+          byMinistry: Array.from(bfMinistryMap.values()).filter(m => m.ministryId !== 0 || Math.abs(m.totalLakEquivalent) > 0.01 || Object.values(m.amounts).some(v => Math.abs(v) > 0.01)),
           byBankAccount: Array.from(bfBankAccountMap.values()).filter(b => Math.abs(b.totalLakEquivalent) > 0.01 || Object.values(b.amounts).some(v => Math.abs(v) > 0.01)),
           totals: {
             currencyTotals: bfCurrencyTotals,
@@ -416,7 +461,7 @@ class MinistryPeriodBalanceService {
           }
         },
         currentAdvances: {
-          byMinistry: Array.from(advMinistryMap.values()),
+          byMinistry: Array.from(advMinistryMap.values()).filter(m => m.ministryId !== 0 || Math.abs(m.totalLakEquivalent) > 0.01),
           byBankAccount: Array.from(advBankAccountMap.values()),
           totals: {
             currencyTotals: advCurrencyTotals,
@@ -424,7 +469,7 @@ class MinistryPeriodBalanceService {
           }
         },
         currentSettlements: {
-          byMinistry: Array.from(setMinistryMap.values()),
+          byMinistry: Array.from(setMinistryMap.values()).filter(m => m.ministryId !== 0 || Math.abs(m.totalLakEquivalent) > 0.01),
           byBankAccount: Array.from(setBankAccountMap.values()),
           totals: {
             currencyTotals: setCurrencyTotals,
@@ -432,7 +477,7 @@ class MinistryPeriodBalanceService {
           }
         },
         closingBalance: {
-          byMinistry: Array.from(closingMinistryMap.values()).filter(m => Math.abs(m.totalLakEquivalent) > 0.01 || Object.values(m.amounts).some(v => Math.abs(v) > 0.01)),
+          byMinistry: Array.from(closingMinistryMap.values()).filter(m => m.ministryId !== 0 || Math.abs(m.totalLakEquivalent) > 0.01 || Object.values(m.amounts).some(v => Math.abs(v) > 0.01)),
           byBankAccount: Array.from(closingBankAccountMap.values()).filter(b => Math.abs(b.totalLakEquivalent) > 0.01 || Object.values(b.amounts).some(v => Math.abs(v) > 0.01)),
           totals: {
             currencyTotals: closingCurrencyTotals,
