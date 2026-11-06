@@ -149,11 +149,13 @@ const reverse = async ({ accountId, input, ctxUser, pending, transaction, hook }
   if (target.postingStatus !== 'POSTED' || target.isReversed || target.eventCode === 'REVERSAL' || target.source !== 'ONLINE') {
     throw new LoanError(409, `${target.txNo} cannot be reversed (${target.postingStatus}${target.isReversed ? ', already reversed' : ''}, ${target.eventCode}, ${target.source})`);
   }
+  // LIFO: no later ONLINE transaction may still stand. REVERSAL rows are skipped (they are never targets);
+  // checking only the newest row would let an older target through whenever the newest is a REVERSAL.
   const later = await db.lnTransaction.findOne({
-    where: { loanAccountId: ctx.account.id, source: 'ONLINE', postingStatus: 'POSTED', isReversed: false, id: { [db.Sequelize.Op.gt]: target.id } },
+    where: { loanAccountId: ctx.account.id, source: 'ONLINE', postingStatus: 'POSTED', isReversed: false, eventCode: { [db.Sequelize.Op.ne]: 'REVERSAL' }, id: { [db.Sequelize.Op.gt]: target.id } },
     order: [['id', 'DESC']], transaction
   });
-  if (later && later.eventCode !== 'REVERSAL') throw new LoanError(409, `Reversal is LIFO: reverse the later transaction ${later.txNo} (${later.eventCode}) first`);
+  if (later) throw new LoanError(409, `Reversal is LIFO: reverse the later transaction ${later.txNo} (${later.eventCode}) first`);
   const dates = await G.resolveDates({ kind: 'REVERSAL', valueDate: input.valueDate, product: null, transaction });
   const txn = pending || await newTransactionRow({ kind: 'REVERSAL', ctx, input, dates, ctxUser, status: 'POSTED', transaction });
   hook('AFTER_TRANSACTION');

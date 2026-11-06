@@ -128,7 +128,16 @@ module.exports = async ({ test: runTest, call, q, db, runNode, users, L, expectS
     await setSpf('USE_BUSINESS_DATE', 'Y');
     await setBusinessDate('2026-11-02');
     await q("UPDATE ln_system_date SET periodLockDate = '2026-10-01'");
-    product = (await call(ADMIN, 'get', `${L}/products?search=CAR-LOAN-DB`)).data.data.find(p => p.authStatus === 'AUTHORIZED' && p.status === 'ACTIVE');
+    // The 2A/2B seeds stamp effectiveFrom with the day they run (Asia/Vientiane). The business date above is
+    // fixed, so on any run after 2026-11-02 the seeded rules would not be in force yet. Backdate only the rows
+    // the seeds stamped today (entry rules: seed rows have no maker), so the suite does not depend on the calendar.
+    const seedDay = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Vientiane' });
+    if (seedDay > '2026-11-02') {
+      await q("UPDATE ln_accounting_entry_rule SET effectiveFrom = '2026-01-01' WHERE effectiveFrom = ? AND makerId IS NULL", [seedDay]);
+      await q("UPDATE ln_status_movement_rule SET effectiveFrom = '2026-01-01' WHERE effectiveFrom = ?", [seedDay]);
+      await q("UPDATE ln_provision_rule SET effectiveFrom = '2026-01-01' WHERE effectiveFrom = ?", [seedDay]);
+    }
+    product =(await call(ADMIN, 'get', `${L}/products?search=CAR-LOAN-DB`)).data.data.find(p => p.authStatus === 'AUTHORIZED' && p.status === 'ACTIVE');
     lakId = (await q('SELECT id FROM currency WHERE isLocalCCY = 1 LIMIT 1'))[0].id;
     await q("UPDATE ln_tax_profile SET confirmationStatus = 'CONFIRMED'");
   });
@@ -385,6 +394,17 @@ module.exports = async ({ test: runTest, call, q, db, runNode, users, L, expectS
     const net = await q("SELECT a.accountNumber acct, SUM(CASE WHEN g.drAccountId = a.id THEN g.debit ELSE -g.credit END) n FROM general_ledger g JOIN chart_of_account a ON a.id IN (g.drAccountId, g.crAccountId) WHERE g.postingReference IN (?, ?) GROUP BY a.accountNumber", [prepayTx.txNo, rev.txNo]);
     assert.ok(net.every(x => Number(x.n) === 0), 'GL nets to zero per account');
     assert.strictEqual(Number((await q('SELECT isReversed r FROM ln_transaction WHERE id = ?', [prepayTx.transactionId]))[0].r), 1);
+
+    // Step 4 click-through: the newest row is now the REVERSAL itself. LIFO must still look past it, so the
+    // older DISB (with later repayments standing) stays refused, for both the preview and the submit.
+    const pendingBefore = await num("SELECT COUNT(*) n FROM ln_transaction WHERE loanAccountId = ? AND postingStatus = 'PENDING_AUTH'", [A.account.id]);
+    const lifoPreview = await call(ADMIN, 'post', `${L}/accounts/${A.account.id}/preview/REVERSAL`, { targetTransactionId: disbTx.transactionId });
+    expectStatus(lifoPreview, 409, 'preview: non-LIFO reversal behind a reversal');
+    assert.match(lifoPreview.data.message, /LIFO/);
+    const lifoSubmit = await post(ADMIN, A.account.id, { kind: 'REVERSAL', targetTransactionId: disbTx.transactionId });
+    expectStatus(lifoSubmit, 409, 'submit: non-LIFO reversal behind a reversal');
+    assert.match(lifoSubmit.data.message, /LIFO/);
+    assert.strictEqual(await num("SELECT COUNT(*) n FROM ln_transaction WHERE loanAccountId = ? AND postingStatus = 'PENDING_AUTH'", [A.account.id]), pendingBefore, 'no pending reversal created');
   });
 
   await test('EOD crash at an account resumes without duplicates; late REPAYMENT carries the memo penalty as PEN_CASH', async () => {
@@ -500,6 +520,69 @@ module.exports = async ({ test: runTest, call, q, db, runNode, users, L, expectS
     assert.strictEqual(rec[0].status, 'voided');
     assert.notStrictEqual((await q('SELECT status FROM ARInvoiceHeader WHERE id = ?', [El.invoice.id]))[0].status, 'paid');
     assert.strictEqual((await q('SELECT accountStage s FROM ln_account WHERE id = ?', [El.account.id]))[0].s, 'BOOKED');
+  });
+
+  // Rule: the target must be the newest POSTED ONLINE transaction that is not already reversed, ignoring REVERSAL rows.
+  await test('reversal order (LIFO): T1,T2,T3 -> only T3; after T3 reversed only T2; a reversal row is never a target; after T3 and T2 reversed T1 is allowed and the account is exactly as it was after T1', async () => {
+    const R = await makeLoan();
+    await feeCollect(R.account.id, '0');
+    await disburse(R.account.id);
+    const id = R.account.id;
+    const pendingCount = () => num("SELECT COUNT(*) n FROM ln_transaction WHERE loanAccountId = ? AND postingStatus = 'PENDING_AUTH'", [id]);
+    // Every stored amount of the account, as exact decimal strings
+    const snapshot = async () => ({
+      account: await q('SELECT CAST(disbursedAmount AS CHAR) disbursed, CAST(advanceBalance AS CHAR) advance, CAST(writtenOffMemo AS CHAR) wo, CAST(repossessedCarrying AS CHAR) repo, onTimeStreak streak, accountStage stage FROM ln_account WHERE id = ?', [id]),
+      balances: await q('SELECT componentId c, CAST(outstandingAmount AS CHAR) o, CAST(totalAccrued AS CHAR) ac, CAST(totalBilled AS CHAR) b, CAST(totalPaid AS CHAR) p, CAST(totalWaived AS CHAR) w FROM ln_account_balance WHERE loanAccountId = ? ORDER BY componentId', [id]),
+      schedule: await q('SELECT s.installmentNo n, s.status st, c.componentId c, CAST(c.amountDue AS CHAR) due, CAST(c.amountPaid AS CHAR) paid, CAST(c.amountWaived AS CHAR) waived, c.status cst FROM ln_schedule s JOIN ln_schedule_component c ON c.scheduleId = s.id WHERE s.loanAccountId = ? ORDER BY s.installmentNo, c.componentId', [id]),
+      bank: (await q('SELECT CAST(balance AS CHAR) b FROM bankAccount WHERE id = ?', [bank.id]))[0].b
+    });
+    const refused = async (target, label) => {
+      const before = await pendingCount();
+      const pv = await call(ADMIN, 'post', `${L}/accounts/${id}/preview/REVERSAL`, { targetTransactionId: target.transactionId });
+      expectStatus(pv, 409, `preview: ${label}`);
+      const sb = await post(ADMIN, id, { kind: 'REVERSAL', targetTransactionId: target.transactionId });
+      expectStatus(sb, 409, `submit: ${label}`);
+      assert.strictEqual(await pendingCount(), before, `${label}: no pending reversal created`);
+      return sb.data.message;
+    };
+    const allowed = async (target, label) => {
+      expectStatus(await call(ADMIN, 'post', `${L}/accounts/${id}/preview/REVERSAL`, { targetTransactionId: target.transactionId }), 200, `preview: ${label}`);
+      const rev = await makerChecker(id, { kind: 'REVERSAL', targetTransactionId: target.transactionId }, label);
+      assert.strictEqual(rev.reverses, target.txNo);
+      return rev;
+    };
+    const pay = async (amount) => {
+      const r = await post(ADMIN, id, { kind: 'REPAYMENT', amount, bankAccountId: bank.id });
+      expectStatus(r, 201, `REPAYMENT ${amount}`);
+      return r.data.data;
+    };
+
+    const T1 = await pay('1000000');
+    const afterT1 = await snapshot();
+    const T2 = await pay('2000000');
+    const T3 = await pay('3000000');
+
+    // (a) T1, T2, T3 posted: T1 and T2 refused (naming T3), T3 allowed
+    assert.match(await refused(T1, 'T1 behind T2,T3'), new RegExp(`LIFO.*${T3.txNo}`));
+    assert.match(await refused(T2, 'T2 behind T3'), new RegExp(`LIFO.*${T3.txNo}`));
+    const R3 = await allowed(T3, 'REVERSAL of T3');
+
+    // (b) T3 reversed: T2 is now the newest standing transaction; T1 still refused (naming T2, not the reversal row)
+    assert.match(await refused(T1, 'T1 behind T2 (newest row is a reversal)'), new RegExp(`LIFO.*${T2.txNo}`));
+
+    // (c) a reversal row is never a target, and T3 cannot be reversed twice
+    assert.match(await refused(R3, 'reversal of a reversal'), /cannot be reversed.*REVERSAL/);
+    assert.match(await refused(T3, 'T3 again'), /already reversed/);
+
+    const R2 = await allowed(T2, 'REVERSAL of T2');
+
+    // (d) T3 and T2 reversed: the account is exactly as after T1 (every amount, to the last decimal), the GL of
+    // T2, T3 and their reversals nets to zero per chart account, and T1 is now allowed
+    assert.deepStrictEqual(await snapshot(), afterT1, 'state after reversing T3 and T2 equals the state after T1');
+    const net = await q("SELECT a.accountNumber acct, CAST(SUM(CASE WHEN g.drAccountId = a.id THEN g.debit ELSE -g.credit END) AS CHAR) n FROM general_ledger g JOIN chart_of_account a ON a.id IN (g.drAccountId, g.crAccountId) WHERE g.postingReference IN (?, ?, ?, ?) GROUP BY a.accountNumber", [T2.txNo, T3.txNo, R2.txNo, R3.txNo]);
+    assert.ok(net.length > 0 && net.every(x => Number(x.n) === 0), `GL nets to zero per account: ${JSON.stringify(net)}`);
+    await allowed(T1, 'REVERSAL of T1');
+    assert.deepStrictEqual((await q('SELECT txNo, isReversed r FROM ln_transaction WHERE id IN (?, ?, ?) ORDER BY id', [T1.transactionId, T2.transactionId, T3.transactionId])).map(t => Number(t.r)), [1, 1, 1]);
   });
 
   await test('books stay consistent: trial balance balanced, every posted leg points to an existing GL row, every loan cash entry links to a loan transaction', async () => {
