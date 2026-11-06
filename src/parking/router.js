@@ -9,8 +9,12 @@ const {
   validatePay,
   validateZone,
   validateSlot,
+  validateSlotUpdate,
   validatePricingRule,
-  validateMonthlyPass
+  validateMonthlyPass,
+  validateVehicleTypeCreate,
+  validateVehicleTypeUpdate,
+  validateVehicleTypeStatus
 } = require('./validation');
 
 // Protect all routes with JWT token verification
@@ -41,8 +45,16 @@ router.delete('/zones/:id', checkRole(['admin']), controller.deleteZone);
 
 router.get('/slots', controller.getSlots);
 router.post('/slots', checkRole(['admin']), validateSlot, controller.createSlot);
-router.put('/slots/:id', checkRole(['admin']), controller.updateSlot);
+router.put('/slots/:id', checkRole(['admin']), validateSlotUpdate, controller.updateSlot);
 router.patch('/slots/:id/status', controller.updateSlotStatus);
+
+// =============================================================================
+// 3b. VEHICLE TYPES (customer-maintained master)
+// =============================================================================
+router.get('/vehicle-types', controller.getVehicleTypes);
+router.post('/vehicle-types', checkRole(['admin']), validateVehicleTypeCreate, controller.createVehicleType);
+router.put('/vehicle-types/:id', checkRole(['admin']), validateVehicleTypeUpdate, controller.updateVehicleType);
+router.patch('/vehicle-types/:id/status', checkRole(['admin']), validateVehicleTypeStatus, controller.setVehicleTypeStatus);
 
 // =============================================================================
 // 4. PRICING RULES (ADMIN)

@@ -1,5 +1,6 @@
 const { body, query, param, validationResult } = require('express-validator');
 const db = require('../models');
+const vehicleTypeService = require('./vehicleTypeService');
 
 // Helper to handle and format express-validator errors
 const handleValidationErrors = (req, res, next) => {
@@ -53,15 +54,25 @@ const checkRole = (allowedRoles = ['admin']) => {
   };
 };
 
+// Vehicle type codes come from the customer-maintained parking_vehicle_types table.
+// Normalizes to lowercase and rejects unknown/inactive codes.
+const vehicleTypeField = (field, { required = false } = {}) => {
+  let chain = body(field);
+  chain = required ? chain.exists({ checkNull: true }).withMessage(`${field} is required`).bail() : chain.optional({ nullable: true });
+  return chain
+    .customSanitizer(v => vehicleTypeService.normalizeCode(v))
+    .custom(async v => {
+      await vehicleTypeService.assertActiveCode(v);
+      return true;
+    });
+};
+
 const validateEntry = [
   body('plateNumber')
     .trim()
     .notEmpty()
     .withMessage('Plate number is required (ກະລຸນາປ້ອນເລກທະບຽນລົດ)'),
-  body('vehicleType')
-    .optional()
-    .isIn(['car', 'motorbike', 'vip', 'disabled', 'truck'])
-    .withMessage('Invalid vehicle type'),
+  vehicleTypeField('vehicleType'),
   body('zoneId')
     .optional({ nullable: true })
     .isInt()
@@ -118,17 +129,17 @@ const validateSlot = [
     .trim()
     .notEmpty()
     .withMessage('Slot number is required (e.g. A-01)'),
-  body('slotType')
-    .optional()
-    .isIn(['car', 'motorbike', 'vip', 'disabled', 'truck'])
-    .withMessage('Invalid slot type'),
+  vehicleTypeField('slotType'),
+  handleValidationErrors
+];
+
+const validateSlotUpdate = [
+  vehicleTypeField('slotType'),
   handleValidationErrors
 ];
 
 const validatePricingRule = [
-  body('vehicleType')
-    .isIn(['car', 'motorbike', 'vip', 'disabled', 'truck'])
-    .withMessage('Invalid vehicle type'),
+  vehicleTypeField('vehicleType', { required: true }),
   body('dayHourlyRate')
     .isNumeric()
     .withMessage('Day hourly rate must be a valid number'),
@@ -153,6 +164,37 @@ const validateMonthlyPass = [
   body('endDate')
     .isISO8601()
     .withMessage('Valid end date (YYYY-MM-DD) is required'),
+  vehicleTypeField('vehicleType'),
+  handleValidationErrors
+];
+
+const validateVehicleTypeCreate = [
+  body('code')
+    .customSanitizer(v => vehicleTypeService.normalizeCode(v))
+    .matches(/^[a-z0-9_]{1,30}$/)
+    .withMessage('Code must be 1-30 characters: lowercase letters, numbers or underscore (e.g. van, tuk_tuk)'),
+  body('nameLa')
+    .trim()
+    .notEmpty()
+    .withMessage('Lao name is required (ກະລຸນາປ້ອນຊື່ພາສາລາວ)'),
+  body('sortOrder').optional({ nullable: true }).isInt().withMessage('sortOrder must be an integer'),
+  body('isDefault').optional().isBoolean().withMessage('isDefault must be true/false'),
+  handleValidationErrors
+];
+
+const validateVehicleTypeUpdate = [
+  body('nameLa')
+    .optional()
+    .trim()
+    .notEmpty()
+    .withMessage('Lao name cannot be empty (ກະລຸນາປ້ອນຊື່ພາສາລາວ)'),
+  body('sortOrder').optional({ nullable: true }).isInt().withMessage('sortOrder must be an integer'),
+  body('isDefault').optional().isBoolean().withMessage('isDefault must be true/false'),
+  handleValidationErrors
+];
+
+const validateVehicleTypeStatus = [
+  body('isActive').isBoolean().withMessage('isActive (true/false) is required'),
   handleValidationErrors
 ];
 
@@ -164,6 +206,10 @@ module.exports = {
   validatePay,
   validateZone,
   validateSlot,
+  validateSlotUpdate,
   validatePricingRule,
-  validateMonthlyPass
+  validateMonthlyPass,
+  validateVehicleTypeCreate,
+  validateVehicleTypeUpdate,
+  validateVehicleTypeStatus
 };

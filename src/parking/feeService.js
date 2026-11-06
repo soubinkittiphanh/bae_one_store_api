@@ -41,7 +41,9 @@ function calculateParkingFee({
   const durationMs = end.getTime() - start.getTime();
   const totalMinutes = Math.floor(durationMs / (1000 * 60));
 
-  // Default pricing rule fallback if none provided
+  // Default pricing rule fallback if none provided.
+  // `usedFallbackRule` is returned so callers can warn: the vehicle type has no active pricing rule.
+  const usedFallbackRule = !pricingRule;
   const rule = pricingRule || {
     gracePeriodMinutes: 15,
     dayStartTime: '06:00',
@@ -89,7 +91,8 @@ function calculateParkingFee({
       subtotalBeforeCap: 0,
       dailyCapApplied: false,
       penaltyFee: 0,
-      totalFee: 0
+      totalFee: 0,
+      usedFallbackRule
     };
   }
 
@@ -110,7 +113,8 @@ function calculateParkingFee({
       subtotalBeforeCap: 0,
       dailyCapApplied: false,
       penaltyFee: 0,
-      totalFee: 0
+      totalFee: 0,
+      usedFallbackRule
     };
   }
 
@@ -207,7 +211,8 @@ function calculateParkingFee({
     subtotalBeforeCap,
     dailyCapApplied,
     penaltyFee,
-    totalFee: Math.round(totalFee)
+    totalFee: Math.round(totalFee),
+    usedFallbackRule
   };
 }
 

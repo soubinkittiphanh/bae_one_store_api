@@ -400,6 +400,23 @@ const packagingService = {
                     companyId
                 }, t);
 
+                let unitCost = 0;
+                if (item.depositRefundAmount && qty > 0) {
+                    unitCost = Math.abs(Number(item.depositRefundAmount) / qty);
+                } else if (item.depositPrice || item.price) {
+                    unitCost = Math.abs(Number(item.depositPrice || item.price) || 0);
+                }
+                if (!unitCost || unitCost <= 0) {
+                    const pkgProd = await product.findByPk(item.packagingProductId, {
+                        attributes: ['id', 'cost_price', 'pro_price'],
+                        transaction: t
+                    });
+                    if (pkgProd) {
+                        unitCost = Number(pkgProd.cost_price) || Number(pkgProd.pro_price) || 0;
+                    }
+                }
+                const totalCost = unitCost * qty;
+
                 // 2. Increase empty crate/bottle inventory via stock cards
                 await cardService.cardUtility([
                     {
@@ -407,9 +424,11 @@ const packagingService = {
                         quantity: qty,
                         qty: qty,
                         rate: 1,
-                        price: 0
+                        price: unitCost,
+                        cost: unitCost,
+                        total: totalCost
                     }
-                ], locationId, 1, t);
+                ], locationId, 1, t, { cost: unitCost });
 
                 if (ledgerEntry) {
                     results.push(ledgerEntry);
@@ -624,6 +643,18 @@ const packagingService = {
                     }, t);
                 }
 
+                let unitCost = rate;
+                if (!unitCost || unitCost <= 0) {
+                    const pkgProd = await product.findByPk(item.packagingProductId, {
+                        attributes: ['id', 'cost_price', 'pro_price'],
+                        transaction: t
+                    });
+                    if (pkgProd) {
+                        unitCost = Number(pkgProd.cost_price) || Number(pkgProd.pro_price) || 0;
+                    }
+                }
+                const totalCost = unitCost * qty;
+
                 // 2. Increment empty crate/bottle inventory in store
                 await cardService.cardUtility([
                     {
@@ -631,9 +662,11 @@ const packagingService = {
                         quantity: qty,
                         qty: qty,
                         rate: 1,
-                        price: 0
+                        price: unitCost,
+                        cost: unitCost,
+                        total: totalCost
                     }
-                ], locationId, 1, t);
+                ], locationId, 1, t, { cost: unitCost });
 
                 processedItems.push({
                     packagingProductId: item.packagingProductId,

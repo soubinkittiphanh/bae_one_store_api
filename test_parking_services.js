@@ -364,7 +364,236 @@ async function runParkingUnitTests() {
     const freedSlot = await db.parkingSlot.findByPk(entryResult.slotId);
     assert.strictEqual(freedSlot.status, "available", "Slot should be available after checkout");
     assert.strictEqual(freedSlot.currentTicketId, null);
+
+    // Cleanup test rows so repeated runs don't pollute the demo DB
+    await db.parkingPayment.destroy({ where: { ticketId: entryResult.id } });
+    await db.parkingTicket.destroy({ where: { id: entryResult.id } });
   });
+
+  // -------------------------------------------------------------------------
+  // 10. CUSTOMER-MAINTAINED VEHICLE TYPES
+  // -------------------------------------------------------------------------
+  console.log("\n--- 10. Vehicle Type Master Tests ---");
+
+  const vehicleTypeService = require('./src/parking/vehicleTypeService');
+  const parkingServiceVT = require('./src/parking/service');
+  const TEST_CODE = 'test_van';
+  const TEST_PLATE = 'TV 0001';
+  const originalDefaultCode = await vehicleTypeService.getDefaultCode();
+  let testSlot = null;
+  let testTicketIds = [];
+
+  async function cleanupVehicleTypeTest() {
+    if (testTicketIds.length) {
+      await db.parkingPayment.destroy({ where: { ticketId: testTicketIds } });
+      await db.parkingTicket.destroy({ where: { id: testTicketIds } });
+    }
+    await db.parkingTicket.destroy({ where: { plateNumber: TEST_PLATE } });
+    if (testSlot) await db.parkingSlot.destroy({ where: { id: testSlot.id } });
+    await db.parkingSlot.destroy({ where: { slotNumber: 'TEST-VAN-01' } });
+    await db.parkingVehicle.destroy({ where: { plateNumber: TEST_PLATE } });
+    // restore original default before removing the test type
+    const orig = await db.parkingVehicleType.findOne({ where: { code: originalDefaultCode } });
+    if (orig && !orig.isDefault) {
+      await db.parkingVehicleType.update({ isDefault: false }, { where: {} });
+      await orig.update({ isDefault: true });
+    }
+    await db.parkingVehicleType.destroy({ where: { code: TEST_CODE } });
+  }
+
+  await cleanupVehicleTypeTest(); // leftovers from an aborted earlier run
+
+  await testAsync("Seeded default vehicle types exist", async () => {
+    const types = await vehicleTypeService.list();
+    const codes = types.map(t => t.code);
+    ['car', 'motorbike', 'truck'].forEach(c => assert.ok(codes.includes(c), `Missing seeded type ${c}`));
+    const defaults = types.filter(t => t.isDefault);
+    assert.strictEqual(defaults.length, 1, "Exactly one default type expected");
+  });
+
+  await testAsync("Create custom vehicle type (code normalized to lowercase)", async () => {
+    const created = await vehicleTypeService.create({ code: ' TEST_VAN ', nameLa: 'ລົດຕູ້ທົດສອບ', nameEn: 'Test Van', icon: 'mdi-van-utility', sortOrder: 50 }, 1);
+    assert.strictEqual(created.code, TEST_CODE);
+    assert.strictEqual(created.isActive, true);
+  });
+
+  await testAsync("Duplicate vehicle type code is rejected", async () => {
+    await assert.rejects(
+      () => vehicleTypeService.create({ code: TEST_CODE, nameLa: 'ຊ້ຳ' }),
+      /already exists/
+    );
+  });
+
+  await testAsync("Vehicle type code cannot be changed on update", async () => {
+    const t = await vehicleTypeService.findByCode(TEST_CODE);
+    await assert.rejects(() => vehicleTypeService.update(t.id, { code: 'other_code' }), /cannot be changed/);
+    const updated = await vehicleTypeService.update(t.id, { nameEn: 'Test Van Updated' });
+    assert.strictEqual(updated.nameEn, 'Test Van Updated');
+  });
+
+  await testAsync("Entry with unknown vehicle type is rejected", async () => {
+    await assert.rejects(
+      () => parkingServiceVT.processEntry({ plateNumber: TEST_PLATE, vehicleType: 'no_such_type' }),
+      /Unknown vehicle type/
+    );
+  });
+
+  await testAsync("Vehicle entry & checkout with custom type uses matching slot", async () => {
+    const zone = await db.parkingZone.findOne({ where: { isActive: true }, order: [['id', 'ASC']] });
+    assert.ok(zone, "Need at least one active zone");
+    testSlot = await db.parkingSlot.create({ zoneId: zone.id, slotNumber: 'TEST-VAN-01', slotType: TEST_CODE, status: 'available', isActive: true });
+
+    const ticket = await parkingServiceVT.processEntry({ plateNumber: TEST_PLATE, vehicleType: 'TEST_VAN' });
+    testTicketIds.push(ticket.id);
+    assert.strictEqual(ticket.vehicleType, TEST_CODE);
+    assert.strictEqual(ticket.slotId, testSlot.id, "Should be assigned to the custom-type slot");
+
+    // Cannot deactivate while a vehicle of this type is parked
+    const t = await vehicleTypeService.findByCode(TEST_CODE);
+    await assert.rejects(() => vehicleTypeService.setActive(t.id, false), /currently parked/);
+
+    await parkingServiceVT.processPaymentAndExit({ ticketId: ticket.id, paymentMethod: 'CASH', amount: 0 });
+  });
+
+  await testAsync("Cannot deactivate a type still used by an active slot", async () => {
+    const t = await vehicleTypeService.findByCode(TEST_CODE);
+    await assert.rejects(() => vehicleTypeService.setActive(t.id, false), /active slot/);
+  });
+
+  await testAsync("Switching default keeps exactly one default", async () => {
+    const t = await vehicleTypeService.findByCode(TEST_CODE);
+    await vehicleTypeService.update(t.id, { isDefault: true });
+    const defaults = await db.parkingVehicleType.findAll({ where: { isDefault: true } });
+    assert.strictEqual(defaults.length, 1);
+    assert.strictEqual(defaults[0].code, TEST_CODE);
+    assert.strictEqual(await vehicleTypeService.getDefaultCode(), TEST_CODE);
+    await assert.rejects(() => vehicleTypeService.setActive(t.id, false), /default/);
+    // restore
+    const orig = await vehicleTypeService.findByCode(originalDefaultCode);
+    await vehicleTypeService.update(orig.id, { isDefault: true });
+    assert.strictEqual(await vehicleTypeService.getDefaultCode(), originalDefaultCode);
+  });
+
+  await testAsync("Deactivated type is hidden from list and rejected on entry", async () => {
+    await db.parkingSlot.update({ isActive: false }, { where: { id: testSlot.id } });
+    const t = await vehicleTypeService.findByCode(TEST_CODE);
+    await vehicleTypeService.setActive(t.id, false);
+    const codes = (await vehicleTypeService.list()).map(x => x.code);
+    assert.ok(!codes.includes(TEST_CODE));
+    const allCodes = (await vehicleTypeService.list({ includeInactive: 'true' })).map(x => x.code);
+    assert.ok(allCodes.includes(TEST_CODE));
+    await assert.rejects(
+      () => parkingServiceVT.processEntry({ plateNumber: TEST_PLATE, vehicleType: TEST_CODE }),
+      /inactive/
+    );
+  });
+
+  await cleanupVehicleTypeTest();
+
+  // -------------------------------------------------------------------------
+  // 11. PRICING RULE DEFAULTS & MISSING-RULE WARNINGS
+  // -------------------------------------------------------------------------
+  console.log("\n--- 11. Pricing Rule Default & Fallback Tests ---");
+
+  const RT_A = 'test_rule_a';
+  const RT_B = 'test_rule_b';
+  const RT_PLATE = 'TR 0001';
+  const ruleBase = { gracePeriodMinutes: 15, dayStartTime: '06:00', dayEndTime: '18:00', dayHourlyRate: 1000, nightHourlyRate: 2000, nightPricingType: 'HOURLY', dailyCap: 10000, lostTicketFee: 20000, isActive: true };
+  const defaultsOf = async code => (await db.parkingPricingRule.findAll({ where: { vehicleType: code, isDefault: true, isActive: true } })).map(r => r.id);
+
+  async function cleanupRuleTest() {
+    const tickets = await db.parkingTicket.findAll({ where: { plateNumber: RT_PLATE }, attributes: ['id'] });
+    if (tickets.length) {
+      await db.parkingPayment.destroy({ where: { ticketId: tickets.map(t => t.id) } });
+      await db.parkingTicket.destroy({ where: { id: tickets.map(t => t.id) } });
+    }
+    await db.parkingSlot.destroy({ where: { slotNumber: 'TEST-RULE-01' } });
+    await db.parkingVehicle.destroy({ where: { plateNumber: RT_PLATE } });
+    await db.parkingPricingRule.destroy({ where: { vehicleType: [RT_A, RT_B] } });
+    await db.parkingVehicleType.destroy({ where: { code: [RT_A, RT_B] } });
+  }
+  await cleanupRuleTest();
+
+  test("Fee breakdown flags the built-in fallback rate", () => {
+    const entry = new Date("2026-10-25T03:00:00Z"); // 10:00 Vientiane
+    const exit = new Date("2026-10-25T05:00:00Z");
+    assert.strictEqual(feeService.calculateParkingFee({ entryTime: entry, exitTime: exit, pricingRule: null }).usedFallbackRule, true);
+    assert.strictEqual(feeService.calculateParkingFee({ entryTime: entry, exitTime: exit, pricingRule: carPricing }).usedFallbackRule, false);
+  });
+
+  try {
+    await vehicleTypeService.create({ code: RT_A, nameLa: 'ທົດສອບ A' });
+    await vehicleTypeService.create({ code: RT_B, nameLa: 'ທົດສອບ B' });
+
+    await testAsync("Type without a rule: flagged in list, entry allowed without rule, fee marked as fallback", async () => {
+      const t = (await vehicleTypeService.list()).find(x => x.code === RT_A);
+      assert.strictEqual(t.get('hasPricingRule'), false);
+
+      const zone = await db.parkingZone.findOne({ where: { isActive: true }, order: [['id', 'ASC']] });
+      await db.parkingSlot.create({ zoneId: zone.id, slotNumber: 'TEST-RULE-01', slotType: RT_A, status: 'available', isActive: true });
+      const ticket = await parkingServiceVT.processEntry({ plateNumber: RT_PLATE, vehicleType: RT_A });
+      assert.strictEqual(ticket.pricingRuleId, null, "No rule should be linked");
+      const fee = await parkingServiceVT.calculateExitFee({ ticketId: ticket.id });
+      assert.strictEqual(fee.feeBreakdown.usedFallbackRule, true);
+      await parkingServiceVT.processPaymentAndExit({ ticketId: ticket.id, paymentMethod: 'CASH', amount: 0 });
+    });
+
+    let rule1, rule2;
+    await testAsync("First rule of a type becomes default even if isDefault=false", async () => {
+      rule1 = await parkingServiceVT.savePricingRule({ ...ruleBase, name: 'R1', vehicleType: RT_A, isDefault: false }, 1);
+      assert.strictEqual(rule1.isDefault, true);
+      const t = (await vehicleTypeService.list()).find(x => x.code === RT_A);
+      assert.strictEqual(t.get('hasPricingRule'), true);
+    });
+
+    await testAsync("Saving a new default rule un-defaults the old one", async () => {
+      rule2 = await parkingServiceVT.savePricingRule({ ...ruleBase, name: 'R2', vehicleType: RT_A, isDefault: true }, 1);
+      assert.deepStrictEqual(await defaultsOf(RT_A), [rule2.id]);
+    });
+
+    await testAsync("Non-default second rule leaves the current default alone", async () => {
+      const r3 = await parkingServiceVT.savePricingRule({ ...ruleBase, name: 'R3', vehicleType: RT_A, isDefault: false }, 1);
+      assert.strictEqual(r3.isDefault, false);
+      assert.deepStrictEqual(await defaultsOf(RT_A), [rule2.id]);
+    });
+
+    await testAsync("The only default can't be un-set", async () => {
+      const saved = await parkingServiceVT.savePricingRule({ id: rule2.id, isDefault: false }, 1);
+      assert.strictEqual(saved.isDefault, true);
+      assert.deepStrictEqual(await defaultsOf(RT_A), [rule2.id]);
+    });
+
+    await testAsync("Entry links the default rule (no fallback)", async () => {
+      const ticket = await parkingServiceVT.processEntry({ plateNumber: RT_PLATE, vehicleType: RT_A });
+      assert.strictEqual(ticket.pricingRuleId, rule2.id);
+      const fee = await parkingServiceVT.calculateExitFee({ ticketId: ticket.id });
+      assert.strictEqual(fee.feeBreakdown.usedFallbackRule, false);
+      await parkingServiceVT.processPaymentAndExit({ ticketId: ticket.id, paymentMethod: 'CASH', amount: 0 });
+    });
+
+    await testAsync("Moving the default rule to another type promotes a new default for the old type", async () => {
+      await parkingServiceVT.savePricingRule({ id: rule2.id, vehicleType: RT_B }, 1);
+      assert.deepStrictEqual(await defaultsOf(RT_B), [rule2.id], "Moved rule is the first rule of B, so it is B's default");
+      const aDefaults = await defaultsOf(RT_A);
+      assert.strictEqual(aDefaults.length, 1, "Type A must still have exactly one default");
+      assert.notStrictEqual(aDefaults[0], rule2.id);
+    });
+
+    await testAsync("PUT /pricing-rules/:id updates (no body id) instead of creating a new rule", async () => {
+      const controller = require('./src/parking/controller');
+      const before = await db.parkingPricingRule.count({ where: { vehicleType: [RT_A, RT_B] } });
+      let statusCode = 0;
+      let payload = null;
+      const res = { status(c) { statusCode = c; return this; }, json(p) { payload = p; return this; } };
+      await controller.savePricingRule({ params: { id: String(rule1.id) }, body: { ...ruleBase, name: 'R1 renamed', vehicleType: RT_A }, user: { id: 1 } }, res);
+      assert.strictEqual(statusCode, 200, payload && payload.message);
+      const after = await db.parkingPricingRule.count({ where: { vehicleType: [RT_A, RT_B] } });
+      assert.strictEqual(after, before, "No new rule should be created");
+      assert.strictEqual((await db.parkingPricingRule.findByPk(rule1.id)).name, 'R1 renamed');
+    });
+  } finally {
+    await cleanupRuleTest();
+  }
 
   // Summary
   console.log("\n=================================================================");

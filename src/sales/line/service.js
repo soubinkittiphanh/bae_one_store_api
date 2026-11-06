@@ -16,7 +16,7 @@ const handleLinePackagingMovement = async (iterator) => {
   try {
     // Strictly verify that iterator.productId is a genuine packaging product
     const targetProduct = await db.product.findByPk(iterator.productId, {
-      attributes: ['id', 'pro_name', 'isPackagingAsset', 'pro_category']
+      attributes: ['id', 'pro_name', 'isPackagingAsset', 'pro_category', 'cost_price', 'pro_price']
     });
     if (!targetProduct) return false;
 
@@ -43,17 +43,33 @@ const handleLinePackagingMovement = async (iterator) => {
     if (isReturn) {
       // 1. Inflow stock cards for returned packaging item
       const cardService = require('../../card/service');
+      const rawPrice = Math.abs(Number(iterator.price) || 0);
+      const rawTotalUnit = (iterator.total && qty > 0) ? Math.abs(Number(iterator.total) / (iterator.quantity || qty || 1)) : 0;
+      const productCostPrice = Number(targetProduct.cost_price) || 0;
+      const productSalePrice = Number(targetProduct.pro_price) || 0;
+
+      const unitBuyPrice = rawPrice || rawTotalUnit || productCostPrice || productSalePrice || 0;
+      const totalCost = unitBuyPrice * qty;
+
       await cardService.cardUtility([
         {
           productId: iterator.productId,
           quantity: qty,
           qty: qty,
           rate: 1,
-          price: iterator.price || 0,
+          price: unitBuyPrice,
+          cost: unitBuyPrice,
+          total: totalCost,
           returnSaleLineId: iterator.id
         }
-      ], locationId, currencyId, null, { returnSaleLineId: iterator.id });
-      logger.info(`Inflowed ${qty} packaging stock cards for returned line ${iterator.id} (product: ${iterator.productId}) with returnSaleLineId=${iterator.id}`);
+      ], locationId, currencyId, null, { returnSaleLineId: iterator.id, cost: unitBuyPrice });
+      logger.info(`Inflowed ${qty} packaging stock cards for returned line ${iterator.id} (product: ${iterator.productId}, cost: ${unitBuyPrice}) with returnSaleLineId=${iterator.id}`);
+
+      // Update product stock count
+      const productService = require('../../product/service');
+      if (productService && typeof productService.updateProductCountById === 'function') {
+        await productService.updateProductCountById(iterator.productId);
+      }
 
       // 2. Record in customer packaging ledger if client is attached
       if (saleHeader && saleHeader.clientId) {

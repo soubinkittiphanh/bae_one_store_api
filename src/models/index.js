@@ -304,6 +304,7 @@ const initializeModels = () => {
     mfJournalEntry: require("../microfinance/journal/model")(sequelize, DataTypes),
 
     // Car Parking models
+    parkingVehicleType: require("../parking/models/vehicleType")(sequelize, DataTypes),
     parkingZone: require("../parking/models/zone")(sequelize, DataTypes),
     parkingSlot: require("../parking/models/slot")(sequelize, DataTypes),
     parkingVehicle: require("../parking/models/vehicle")(sequelize, DataTypes),

@@ -15,7 +15,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false
     },
     slotType: {
-      type: DataTypes.ENUM('car', 'motorbike', 'vip', 'disabled', 'truck'),
+      type: DataTypes.STRING(30), // parking_vehicle_types.code
       allowNull: false,
       defaultValue: 'car'
     },

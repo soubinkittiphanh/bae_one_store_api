@@ -8,21 +8,30 @@ async function seedParkingData() {
     console.log("🚗 Seeding Car Parking Management Module Data...");
     console.log("=================================================");
 
-    // 1. First run SQL migration to guarantee tables exist
-    const sqlPath = path.join(__dirname, '20261025_create_parking_tables.sql');
-    if (fs.existsSync(sqlPath)) {
-      console.log("Executing SQL migration script: 20261025_create_parking_tables.sql");
-      const sqlContent = fs.readFileSync(sqlPath, 'utf8');
-      const statements = sqlContent
+    // 1. First run SQL migrations to guarantee tables exist
+    //    (20261106 creates parking_vehicle_types, seeds the default types and
+    //     converts the vehicleType/slotType ENUM columns to VARCHAR codes)
+    const migrations = [
+      '20261025_create_parking_tables.sql',
+      '20261106_create_parking_vehicle_types.sql'
+    ];
+    for (const file of migrations) {
+      const sqlPath = path.join(__dirname, file);
+      if (!fs.existsSync(sqlPath)) continue;
+      console.log(`Executing SQL migration script: ${file}`);
+      const statements = fs.readFileSync(sqlPath, 'utf8')
         .split(';')
         .map(s => s.trim())
-        .filter(s => s.length > 0);
+        .filter(s => s.replace(/^--.*$/gm, '').trim().length > 0);
 
       for (const sql of statements) {
         await db.sequelize.query(sql);
       }
-      console.log("✅ SQL migration executed successfully.");
+      console.log(`✅ ${file} executed successfully.`);
     }
+
+    const vehicleTypes = await db.parkingVehicleType.findAll({ order: [['sortOrder', 'ASC']] });
+    console.log(`🚙 Vehicle types available: ${vehicleTypes.map(t => t.code).join(', ')}`);
 
     // 2. Seed Parking Zones
     console.log("\n📍 Seeding Parking Zones...");

@@ -619,6 +619,53 @@ const ensurePackagingColumns = async () => {
           );
           logger.info("Successfully added returnSaleLineId to card table.");
         }
+
+        // Backfill zero cost cards created from return / buyback sale lines
+        try {
+          await sequelize.query(`
+            UPDATE card c
+            JOIN saleLine sl ON c.returnSaleLineId = sl.id
+            JOIN product p ON c.productId = p.id
+            SET c.cost = CASE 
+                WHEN ABS(sl.price) > 0 THEN ABS(sl.price)
+                WHEN ABS(sl.total) > 0 AND sl.quantity != 0 THEN ABS(sl.total / sl.quantity)
+                WHEN p.cost_price > 0 THEN p.cost_price
+                WHEN p.pro_price > 0 THEN p.pro_price
+                ELSE c.cost
+            END,
+            c.costLCY = CASE 
+                WHEN ABS(sl.price) > 0 THEN ABS(sl.price)
+                WHEN ABS(sl.total) > 0 AND sl.quantity != 0 THEN ABS(sl.total / sl.quantity)
+                WHEN p.cost_price > 0 THEN p.cost_price
+                WHEN p.pro_price > 0 THEN p.pro_price
+                ELSE c.costLCY
+            END
+            WHERE c.cost = 0 AND c.returnSaleLineId IS NOT NULL;
+          `, { type: QueryTypes.BULKUPDATE });
+        } catch (repairErr) {
+          logger.warn("Could not backfill card returnSaleLineId costs:", repairErr.message);
+        }
+
+        // Backfill zero cost cards for packaging asset products
+        try {
+          await sequelize.query(`
+            UPDATE card c
+            JOIN product p ON c.productId = p.id
+            SET c.cost = CASE 
+                WHEN p.cost_price > 0 THEN p.cost_price
+                WHEN p.pro_price > 0 THEN p.pro_price
+                ELSE c.cost
+            END,
+            c.costLCY = CASE 
+                WHEN p.cost_price > 0 THEN p.cost_price
+                WHEN p.pro_price > 0 THEN p.pro_price
+                ELSE c.costLCY
+            END
+            WHERE c.cost = 0 AND (p.isPackagingAsset = 1 OR p.isReturnablePackaging = 1) AND (p.cost_price > 0 OR p.pro_price > 0);
+          `, { type: QueryTypes.BULKUPDATE });
+        } catch (pkgRepairErr) {
+          logger.warn("Could not backfill packaging asset card costs:", pkgRepairErr.message);
+        }
       }
     } catch (cardErr) {
       logger.warn("Could not ensure card returnSaleLineId column:", cardErr.message);

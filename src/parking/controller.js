@@ -1,5 +1,13 @@
 const parkingService = require('./service');
+const vehicleTypeService = require('./vehicleTypeService');
 const logger = require('../api/logger');
+
+// Warning list for a fee breakdown computed with the built-in fallback rate
+// (skipped for a free monthly-pass exit, where the rate doesn't matter)
+const feeWarnings = (feeBreakdown, vehicleType) =>
+  feeBreakdown && feeBreakdown.usedFallbackRule && !(feeBreakdown.isMonthlyPass && !feeBreakdown.isLostTicket)
+    ? [parkingService.NO_RULE_WARNING(vehicleType)]
+    : [];
 
 const parkingController = {
   // 1. ENTRY
@@ -9,10 +17,13 @@ const parkingController = {
         ...req.body,
         userId: req.user?.id || 1
       });
+      // Entry is allowed without a pricing rule, but tell the attendant
+      const warnings = result && !result.pricingRuleId ? [parkingService.NO_RULE_WARNING(result.vehicleType)] : [];
       return res.status(201).json({
         success: true,
         message: 'Vehicle entry registered successfully (ບັນທຶກລົດເຂົ້າສຳເລັດ)',
-        data: result
+        data: result,
+        warnings
       });
     } catch (err) {
       logger.error(`Error in parking entry controller: ${err.message}`);
@@ -26,7 +37,8 @@ const parkingController = {
       const result = await parkingService.calculateExitFee(req.body);
       return res.status(200).json({
         success: true,
-        data: result
+        data: result,
+        warnings: feeWarnings(result.feeBreakdown, result.ticket?.vehicleType)
       });
     } catch (err) {
       logger.error(`Error in calculateFee controller: ${err.message}`);
@@ -44,7 +56,8 @@ const parkingController = {
       return res.status(200).json({
         success: true,
         message: 'Payment completed and slot released (ຊຳລະເງິນສຳເລັດ ແລະ ປົດລັອກບ່ອນຈອດ)',
-        data: result
+        data: result,
+        warnings: feeWarnings(result.feeBreakdown, result.ticket?.vehicleType)
       });
     } catch (err) {
       logger.error(`Error in parking payment controller: ${err.message}`);
@@ -178,6 +191,43 @@ const parkingController = {
     }
   },
 
+  // 5b. VEHICLE TYPES
+  async getVehicleTypes(req, res) {
+    try {
+      const types = await vehicleTypeService.list(req.query);
+      return res.status(200).json({ success: true, data: types });
+    } catch (err) {
+      return res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
+  async createVehicleType(req, res) {
+    try {
+      const type = await vehicleTypeService.create(req.body, req.user?.id);
+      return res.status(201).json({ success: true, message: 'Vehicle type created (ເພີ່ມປະເພດຍານພາຫະນະສຳເລັດ)', data: type });
+    } catch (err) {
+      return res.status(400).json({ success: false, message: err.message });
+    }
+  },
+
+  async updateVehicleType(req, res) {
+    try {
+      const type = await vehicleTypeService.update(req.params.id, req.body);
+      return res.status(200).json({ success: true, message: 'Vehicle type updated (ແກ້ໄຂປະເພດຍານພາຫະນະສຳເລັດ)', data: type });
+    } catch (err) {
+      return res.status(400).json({ success: false, message: err.message });
+    }
+  },
+
+  async setVehicleTypeStatus(req, res) {
+    try {
+      const type = await vehicleTypeService.setActive(req.params.id, req.body.isActive);
+      return res.status(200).json({ success: true, data: type });
+    } catch (err) {
+      return res.status(400).json({ success: false, message: err.message });
+    }
+  },
+
   // 6. PRICING RULES
   async getPricingRules(req, res) {
     try {
@@ -190,7 +240,9 @@ const parkingController = {
 
   async savePricingRule(req, res) {
     try {
-      const rule = await parkingService.savePricingRule(req.body, req.user?.id);
+      // PUT /pricing-rules/:id carries the id in the URL — don't let a missing body id create a new rule
+      const data = req.params.id ? { ...req.body, id: req.params.id } : req.body;
+      const rule = await parkingService.savePricingRule(data, req.user?.id);
       return res.status(200).json({ success: true, data: rule });
     } catch (err) {
       return res.status(400).json({ success: false, message: err.message });

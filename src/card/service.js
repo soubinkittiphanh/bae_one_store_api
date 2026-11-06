@@ -627,11 +627,50 @@ const createCardFromReceiving = async (receivingLines, locationId, currencyId, t
     let serialIndex = 0; // Counter for serial numbers
 
     for (const iterator of receivingLines) {
-        const physicalQty = Number(iterator['qty'] || 0) + Number(iterator['focQty'] || 0);
+        const physicalQty = Number(iterator['qty'] || iterator['quantity'] || 0) + Number(iterator['focQty'] || 0);
         const cardToInsertCount = Math.round(Number(iterator['rate'] || 1) * physicalQty);
-        const cost = cardToInsertCount > 0 ? (Number(iterator['total'] || 0) / cardToInsertCount) : 0;
-        const productId = iterator['productId']
-        const productCode = iterator['productCode']
+        const productId = iterator['productId'];
+        const productCode = iterator['productCode'];
+
+        // Determine unit cost robustly:
+        // 1. Direct unit cost specified on line
+        // 2. Line total divided by card count
+        // 3. Line price / depositPrice
+        // 4. additionalData.cost
+        // 5. Product cost_price / pro_price
+        let cost = 0;
+        if (cardToInsertCount > 0) {
+            if (iterator['cost'] !== undefined && iterator['cost'] !== null && Number(iterator['cost']) > 0) {
+                cost = Math.abs(Number(iterator['cost']));
+            } else if (iterator['total'] !== undefined && iterator['total'] !== null && Number(iterator['total']) !== 0) {
+                cost = Math.abs(Number(iterator['total'])) / cardToInsertCount;
+            } else if (iterator['price'] !== undefined && iterator['price'] !== null && Number(iterator['price']) !== 0) {
+                cost = Math.abs(Number(iterator['price']));
+            } else if (iterator['depositPrice'] !== undefined && iterator['depositPrice'] !== null && Number(iterator['depositPrice']) !== 0) {
+                cost = Math.abs(Number(iterator['depositPrice']));
+            } else if (additionalData && additionalData.cost && Number(additionalData.cost) > 0) {
+                cost = Math.abs(Number(additionalData.cost));
+            } else if (iterator['cost_price'] !== undefined && iterator['cost_price'] !== null && Number(iterator['cost_price']) > 0) {
+                cost = Number(iterator['cost_price']);
+            } else if (iterator['pro_price'] !== undefined && iterator['pro_price'] !== null && Number(iterator['pro_price']) > 0) {
+                cost = Number(iterator['pro_price']);
+            }
+        }
+
+        // If cost is still 0, look up product from database as fallback
+        if (cost === 0 && productId) {
+            try {
+                const pRecord = await Product.findByPk(productId, {
+                    attributes: ['id', 'cost_price', 'pro_price'],
+                    transaction: t
+                });
+                if (pRecord) {
+                    cost = Number(pRecord.cost_price) || Number(pRecord.pro_price) || 0;
+                }
+            } catch (pErr) {
+                logger.warn(`Could not lookup product cost for productId=${productId}: ${pErr.message}`);
+            }
+        }
 
         for (let index = 0; index < cardToInsertCount; index++) {
             const lockingSessionId = Date.now();
@@ -641,6 +680,7 @@ const createCardFromReceiving = async (receivingLines, locationId, currencyId, t
             let newCardTemplate = { ...cardTemplate };
 
             newCardTemplate.cost = cost;
+            newCardTemplate.costLCY = cost;
             newCardTemplate.currencyId = currencyId;
             newCardTemplate.productId = productId;
             newCardTemplate.product_id = productCode;
@@ -729,9 +769,14 @@ const cardUtility = async (receiveLines, locationId, currencyId, t, additionalDa
     const productIdList = receiveLines.map(el => el.productId);
     const productIdAndCodeList = await productService.findProductCodeFromProductId(productIdList);
 
-    // ----------- Assign productCode to receiving line -----------
+    // ----------- Assign productCode and fallback cost/pricing to receiving line -----------
     for (const iterator of receiveLines) {
-        iterator['productCode'] = productIdAndCodeList.find(el => el.id == iterator['productId'])['pro_id']
+        const prod = productIdAndCodeList ? productIdAndCodeList.find(el => el.id == iterator['productId']) : null;
+        iterator['productCode'] = prod ? prod['pro_id'] : null;
+        if (prod) {
+            if (prod['cost_price'] && !iterator['cost_price']) iterator['cost_price'] = prod['cost_price'];
+            if (prod['pro_price'] && !iterator['pro_price']) iterator['pro_price'] = prod['pro_price'];
+        }
     }
 
     const cardCreated = await createCardFromReceiving(receiveLines, locationId, currencyId, t, additionalData)

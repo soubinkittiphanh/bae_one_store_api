@@ -51,12 +51,12 @@ const updateProductCountGroup = async (productIdList, transaction = null) => {
 const findProductCodeFromProductId = async (productIdList) => {
     try {
         const productCodeList = await Product.findAll({
-            attributes: ['id', 'pro_id'],
+            attributes: ['id', 'pro_id', 'cost_price', 'pro_price'],
             where: {
                 id: { [Op.in]: productIdList }
             }
         })
-        logger.info(`Product list found ${productCodeList.length} \n ${JSON.stringify(productCodeList)}`)
+        logger.info(`Product list found ${productCodeList.length}`)
         return productCodeList;
     } catch (error) {
         logger.log(`An error occured during find product_code ${error}`)

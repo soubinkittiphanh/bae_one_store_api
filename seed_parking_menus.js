@@ -41,6 +41,14 @@ async function seedParkingMenus() {
         isActive: true
       },
       {
+        name: 'Vehicle Types',
+        llname: 'ປະເພດຍານພາຫະນະ',
+        icon: 'mdi-car-multiple',
+        path: '/admin/parking/vehicle-types',
+        target_systems: 'ALL',
+        isActive: true
+      },
+      {
         name: 'Pricing Rules',
         llname: 'ຕັ້ງຄ່າລາຄາຕາມຊ່ວງເວລາ',
         icon: 'mdi-cash-clock',

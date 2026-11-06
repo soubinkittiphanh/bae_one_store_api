@@ -2,17 +2,68 @@ const db = require('../models');
 const { Op } = require('sequelize');
 const feeService = require('./feeService');
 const slotService = require('./slotService');
+const vehicleTypeService = require('./vehicleTypeService');
 const logger = require('../api/logger');
 
+const PRICING_RULE_FIELDS = [
+  'name', 'vehicleType', 'gracePeriodMinutes', 'dayStartTime', 'dayEndTime',
+  'dayHourlyRate', 'nightHourlyRate', 'nightPricingType', 'dailyCap', 'lostTicketFee',
+  'isDefault', 'isActive'
+];
+
+const toBool = v => v === true || v === 'true' || v === 1 || v === '1';
+
+/**
+ * The single rule used for a vehicle type: active + default.
+ * Ordered so the pick is deterministic even if legacy data has several defaults
+ * (most recently saved wins).
+ */
+async function findDefaultPricingRule(vehicleType, transaction) {
+  if (!vehicleType) return null;
+  return db.parkingPricingRule.findOne({
+    where: { vehicleType, isDefault: true, isActive: true },
+    order: [['updateTimestamp', 'DESC'], ['id', 'DESC']],
+    transaction
+  });
+}
+
+/**
+ * Keeps "exactly one default per vehicle type" true for the given type:
+ * if the type has active rules but no active default, the most recently saved active rule becomes default.
+ */
+async function ensureDefaultPricingRule(vehicleType, transaction) {
+  if (!vehicleType) return;
+  const existingDefault = await findDefaultPricingRule(vehicleType, transaction);
+  if (existingDefault) return;
+  const candidate = await db.parkingPricingRule.findOne({
+    where: { vehicleType, isActive: true },
+    order: [['updateTimestamp', 'DESC'], ['id', 'DESC']],
+    transaction
+  });
+  if (candidate) await candidate.update({ isDefault: true }, { transaction });
+}
+
+const NO_RULE_WARNING = code =>
+  `No active pricing rule for vehicle type "${code}" — the built-in fallback rate is used. ` +
+  `Ask an admin to create one (ບໍ່ມີລາຄາສຳລັບປະເພດລົດນີ້ — ໃຊ້ລາຄາສຳຮອງ, ກະລຸນາແຈ້ງຜູ້ດູແລລະບົບ).`;
+
 const parkingService = {
+  NO_RULE_WARNING,
+  findDefaultPricingRule,
+
   // =========================================================================
   // 1. VEHICLE ENTRY
   // =========================================================================
-  async processEntry({ plateNumber, vehicleType = 'car', driverName, driverPhone, zoneId, slotId, notes, userId }) {
+  async processEntry({ plateNumber, vehicleType, driverName, driverPhone, zoneId, slotId, notes, userId }) {
     const normalizedPlate = slotService.normalizePlateNumber(plateNumber);
     if (!normalizedPlate) {
       throw new Error('Plate number is required (ກະລຸນາປ້ອນເລກທະບຽນລົດ).');
     }
+
+    // Resolve vehicle type from the customer-maintained master (default type when omitted)
+    vehicleType = vehicleType
+      ? await vehicleTypeService.assertActiveCode(vehicleType)
+      : await vehicleTypeService.getDefaultCode();
 
     // 1. Check if vehicle is already actively parked inside
     const existingActiveTicket = await db.parkingTicket.findOne({
@@ -64,14 +115,12 @@ const parkingService = {
       }
     });
 
-    // 4. Find matching default pricing rule
-    const pricingRule = await db.parkingPricingRule.findOne({
-      where: {
-        vehicleType,
-        isDefault: true,
-        isActive: true
-      }
-    });
+    // 4. Find matching default pricing rule (entry is still allowed without one — the
+    //    controller returns a warning and the fee engine falls back to its built-in rate)
+    const pricingRule = await findDefaultPricingRule(vehicleType);
+    if (!pricingRule) {
+      logger.warn(`[parking] Entry for ${normalizedPlate}: no active pricing rule for vehicle type "${vehicleType}", fallback rate will be used.`);
+    }
 
     // 5. Transactional slot reservation and ticket creation
     const transaction = await db.sequelize.transaction();
@@ -199,9 +248,7 @@ const parkingService = {
     // Determine pricing rule to use
     let pricingRule = ticket.pricingRule;
     if (!pricingRule) {
-      pricingRule = await db.parkingPricingRule.findOne({
-        where: { vehicleType: ticket.vehicleType, isDefault: true, isActive: true }
-      });
+      pricingRule = await findDefaultPricingRule(ticket.vehicleType);
     }
 
     // Calculate fee using feeService
@@ -246,9 +293,7 @@ const parkingService = {
     // Recalculate fee at time of checkout
     let pricingRule = ticket.pricingRule;
     if (!pricingRule) {
-      pricingRule = await db.parkingPricingRule.findOne({
-        where: { vehicleType: ticket.vehicleType, isDefault: true, isActive: true }
-      });
+      pricingRule = await findDefaultPricingRule(ticket.vehicleType);
     }
 
     const feeBreakdown = feeService.calculateParkingFee({
@@ -532,16 +577,82 @@ const parkingService = {
     });
   },
 
-  async savePricingRule(data, userId) {
-    if (data.id) {
-      const rule = await db.parkingPricingRule.findByPk(data.id);
-      if (!rule) throw new Error('Pricing rule not found.');
-      return await rule.update(data);
+  /**
+   * Create / update a pricing rule while keeping exactly one active default per vehicle type:
+   *  - saving with isDefault=true un-defaults the other rules of that type;
+   *  - the first active rule of a type always becomes its default;
+   *  - the only default of a type can't be un-set (make another rule default instead);
+   *  - moving a rule to another type (or deactivating it) promotes a new default for the old type.
+   */
+  async savePricingRule(data = {}, userId) {
+    const fields = {};
+    for (const f of PRICING_RULE_FIELDS) {
+      if (data[f] !== undefined) fields[f] = data[f];
     }
-    return await db.parkingPricingRule.create({
-      ...data,
-      createdById: userId
-    });
+    if (fields.vehicleType !== undefined) fields.vehicleType = vehicleTypeService.normalizeCode(fields.vehicleType);
+    if (fields.isDefault !== undefined) fields.isDefault = toBool(fields.isDefault);
+    if (fields.isActive !== undefined) fields.isActive = toBool(fields.isActive);
+
+    const transaction = await db.sequelize.transaction();
+    try {
+      let rule = null;
+      let previousType = null;
+      if (data.id) {
+        rule = await db.parkingPricingRule.findByPk(data.id, { transaction, lock: transaction.LOCK.UPDATE });
+        if (!rule) throw new Error('Pricing rule not found.');
+        previousType = rule.vehicleType;
+      }
+
+      const vehicleType = fields.vehicleType || (rule && rule.vehicleType);
+      if (!vehicleType) throw new Error('Vehicle type is required.');
+      const willBeActive = fields.isActive !== undefined ? fields.isActive : (rule ? !!rule.isActive : true);
+      const requestedDefault = fields.isDefault !== undefined ? fields.isDefault : (rule ? !!rule.isDefault : false);
+
+      // Is there another active default for this type?
+      const otherDefault = await db.parkingPricingRule.findOne({
+        where: {
+          vehicleType,
+          isDefault: true,
+          isActive: true,
+          ...(rule ? { id: { [Op.ne]: rule.id } } : {})
+        },
+        transaction
+      });
+
+      // Inactive rules are never default; otherwise default if asked, or if the type has no other default.
+      fields.isDefault = willBeActive && (requestedDefault || !otherDefault);
+
+      if (fields.isDefault) {
+        await db.parkingPricingRule.update(
+          { isDefault: false },
+          {
+            where: {
+              vehicleType,
+              isDefault: true,
+              ...(rule ? { id: { [Op.ne]: rule.id } } : {})
+            },
+            transaction
+          }
+        );
+      }
+
+      if (rule) {
+        await rule.update(fields, { transaction });
+      } else {
+        rule = await db.parkingPricingRule.create({ ...fields, createdById: userId }, { transaction });
+      }
+
+      // The rule left its old type (or was deactivated): make sure the old type still has a default.
+      if (previousType && (previousType !== vehicleType || !willBeActive)) {
+        await ensureDefaultPricingRule(previousType, transaction);
+      }
+
+      await transaction.commit();
+      return rule;
+    } catch (err) {
+      await transaction.rollback();
+      throw err;
+    }
   },
 
   // =========================================================================
@@ -649,9 +760,20 @@ const parkingService = {
     });
     const monthRevenue = monthPayments.reduce((acc, p) => acc + (Number(p.amount) || 0), 0);
 
-    // Breakdown by vehicle type
-    const carSlots = slots.filter(s => s.slotType === 'car');
-    const motoSlots = slots.filter(s => s.slotType === 'motorbike');
+    // Breakdown by vehicle type (all active customer-defined types, plus any code still used by a slot)
+    const vehicleTypes = await vehicleTypeService.list();
+    const typeCodes = new Set(vehicleTypes.map(t => t.code));
+    slots.forEach(s => s.slotType && typeCodes.add(s.slotType));
+
+    const byType = {};
+    typeCodes.forEach(code => {
+      const typeSlots = slots.filter(s => s.slotType === code);
+      byType[code] = {
+        total: typeSlots.length,
+        occupied: typeSlots.filter(s => s.status === 'occupied').length,
+        available: typeSlots.filter(s => s.status === 'available').length
+      };
+    });
 
     return {
       totalSlots,
@@ -664,18 +786,8 @@ const parkingService = {
       todayExitsCount,
       todayRevenue,
       monthRevenue,
-      byType: {
-        car: {
-          total: carSlots.length,
-          occupied: carSlots.filter(s => s.status === 'occupied').length,
-          available: carSlots.filter(s => s.status === 'available').length
-        },
-        motorbike: {
-          total: motoSlots.length,
-          occupied: motoSlots.filter(s => s.status === 'occupied').length,
-          available: motoSlots.filter(s => s.status === 'available').length
-        }
-      }
+      byType,
+      vehicleTypes
     };
   },
 
@@ -696,6 +808,9 @@ const parkingService = {
     const s = startDate ? new Date(startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const e = endDate ? new Date(endDate) : new Date();
     e.setHours(23, 59, 59, 999);
+
+    const activeTypeCodes = (await vehicleTypeService.list()).map(t => t.code);
+    const defaultTypeCode = await vehicleTypeService.getDefaultCode();
 
     const payments = await db.parkingPayment.findAll({
       where: {
@@ -723,7 +838,7 @@ const parkingService = {
           totalAmount: 0,
           ticketCount: 0,
           byMethod: { CASH: 0, QR: 0, TRANSFER: 0, CARD: 0 },
-          byVehicle: { car: 0, motorbike: 0, truck: 0, vip: 0 }
+          byVehicle: Object.fromEntries(activeTypeCodes.map(c => [c, 0]))
         };
       }
 
@@ -735,7 +850,7 @@ const parkingService = {
       const m = p.paymentMethod || 'CASH';
       grouped[dateKey].byMethod[m] = (grouped[dateKey].byMethod[m] || 0) + amt;
 
-      const v = p.ticket?.vehicleType || 'car';
+      const v = p.ticket?.vehicleType || defaultTypeCode;
       grouped[dateKey].byVehicle[v] = (grouped[dateKey].byVehicle[v] || 0) + amt;
     });
 

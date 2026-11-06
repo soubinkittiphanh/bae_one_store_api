@@ -41,6 +41,7 @@ All menu items, labels, dialogs, ticket receipts, and badges across the Web Admi
 |-----------------|----------------|---------------------|
 | `/admin/parking` | ພາບລວມບ່ອນຈອດລົດ | Parking Dashboard & Live Status |
 | `/admin/parking/zones` | ຜັງລົດ ແລະ ຊ່ອງຈອດ | Zones & Interactive Slot Grid |
+| `/admin/parking/vehicle-types` | ປະເພດຍານພາຫະນະ | Customer-maintained Vehicle Types |
 | `/admin/parking/pricing` | ກຳນົດລາຄາຄ່າຈອດ | Day / Night Pricing Rules Setup |
 | `/admin/parking/passes` | ປີ້ລາຍເດືອນ | Monthly Pass Subscriptions |
 | `/admin/parking/tickets` | ປະຫວັດປີ້ລົດ | Ticket History & Transactions |
@@ -85,3 +86,31 @@ node test_parking_services.js
 - **Main Drawer Entry**: `ລະບົບຄຸ້ມຄອງບ່ອນຈອດລົດ (Car Parking)`
 - **Gate In**: Fast entry form with automatic plate uppercase formatting, vehicle type selector (Car, Motorbike, Truck, Van), zone & slot assignment, and printable thermal entry QR ticket.
 - **Gate Out**: Scan QR code or search plate, real-time fee calculation with day & night rate itemized breakdown, payment method selection (Cash, OnePay / QR transfer), and thermal receipt preview with share sheet.
+
+---
+
+## 6. Vehicle Types (ປະເພດຍານພາຫະນະ)
+
+Vehicle types are no longer a hard-coded ENUM. Each customer maintains their own list in
+`parking_vehicle_types` from **Web Admin → Car Parking → ປະເພດຍານພາຫະນະ** (`/admin/parking/vehicle-types`).
+
+- Tickets, slots, vehicles, pricing rules and monthly passes reference a type by its string **`code`**
+  (`car`, `motorbike`, `van`, …). The code is **immutable** after creation; names, icon, colour and order are editable.
+- Exactly one type is the **default** (pre-selected at entry). A type can't be deactivated while it is the default,
+  while vehicles of that type are parked, or while active slots use it.
+- API: `GET /api/parking/vehicle-types[?includeInactive=1]`, `POST /api/parking/vehicle-types`,
+  `PUT /api/parking/vehicle-types/:id`, `PATCH /api/parking/vehicle-types/:id/status` (writes are admin-only).
+- Migration: `20261106_create_parking_vehicle_types.sql` (rollback: `20261106_create_parking_vehicle_types_down.sql`).
+  `node seed_parking_data.js` runs it automatically. Re-run `node seed_parking_menus.js` to add the menu entry.
+- Icons are mdi names (`mdi-car`, `mdi-van-utility`, …). The POS maps them to Flutter icons in
+  `dc_pos/lib/helper/parking_vehicle_icons.dart`; keep that map in sync with the web page's `iconOptions`.
+
+## 7. Pricing Rules per Vehicle Type
+
+- Each vehicle type uses **exactly one active default rule**. Saving a rule as default un-defaults the others of that
+  type, and the first active rule of a type always becomes its default. The current default can't be switched off
+  directly; make another rule the default instead.
+- A type **without** an active rule is still allowed in, but the API's built-in fallback rate is charged
+  (5,000/day-hour, 10,000/night-hour, 50,000 cap). Entry, fee and pay responses then include a `warnings` array,
+  the fee breakdown has `usedFallbackRule: true`, and the vehicle-type list has `hasPricingRule: false` (shown as
+  "ບໍ່ມີລາຄາ" on the web and POS vehicle-type screens).
