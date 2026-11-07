@@ -82,24 +82,49 @@ const packagingService = {
     getPackagingAssets: async (companyId = 1) => {
         try {
             const pkgCategories = await category.findAll({
-                where: { isPackaging: true },
+                where: {
+                    [Op.or]: [
+                        { isPackaging: true },
+                        { isPackaging: 1 },
+                        { categ_name: { [Op.like]: '%ບັນຈຸພັນ%' } },
+                        { categ_name: { [Op.like]: '%packaging%' } },
+                        { categ_name: { [Op.like]: '%empties%' } }
+                    ]
+                },
                 attributes: ['categ_id']
             });
             const pkgCategoryIds = pkgCategories.map(c => c.categ_id);
 
-            const whereClause = {
-                isActive: true,
-                [Op.or]: [
-                    { isPackagingAsset: true }
-                ]
-            };
+            const orConditions = [
+                { isPackagingAsset: true },
+                { isPackagingAsset: 1 }
+            ];
 
             if (pkgCategoryIds.length > 0) {
-                whereClause[Op.or].push({ pro_category: { [Op.in]: pkgCategoryIds } });
+                orConditions.push({ pro_category: { [Op.in]: pkgCategoryIds } });
             }
 
+            // Also match if product name explicitly mentions crate or bottle empties
+            orConditions.push(
+                { pro_name: { [Op.like]: '%ລັງເປົ່າ%' } },
+                { pro_name: { [Op.like]: '%ແກ້ວເປົ່າ%' } },
+                { pro_name: { [Op.like]: '%empty crate%' } },
+                { pro_name: { [Op.like]: '%empty bottle%' } }
+            );
+
             return await product.findAll({
-                where: whereClause,
+                where: {
+                    [Op.and]: [
+                        {
+                            [Op.or]: [
+                                { isActive: true },
+                                { isActive: 1 },
+                                { isActive: null }
+                            ]
+                        },
+                        { [Op.or]: orConditions }
+                    ]
+                },
                 attributes: ['id', 'pro_name', 'pro_price', 'barCode', 'cost_price', 'isPackagingAsset', 'pro_category']
             });
         } catch (error) {
@@ -929,13 +954,11 @@ const packagingService = {
      * Calculates the complete 360-degree packaging balance for the Agency:
      * Full Cases on Hand + Empties on Hand + Wholesale Debt + Retail Deposits - Factory Quota
      */
-    getMasterPackagingMatrix: async (companyId = 1, locationId = 1) => {
+    getMasterPackagingMatrix: async (companyId = 1, locationId = 'all') => {
         try {
             // 1. Get all packaging asset products (crates, bottles)
-            const packagingAssets = await product.findAll({
-                where: { isPackagingAsset: true, isActive: true },
-                attributes: ['id', 'pro_name', 'barCode']
-            });
+            // Filter by isPackagingAsset = 1 OR category.isPackaging = 1
+            const packagingAssets = await packagingService.getPackagingAssets(companyId);
 
             const matrix = [];
 
@@ -943,13 +966,16 @@ const packagingService = {
                 const assetId = asset.id;
 
                 // A. Physical empty stock in warehouse
+                const cardWhere = {
+                    productId: assetId,
+                    card_isused: 0,
+                    isActive: true
+                };
+                if (locationId && locationId !== 'all') {
+                    cardWhere.locationId = locationId;
+                }
                 const emptyStockCards = await card.count({
-                    where: {
-                        productId: assetId,
-                        locationId,
-                        card_isused: 0,
-                        isActive: true
-                    }
+                    where: cardWhere
                 });
 
                 // B. Packaging embedded in full cases on shelf
@@ -960,56 +986,74 @@ const packagingService = {
 
                 let embeddedInFullStock = 0;
                 for (const pkg of packagings) {
+                    const fullCardWhere = {
+                        productId: pkg.productId,
+                        card_isused: 0,
+                        isActive: true
+                    };
+                    if (locationId && locationId !== 'all') {
+                        fullCardWhere.locationId = locationId;
+                    }
                     const fullCaseCards = await card.count({
-                        where: {
-                            productId: pkg.productId,
-                            locationId,
-                            card_isused: 0,
-                            isActive: true
-                        }
+                        where: fullCardWhere
                     });
                     embeddedInFullStock += fullCaseCards * pkg.quantity;
                 }
 
                 // C. Outstanding packaging debt with wholesale customers
-                const clientDebtQuery = `
-                    SELECT COALESCE(SUM(balanceAfter), 0) AS totalDebt
-                    FROM (
-                        SELECT cpl.balanceAfter
-                        FROM customer_packaging_ledger cpl
-                        INNER JOIN (
-                            SELECT clientId, MAX(id) AS maxId
-                            FROM customer_packaging_ledger
-                            WHERE packagingProductId = :assetId
-                            GROUP BY clientId
-                        ) latest ON cpl.id = latest.maxId
-                        WHERE cpl.balanceAfter > 0
-                    ) t
-                `;
-                const [clientDebtResult] = await sequelize.query(clientDebtQuery, {
-                    replacements: { assetId },
-                    type: sequelize.QueryTypes.SELECT
-                });
-                const wholesaleDebt = clientDebtResult ? parseInt(clientDebtResult.totalDebt, 10) : 0;
+                let wholesaleDebt = 0;
+                try {
+                    const clientDebtQuery = `
+                        SELECT COALESCE(SUM(balanceAfter), 0) AS totalDebt
+                        FROM (
+                            SELECT cpl.balanceAfter
+                            FROM customer_packaging_ledger cpl
+                            INNER JOIN (
+                                SELECT clientId, MAX(id) AS maxId
+                                FROM customer_packaging_ledger
+                                WHERE packagingProductId = :assetId
+                                GROUP BY clientId
+                            ) latest ON cpl.id = latest.maxId
+                            WHERE cpl.balanceAfter > 0
+                        ) t
+                    `;
+                    const [clientDebtResult] = await sequelize.query(clientDebtQuery, {
+                        replacements: { assetId },
+                        type: sequelize.QueryTypes.SELECT
+                    });
+                    wholesaleDebt = clientDebtResult ? parseInt(clientDebtResult.totalDebt, 10) || 0 : 0;
+                } catch (err) {
+                    logger.warn(`Could not query wholesaleDebt for asset #${assetId}: ${err.message}`);
+                }
 
                 // D. Total Breakages & Damage
-                const totalDamage = await packagingDamageLog.sum('quantity', {
-                    where: { packagingProductId: assetId }
-                }) || 0;
+                let totalDamage = 0;
+                try {
+                    totalDamage = await packagingDamageLog.sum('quantity', {
+                        where: { packagingProductId: assetId }
+                    }) || 0;
+                } catch (err) {
+                    logger.warn(`Could not query packagingDamageLog for asset #${assetId}: ${err.message}`);
+                }
 
                 // E. Factory Packaging Balance (Liability with Beerlao Company)
-                const factoryBalanceQuery = `
-                    SELECT COALESCE(balanceAfter, 0) AS factoryBalance
-                    FROM supplier_packaging_ledger
-                    WHERE packagingProductId = :assetId
-                    ORDER BY id DESC
-                    LIMIT 1
-                `;
-                const [factoryResult] = await sequelize.query(factoryBalanceQuery, {
-                    replacements: { assetId },
-                    type: sequelize.QueryTypes.SELECT
-                });
-                const factoryLiability = factoryResult ? parseInt(factoryResult.factoryBalance, 10) : 0;
+                let factoryLiability = 0;
+                try {
+                    const factoryBalanceQuery = `
+                        SELECT COALESCE(balanceAfter, 0) AS factoryBalance
+                        FROM supplier_packaging_ledger
+                        WHERE packagingProductId = :assetId
+                        ORDER BY id DESC
+                        LIMIT 1
+                    `;
+                    const [factoryResult] = await sequelize.query(factoryBalanceQuery, {
+                        replacements: { assetId },
+                        type: sequelize.QueryTypes.SELECT
+                    });
+                    factoryLiability = factoryResult ? parseInt(factoryResult.factoryBalance, 10) || 0 : 0;
+                } catch (err) {
+                    logger.warn(`Could not query supplier_packaging_ledger for asset #${assetId}: ${err.message}`);
+                }
 
                 // Calculate Net Discrepancy
                 const totalCalculatedAssets = emptyStockCards + embeddedInFullStock + wholesaleDebt + totalDamage;

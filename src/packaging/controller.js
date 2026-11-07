@@ -222,7 +222,7 @@ const packagingController = {
         try {
             const { locationId } = req.query;
             const companyId = req.user?.companyId || 1;
-            const data = await packagingService.getMasterPackagingMatrix(companyId, locationId || 1);
+            const data = await packagingService.getMasterPackagingMatrix(companyId, locationId || 'all');
             return res.status(200).json(data);
         } catch (error) {
             logger.error(`Error in getMasterPackagingMatrix: ${error.message}`);
