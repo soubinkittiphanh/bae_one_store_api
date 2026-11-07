@@ -71,6 +71,21 @@ const packagingController = {
         }
     },
 
+    rebuildCustomerPackagingBalances: async (req, res) => {
+        try {
+            const { clientId } = req.body || req.query;
+            const companyId = req.user?.companyId || 1;
+            const result = await packagingService.rebuildCustomerPackagingBalances({
+                clientId: clientId || null,
+                companyId
+            });
+            return res.status(200).json(result);
+        } catch (error) {
+            logger.error(`Error in rebuildCustomerPackagingBalances: ${error.message}`);
+            return res.status(500).json({ success: false, message: error.message });
+        }
+    },
+
     processWholesaleEmptiesReturn: async (req, res) => {
         try {
             const { clientId, returnedItems, locationId, notes } = req.body;

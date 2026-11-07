@@ -868,6 +868,88 @@ const packagingService = {
         }
     },
 
+    /**
+     * Rebuild / Recalculate running balanceAfter for customer packaging accounts sequentially.
+     * Useful when transactions are inserted, edited, or deleted manually from the database.
+     */
+    rebuildCustomerPackagingBalances: async ({ clientId = null, companyId = 1 }, t = null) => {
+        const execute = async (transaction) => {
+            let accountPairsQuery = `
+                SELECT DISTINCT clientId, packagingProductId
+                FROM customer_packaging_ledger
+            `;
+            const replacements = {};
+            if (clientId && clientId !== 'all') {
+                accountPairsQuery += ` WHERE clientId = :clientId`;
+                replacements.clientId = parseInt(clientId, 10);
+            }
+            accountPairsQuery += ` ORDER BY clientId, packagingProductId`;
+
+            const accounts = await sequelize.query(accountPairsQuery, {
+                replacements,
+                type: sequelize.QueryTypes.SELECT,
+                transaction
+            });
+
+            let totalUpdatedRecords = 0;
+            const updatedAccounts = [];
+
+            for (const acc of accounts) {
+                const targetClientId = acc.clientId;
+                const targetPackagingProductId = acc.packagingProductId;
+
+                if (!targetClientId || !targetPackagingProductId) continue;
+
+                // Fetch all ledger rows for this client & packaging product in chronological order
+                const entries = await customerPackagingLedger.findAll({
+                    where: {
+                        clientId: targetClientId,
+                        packagingProductId: targetPackagingProductId
+                    },
+                    order: [['createdAt', 'ASC'], ['id', 'ASC']],
+                    transaction
+                });
+
+                let runningBalance = 0;
+                let accountModifiedCount = 0;
+
+                for (const row of entries) {
+                    runningBalance += (parseInt(row.qtyChange, 10) || 0);
+                    if (row.balanceAfter !== runningBalance) {
+                        await row.update({ balanceAfter: runningBalance }, { transaction });
+                        accountModifiedCount++;
+                        totalUpdatedRecords++;
+                    }
+                }
+
+                if (accountModifiedCount > 0) {
+                    updatedAccounts.push({
+                        clientId: targetClientId,
+                        packagingProductId: targetPackagingProductId,
+                        finalBalance: runningBalance,
+                        modifiedRows: accountModifiedCount
+                    });
+                }
+            }
+
+            logger.info(`[Packaging Rebuild] Recalculated ${accounts.length} customer packaging accounts. Corrected ${totalUpdatedRecords} balanceAfter records.`);
+
+            return {
+                success: true,
+                accountsChecked: accounts.length,
+                accountsUpdated: updatedAccounts.length,
+                recordsUpdated: totalUpdatedRecords,
+                details: updatedAccounts
+            };
+        };
+
+        if (t) {
+            return await execute(t);
+        } else {
+            return await sequelize.transaction(execute);
+        }
+    },
+
     // =========================================================================
     // 5. PACKAGING DAMAGE & LOSS LOGGING (Breakages / Crushed Crates)
     // =========================================================================
