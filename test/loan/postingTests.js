@@ -382,11 +382,11 @@ module.exports = async ({ test: runTest, call, q, db, runNode, users, L, expectS
     // A cashier REPAYMENT has no checker: nobody approved the amendment, so approvedBy stays NULL
     assert.deepStrictEqual([amend[0].approvedBy, amend[0].source, Number(amend[0].transactionId), Number(amend[0].makerId)], [null, 'TRANSACTION', prepayTx.transactionId, Number(ADMIN)]);
 
-    const older = await post(ADMIN, A.account.id, { kind: 'REVERSAL', targetTransactionId: disbTx.transactionId });
+    const older = await post(ADMIN, A.account.id, { kind: 'REVERSAL', remarks: 'test', targetTransactionId: disbTx.transactionId });
     expectStatus(older, 409, 'non-LIFO reversal');
     assert.match(older.data.message, /LIFO/);
     const bankBefore = await bankBalance(bank.id);
-    const rev = await makerChecker(A.account.id, { kind: 'REVERSAL', targetTransactionId: prepayTx.transactionId }, 'REVERSAL');
+    const rev = await makerChecker(A.account.id, { kind: 'REVERSAL', remarks: 'test', targetTransactionId: prepayTx.transactionId }, 'REVERSAL');
     assert.strictEqual(rev.reverses, prepayTx.txNo);
     const rowsAfter = await q('SELECT s.installmentNo n, CAST(c.amountDue AS CHAR) a FROM ln_schedule s JOIN ln_schedule_component c ON c.scheduleId = s.id WHERE s.loanAccountId = ? ORDER BY s.installmentNo, c.componentId', [A.account.id]);
     assert.deepStrictEqual(rowsAfter.filter(x => x.n !== 13), rowsBefore.filter(x => x.n !== 13), 'schedule restored exactly');
@@ -401,7 +401,7 @@ module.exports = async ({ test: runTest, call, q, db, runNode, users, L, expectS
     const lifoPreview = await call(ADMIN, 'post', `${L}/accounts/${A.account.id}/preview/REVERSAL`, { targetTransactionId: disbTx.transactionId });
     expectStatus(lifoPreview, 409, 'preview: non-LIFO reversal behind a reversal');
     assert.match(lifoPreview.data.message, /LIFO/);
-    const lifoSubmit = await post(ADMIN, A.account.id, { kind: 'REVERSAL', targetTransactionId: disbTx.transactionId });
+    const lifoSubmit = await post(ADMIN, A.account.id, { kind: 'REVERSAL', remarks: 'test', targetTransactionId: disbTx.transactionId });
     expectStatus(lifoSubmit, 409, 'submit: non-LIFO reversal behind a reversal');
     assert.match(lifoSubmit.data.message, /LIFO/);
     assert.strictEqual(await num("SELECT COUNT(*) n FROM ln_transaction WHERE loanAccountId = ? AND postingStatus = 'PENDING_AUTH'", [A.account.id]), pendingBefore, 'no pending reversal created');
@@ -457,9 +457,23 @@ module.exports = async ({ test: runTest, call, q, db, runNode, users, L, expectS
     assert.strictEqual(prov[0].b, '48000000.0000', '20% of 240,000,000 (no collateral)');
     const stch = await q("SELECT roleCode r, drCr, statusQualifier qf, amountTag t FROM ln_journal_posting WHERE loanAccountId = ? AND eventCode = 'STCH' ORDER BY id", [B.account.id]);
     assert.deepStrictEqual(stch.map(x => `${x.t} ${x.drCr} ${x.r}${x.qf ? `[${x.qf}]` : ''}`).slice(0, 2), ['OUT_PRIN DR LOAN_PORTFOLIO[SUBSTANDARD]', 'OUT_PRIN CR LOAN_PORTFOLIO[NORMAL]']);
-    const waive = await makerChecker(B.account.id, { kind: 'WAIVE', component: 'INTEREST', amount: '1000000' }, 'INT_WAIVE');
+    // Step 4 click-through: the screen asks for remarks on these kinds; a direct API submit without them
+    // (missing, empty or blank) is refused with 400 and creates nothing. A preview still needs none.
+    const txCount = () => num('SELECT COUNT(*) n FROM ln_transaction WHERE loanAccountId = ?', [B.account.id]);
+    const txBefore = await txCount();
+    const remarkBodies = { WAIVE: { component: 'INTEREST', amount: '1000000' }, WRITE_OFF: {}, REPOSSESS: { appraisedValue: '1000000' }, VEH_DISPOSE: { salePrice: '1000000', bankAccountId: bank.id }, REVERSAL: { targetTransactionId: 1 } };
+    for (const [kind, extra] of Object.entries(remarkBodies)) {
+      for (const remarks of [undefined, '', '   ']) {
+        const r = await post(ADMIN, B.account.id, { kind, ...extra, ...(remarks === undefined ? {} : { remarks }) });
+        expectStatus(r, 400, `${kind} submit with remarks ${JSON.stringify(remarks)}`);
+        assert.match(r.data.message, /remarks are required/);
+      }
+    }
+    assert.strictEqual(await txCount(), txBefore, 'no transaction row from a submit without remarks');
+    expectStatus(await call(ADMIN, 'post', `${L}/accounts/${B.account.id}/preview/WAIVE`, { component: 'INTEREST', amount: '1000000' }), 200, 'WAIVE preview needs no remarks');
+    const waive = await makerChecker(B.account.id, { kind: 'WAIVE', remarks: 'test', component: 'INTEREST', amount: '1000000' }, 'INT_WAIVE');
     assert.deepStrictEqual(tagsOf(waive, 'INT_WAIVE'), { INT_WAIVE_SUSP: '1000000' });
-    const wo = await makerChecker(B.account.id, { kind: 'WRITE_OFF' }, 'WRITE_OFF');
+    const wo = await makerChecker(B.account.id, { kind: 'WRITE_OFF', remarks: 'test' }, 'WRITE_OFF');
     const t = tagsOf(wo, 'WRITE_OFF');
     assert.deepStrictEqual([t.PRIN_WO, t.SHORTFALL], ['48000000', '192000000']);
     assert.ok(Number(t.SUSP_CLR) > 0 && Number(t.MEMO_WO) === 240000000 + Number(t.SUSP_CLR));
@@ -494,10 +508,10 @@ module.exports = async ({ test: runTest, call, q, db, runNode, users, L, expectS
     assert.match(unmapped.data.message, /has no active chart_of_account with the same number/);
     assert.deepStrictEqual(await counts(bank.id), before);
 
-    const rep = await makerChecker(C.account.id, { kind: 'REPOSSESS', appraisedValue: '200000000' }, 'REPOSSESS');
+    const rep = await makerChecker(C.account.id, { kind: 'REPOSSESS', remarks: 'test', appraisedValue: '200000000' }, 'REPOSSESS');
     const rt = tagsOf(rep, 'REPOSSESS');
     assert.deepStrictEqual([rt.APPRAISED, rt.SHORTFALL, rt.OUT_PRIN], ['200000000', '40000000', '240000000']);
-    const disp = await makerChecker(C.account.id, { kind: 'VEH_DISPOSE', salePrice: '190000000', bankAccountId: bank.id }, 'VEH_DISPOSE');
+    const disp = await makerChecker(C.account.id, { kind: 'VEH_DISPOSE', remarks: 'test', salePrice: '190000000', bankAccountId: bank.id }, 'VEH_DISPOSE');
     assert.deepStrictEqual(tagsOf(disp, 'VEH_DISPOSE'), { SALE_PRICE: '190000000', CARRYING: '200000000', VAT_OUT: '17272727', LOSS: '27272727' }, 'resale tax-inclusive 10%');
   });
 
@@ -514,7 +528,7 @@ module.exports = async ({ test: runTest, call, q, db, runNode, users, L, expectS
     await feeCollect(El.account.id, '0');
     const disb = await disburse(El.account.id);
     assert.strictEqual((await q('SELECT status FROM ARInvoiceHeader WHERE id = ?', [El.invoice.id]))[0].status, 'paid');
-    const rev = await makerChecker(El.account.id, { kind: 'REVERSAL', targetTransactionId: disb.transactionId }, 'REVERSAL of DISB');
+    const rev = await makerChecker(El.account.id, { kind: 'REVERSAL', remarks: 'test', targetTransactionId: disb.transactionId }, 'REVERSAL of DISB');
     assert.strictEqual(rev.reverses, disb.txNo);
     const rec = await q('SELECT status FROM ARReceiveHeader WHERE referenceNumber = ?', [disb.txNo]);
     assert.strictEqual(rec[0].status, 'voided');
@@ -540,14 +554,14 @@ module.exports = async ({ test: runTest, call, q, db, runNode, users, L, expectS
       const before = await pendingCount();
       const pv = await call(ADMIN, 'post', `${L}/accounts/${id}/preview/REVERSAL`, { targetTransactionId: target.transactionId });
       expectStatus(pv, 409, `preview: ${label}`);
-      const sb = await post(ADMIN, id, { kind: 'REVERSAL', targetTransactionId: target.transactionId });
+      const sb = await post(ADMIN, id, { kind: 'REVERSAL', remarks: 'test', targetTransactionId: target.transactionId });
       expectStatus(sb, 409, `submit: ${label}`);
       assert.strictEqual(await pendingCount(), before, `${label}: no pending reversal created`);
       return sb.data.message;
     };
     const allowed = async (target, label) => {
       expectStatus(await call(ADMIN, 'post', `${L}/accounts/${id}/preview/REVERSAL`, { targetTransactionId: target.transactionId }), 200, `preview: ${label}`);
-      const rev = await makerChecker(id, { kind: 'REVERSAL', targetTransactionId: target.transactionId }, label);
+      const rev = await makerChecker(id, { kind: 'REVERSAL', remarks: 'test', targetTransactionId: target.transactionId }, label);
       assert.strictEqual(rev.reverses, target.txNo);
       return rev;
     };
@@ -686,7 +700,7 @@ module.exports = async ({ test: runTest, call, q, db, runNode, users, L, expectS
       const before = await snapshot();
       const disb = await disburse(H.account.id);
       const afterDisb = await snapshot();
-      const rev = await makerChecker(H.account.id, { kind: 'REVERSAL', targetTransactionId: disb.transactionId }, 'REVERSAL of DISB');
+      const rev = await makerChecker(H.account.id, { kind: 'REVERSAL', remarks: 'test', targetTransactionId: disb.transactionId }, 'REVERSAL of DISB');
       assert.strictEqual(rev.reverses, disb.txNo);
       const afterRev = await snapshot();
       const inv = (await q('SELECT status FROM ARInvoiceHeader WHERE id = ?', [H.invoice.id]))[0].status;
@@ -835,7 +849,7 @@ module.exports = async ({ test: runTest, call, q, db, runNode, users, L, expectS
     const expectedBank = (1000000 + Number(fxState.feeTotal) + 1100.16).toFixed(2);
     assert.strictEqual(Number((await q('SELECT balance b FROM bankAccount WHERE id = ?', [fxState.bank.id]))[0].b).toFixed(2), expectedBank, 'USD bank moved by the fee and the payment, in USD');
     await tbBalanced();
-    const rev = await makerChecker(U.account.id, { kind: 'REVERSAL', targetTransactionId: pay.data.data.transactionId }, 'REVERSAL of USD repayment');
+    const rev = await makerChecker(U.account.id, { kind: 'REVERSAL', remarks: 'test', targetTransactionId: pay.data.data.transactionId }, 'REVERSAL of USD repayment');
     assert.strictEqual(rev.reverses, pay.data.data.txNo);
     assert.strictEqual(await legBase(U.account.id, 'LOAN_PORTFOLIO'), 252000000, 'carrying base restored');
     assert.strictEqual(await legBase(U.account.id, 'INTEREST_RECEIVABLE'), 0);

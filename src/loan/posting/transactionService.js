@@ -31,6 +31,9 @@ const KINDS = {
   REVERSAL: { checker: true }
 };
 const ENDPOINT = 'POST /loan/accounts/:id/transactions';
+// Material or irreversible kinds must say why (the screen asks too; this stops a direct API call skipping it).
+// INT_WAIVE on the screen posts as WAIVE. Checked on submit only: a preview writes nothing.
+const REMARKS_REQUIRED = new Set(['WAIVE', 'WRITE_OFF', 'REPOSSESS', 'VEH_DISPOSE', 'REVERSAL']);
 
 class DryRun extends Error {}
 
@@ -215,6 +218,7 @@ const execute = (kind, args) => (kind === 'REVERSAL' ? reverse(args) : post({ ki
 
 const transactionService = {
   KINDS,
+  REMARKS_REQUIRED,
 
   // body: { kind, valueDate?, amount?, bankAccountId?, ... }; returns { status, body }
   async create(accountId, body, ctxUser, idempotencyKey, failAt) {
@@ -223,6 +227,7 @@ const transactionService = {
     const input = { ...body };
     delete input.kind;
     if (kind === 'REVERSAL' && !input.targetTransactionId) throw new LoanError(400, 'targetTransactionId is required for REVERSAL');
+    if (REMARKS_REQUIRED.has(kind) && !(typeof input.remarks === 'string' && input.remarks.trim())) throw new LoanError(400, `remarks are required for ${kind}`);
     const hash = G.requestHash({ accountId: Number(accountId), body });
     const hook = G.makeTestHook(failAt);
     try {
