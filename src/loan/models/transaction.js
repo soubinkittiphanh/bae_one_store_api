@@ -34,7 +34,8 @@ module.exports = (sequelize, DataTypes) => {
     remarks: { type: DataTypes.TEXT, allowNull: true }
   }, { freezeTableName: true, tableName: 'ln_transaction', timestamps: true,
     indexes: [
-      { name: 'idx_tx_loan_event', fields: ['loanAccountId', 'eventCode'] }
+      { name: 'idx_tx_loan_event', fields: ['loanAccountId', 'eventCode'] },
+      { name: 'idx_tx_branch', fields: ['branchId'] } // Phase 6 (20261107_loan_branch_support)
     ] });
 
   const lnTransactionAllocation = sequelize.define('lnTransactionAllocation', {
@@ -50,6 +51,8 @@ module.exports = (sequelize, DataTypes) => {
     transactionId: { type: DataTypes.INTEGER, allowNull: true },
     glBatchId: { type: DataTypes.STRING(100), allowNull: true, comment: 'ln_gl_batch.batchNumber' },
     loanAccountId: { type: DataTypes.INTEGER, allowNull: true },
+    // Phase 6: location.id of the account at posting (20261107_loan_branch_support)
+    branchId: { type: DataTypes.INTEGER, allowNull: true },
     eventCode: { type: DataTypes.STRING(30), allowNull: false },
     amountTag: { type: DataTypes.STRING(50), allowNull: false },
     roleCode: { type: DataTypes.STRING(50), allowNull: false },
@@ -67,7 +70,8 @@ module.exports = (sequelize, DataTypes) => {
     indexes: [
       { name: 'idx_jp_batch', fields: ['glBatchId'] },
       { name: 'idx_jp_tx', fields: ['transactionId'] },
-      { name: 'idx_jp_account_role', fields: ['loanAccountId', 'roleCode'] }
+      { name: 'idx_jp_account_role', fields: ['loanAccountId', 'roleCode'] },
+      { name: 'idx_jp_branch_role', fields: ['branchId', 'roleCode'] }
     ] });
 
   const lnStatusHistory = sequelize.define('lnStatusHistory', {

@@ -96,6 +96,11 @@ const MIGRATIONS = [
     // Collation alignment: the four Phase 5 tables -> utf8mb4_unicode_ci (JS, idempotent, reversible)
     name: '20261105_loan_phase5_collation_align',
     module: './20261105_loan_phase5_collation_align.js'
+  },
+  {
+    // Phase 6 Stage 1: branch support schema (JS, idempotent; DOWN refuses once branch data exists)
+    name: '20261107_loan_branch_support',
+    module: './20261107_loan_branch_support.js'
   }
 ];
 

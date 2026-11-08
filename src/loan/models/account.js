@@ -39,7 +39,10 @@ module.exports = (sequelize, DataTypes) => {
     onTimeStreak: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
     statusSince: { type: DataTypes.DATEONLY, allowNull: true },
     lastEodDate: { type: DataTypes.DATEONLY, allowNull: true }
-  }, { freezeTableName: true, tableName: 'ln_account', timestamps: true });
+  }, { freezeTableName: true, tableName: 'ln_account', timestamps: true,
+    indexes: [
+      { name: 'idx_account_branch', fields: ['branchId'] } // Phase 6 (20261107_loan_branch_support)
+    ] });
 
   const lnAccountParamSnapshot = sequelize.define('lnAccountParamSnapshot', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },

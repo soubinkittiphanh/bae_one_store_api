@@ -178,6 +178,7 @@ const defineLoanModels = (sequelize, DataTypes) => {
   const scheduleModels = require('./schedule')(sequelize, DataTypes);
   const transactionModels = require('./transaction')(sequelize, DataTypes);
   const systemModels = require('./system')(sequelize, DataTypes);
+  const branchModels = require('./branch')(sequelize, DataTypes);
 
   const allLoanModels = {
     ...lookupModels,
@@ -193,7 +194,8 @@ const defineLoanModels = (sequelize, DataTypes) => {
     ...accountModels,
     ...scheduleModels,
     ...transactionModels,
-    ...systemModels
+    ...systemModels,
+    ...branchModels
   };
 
   return {

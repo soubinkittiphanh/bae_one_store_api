@@ -104,7 +104,9 @@ async function seed() {
         // 5. Seed SPF configurations to enable GL integration globally
         const spfParams = [
             { code: 'AC_AP_GL_ENABLE', value: 'Y', remark: 'Enable General Ledger mapping for AP (Y/N)' },
-            { code: 'AC_AR_GL_ENABLE', value: 'Y', remark: 'Enable General Ledger mapping for AR (Y/N)' }
+            { code: 'AC_AR_GL_ENABLE', value: 'Y', remark: 'Enable General Ledger mapping for AR (Y/N)' },
+            { code: 'AC_AP_SETTLEMENT_PL', value: 'N', remark: 'Include AP settlement in P&L expenses (Y/N)' },
+            { code: 'AC_AR_RECEIVE_PL', value: 'N', remark: 'Include AR receipts in P&L income (Y/N)' }
         ];
 
         for (const param of spfParams) {

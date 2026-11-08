@@ -27,7 +27,10 @@ module.exports = (sequelize, DataTypes) => {
     makerId: { type: DataTypes.INTEGER, allowNull: true },
     checkerId: { type: DataTypes.INTEGER, allowNull: true },
     authorizedAt: { type: DataTypes.DATE, allowNull: true }
-  }, { freezeTableName: true, tableName: 'ln_application', timestamps: true });
+  }, { freezeTableName: true, tableName: 'ln_application', timestamps: true,
+    indexes: [
+      { name: 'idx_app_branch', fields: ['branchId'] } // Phase 6 (20261107_loan_branch_support)
+    ] });
 
   const lnGuarantor = sequelize.define('lnGuarantor', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
