@@ -69,7 +69,14 @@ async function findAndLockAvailableSlot({ zoneId, slotId, vehicleType = 'car', t
   }
 
   if (!slot) {
-    throw new Error('Parking lot is full for this vehicle type (ສະຖານທີ່ຈອດລົດເຕັມແລ້ວ).');
+    // Distinguish "no slots configured for this type" from "all slots of this type are taken"
+    const configured = vehicleType
+      ? await db.parkingSlot.count({ where: { slotType: vehicleType, isActive: true }, transaction })
+      : 1;
+    if (!configured) {
+      throw new Error(`No parking slots are configured for vehicle type "${vehicleType}". Please create slots with this type or change existing slots to it (ບໍ່ມີບ່ອນຈອດສຳລັບປະເພດຍານພາຫະນະ "${vehicleType}").`);
+    }
+    throw new Error(`Parking lot is full for vehicle type "${vehicleType}" (ສະຖານທີ່ຈອດລົດເຕັມແລ້ວ).`);
   }
 
   return slot;
