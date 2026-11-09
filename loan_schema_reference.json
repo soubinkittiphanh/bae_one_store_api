@@ -13,6 +13,11 @@
    "collation": "utf8mb4_unicode_ci"
   },
   {
+   "table": "ln_account_branch_history",
+   "engine": "InnoDB",
+   "collation": "utf8mb4_unicode_ci"
+  },
+  {
    "table": "ln_account_document",
    "engine": "InnoDB",
    "collation": "utf8mb4_unicode_ci"
@@ -89,6 +94,16 @@
   },
   {
    "table": "ln_batch_log",
+   "engine": "InnoDB",
+   "collation": "utf8mb4_unicode_ci"
+  },
+  {
+   "table": "ln_branch_bank_account",
+   "engine": "InnoDB",
+   "collation": "utf8mb4_unicode_ci"
+  },
+  {
+   "table": "ln_branch_profile",
    "engine": "InnoDB",
    "collation": "utf8mb4_unicode_ci"
   },
@@ -451,7 +466,7 @@
    "nullable": "NO",
    "default": "1",
    "collation": "<null>",
-   "key": "",
+   "key": "MUL",
    "extra": ""
   },
   {
@@ -903,6 +918,96 @@
    "collation": "<null>",
    "key": "",
    "extra": "on update current_timestamp()"
+  },
+  {
+   "table": "ln_account_branch_history",
+   "column": "checkerId",
+   "type": "int(11)",
+   "nullable": "YES",
+   "default": "NULL",
+   "collation": "<null>",
+   "key": "",
+   "extra": ""
+  },
+  {
+   "table": "ln_account_branch_history",
+   "column": "createdAt",
+   "type": "datetime",
+   "nullable": "NO",
+   "default": "current_timestamp()",
+   "collation": "<null>",
+   "key": "",
+   "extra": ""
+  },
+  {
+   "table": "ln_account_branch_history",
+   "column": "effectiveDate",
+   "type": "date",
+   "nullable": "NO",
+   "default": "<null>",
+   "collation": "<null>",
+   "key": "",
+   "extra": ""
+  },
+  {
+   "table": "ln_account_branch_history",
+   "column": "fromBranchId",
+   "type": "int(11)",
+   "nullable": "NO",
+   "default": "<null>",
+   "collation": "<null>",
+   "key": "",
+   "extra": ""
+  },
+  {
+   "table": "ln_account_branch_history",
+   "column": "id",
+   "type": "int(11)",
+   "nullable": "NO",
+   "default": "<null>",
+   "collation": "<null>",
+   "key": "PRI",
+   "extra": "auto_increment"
+  },
+  {
+   "table": "ln_account_branch_history",
+   "column": "loanAccountId",
+   "type": "int(11)",
+   "nullable": "NO",
+   "default": "<null>",
+   "collation": "<null>",
+   "key": "MUL",
+   "extra": ""
+  },
+  {
+   "table": "ln_account_branch_history",
+   "column": "makerId",
+   "type": "int(11)",
+   "nullable": "YES",
+   "default": "NULL",
+   "collation": "<null>",
+   "key": "",
+   "extra": ""
+  },
+  {
+   "table": "ln_account_branch_history",
+   "column": "toBranchId",
+   "type": "int(11)",
+   "nullable": "NO",
+   "default": "<null>",
+   "collation": "<null>",
+   "key": "",
+   "extra": ""
+  },
+  {
+   "table": "ln_account_branch_history",
+   "column": "transactionId",
+   "type": "int(11)",
+   "nullable": "YES",
+   "default": "NULL",
+   "collation": "<null>",
+   "key": "",
+   "extra": ""
   },
   {
    "table": "ln_account_document",
@@ -1831,7 +1936,7 @@
    "nullable": "NO",
    "default": "1",
    "collation": "<null>",
-   "key": "",
+   "key": "MUL",
    "extra": ""
   },
   {
@@ -2743,6 +2848,216 @@
    "collation": "utf8mb4_unicode_ci",
    "key": "",
    "extra": ""
+  },
+  {
+   "table": "ln_branch_bank_account",
+   "column": "authStatus",
+   "type": "varchar(30)",
+   "nullable": "NO",
+   "default": "'PENDING'",
+   "collation": "utf8mb4_unicode_ci",
+   "key": "",
+   "extra": ""
+  },
+  {
+   "table": "ln_branch_bank_account",
+   "column": "authorizedAt",
+   "type": "datetime",
+   "nullable": "YES",
+   "default": "NULL",
+   "collation": "<null>",
+   "key": "",
+   "extra": ""
+  },
+  {
+   "table": "ln_branch_bank_account",
+   "column": "bankAccountId",
+   "type": "int(11)",
+   "nullable": "NO",
+   "default": "<null>",
+   "collation": "<null>",
+   "key": "",
+   "extra": ""
+  },
+  {
+   "table": "ln_branch_bank_account",
+   "column": "checkerId",
+   "type": "int(11)",
+   "nullable": "YES",
+   "default": "NULL",
+   "collation": "<null>",
+   "key": "",
+   "extra": ""
+  },
+  {
+   "table": "ln_branch_bank_account",
+   "column": "createdAt",
+   "type": "datetime",
+   "nullable": "NO",
+   "default": "current_timestamp()",
+   "collation": "<null>",
+   "key": "",
+   "extra": ""
+  },
+  {
+   "table": "ln_branch_bank_account",
+   "column": "id",
+   "type": "int(11)",
+   "nullable": "NO",
+   "default": "<null>",
+   "collation": "<null>",
+   "key": "PRI",
+   "extra": "auto_increment"
+  },
+  {
+   "table": "ln_branch_bank_account",
+   "column": "isActive",
+   "type": "tinyint(1)",
+   "nullable": "NO",
+   "default": "1",
+   "collation": "<null>",
+   "key": "",
+   "extra": ""
+  },
+  {
+   "table": "ln_branch_bank_account",
+   "column": "locationId",
+   "type": "int(11)",
+   "nullable": "NO",
+   "default": "<null>",
+   "collation": "<null>",
+   "key": "MUL",
+   "extra": ""
+  },
+  {
+   "table": "ln_branch_bank_account",
+   "column": "makerId",
+   "type": "int(11)",
+   "nullable": "YES",
+   "default": "NULL",
+   "collation": "<null>",
+   "key": "",
+   "extra": ""
+  },
+  {
+   "table": "ln_branch_bank_account",
+   "column": "purpose",
+   "type": "varchar(10)",
+   "nullable": "NO",
+   "default": "'BANK'",
+   "collation": "utf8mb4_unicode_ci",
+   "key": "",
+   "extra": ""
+  },
+  {
+   "table": "ln_branch_bank_account",
+   "column": "updatedAt",
+   "type": "datetime",
+   "nullable": "NO",
+   "default": "current_timestamp()",
+   "collation": "<null>",
+   "key": "",
+   "extra": "on update current_timestamp()"
+  },
+  {
+   "table": "ln_branch_profile",
+   "column": "authStatus",
+   "type": "varchar(30)",
+   "nullable": "NO",
+   "default": "'PENDING'",
+   "collation": "utf8mb4_unicode_ci",
+   "key": "",
+   "extra": ""
+  },
+  {
+   "table": "ln_branch_profile",
+   "column": "authorizedAt",
+   "type": "datetime",
+   "nullable": "YES",
+   "default": "NULL",
+   "collation": "<null>",
+   "key": "",
+   "extra": ""
+  },
+  {
+   "table": "ln_branch_profile",
+   "column": "branchCode",
+   "type": "varchar(10)",
+   "nullable": "NO",
+   "default": "<null>",
+   "collation": "utf8mb4_unicode_ci",
+   "key": "UNI",
+   "extra": ""
+  },
+  {
+   "table": "ln_branch_profile",
+   "column": "checkerId",
+   "type": "int(11)",
+   "nullable": "YES",
+   "default": "NULL",
+   "collation": "<null>",
+   "key": "",
+   "extra": ""
+  },
+  {
+   "table": "ln_branch_profile",
+   "column": "createdAt",
+   "type": "datetime",
+   "nullable": "NO",
+   "default": "current_timestamp()",
+   "collation": "<null>",
+   "key": "",
+   "extra": ""
+  },
+  {
+   "table": "ln_branch_profile",
+   "column": "id",
+   "type": "int(11)",
+   "nullable": "NO",
+   "default": "<null>",
+   "collation": "<null>",
+   "key": "PRI",
+   "extra": "auto_increment"
+  },
+  {
+   "table": "ln_branch_profile",
+   "column": "isActive",
+   "type": "tinyint(1)",
+   "nullable": "NO",
+   "default": "1",
+   "collation": "<null>",
+   "key": "",
+   "extra": ""
+  },
+  {
+   "table": "ln_branch_profile",
+   "column": "locationId",
+   "type": "int(11)",
+   "nullable": "NO",
+   "default": "<null>",
+   "collation": "<null>",
+   "key": "UNI",
+   "extra": ""
+  },
+  {
+   "table": "ln_branch_profile",
+   "column": "makerId",
+   "type": "int(11)",
+   "nullable": "YES",
+   "default": "NULL",
+   "collation": "<null>",
+   "key": "",
+   "extra": ""
+  },
+  {
+   "table": "ln_branch_profile",
+   "column": "updatedAt",
+   "type": "datetime",
+   "nullable": "NO",
+   "default": "current_timestamp()",
+   "collation": "<null>",
+   "key": "",
+   "extra": "on update current_timestamp()"
   },
   {
    "table": "ln_checklist_confirmation",
@@ -4492,6 +4807,16 @@
    "default": "0.0000",
    "collation": "<null>",
    "key": "",
+   "extra": ""
+  },
+  {
+   "table": "ln_journal_posting",
+   "column": "branchId",
+   "type": "int(11)",
+   "nullable": "YES",
+   "default": "NULL",
+   "collation": "<null>",
+   "key": "MUL",
    "extra": ""
   },
   {
@@ -9401,7 +9726,7 @@
    "nullable": "NO",
    "default": "1",
    "collation": "<null>",
-   "key": "",
+   "key": "MUL",
    "extra": ""
   },
   {
@@ -9969,6 +10294,12 @@
    "columns": "accountNo"
   },
   {
+   "table": "ln_account",
+   "index": "idx_account_branch",
+   "nonUnique": "1",
+   "columns": "branchId"
+  },
+  {
    "table": "ln_account_balance",
    "index": "PRIMARY",
    "nonUnique": "0",
@@ -9979,6 +10310,18 @@
    "index": "uk_account_component_balance",
    "nonUnique": "0",
    "columns": "loanAccountId,componentId"
+  },
+  {
+   "table": "ln_account_branch_history",
+   "index": "PRIMARY",
+   "nonUnique": "0",
+   "columns": "id"
+  },
+  {
+   "table": "ln_account_branch_history",
+   "index": "idx_abh_account",
+   "nonUnique": "1",
+   "columns": "loanAccountId"
   },
   {
    "table": "ln_account_document",
@@ -10101,6 +10444,12 @@
    "columns": "appNo"
   },
   {
+   "table": "ln_application",
+   "index": "idx_app_branch",
+   "nonUnique": "1",
+   "columns": "branchId"
+  },
+  {
    "table": "ln_application_document",
    "index": "PRIMARY",
    "nonUnique": "0",
@@ -10165,6 +10514,36 @@
    "index": "PRIMARY",
    "nonUnique": "0",
    "columns": "id"
+  },
+  {
+   "table": "ln_branch_bank_account",
+   "index": "PRIMARY",
+   "nonUnique": "0",
+   "columns": "id"
+  },
+  {
+   "table": "ln_branch_bank_account",
+   "index": "uk_branch_bank",
+   "nonUnique": "0",
+   "columns": "locationId,bankAccountId"
+  },
+  {
+   "table": "ln_branch_profile",
+   "index": "PRIMARY",
+   "nonUnique": "0",
+   "columns": "id"
+  },
+  {
+   "table": "ln_branch_profile",
+   "index": "uk_branch_profile_code",
+   "nonUnique": "0",
+   "columns": "branchCode"
+  },
+  {
+   "table": "ln_branch_profile",
+   "index": "uk_branch_profile_location",
+   "nonUnique": "0",
+   "columns": "locationId"
   },
   {
    "table": "ln_checklist_confirmation",
@@ -10345,6 +10724,12 @@
    "index": "idx_jp_batch",
    "nonUnique": "1",
    "columns": "glBatchId"
+  },
+  {
+   "table": "ln_journal_posting",
+   "index": "idx_jp_branch_role",
+   "nonUnique": "1",
+   "columns": "branchId,roleCode"
   },
   {
    "table": "ln_journal_posting",
@@ -10741,6 +11126,12 @@
    "index": "PRIMARY",
    "nonUnique": "0",
    "columns": "id"
+  },
+  {
+   "table": "ln_transaction",
+   "index": "idx_tx_branch",
+   "nonUnique": "1",
+   "columns": "branchId"
   },
   {
    "table": "ln_transaction",
