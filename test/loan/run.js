@@ -96,10 +96,11 @@ const main = async () => {
   await test('migrate up on a clean copy', async () => {
     runNode('loan_migrate.js', ['up']);
     const n = Number((await q("SELECT COUNT(*) n FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name LIKE 'ln\\_%'"))[0].n);
-    assert.strictEqual(n, 76, `expected 76 ln_* tables, found ${n}`);
+    assert.strictEqual(n, 79, `expected 79 ln_* tables, found ${n}`);
   });
-  await test('collation align, Phase 5 print templates, documents, currency limits, FX, Phase 4, POS loan types, Phase 3, 2B and corrections DOWN, then UP, restore the schema exactly', async () => {
+  await test('branch support, collation align, Phase 5 print templates, documents, currency limits, FX, Phase 4, POS loan types, Phase 3, 2B and corrections DOWN, then UP, restore the schema exactly', async () => {
     const before = await snapshot();
+    assert.match(runNode('loan_migrate.js', ['down', '--yes']), /20261107_loan_branch_support/);
     assert.match(runNode('loan_migrate.js', ['down', '--yes']), /20261105_loan_phase5_collation_align/);
     assert.match(runNode('loan_migrate.js', ['down', '--yes']), /20261104_loan_phase5_print_templates/);
     assert.match(runNode('loan_migrate.js', ['down', '--yes']), /20261103_loan_phase5_documents/);
@@ -121,6 +122,7 @@ const main = async () => {
     assert.deepStrictEqual(values.slice(-2), ['LOAN_IN', 'LOAN_OUT']);
     runNode('loan_migrate.js', ['up']);
     assert.deepStrictEqual((await q(colSql))[0], after, 'second UP changes nothing');
+    runNode('loan_migrate.js', ['down', '--yes']); // branch support
     runNode('loan_migrate.js', ['down', '--yes']); // collation align
     runNode('loan_migrate.js', ['down', '--yes']); // Phase 5 print templates
     runNode('loan_migrate.js', ['down', '--yes']); // Phase 5 documents
@@ -146,7 +148,7 @@ const main = async () => {
     const colCollations = async (table) => (await q("SELECT column_name n, collation_name c FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = ? AND collation_name IS NOT NULL ORDER BY 1", [table]));
     // State now: migrations are fully applied (the previous tests ended with UP).
     const all = await tableCollations();
-    assert.strictEqual(Object.keys(all).length, 76);
+    assert.strictEqual(Object.keys(all).length, 79);
     const offenders = Object.entries(all).filter(([, c]) => c !== 'utf8mb4_unicode_ci').map(([t]) => t);
     assert.deepStrictEqual(offenders, [], `every ln_ table should be utf8mb4_unicode_ci; off: ${offenders.join(', ')}`);
     for (const t of mig.TABLES) {
@@ -164,6 +166,7 @@ const main = async () => {
     // DOWN returns the four tables to general_ci without touching data, and isApplied flips to false.
     const docRowsBefore = Number((await q('SELECT COUNT(*) n FROM ln_print_template'))[0].n);
     const printBodyBefore = await q('SELECT templateCode, body FROM ln_print_template ORDER BY templateCode');
+    assert.match(runNode('loan_migrate.js', ['down', '--yes']), /20261107_loan_branch_support/); // the later migration first
     assert.match(runNode('loan_migrate.js', ['down', '--yes']), /20261105_loan_phase5_collation_align/);
     const downState = await tableCollations();
     for (const t of mig.TABLES) assert.strictEqual(downState[t], 'utf8mb4_general_ci', `${t} back to general_ci on DOWN`);
@@ -174,6 +177,47 @@ const main = async () => {
     // UP realigns and is the recorded restore for the suite's later state.
     runNode('loan_migrate.js', ['up']);
     assert.strictEqual(await snapshot(), before, 'UP after DOWN restores the aligned schema exactly');
+    assert.strictEqual(await mig.isApplied(conn), true);
+  });
+  await test('branch support (Phase 6): UP made 3 tables, ln_journal_posting.branchId and 4 indexes (79 ln_ tables); UP idempotent; DOWN refuses with a branch profile row or a tagged leg and changes nothing; DOWN without data removes exactly those (76 tables); UP restores the schema exactly; isApplied tracks it', async () => {
+    const mig = require('../../20261107_loan_branch_support');
+    const lnTables = async () => (await q("SELECT table_name t FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name LIKE 'ln\\_%' ORDER BY 1")).map(r => r.t);
+    const colExists = async () => Number((await q("SELECT COUNT(*) n FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'ln_journal_posting' AND column_name = 'branchId'"))[0].n) === 1;
+    const indexNames = async () => (await q("SELECT DISTINCT CONCAT(table_name, '.', index_name) i FROM information_schema.statistics WHERE table_schema = DATABASE() AND index_name IN ('idx_jp_branch_role','idx_account_branch','idx_tx_branch','idx_app_branch') ORDER BY 1")).map(r => r.i);
+    const ALL_INDEXES = ['ln_account.idx_account_branch', 'ln_application.idx_app_branch', 'ln_journal_posting.idx_jp_branch_role', 'ln_transaction.idx_tx_branch'];
+
+    const applied = await lnTables();
+    assert.strictEqual(applied.length, 79);
+    for (const t of mig.TABLES) assert.ok(applied.includes(t), `${t} exists`);
+    assert.strictEqual(await colExists(), true);
+    assert.deepStrictEqual(await indexNames(), ALL_INDEXES);
+    assert.strictEqual(await mig.isApplied(conn), true);
+    const before = await snapshot();
+    runNode('loan_migrate.js', ['up']);
+    assert.strictEqual(await snapshot(), before, 'second UP changes nothing');
+
+    // DOWN refuses while branch data exists: a branch profile row, then a journal leg carrying a branchId
+    await q("INSERT INTO ln_branch_profile (locationId, branchCode, authStatus) VALUES (999001, 'T6REF', 'PENDING')");
+    assert.throws(() => runNode('loan_migrate.js', ['down', '--yes']), err => /ln_branch_profile has 1 row/.test(err.stderr ? err.stderr.toString() : err.message));
+    assert.strictEqual(await snapshot(), before, 'refused DOWN changes nothing');
+    await q("DELETE FROM ln_branch_profile WHERE branchCode = 'T6REF'");
+    await q("INSERT INTO ln_journal_posting (branchId, eventCode, amountTag, roleCode, chartAccountId, drCr, createdAt, updatedAt) VALUES (999001, 'T6REF', 'T6REF', 'T6REF', 0, 'DR', NOW(), NOW())");
+    assert.throws(() => runNode('loan_migrate.js', ['down', '--yes']), err => /ln_journal_posting has 1 leg\(s\) with a branchId/.test(err.stderr ? err.stderr.toString() : err.message));
+    assert.strictEqual(await snapshot(), before, 'refused DOWN changes nothing');
+    await q("DELETE FROM ln_journal_posting WHERE eventCode = 'T6REF'");
+
+    // DOWN without branch data removes exactly the Phase 6 objects
+    assert.match(runNode('loan_migrate.js', ['down', '--yes']), /rolled back 20261107_loan_branch_support$/m);
+    const down = await lnTables();
+    assert.deepStrictEqual(down, applied.filter(t => !mig.TABLES.includes(t)), 'only the three branch tables are gone');
+    assert.strictEqual(down.length, 76);
+    assert.strictEqual(await colExists(), false);
+    assert.deepStrictEqual(await indexNames(), []);
+    assert.strictEqual(await mig.isApplied(conn), false);
+    // the next DOWN in the chain is the collation align (proves the order); put it straight back
+    assert.match(runNode('loan_migrate.js', ['down', '--yes']), /20261105_loan_phase5_collation_align/);
+    runNode('loan_migrate.js', ['up']);
+    assert.strictEqual(await snapshot(), before, 'UP after DOWN restores the schema exactly');
     assert.strictEqual(await mig.isApplied(conn), true);
   });
 
@@ -312,12 +356,70 @@ const main = async () => {
     assert.deepStrictEqual(tpl.map(t => `${t.c}:${t.s}`), ['CONTRACT_SUMMARY:PENDING'], 'draft contract wording waits for a checker');
   });
 
+  await test('Phase 6 seed: LN_ALL_BRANCHES (VIEW only) granted to exactly SUPER_ADMIN, LOAN_HO_CHECKER and LOAN_ACCOUNTANT, never ADMIN or CASHIER; runs twice with identical counts; refuses (exit 1, names the group, revokes nothing) when another group holds it', async () => {
+    // The two loan groups do not exist in a POS database yet: the seed skips a missing group with a warning
+    const holders = async () => (await q("SELECT g.code c, s.actionCode a FROM sec_group_grant s JOIN userGroup g ON g.id = s.userGroupId WHERE s.functionCode = 'LN_ALL_BRANCHES' ORDER BY 1, 2")).map(r => `${r.c}:${r.a}`);
+    const missing = runNode('seed_loan_phase6.js');
+    assert.deepStrictEqual(await holders(), ['SUPER_ADMIN:VIEW'], `only SUPER_ADMIN while the loan groups are missing (${missing.trim().split('\n').pop()})`);
+    for (const code of ['LOAN_HO_CHECKER', 'LOAN_ACCOUNTANT']) await q("INSERT INTO userGroup (name, code, isActive, createdAt, updateTimestamp, homePage) VALUES (?, ?, 1, NOW(), NOW(), '/')", [code, code]);
+    runNode('seed_loan_phase6.js');
+    const counts = await tableCounts();
+    runNode('seed_loan_phase6.js');
+    assert.deepStrictEqual(await tableCounts(), counts, 'second run creates nothing');
+    const fn = (await q("SELECT applicableActions a, moduleCode m, isActive i FROM sec_function WHERE functionCode = 'LN_ALL_BRANCHES'"))[0];
+    assert.deepStrictEqual([fn.a, fn.m, Number(fn.i)], ['VIEW', 'LN', 1]);
+    assert.deepStrictEqual(await holders(), ['LOAN_ACCOUNTANT:VIEW', 'LOAN_HO_CHECKER:VIEW', 'SUPER_ADMIN:VIEW']);
+    // A grant to another group (ADMIN) is flagged, not revoked
+    const adminGroup = Number((await q("SELECT id FROM userGroup WHERE code = 'ADMIN'"))[0].id);
+    await q("INSERT INTO sec_group_grant (userGroupId, functionCode, actionCode) VALUES (?, 'LN_ALL_BRANCHES', 'VIEW')", [adminGroup]);
+    assert.throws(() => runNode('seed_loan_phase6.js'), err => /also held by: ADMIN/.test(err.stderr ? err.stderr.toString() : err.message));
+    assert.ok((await holders()).includes('ADMIN:VIEW'), 'the seed revokes nothing');
+    await q("DELETE FROM sec_group_grant WHERE userGroupId = ? AND functionCode = 'LN_ALL_BRANCHES'", [adminGroup]);
+    runNode('seed_loan_phase6.js');
+    assert.deepStrictEqual(await holders(), ['LOAN_ACCOUNTANT:VIEW', 'LOAN_HO_CHECKER:VIEW', 'SUPER_ADMIN:VIEW']);
+  });
+
   console.log('\n[schema parity]');
   const db = require('../../src/models');
   db.sequelize.options.logging = false;
   await test('Sequelize models match the database (except documented generated-column keys)', async () => {
     const diffs = await parity(db);
     assert.deepStrictEqual(diffs, []);
+  });
+
+  await test('branch support UP after a sync-first state (the app started before the migration, as on 2026-11-08): sync made the 3 tables (default collation, no defaults or comments), ln_journal_posting.branchId and the 4 indexes; UP runs without error, creates nothing twice, aligns collation and columns keeping rows, and ends identical to a migration-only schema; a second UP changes nothing', async () => {
+    const mig = require('../../20261107_loan_branch_support');
+    const before = await snapshot();
+    const qi = db.sequelize.getQueryInterface();
+    assert.match(runNode('loan_migrate.js', ['down', '--yes']), /20261107_loan_branch_support/);
+    // What startup sync does for these objects: CREATE TABLE IF NOT EXISTS from the models (database default
+    // collation), and the alter pass adding the missing column and the model indexes by their names.
+    for (const m of [db.lnBranchProfile, db.lnBranchBankAccount, db.lnAccountBranchHistory]) await m.sync();
+    await qi.addColumn('ln_journal_posting', 'branchId', { type: db.Sequelize.INTEGER, allowNull: true });
+    for (const [model, name] of [[db.lnJournalPosting, 'idx_jp_branch_role'], [db.lnAccount, 'idx_account_branch'], [db.lnTransaction, 'idx_tx_branch'], [db.lnApplication, 'idx_app_branch']]) {
+      const ix = model.options.indexes.find(i => i.name === name);
+      await qi.addIndex(model.getTableName(), ix.fields, { name });
+    }
+    const collations = async () => Object.fromEntries((await q("SELECT table_name t, table_collation c FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name IN ('ln_branch_profile','ln_branch_bank_account','ln_account_branch_history')")).map(r => [r.t, r.c]));
+    const syncMade = await collations();
+    assert.strictEqual(Object.keys(syncMade).length, 3, 'sync made the three tables');
+    assert.ok(Object.values(syncMade).every(c => c !== 'utf8mb4_unicode_ci'), `sync used the database default collation: ${JSON.stringify(syncMade)}`);
+    assert.notStrictEqual(await snapshot(), before, 'the sync-made schema differs from the migration (collation, defaults, comments)');
+    // a row written while only sync existed survives UP
+    await q("INSERT INTO ln_branch_profile (locationId, branchCode, isActive, authStatus, createdAt, updatedAt) VALUES (999002, 'T6SYNC', 1, 'PENDING', NOW(), NOW())");
+    assert.strictEqual(await mig.isApplied(conn), true, 'every object exists, so status shows applied');
+
+    const out = runNode('loan_migrate.js', ['up']);
+    assert.match(out, /loan_migrate up: done/);
+    assert.deepStrictEqual(Object.values(await collations()), ['utf8mb4_unicode_ci', 'utf8mb4_unicode_ci', 'utf8mb4_unicode_ci']);
+    const dupes = await q("SELECT table_name t, GROUP_CONCAT(index_name) i FROM information_schema.statistics WHERE table_schema = DATABASE() AND column_name = 'branchId' AND seq_in_index = 1 AND table_name IN ('ln_account','ln_transaction','ln_application','ln_journal_posting') GROUP BY 1 HAVING COUNT(DISTINCT index_name) > 1");
+    assert.deepStrictEqual(dupes, [], 'no index created twice');
+    assert.deepStrictEqual((await q("SELECT branchCode b FROM ln_branch_profile WHERE locationId = 999002")).map(r => r.b), ['T6SYNC'], 'the row is kept');
+    await q("DELETE FROM ln_branch_profile WHERE locationId = 999002");
+    assert.strictEqual(await snapshot(), before, 'UP after sync-first ends identical to the migration-only schema (columns, types, defaults, comments, collations, indexes)');
+    runNode('loan_migrate.js', ['up']);
+    assert.strictEqual(await snapshot(), before, 'second UP changes nothing');
+    assert.deepStrictEqual(await parity(db), [], 'models still match');
   });
 
   await test('exact decimal reads (loan only): a DECIMAL(20,4) above 2^53/10^4 comes back as the exact string; normal reads lose digits', async () => {
@@ -572,6 +674,11 @@ const apiTests = async ({ port, q, db, runNode }) => {
   const SUPER = pick('SUPER_ADMIN');
   const ADMIN = pick('ADMIN');
   const CASHIER = pick('CASHIER');
+  // Phase 6 branch scope: ADMIN (no LN_ALL_BRANCHES) works at the branch of its terminal; loan records the
+  // suite creates as ADMIN carry that branch, so ADMIN can reach them. SUPER_ADMIN holds LN_ALL_BRANCHES.
+  const adminBranches = (await q('SELECT DISTINCT t.locationId l FROM UserTerminals ut JOIN terminal t ON t.id = ut.terminalId WHERE ut.userId = ? AND t.isActive = 1 AND t.locationId IS NOT NULL', [ADMIN])).map(r => Number(r.l));
+  if (adminBranches.length !== 1) throw new Error(`ADMIN user ${ADMIN} must have terminals at exactly one location in ${TEST_DB} (has ${adminBranches.length})`);
+  const BRANCH_A = adminBranches[0];
 
   const leaks = [];
   const call = async (userId, method, url, data, headers = {}) => {
@@ -949,7 +1056,7 @@ const apiTests = async ({ port, q, db, runNode }) => {
     assert.strictEqual(lak.fees.lines.find(l => l.componentCode === 'DOCUMENTATION_FEE').amount, '300000');
 
     const client = (await q('SELECT id FROM client ORDER BY id LIMIT 1'))[0];
-    const app = { customerId: client.id, productId: p.id, currencyId: usdId, requestedAmount: '500', tenorMonths: 12, interestRate: '0.12', valueDate: businessDate };
+    const app = { customerId: client.id, productId: p.id, currencyId: usdId, branchId: BRANCH_A, requestedAmount: '500', tenorMonths: 12, interestRate: '0.12', valueDate: businessDate };
     const refused = await call(ADMIN, 'post', `${L}/applications`, app);
     expectStatus(refused, 400, 'below the USD minimum');
     assert.match(refused.data.message, /Amount must be between USD 1000\.0000 and 150000\.0000/);
@@ -961,7 +1068,7 @@ const apiTests = async ({ port, q, db, runNode }) => {
     const client = (await q('SELECT id FROM client ORDER BY id LIMIT 1'))[0];
     assert.ok(client, 'test DB has a POS client');
     const currencyId = (await q('SELECT currencyId FROM ln_product_currency WHERE productId = ? LIMIT 1', [product.id]))[0].currencyId;
-    const body = { customerId: client.id, productId: product.id, currencyId, vehiclePrice: '300000000', downPaymentAmount: '60000000', requestedAmount: '240000000', tenorMonths: 12, interestRate: '0.18', valueDate: businessDate };
+    const body = { customerId: client.id, productId: product.id, currencyId, branchId: BRANCH_A, vehiclePrice: '300000000', downPaymentAmount: '60000000', requestedAmount: '240000000', tenorMonths: 12, interestRate: '0.18', valueDate: businessDate };
     expectStatus(await call(ADMIN, 'post', `${L}/applications`, { ...body, requestedAmount: '1000' }), 400, 'below product minimum');
     expectStatus(await call(ADMIN, 'post', `${L}/applications`, { ...body, downPaymentAmount: '10000000' }), 400, 'down payment too low');
     expectStatus(await call(ADMIN, 'post', `${L}/applications`, { ...body, foo: 1 }), 400, 'unknown field');
@@ -1023,9 +1130,11 @@ const apiTests = async ({ port, q, db, runNode }) => {
     assert.deepStrictEqual([stillNormal[0].status, Number(stillNormal[0].currentDpd)], ['NORMAL', 0], 'previews persist nothing');
   });
   console.log('\n[phase 4 posting, EOD, balance sheet]');
-  await require('./postingTests')({ test, call, q, db, runNode, users: { SUPER, ADMIN, CASHIER }, L, expectStatus });
+  await require('./postingTests')({ test, call, q, db, runNode, users: { SUPER, ADMIN, CASHIER }, L, expectStatus, branch: BRANCH_A });
   console.log('\n[phase 5 part B: screen APIs]');
   await require('./screenApiTests')({ test, call, q, users: { SUPER, ADMIN, CASHIER }, L, expectStatus });
+  console.log('\n[phase 6 stage 1: branch scope]');
+  await require('./branchScopeTests')({ test, call, q, runNode, users: { SUPER, ADMIN, CASHIER }, L, expectStatus, branch: BRANCH_A });
 
   console.log('\n[api, continued]');
   await test('banner status for any user, pending inbox filtered by grants, enums served by lookups', async () => {

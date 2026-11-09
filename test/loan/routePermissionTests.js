@@ -2,7 +2,8 @@
  * T4: route permissions of the loan module (security checklist 1.1, 1.2, 1.6, 1.12), run from run.js.
  *
  *  - auditRouter walks the real router against routeManifest.js: token first, every route guarded,
- *    the guard before anything that parses a request, the action fits the verb.
+ *    the guard before anything that parses a request, the action fits the verb, and (Phase 6) exactly one
+ *    branch scope guard right after the permission guard, of the kind the manifest declares.
  *  - No token, bad token and no grant are sent to the running API on every route: each is refused before
  *    a controller runs, so this is safe for POST /eod/run and the like.
  *  - The role matrix runs the real validateToken and requirePermission against the real sec_group_grant
@@ -43,6 +44,8 @@ const dynamicName = (functionCode) => {
 };
 
 // Returns a list of problems; empty means the router matches the rules. Pure, so it can be tested on bad routers.
+const SCOPE_KINDS = ['account', 'transaction', 'application', 'document', 'sale', 'list', 'all-branches', 'global'];
+
 const auditRouter = (router, { validateToken, routes = ROUTES, tokenOnly = TOKEN_ONLY, readOnlyPosts = READ_ONLY_POSTS }) => {
   const problems = [];
   const seen = new Map();
@@ -59,8 +62,12 @@ const auditRouter = (router, { validateToken, routes = ROUTES, tokenOnly = TOKEN
       const handlers = layer.route.stack.map(s => s.handle);
       const guards = handlers.filter(h => h.permission);
       const permission = guards[0] ? guards[0].permission : null;
+      const scopes = handlers.filter(h => h.scope);
       if (seen.has(id)) problems.push(`${id}: declared twice`);
-      seen.set(id, permission ? { fn: dynamicName(permission.functionCode), action: permission.actionCode } : { fn: null, action: null });
+      seen.set(id, { ...(permission ? { fn: dynamicName(permission.functionCode), action: permission.actionCode } : { fn: null, action: null }), scope: scopes[0] ? scopes[0].scope : null });
+      if (scopes.length === 0) problems.push(`${id}: no branch scope guard`);
+      if (scopes.length > 1) problems.push(`${id}: more than one branch scope guard`);
+      if (scopes.length && handlers.indexOf(scopes[0]) !== (permission ? handlers.indexOf(guards[0]) + 1 : 0)) problems.push(`${id}: the branch scope guard must run right after the permission check`);
       if (guards.length > 1) problems.push(`${id}: more than one permission middleware`);
       if (permission && handlers[0] !== guards[0]) problems.push(`${id}: something runs before the permission check`);
       if (!permission && !tokenOnly[id]) problems.push(`${id}: no permission middleware and not on the token-only list`);
@@ -75,11 +82,15 @@ const auditRouter = (router, { validateToken, routes = ROUTES, tokenOnly = TOKEN
     }
   }
 
-  const declared = new Map(routes.map(([method, path, fn, action]) => [key(method, path), { fn, action }]));
+  const declared = new Map(routes.map(([method, path, fn, action, scope]) => [key(method, path), { fn, action, scope }]));
   for (const [id, want] of declared) {
     const got = seen.get(id);
+    if (!SCOPE_KINDS.includes(want.scope)) problems.push(`${id}: manifest scope "${want.scope}" is not one of ${SCOPE_KINDS.join(', ')}`);
     if (!got) problems.push(`${id}: in the manifest, not in the router`);
-    else if (got.fn !== want.fn || got.action !== want.action) problems.push(`${id}: router has ${got.fn} ${got.action}, manifest has ${want.fn} ${want.action}`);
+    else {
+      if (got.fn !== want.fn || got.action !== want.action) problems.push(`${id}: router has ${got.fn} ${got.action}, manifest has ${want.fn} ${want.action}`);
+      if (got.scope && got.scope !== want.scope) problems.push(`${id}: router scope ${got.scope}, manifest scope ${want.scope}`);
+    }
   }
   for (const id of seen.keys()) if (!declared.has(id)) problems.push(`${id}: in the router, not in the manifest`);
   for (const id of Object.keys(tokenOnly)) if (!declared.has(id) || declared.get(id).fn !== null) problems.push(`${id}: on the token-only list but not a token-only route`);
@@ -107,29 +118,36 @@ module.exports = async ({ test, call, q, baseUrl, users, L, expectStatus }) => {
   const axiosMethod = m => m.toLowerCase();
   let router;
 
-  await test('T4 the route audit catches a bad router: no token first, unguarded route, guard after a parser, wrong action, unlisted or missing route', async () => {
+  await test('T4 the route audit catches a bad router: no token first, unguarded route, guard after a parser, wrong action, unlisted or missing route, missing/doubled/misplaced/wrong branch scope', async () => {
     const guard = (fn, action) => { const h = (req, res, next) => next(); h.permission = { functionCode: fn, actionCode: action }; return h; };
+    const sc = (kind) => { const h = (req, res, next) => next(); h.scope = kind; return h; };
     const handler = (req, res) => res.end();
     const opts = (routes, extra = {}) => ({ validateToken, routes, tokenOnly: {}, readOnlyPosts: [], ...extra });
     const audit = (build, routes, extra) => { const r = express.Router(); build(r); return auditRouter(r, opts(routes, extra)); };
     const has = (problems, text) => assert.ok(problems.some(p => p.includes(text)), `expected "${text}" in ${JSON.stringify(problems)}`);
 
-    assert.deepStrictEqual(audit((r) => { r.use(validateToken); r.get('/a', guard('F', 'VIEW'), handler); }, [['GET', '/a', 'F', 'VIEW']]), [], 'a correct router passes');
-    has(audit((r) => { r.get('/a', guard('F', 'VIEW'), handler); r.use(validateToken); }, [['GET', '/a', 'F', 'VIEW']]), 'before router.use(validateToken)');
-    has(audit((r) => { r.get('/a', guard('F', 'VIEW'), handler); }, [['GET', '/a', 'F', 'VIEW']]), 'before router.use(validateToken)');
-    has(audit((r) => { r.use(validateToken); r.post('/a', handler); }, [['POST', '/a', null, null]]), 'no permission middleware');
-    has(audit((r) => { r.use(validateToken); r.post('/a', handler); }, [['POST', '/a', null, null]], { tokenOnly: { 'POST /a': 'x' } }), 'token-only route must be GET');
-    has(audit((r) => { r.use(validateToken); r.post('/a', handler, guard('F', 'CREATE'), handler); }, [['POST', '/a', 'F', 'CREATE']]), 'before the permission check');
-    has(audit((r) => { r.use(validateToken); r.get('/a', guard('F', 'CREATE'), handler); }, [['GET', '/a', 'F', 'CREATE']]), 'GET must use VIEW');
-    has(audit((r) => { r.use(validateToken); r.put('/a', guard('F', 'VIEW'), handler); }, [['PUT', '/a', 'F', 'VIEW']]), 'PUT must use EDIT');
-    has(audit((r) => { r.use(validateToken); r.delete('/a', guard('F', 'EDIT'), handler); }, [['DELETE', '/a', 'F', 'EDIT']]), 'DELETE must use DELETE');
-    has(audit((r) => { r.use(validateToken); r.post('/a', guard('F', 'VIEW'), handler); }, [['POST', '/a', 'F', 'VIEW']]), 'not on the read-only list');
-    has(audit((r) => { r.use(validateToken); r.get('/new', guard('F', 'VIEW'), handler); }, []), 'in the router, not in the manifest');
-    has(audit((r) => { r.use(validateToken); }, [['GET', '/gone', 'F', 'VIEW']]), 'in the manifest, not in the router');
-    has(audit((r) => { r.use(validateToken); r.get('/a', guard('G', 'VIEW'), handler); }, [['GET', '/a', 'F', 'VIEW']]), 'router has G VIEW, manifest has F VIEW');
+    assert.deepStrictEqual(audit((r) => { r.use(validateToken); r.get('/a', guard('F', 'VIEW'), sc('global'), handler); }, [['GET', '/a', 'F', 'VIEW', 'global']]), [], 'a correct router passes');
+    has(audit((r) => { r.get('/a', guard('F', 'VIEW'), sc('global'), handler); r.use(validateToken); }, [['GET', '/a', 'F', 'VIEW', 'global']]), 'before router.use(validateToken)');
+    has(audit((r) => { r.get('/a', guard('F', 'VIEW'), sc('global'), handler); }, [['GET', '/a', 'F', 'VIEW', 'global']]), 'before router.use(validateToken)');
+    has(audit((r) => { r.use(validateToken); r.post('/a', handler); }, [['POST', '/a', null, null, 'global']]), 'no permission middleware');
+    has(audit((r) => { r.use(validateToken); r.post('/a', handler); }, [['POST', '/a', null, null, 'global']], { tokenOnly: { 'POST /a': 'x' } }), 'token-only route must be GET');
+    has(audit((r) => { r.use(validateToken); r.post('/a', handler, guard('F', 'CREATE'), sc('global'), handler); }, [['POST', '/a', 'F', 'CREATE', 'global']]), 'before the permission check');
+    has(audit((r) => { r.use(validateToken); r.get('/a', guard('F', 'CREATE'), sc('global'), handler); }, [['GET', '/a', 'F', 'CREATE', 'global']]), 'GET must use VIEW');
+    has(audit((r) => { r.use(validateToken); r.put('/a', guard('F', 'VIEW'), sc('global'), handler); }, [['PUT', '/a', 'F', 'VIEW', 'global']]), 'PUT must use EDIT');
+    has(audit((r) => { r.use(validateToken); r.delete('/a', guard('F', 'EDIT'), sc('global'), handler); }, [['DELETE', '/a', 'F', 'EDIT', 'global']]), 'DELETE must use DELETE');
+    has(audit((r) => { r.use(validateToken); r.post('/a', guard('F', 'VIEW'), sc('global'), handler); }, [['POST', '/a', 'F', 'VIEW', 'global']]), 'not on the read-only list');
+    has(audit((r) => { r.use(validateToken); r.get('/new', guard('F', 'VIEW'), sc('global'), handler); }, []), 'in the router, not in the manifest');
+    has(audit((r) => { r.use(validateToken); }, [['GET', '/gone', 'F', 'VIEW', 'global']]), 'in the manifest, not in the router');
+    has(audit((r) => { r.use(validateToken); r.get('/a', guard('G', 'VIEW'), sc('global'), handler); }, [['GET', '/a', 'F', 'VIEW', 'global']]), 'router has G VIEW, manifest has F VIEW');
+    // Phase 6 branch scope: missing, doubled, misplaced, or of another kind than the manifest
+    has(audit((r) => { r.use(validateToken); r.get('/a', guard('F', 'VIEW'), handler); }, [['GET', '/a', 'F', 'VIEW', 'global']]), 'no branch scope guard');
+    has(audit((r) => { r.use(validateToken); r.get('/a', guard('F', 'VIEW'), sc('global'), sc('list'), handler); }, [['GET', '/a', 'F', 'VIEW', 'global']]), 'more than one branch scope guard');
+    has(audit((r) => { r.use(validateToken); r.get('/a', guard('F', 'VIEW'), handler, sc('global')); }, [['GET', '/a', 'F', 'VIEW', 'global']]), 'right after the permission check');
+    has(audit((r) => { r.use(validateToken); r.get('/a', guard('F', 'VIEW'), sc('global'), handler); }, [['GET', '/a', 'F', 'VIEW', 'account']]), 'router scope global, manifest scope account');
+    has(audit((r) => { r.use(validateToken); r.get('/a', guard('F', 'VIEW'), sc('global'), handler); }, [['GET', '/a', 'F', 'VIEW', 'everywhere']]), 'is not one of');
   });
 
-  await test(`T4 the real router matches the manifest (${ROUTES.length} routes): token first, permission before any parser, action fits the verb, only /status and /pending are token-only`, async () => {
+  await test(`T4 the real router matches the manifest (${ROUTES.length} routes): token first, permission before any parser, action fits the verb, only /status and /pending are token-only, every route has the branch scope the manifest declares`, async () => {
     router = loadTaggedRouter();
     assert.deepStrictEqual(auditRouter(router, { validateToken }), []);
     assert.strictEqual(ROUTES.filter(r => r[2] === null).length, 2);
@@ -164,6 +182,16 @@ module.exports = async ({ test, call, q, baseUrl, users, L, expectStatus }) => {
     guardLayer.handle.permission = { functionCode: 'LN_TRANSACTION', actionCode: 'VIEW' };
     const p3 = auditRouter(downgraded, { validateToken });
     assert.ok(p3.some(p => p.includes('POST /transactions/:txId/authorize: router has LN_TRANSACTION VIEW, manifest has LN_TRANSACTION AUTHORIZE')), `expected a permission-mismatch problem, got ${JSON.stringify(p3)}`);
+
+    // 4. A by-id route's branch scope is swapped for 'global' (as if scoped('account') were edited away).
+    const unscoped = loadTaggedRouter();
+    const accLayer = unscoped.stack.find(l => l.route && l.route.path === '/accounts/:id' && l.route.methods.get);
+    const scopeLayer = accLayer.route.stack.find(s => s.handle.scope);
+    const swapped = (req, res, next) => next();
+    swapped.scope = 'global';
+    scopeLayer.handle = swapped;
+    const p4 = auditRouter(unscoped, { validateToken });
+    assert.ok(p4.some(p => p.includes('GET /accounts/:id: router scope global, manifest scope account')), `expected a scope-mismatch problem, got ${JSON.stringify(p4)}`);
 
     // The shared router is still clean after all this tampering on separate instances.
     assert.deepStrictEqual(auditRouter(router, { validateToken }), [], 'the shared router was not affected');
@@ -365,6 +393,11 @@ module.exports = async ({ test, call, q, baseUrl, users, L, expectStatus }) => {
     const accountant = userIds.LOAN_ACCOUNTANT;
     const cashier = userIds.LOAN_CASHIER;
     assert.ok(accountant && cashier, 'the role users exist from the matrix setup');
+    // Phase 6: without a terminal their branch scope is empty and every account answers 404 (fail closed),
+    // so give both a terminal at the account's branch; this test is about the permission check after it
+    const terminal = (await q('SELECT t.id FROM terminal t JOIN ln_account a ON a.branchId = t.locationId WHERE a.id = ? AND t.isActive = 1 ORDER BY t.id LIMIT 1', [account.id]))[0];
+    assert.ok(terminal, 'an active terminal at the account\'s branch');
+    for (const u of [accountant, cashier]) await q('INSERT IGNORE INTO UserTerminals (createdAt, updateTimestamp, userId, terminalId) VALUES (NOW(), NOW(), ?, ?)', [u, terminal.id]);
     // A write kind: the accountant (VIEW only) is refused by the in-handler permission check...
     expectStatus(await call(accountant, 'post', `${L}/accounts/${account.id}/preview/DISB`, {}), 403, 'accountant cannot preview a write kind');
     // ...while the cashier (CREATE) passes the permission check (then meets the posting switch, never 403/401).
@@ -376,6 +409,39 @@ module.exports = async ({ test, call, q, baseUrl, users, L, expectStatus }) => {
       const date = (await q("SELECT DATE_FORMAT(currentBusinessDate, '%Y-%m-%d') d FROM ln_system_date LIMIT 1"))[0].d;
       expectStatus(await call(accountant, 'post', `${L}/accounts/${disbursed.id}/preview/status`, { date }), 200, 'accountant may run a simulation preview with LN_ACCOUNT VIEW');
     }
+  });
+
+  await test('T4 Phase 6: a LOAN_ACCOUNTANT user (the seeded group, which holds LN_ALL_BRANCHES) with NO terminal works on every branch: lists and account views equal SUPER_ADMIN\'s, a simulation preview is 200; the flag opens nothing else (write-kind preview and transactions 403); control: without the flag the same user sees nothing and gets 404', async () => {
+    const group = (await q("SELECT id FROM userGroup WHERE code = 'LOAN_ACCOUNTANT'"))[0];
+    assert.ok(group, 'the Phase 6 seed test created LOAN_ACCOUNTANT');
+    const flagRows = await q("SELECT COUNT(*) n FROM sec_group_grant WHERE userGroupId = ? AND functionCode = 'LN_ALL_BRANCHES' AND actionCode = 'VIEW'", [group.id]);
+    assert.strictEqual(Number(flagRows[0].n), 1, 'the seed granted LN_ALL_BRANCHES to LOAN_ACCOUNTANT');
+    for (const [f, actions] of Object.entries(GROUPS.LOAN_ACCOUNTANT)) for (const a of actions) await q('INSERT IGNORE INTO sec_group_grant (userGroupId, functionCode, actionCode) VALUES (?, ?, ?)', [group.id, f, a]);
+    const user = await addUser('t4_ho_accountant', group.id);
+    assert.strictEqual(Number((await q('SELECT COUNT(*) n FROM UserTerminals WHERE userId = ?', [user]))[0].n), 0, 'no terminal');
+    const { scopeOf } = require('../../src/loan/services/branchScope');
+    assert.deepStrictEqual(await scopeOf(user), { all: true, branches: [] });
+    const account = (await q("SELECT id FROM ln_account WHERE accountStage = 'DISBURSED' ORDER BY id LIMIT 1"))[0];
+    const date = (await q("SELECT DATE_FORMAT(currentBusinessDate, '%Y-%m-%d') d FROM ln_system_date LIMIT 1"))[0].d;
+    const views = ['/accounts?limit=500', `/accounts/${account.id}/summary`, `/accounts/${account.id}/schedule`, '/reports/overdue', '/reports/portfolio', '/reports/gl-tieout', '/reports/vat'];
+    for (const url of views) {
+      const mine = await call(user, 'get', `${L}${url}`);
+      expectStatus(mine, 200, `accountant ${url}`);
+      assert.deepStrictEqual(mine.data.data, (await call(SUPER, 'get', `${L}${url}`)).data.data, `accountant sees the same ${url} as SUPER_ADMIN`);
+    }
+    assert.ok((await call(user, 'get', `${L}/accounts?limit=500`)).data.data.length > 0, 'the list is not empty');
+    expectStatus(await call(user, 'post', `${L}/accounts/${account.id}/preview/status`, { date }), 200, 'simulation preview');
+    expectStatus(await call(user, 'post', `${L}/accounts/${account.id}/preview/DISB`, {}), 403, 'write-kind preview still needs LN_TRANSACTION CREATE');
+    expectStatus(await call(user, 'post', `${L}/accounts/${account.id}/transactions`, { kind: 'REPAYMENT', amount: '1' }, { 'Idempotency-Key': 't4-ho-acc' }), 403, 'no transactions');
+    // Control: the flag is what opens every branch. Without it this terminal-less user is fail-closed.
+    await q("DELETE FROM sec_group_grant WHERE userGroupId = ? AND functionCode = 'LN_ALL_BRANCHES'", [group.id]);
+    try {
+      expectStatus(await call(user, 'get', `${L}/accounts/${account.id}/summary`), 404, 'without the flag: 404');
+      assert.deepStrictEqual((await call(user, 'get', `${L}/accounts?limit=500`)).data.data, [], 'without the flag: empty list');
+    } finally {
+      await q("INSERT INTO sec_group_grant (userGroupId, functionCode, actionCode) VALUES (?, 'LN_ALL_BRANCHES', 'VIEW')", [group.id]);
+    }
+    expectStatus(await call(user, 'get', `${L}/accounts/${account.id}/summary`), 200, 'flag restored');
   });
 
   await test('T4 preview/:kind for every one of the 12 write kinds writes nothing, whether it computes a journal or is refused by a business rule (every ln_ table, audit, idempotency and the number sequences)', async () => {

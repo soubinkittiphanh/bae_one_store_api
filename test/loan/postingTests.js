@@ -13,7 +13,7 @@ const E = require('../../src/loan/engine');
 
 const API_ROOT = path.resolve(__dirname, '../..');
 
-module.exports = async ({ test: runTest, call, q, db, runNode, users, L, expectStatus }) => {
+module.exports = async ({ test: runTest, call, q, db, runNode, users, L, expectStatus, branch }) => {
   const { SUPER, ADMIN, CASHIER } = users;
   // LOAN_POSTING_ONLY=<regex>: run only the setup and the matching posting tests (for running one case in isolation)
   const only = process.env.LOAN_POSTING_ONLY ? new RegExp(process.env.LOAN_POSTING_ONLY) : null;
@@ -147,13 +147,13 @@ module.exports = async ({ test: runTest, call, q, db, runNode, users, L, expectS
     saleSeq++;
     const d = await businessDate();
     const client = (await q('SELECT id FROM client ORDER BY id LIMIT 1'))[0];
-    const sale = await db.saleHeader.create({ bookingDate: d, referenceNo: `LN-SALE-${saleSeq}-${Date.now()}`, total: 300000000, exchangeRate: 1, isActive: true, clientId: client.id, currencyId: lakId, isPostedToAR: true });
+    const sale = await db.saleHeader.create({ bookingDate: d, referenceNo: `LN-SALE-${saleSeq}-${Date.now()}`, locationId: branch, total: 300000000, exchangeRate: 1, isActive: true, clientId: client.id, currencyId: lakId, isPostedToAR: true });
     const invoice = await db.arInvoiceHeader.create({ invoiceNumber: `INV-LN-${saleSeq}-${Date.now()}`, invoiceDate: d, totalAmount: '300000000.00', netAmount: '300000000.00', taxAmount: 0, status: 'sent', clientId: client.id, currencyId: lakId, saleHeaderId: sale.id, sourceType: 'POS_ORDER', glPostingStatus: 'posted', exchangeRate: 1 });
     const line = await db.arInvoiceLine.create({ lineNumber: 1, description: 'Vehicle', quantity: 1, unitPrice: '300000000.00', lineTotal: '300000000.00', invoiceHeaderId: invoice.id });
     await sale.update({ arInvoiceId: invoice.id });
     const dp = await db.arReceiveHeaderV2.create({ receiptNumber: `DP-LN-${saleSeq}-${Date.now()}`, bookingDate: d, receivedDate: d, invoiceHeaderId: invoice.id, totalReceivedAmount: '60000000.00', paymentMethod: 'cash', status: 'active', currencyId: lakId, glPostingStatus: 'unposted', exchangeRate: 1 });
     await db.arReceiveLine.create({ receiveHeaderId: dp.id, lineNumber: 1, invoiceLineId: line.id, allocatedAmount: '60000000.00', allocationDate: d });
-    const app = await call(ADMIN, 'post', `${L}/applications`, { customerId: client.id, productId: product.id, currencyId: lakId, vehicleSaleHeaderId: sale.id, vehiclePrice: '300000000', downPaymentAmount: '60000000', requestedAmount: '240000000', tenorMonths: 12, interestRate: '0.18', valueDate: d });
+    const app = await call(ADMIN, 'post', `${L}/applications`, { customerId: client.id, productId: product.id, currencyId: lakId, branchId: branch, vehicleSaleHeaderId: sale.id, vehiclePrice: '300000000', downPaymentAmount: '60000000', requestedAmount: '240000000', tenorMonths: 12, interestRate: '0.18', valueDate: d });
     expectStatus(app, 201, 'application');
     expectStatus(await call(ADMIN, 'post', `${L}/applications/${app.data.data.id}/submit`), 200, 'submit');
     expectStatus(await call(SUPER, 'post', `${L}/applications/${app.data.data.id}/approve`), 200, 'approve');
@@ -757,14 +757,14 @@ module.exports = async ({ test: runTest, call, q, db, runNode, users, L, expectS
     const d = await businessDate();
     const client = (await q('SELECT id FROM client ORDER BY id LIMIT 1'))[0];
     const productId = (await q('SELECT id FROM product ORDER BY id LIMIT 1'))[0].id;
-    const sale = await db.saleHeader.create({ bookingDate: d, referenceNo: `USD-SALE-${usdSeq}-${Date.now()}`, total: 315000000, exchangeRate: 1, isActive: true, clientId: client.id, currencyId: lakId, isPostedToAR: true });
+    const sale = await db.saleHeader.create({ bookingDate: d, referenceNo: `USD-SALE-${usdSeq}-${Date.now()}`, locationId: branch, total: 315000000, exchangeRate: 1, isActive: true, clientId: client.id, currencyId: lakId, isPostedToAR: true });
     await db.saleLine.create({ headerId: sale.id, saleHeaderId: sale.id, productId, quantity: 1, unitRate: 1, price: 15000, total: 15000, currencyId: fxState.usdId, exchangeRate: 21000, isActive: true });
     const invoice = await db.arInvoiceHeader.create({ invoiceNumber: `INV-USD-${usdSeq}-${Date.now()}`, invoiceDate: d, totalAmount: '315000000.00', netAmount: '315000000.00', taxAmount: 0, status: 'sent', clientId: client.id, currencyId: lakId, saleHeaderId: sale.id, sourceType: 'POS_ORDER', glPostingStatus: 'posted', exchangeRate: 1 });
     const line = await db.arInvoiceLine.create({ lineNumber: 1, description: 'Vehicle (USD line)', quantity: 1, unitPrice: '15000.00', lineTotal: '15000.00', invoiceHeaderId: invoice.id });
     await sale.update({ arInvoiceId: invoice.id });
     const dp = await db.arReceiveHeaderV2.create({ receiptNumber: `DP-USD-${usdSeq}-${Date.now()}`, bookingDate: d, receivedDate: d, invoiceHeaderId: invoice.id, totalReceivedAmount: '63000000.00', paymentMethod: 'cash', status: 'active', currencyId: lakId, glPostingStatus: 'unposted', exchangeRate: 1 });
     await db.arReceiveLine.create({ receiveHeaderId: dp.id, lineNumber: 1, invoiceLineId: line.id, allocatedAmount: '63000000.00', allocationDate: d });
-    const app = await call(ADMIN, 'post', `${L}/applications`, { customerId: client.id, productId: product.id, currencyId: fxState.usdId, vehicleSaleHeaderId: sale.id, vehiclePrice: '15000', downPaymentAmount: '3000', requestedAmount: requested, tenorMonths: 12, interestRate: '0.18', valueDate: d });
+    const app = await call(ADMIN, 'post', `${L}/applications`, { customerId: client.id, productId: product.id, currencyId: fxState.usdId, branchId: branch, vehicleSaleHeaderId: sale.id, vehiclePrice: '15000', downPaymentAmount: '3000', requestedAmount: requested, tenorMonths: 12, interestRate: '0.18', valueDate: d });
     expectStatus(app, 201, 'USD application');
     expectStatus(await call(ADMIN, 'post', `${L}/applications/${app.data.data.id}/submit`), 200, 'submit');
     expectStatus(await call(SUPER, 'post', `${L}/applications/${app.data.data.id}/approve`), 200, 'approve');
@@ -1006,7 +1006,7 @@ module.exports = async ({ test: runTest, call, q, db, runNode, users, L, expectS
     const arAcc = (await q("SELECT id FROM chart_of_account WHERE accountType = 'Asset' ORDER BY id LIMIT 1"))[0].id;
     const revAcc = (await q("SELECT id FROM chart_of_account WHERE accountType = 'Revenue' ORDER BY id LIMIT 1"))[0].id;
     // What the POS screen sends: the header in base (lines converted at their rate), the line in the product's currency
-    const sale = await db.saleHeader.create({ bookingDate: day, referenceNo: `DEF9-${Date.now()}`, total: 315000000, exchangeRate: 1, currencyId: lakId, isActive: true, clientId: client.id });
+    const sale = await db.saleHeader.create({ bookingDate: day, referenceNo: `DEF9-${Date.now()}`, locationId: branch, total: 315000000, exchangeRate: 1, currencyId: lakId, isActive: true, clientId: client.id });
     // Both keys, as sales/controller.js assignHeaderId sets them
     await db.saleLine.create({ headerId: sale.id, saleHeaderId: sale.id, productId, quantity: 1, unitRate: 1, price: 15000, total: 15000, currencyId: usd.id, exchangeRate: 21000, isActive: true });
     const inv = await call(SUPER, 'post', `/api/ar-invoices/from-order/${sale.id}`, { invoiceDate: day, DRglAccountId: arAcc, CRglAccountId: revAcc });

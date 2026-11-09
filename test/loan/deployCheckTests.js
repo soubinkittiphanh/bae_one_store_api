@@ -126,10 +126,10 @@ module.exports = async ({ test, sh, MYSQL_ARGS, SOURCE_DB, TEST_DB, API_ROOT, RU
     assert.strictEqual(noSync.code, 0);
   });
 
-  await test('T1 --schema before the migrations reports all 76 tables missing', async () => {
+  await test('T1 --schema before the migrations reports all 79 tables missing', async () => {
     const r = json(['--schema']);
     assert.strictEqual(r.code, 1);
-    assert.strictEqual(r.data.rows.filter(x => /^missing table:/.test(x.detail)).length, 76);
+    assert.strictEqual(r.data.rows.filter(x => /^missing table:/.test(x.detail)).length, 79);
   });
 
   await test('T1 after loan_migrate up: --schema shows 0 differences against the committed reference; --pre now stops on existing tables', async () => {
@@ -150,8 +150,8 @@ module.exports = async ({ test, sh, MYSQL_ARGS, SOURCE_DB, TEST_DB, API_ROOT, RU
     assert.match(r.data.rows.find(x => x.id === 'C5').detail, /seeds/);
   });
 
-  await test('T1 --post after the seven seeds passes; each switch turned on fails; --url checks 401 and refuses anything else', async () => {
-    for (const seed of ['seed_loan_phase2a_data.js', 'seed_loan_phase2b_accounting.js', 'seed_loan_phase3.js', 'seed_loan_phase4.js', 'seed_loan_phase5.js', 'seed_loan_phase5b.js', 'seed_loan_menus.js']) {
+  await test('T1 --post after the eight seeds passes; each switch turned on fails; --url checks 401 and refuses anything else', async () => {
+    for (const seed of ['seed_loan_phase2a_data.js', 'seed_loan_phase2b_accounting.js', 'seed_loan_phase3.js', 'seed_loan_phase4.js', 'seed_loan_phase5.js', 'seed_loan_phase5b.js', 'seed_loan_phase6.js', 'seed_loan_menus.js']) {
       const s = node(seed);
       assert.strictEqual(s.status, 0, `${seed}: ${s.stderr}`);
     }
