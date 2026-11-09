@@ -11,6 +11,7 @@ const ctx = require('./loanContext');
 const { productTerms, limitProblems } = require('./simulationService');
 const { productCurrency } = require('./currencyAmounts');
 const { nextNumber } = require('./numberingService');
+const { whereScope } = require('./branchScope');
 
 const N = E.num;
 const EDITABLE = ['customerId', 'productId', 'currencyId', 'branchId', 'vehicleSaleHeaderId', 'vehiclePrice', 'downPaymentAmount',
@@ -71,8 +72,9 @@ const findApp = async (id, transaction) => {
 };
 
 const applicationService = {
-  async list(query = {}) {
-    const where = query.status ? { status: String(query.status).split(',') } : {};
+  // Phase 6: only the caller's branches (scope from scoped('list'); an empty scope lists nothing)
+  async list(query = {}, scope) {
+    const where = { ...whereScope(scope), ...(query.status ? { status: String(query.status).split(',') } : {}) };
     return db.lnApplication.findAll({ where, order: [['id', 'DESC']], limit: 200 });
   },
   get: id => findApp(id),

@@ -1,7 +1,8 @@
 /**
  * Phase 6 branch scope (plan D5/D6, R2). A branch is a POS location (location.id).
  *
- *  - A user's branches are the distinct terminal.locationId of their UserTerminals rows.
+ *  - A user's branches are the distinct terminal.locationId of their UserTerminals rows (active terminals).
+ *    Fail closed: no terminal means an empty scope, so lists are empty and by-id routes answer 404.
  *  - LN_ALL_BRANCHES (VIEW) widens the scope to every branch. It is a scope flag only: it opens no route by
  *    itself, because every route still runs requirePermission first.
  *  - scoped(kind) is the router middleware that runs right after the permission guard. Its `scope` tag is
@@ -27,7 +28,7 @@ const KINDS = ['account', 'transaction', 'application', 'document', 'sale', 'lis
 const scopeOf = async (userId) => {
   if (await hasPermission(userId, ALL_BRANCHES, 'VIEW')) return { all: true, branches: [] };
   const rows = await db.sequelize.query(
-    'SELECT DISTINCT t.locationId AS l FROM UserTerminals ut JOIN terminal t ON t.id = ut.terminalId WHERE ut.userId = ? AND t.locationId IS NOT NULL ORDER BY 1',
+    'SELECT DISTINCT t.locationId AS l FROM UserTerminals ut JOIN terminal t ON t.id = ut.terminalId WHERE ut.userId = ? AND t.isActive = 1 AND t.locationId IS NOT NULL ORDER BY 1',
     { replacements: [userId], type: db.Sequelize.QueryTypes.SELECT }
   );
   return { all: false, branches: rows.map(r => Number(r.l)) };
@@ -35,8 +36,43 @@ const scopeOf = async (userId) => {
 
 const inScope = (scope, branchId) => scope.all || (branchId !== null && branchId !== undefined && scope.branches.includes(Number(branchId)));
 
-// Sequelize `where` fragment for list queries (an empty scope matches nothing)
-const whereScope = (scope, column = 'branchId') => (!scope || scope.all ? {} : { [column]: scope.branches });
+// Fail closed: a list service called without a scope is a programming error, never "all branches"
+const assertScope = (scope) => {
+  if (!scope || typeof scope.all !== 'boolean' || !Array.isArray(scope.branches)) throw new Error('branch scope missing: list services need req.branchScope (scoped(\'list\'))');
+  return scope;
+};
+
+// Sequelize `where` fragment for list queries. All branches: no filter. Otherwise branchId IN (the user's
+// branches); an empty scope (no terminal) and a NULL branchId match nothing.
+const NONE = -1; // no location has id -1; keeps the IN list non-empty so the SQL stays plain
+const whereScope = (scope, column = 'branchId') => {
+  assertScope(scope);
+  if (scope.all) return {};
+  return { [column]: scope.branches.length ? scope.branches : [NONE] };
+};
+
+// ln_audit_log rows that belong to one loan record are listed only when that record is in scope. Other
+// rows (parameters, tax profile, checklist) are company-wide and stay visible to anyone with LN_AUDIT_LOG.
+const AUDIT_ENTITIES = {
+  application: 'SELECT id FROM ln_application WHERE branchId IN (:b)',
+  account: 'SELECT id FROM ln_account WHERE branchId IN (:b)',
+  'loan-transaction': 'SELECT id FROM ln_transaction WHERE branchId IN (:b)',
+  'account-document': 'SELECT d.id FROM ln_account_document d JOIN ln_account a ON a.id = d.loanAccountId WHERE a.branchId IN (:b)'
+};
+const auditWhereScope = (scope) => {
+  assertScope(scope);
+  if (scope.all) return {};
+  const { Op } = db.Sequelize;
+  const b = (scope.branches.length ? scope.branches : [NONE]).map(Number).join(',');
+  return {
+    [Op.or]: [
+      { entityName: { [Op.notIn]: Object.keys(AUDIT_ENTITIES) } },
+      ...Object.entries(AUDIT_ENTITIES).map(([entityName, sql]) => ({
+        entityName, entityId: { [Op.in]: db.sequelize.literal(`(${sql.replace(':b', b)})`) }
+      }))
+    ]
+  };
+};
 
 // Each loader returns { found, branchId } for the record a route addresses
 const loaders = {
@@ -91,4 +127,4 @@ const scoped = (kind) => {
   return middleware;
 };
 
-module.exports = { ALL_BRANCHES, KINDS, scopeOf, inScope, whereScope, scoped };
+module.exports = { ALL_BRANCHES, KINDS, AUDIT_ENTITIES, scopeOf, inScope, assertScope, whereScope, auditWhereScope, scoped };

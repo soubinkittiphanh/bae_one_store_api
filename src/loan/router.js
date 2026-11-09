@@ -126,6 +126,6 @@ router.post('/changes/:id/authorize', can(changeFunction, 'AUTHORIZE'), scoped('
 router.post('/changes/:id/reject', can(changeFunction, 'AUTHORIZE'), scoped('global'), paramController.rejectChange);
 
 // --- Audit trail ---
-router.get('/audit-log', can('LN_AUDIT_LOG', 'VIEW'), scoped('global'), paramController.auditLog);
+router.get('/audit-log', can('LN_AUDIT_LOG', 'VIEW'), scoped('list'), paramController.auditLog);
 
 module.exports = router;

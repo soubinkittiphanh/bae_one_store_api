@@ -10,6 +10,12 @@
  *
  * UP is idempotent: each table, column and index is created only when missing, and the backfill touches
  * only legs whose branchId is still NULL. New tables use utf8mb4_unicode_ci like every other loan table.
+ * Sync-first safe: when the app's startup sequelize.sync already made the tables, the column or the indexes
+ * (same names as the models declare), UP does not create them again. It aligns what sync makes differently,
+ * keeping every row: a table in the database's default collation is converted to utf8mb4_unicode_ci, and a
+ * column whose comment, CURRENT_TIMESTAMP default or ON UPDATE differs from the definition below is
+ * MODIFYed to it (same type and nullability, so no data changes). The end state then matches a
+ * migration-only database column for column (tested: test/loan/run.js, "UP after a sync-first state").
  * DOWN refuses once any of the three tables has rows or any journal leg carries a branchId, so it can
  * only undo a schema that holds no branch data.
  */
@@ -70,6 +76,27 @@ const count = async (conn, sql, params = []) => Number((await conn.query(sql, pa
 const tableExists = (conn, table) => count(conn, 'SELECT COUNT(*) AS n FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?', [table]).then(n => n > 0);
 const columnExists = (conn, table, column) => count(conn, 'SELECT COUNT(*) AS n FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?', [table, column]).then(n => n > 0);
 const indexExists = (conn, table, index) => count(conn, 'SELECT COUNT(*) AS n FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND INDEX_NAME = ?', [table, index]).then(n => n > 0);
+const JP_BRANCH_DEF = "INT(11) NULL COMMENT 'location.id at posting (Phase 6)'";
+
+// Column definitions of a CREATE TABLE above: [{ name, def }]
+const columnDefs = ddl => ddl.split('\n').map(l => l.trim().replace(/,$/, '')).filter(l => /^`\w+` /.test(l))
+  .map(l => { const m = l.match(/^`(\w+)` (.*)$/); return { name: m[1], def: m[2] }; });
+
+// MODIFY the columns sequelize.sync made with another comment, timestamp default or ON UPDATE
+const alignColumns = async (conn, table, defs) => {
+  for (const { name, def } of defs) {
+    const rows = await conn.query('SELECT COLUMN_COMMENT AS c, COLUMN_DEFAULT AS d, EXTRA AS x FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?', [table, name]);
+    if (!rows.length) continue;
+    const have = rows[0];
+    const wantComment = ((def.match(/COMMENT '((?:[^']|'')*)'/) || [])[1] || '').replace(/''/g, "'");
+    const same = String(have.c || '') === wantComment
+      && /DEFAULT CURRENT_TIMESTAMP/i.test(def) === /^current_timestamp/i.test(String(have.d || ''))
+      && /ON UPDATE CURRENT_TIMESTAMP/i.test(def) === /on update current_timestamp/i.test(String(have.x || ''));
+    if (!same) await conn.query(`ALTER TABLE \`${table}\` MODIFY COLUMN \`${name}\` ${def}`);
+  }
+};
+
+const tableCollation = async (conn, table) => ((await conn.query('SELECT TABLE_COLLATION AS c FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?', [table]))[0] || {}).c;
 
 module.exports = {
   name: '20261107_loan_branch_support',
@@ -84,9 +111,16 @@ module.exports = {
   },
 
   async up(conn) {
-    for (const ddl of Object.values(TABLES)) await conn.query(ddl);
+    for (const [t, ddl] of Object.entries(TABLES)) {
+      await conn.query(ddl);
+      // made by sequelize.sync before this migration ran: align the collation (no-op when already aligned)
+      if (await tableCollation(conn, t) !== 'utf8mb4_unicode_ci') await conn.query(`ALTER TABLE \`${t}\` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
+      await alignColumns(conn, t, columnDefs(ddl));
+    }
     if (!(await columnExists(conn, 'ln_journal_posting', 'branchId'))) {
-      await conn.query("ALTER TABLE `ln_journal_posting` ADD COLUMN `branchId` INT(11) NULL COMMENT 'location.id at posting (Phase 6)' AFTER `loanAccountId`");
+      await conn.query(`ALTER TABLE \`ln_journal_posting\` ADD COLUMN \`branchId\` ${JP_BRANCH_DEF} AFTER \`loanAccountId\``);
+    } else {
+      await alignColumns(conn, 'ln_journal_posting', [{ name: 'branchId', def: JP_BRANCH_DEF }]);
     }
     for (const [t, i, cols] of INDEXES) {
       if (!(await indexExists(conn, t, i))) await conn.query(`ALTER TABLE \`${t}\` ADD INDEX \`${i}\` (${cols.map(c => `\`${c}\``).join(', ')})`);

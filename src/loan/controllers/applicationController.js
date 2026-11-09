@@ -5,7 +5,7 @@ const { ctxOf } = require('./paramController');
 
 // Applications follow single-level maker-checker; booking creates the account (no GL posting).
 const applicationController = {
-  list: handle(req => applicationService.list(req.query)),
+  list: handle(req => applicationService.list(req.query, req.branchScope)),
   get: handle(req => applicationService.get(req.params.id)),
   create: handle(async req => respond(await applicationService.create(req.body, ctxOf(req)), 'Application created (DRAFT)', 201)),
   update: handle(async req => respond(await applicationService.update(req.params.id, req.body, ctxOf(req)), 'Application updated')),

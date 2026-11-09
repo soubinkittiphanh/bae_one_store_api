@@ -6,19 +6,19 @@ const { ctxOf } = require('./paramController');
 
 // Phase 5 Part B1: read-only views for the loan screens, and account documents (D10)
 const reportController = {
-  accounts: handle(req => reportService.accounts(req.query)),
+  accounts: handle(req => reportService.accounts(req.query, req.branchScope)),
   summary: handle(req => reportService.accountSummary(req.params.id)),
   schedule: handle(req => reportService.schedule(req.params.id)),
   history: handle(req => reportService.history(req.params.id)),
   statement: handle(req => reportService.statement(req.params.id, req.query)),
-  pending: handle(req => reportService.pendingTransactions(req.query)),
+  pending: handle(req => reportService.pendingTransactions(req.query, req.branchScope)),
   eodLogs: handle(req => reportService.eodLogs(req.query)),
-  overdue: handle(req => reportService.overdue(req.query)),
-  portfolio: handle(req => reportService.portfolio(req.query, 'product')),
-  aging: handle(req => reportService.portfolio(req.query, 'aging')),
-  npl: handle(req => reportService.portfolio(req.query, 'npl')),
-  provisions: handle(req => reportService.provisions(req.query)),
-  glTieout: handle(() => reportService.glTieout()),
+  overdue: handle(req => reportService.overdue(req.query, req.branchScope)),
+  portfolio: handle(req => reportService.portfolio(req.query, 'product', req.branchScope)),
+  aging: handle(req => reportService.portfolio(req.query, 'aging', req.branchScope)),
+  npl: handle(req => reportService.portfolio(req.query, 'npl', req.branchScope)),
+  provisions: handle(req => reportService.provisions(req.query, req.branchScope)),
+  glTieout: handle(req => reportService.glTieout(req.branchScope)),
   printTemplate: handle(req => reportService.printTemplate(req.params.code)),
 
   documents: handle(req => documentService.list(req.params.id)),

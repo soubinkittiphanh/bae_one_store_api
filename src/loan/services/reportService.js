@@ -3,6 +3,9 @@
  *   accounts / account summary / schedule / history / statement   per account, in the contract currency
  *   pending transactions                                           the checker queue
  *   eod logs, overdue (collection), portfolio, aging, npl, provisions, gl-tieout
+ * Phase 6: every list takes the caller's branch scope (req.branchScope from scoped('list')) and shows only
+ * records of those branches; an empty scope (no terminal) shows nothing. Per-record views are guarded by
+ * the router (scoped('account') and friends).
  * Wherever an amount is converted, the view gives the contract amount, the base amount, the rate, the rate
  * date and the rate-age warning (fx block). Stored transactions show the rate they were posted at; open
  * balances show the latest authorized rate for the business date (indicative, from ln_exchange_rate).
@@ -17,6 +20,7 @@ const { findAllExact, findOneExact } = require('../db/exact');
 const fxRates = require('./fxRateService');
 const ctx = require('./loanContext');
 const { PRINT_PLACEHOLDERS } = require('./paramRegistry');
+const { whereScope } = require('./branchScope');
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const AGING = [[0, 0, 'CURRENT'], [1, 30, '1-30'], [31, 60, '31-60'], [61, 90, '61-90'], [91, 180, '91-180'], [181, Infinity, '181+']];
@@ -127,8 +131,8 @@ const loadAccountRow = async (id) => {
 const reportService = {
   indicativeFx,
 
-  async accounts(query = {}) {
-    const where = {};
+  async accounts(query = {}, scope) {
+    const where = { ...whereScope(scope) };
     if (query.status) where.status = String(query.status).split(',');
     if (query.stage) where.accountStage = String(query.stage).split(',');
     if (query.currencyId) where.currencyId = Number(query.currencyId);
@@ -249,8 +253,8 @@ const reportService = {
     };
   },
 
-  async pendingTransactions(query = {}) {
-    const where = { postingStatus: 'PENDING_AUTH' };
+  async pendingTransactions(query = {}, scope) {
+    const where = { ...whereScope(scope), postingStatus: 'PENDING_AUTH' };
     if (query.kind) where.eventCode = String(query.kind).split(',');
     const rows = await findAllExact(db.lnTransaction, { where, order: [['id', 'ASC']], limit: 500 });
     const [ccy, accounts, users] = await Promise.all([
@@ -306,9 +310,9 @@ const reportService = {
   },
 
   // Collection list: every disbursed, open account with an overdue amount as of the business date
-  async overdue(query = {}) {
+  async overdue(query = {}, scope) {
     const date = dateArg(query.date, 'date') || await ctx.businessDate();
-    const accounts = await findAllExact(db.lnAccount, { where: { accountStage: 'DISBURSED' }, order: [['id', 'ASC']] });
+    const accounts = await findAllExact(db.lnAccount, { where: { ...whereScope(scope), accountStage: 'DISBURSED' }, order: [['id', 'ASC']] });
     const ccy = await currencyMap();
     const conv = await makeConverter(date);
     const cache = new Map();
@@ -333,9 +337,9 @@ const reportService = {
   },
 
   // Portfolio / aging / NPL: open disbursed accounts grouped, per currency with the indicative base total
-  async portfolio(query = {}, groupBy = 'product') {
+  async portfolio(query = {}, groupBy = 'product', scope) {
     const date = dateArg(query.date, 'date') || await ctx.businessDate();
-    const accounts = await findAllExact(db.lnAccount, { where: { accountStage: 'DISBURSED' }, order: [['id', 'ASC']] });
+    const accounts = await findAllExact(db.lnAccount, { where: { ...whereScope(scope), accountStage: 'DISBURSED' }, order: [['id', 'ASC']] });
     const [ccy, products, classes] = await Promise.all([currencyMap(), db.lnProduct.findAll({ attributes: ['id', 'productCode'] }), db.lnRegulatoryClass.findAll()]);
     const pcode = Object.fromEntries(products.map(p => [p.id, p.productCode]));
     const qualifier = Object.fromEntries(classes.map(c => [c.classCode, c.glQualifier]));
@@ -366,12 +370,13 @@ const reportService = {
     return { date, groupBy, baseCurrency: conv.base.code, rows, totalBase: baseMissing ? null : str(baseTotal), totalBaseIncomplete: baseMissing };
   },
 
-  async provisions(query = {}) {
+  async provisions(query = {}, scope) {
     const date = dateArg(query.date, 'date') || await ctx.businessDate();
+    const within = whereScope(scope);
     const ledger = await findAllExact(db.lnProvisionLedger, { where: { evaluationDate: { [Op.lte]: date } }, order: [['loanAccountId', 'ASC'], ['evaluationDate', 'DESC'], ['id', 'DESC']] });
     const latest = new Map();
     for (const l of ledger) if (!latest.has(l.loanAccountId)) latest.set(l.loanAccountId, l);
-    const accounts = latest.size ? await db.lnAccount.findAll({ where: { id: [...latest.keys()] }, attributes: ['id', 'accountNo', 'currencyId', 'regulatoryClass'] }) : [];
+    const accounts = latest.size ? await db.lnAccount.findAll({ where: { ...within, id: [...latest.keys()] }, attributes: ['id', 'accountNo', 'currencyId', 'regulatoryClass'] }) : [];
     const ccy = await currencyMap();
     const conv = await makeConverter(date);
     const cache = new Map();
@@ -401,9 +406,16 @@ const reportService = {
   // wrote (rows its legs point to, and rows a loan transaction linked in ln_pos_link, e.g. a REVERSAL's
   // mirrored rows), in the transaction currency and in base. A leg is unlinked when it has no GL row and its
   // transaction linked none either.
-  async glTieout() {
-    const legs = await findAllExact(db.lnJournalPosting, { attributes: ['transactionId', 'roleCode', 'chartAccountId', 'drCr', 'currencyId', 'amount', 'baseAmount', 'glRecordId'] });
-    const links = await db.lnPosLink.findAll({ where: { posTable: 'general_ledger' }, attributes: ['transactionId', 'posId'] });
+  // Phase 6: a branch-limited caller sees the legs of accounts in their branches and only the GL rows those
+  // legs and their transactions point to (legs without an account are company-wide and left out). Legs are
+  // matched through their account, not ln_journal_posting.branchId, until journal tagging (Stage 2).
+  async glTieout(scope) {
+    const within = whereScope(scope);
+    const accountIds = scope.all ? null : (await db.lnAccount.findAll({ where: within, attributes: ['id'] })).map(a => a.id);
+    const legWhere = accountIds ? { loanAccountId: accountIds.length ? accountIds : [-1] } : {};
+    const legs = await findAllExact(db.lnJournalPosting, { where: legWhere, attributes: ['transactionId', 'roleCode', 'chartAccountId', 'drCr', 'currencyId', 'amount', 'baseAmount', 'glRecordId'] });
+    const linkWhere = { posTable: 'general_ledger', ...(accountIds ? { transactionId: [...new Set(legs.map(l => l.transactionId).filter(Boolean))].concat([-1]) } : {}) };
+    const links = await db.lnPosLink.findAll({ where: linkWhere, attributes: ['transactionId', 'posId'] });
     const txWithGl = new Set(links.map(l => l.transactionId));
     const glIds = [...new Set([...legs.map(l => l.glRecordId).filter(Boolean), ...links.map(l => l.posId)])];
     const glRows = glIds.length ? (await db.sequelize.query(

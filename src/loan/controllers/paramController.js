@@ -1,6 +1,7 @@
 const paramService = require('../services/paramService');
 const db = require('../../models');
 const { handle, respond } = require('../errors');
+const { auditWhereScope } = require('../services/branchScope');
 
 const ctxOf = (req) => ({ userId: req.user ? req.user.id : null, ip: req.ip });
 
@@ -19,8 +20,10 @@ const paramController = {
   authorizeChange: handle(req => paramService.authorizeChange(req.params.id, ctxOf(req))),
   rejectChange: handle(req => paramService.rejectChange(req.params.id, ctxOf(req), req.body && req.body.remarks)),
 
+  // Phase 6: rows of an application, account, transaction or document show only when it is in the caller's
+  // branches (router: scoped('list')); parameter and company rows show to anyone with LN_AUDIT_LOG VIEW
   auditLog: handle(async (req) => {
-    const where = {};
+    const where = { ...auditWhereScope(req.branchScope) };
     if (req.query.entityName) where.entityName = req.query.entityName;
     if (req.query.entityKey) where.entityKey = req.query.entityKey;
     return db.lnAuditLog.findAll({ where, order: [['id', 'DESC']], limit: Math.min(parseInt(req.query.limit, 10) || 200, 1000) });
