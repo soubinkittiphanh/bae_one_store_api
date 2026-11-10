@@ -1145,6 +1145,7 @@ const packagingService = {
                     productId: assetId,
                     name: asset.pro_name,
                     barCode: asset.barCode,
+                    categoryId: asset.pro_category,
                     emptyStockWarehouse: emptyStockCards,
                     embeddedInFullCases: embeddedInFullStock,
                     wholesaleCustomerDebt: wholesaleDebt,
