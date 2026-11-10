@@ -1677,6 +1677,16 @@ exports.getSaleHeadersByDate = async (req, res) => {
                   as: "category"
                 }
               ]
+            },
+            {
+              model: Card,
+              as: 'cards',
+              separate: true,
+              attributes: [
+                'id', 'product_id', 'cost', 'costLCY',
+                'exchangeRate', 'costPerUnit', 'totalCost',
+                'stockCardQty', 'currencyId', 'saleLineId'
+              ]
             }
           ]
         },
@@ -1724,6 +1734,16 @@ exports.getSaleHeadersByDate = async (req, res) => {
                       model: Category,
                       as: "category"
                     }
+                  ]
+                },
+                {
+                  model: Card,
+                  as: 'cards',
+                  separate: true,
+                  attributes: [
+                    'id', 'product_id', 'cost', 'costLCY',
+                    'exchangeRate', 'costPerUnit', 'totalCost',
+                    'stockCardQty', 'currencyId', 'saleLineId'
                   ]
                 }
               ]
@@ -2047,6 +2067,16 @@ exports.getSaleHeadersByDateAndUser = async (req, res) => {
                   ]
                 },
                 {
+                  model: Card,
+                  as: 'cards',
+                  separate: true,
+                  attributes: [
+                    'id', 'product_id', 'cost', 'costLCY',
+                    'exchangeRate', 'costPerUnit', 'totalCost',
+                    'stockCardQty', 'currencyId', 'saleLineId'
+                  ]
+                },
+                {
                   model: SaleHeader,
                   as: "header",
                 },
@@ -2177,6 +2207,16 @@ exports.getSaleHeadersByDateAndCustomer = async (req, res) => {
                       model: Category,
                       as: "category"
                     }
+                  ]
+                },
+                {
+                  model: Card,
+                  as: 'cards',
+                  separate: true,
+                  attributes: [
+                    'id', 'product_id', 'cost', 'costLCY',
+                    'exchangeRate', 'costPerUnit', 'totalCost',
+                    'stockCardQty', 'currencyId', 'saleLineId'
                   ]
                 },
                 {
@@ -2582,6 +2622,16 @@ exports.getSaleHeadersByDateWithGifts = async (req, res) => {
                   model: Category,
                   as: "category"
                 }
+              ]
+            },
+            {
+              model: Card,
+              as: 'cards',
+              separate: true,
+              attributes: [
+                'id', 'product_id', 'cost', 'costLCY',
+                'exchangeRate', 'costPerUnit', 'totalCost',
+                'stockCardQty', 'currencyId', 'saleLineId'
               ]
             }
           ]
