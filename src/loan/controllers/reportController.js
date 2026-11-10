@@ -1,6 +1,7 @@
 const multer = require('multer');
 const reportService = require('../services/reportService');
 const documentService = require('../services/documentService');
+const branchBank = require('../services/branchBank');
 const { handle, respond, LoanError } = require('../errors');
 const { ctxOf } = require('./paramController');
 
@@ -14,12 +15,15 @@ const reportController = {
   pending: handle(req => reportService.pendingTransactions(req.query, req.branchScope)),
   eodLogs: handle(req => reportService.eodLogs(req.query)),
   overdue: handle(req => reportService.overdue(req.query, req.branchScope)),
-  portfolio: handle(req => reportService.portfolio(req.query, 'product', req.branchScope)),
+  // Phase 6: groupBy=branch groups the portfolio by the accounts' branch (location.id)
+  portfolio: handle(req => reportService.portfolio(req.query, req.query.groupBy === 'branch' ? 'branch' : 'product', req.branchScope)),
   aging: handle(req => reportService.portfolio(req.query, 'aging', req.branchScope)),
   npl: handle(req => reportService.portfolio(req.query, 'npl', req.branchScope)),
   provisions: handle(req => reportService.provisions(req.query, req.branchScope)),
   glTieout: handle(req => reportService.glTieout(req.branchScope)),
   printTemplate: handle(req => reportService.printTemplate(req.params.code)),
+  // Phase 6: bank/cash accounts mapped to the account's branch (the transaction dialog's list)
+  bankAccounts: handle(req => branchBank.listForAccount(req.params.id)),
 
   documents: handle(req => documentService.list(req.params.id)),
   uploadDocument: handle(async req => respond(await documentService.upload(req.params.id, req.file, req.body, ctxOf(req)), 'Document stored', 201)),

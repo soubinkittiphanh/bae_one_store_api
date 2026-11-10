@@ -12,6 +12,12 @@ const FX = require('../accounting/fx');
 const { findAllExact } = require('../db/exact');
 const { pairLegs, glRows } = require('./pairing');
 
+// Phase 6: every leg carries the account's branch at posting; an account without one is an error
+const branchOf = (account) => {
+  if (account.branchId === null || account.branchId === undefined) throw new LoanError(409, `Account ${account.accountNo || account.id} has no branch; nothing was posted`);
+  return account.branchId;
+};
+
 const ruleSetFor = async (product, date, transaction) => {
   const rules = (await db.lnAccountingEntryRule.findAll({ transaction })).map(r => r.get({ plain: true }));
   return resolveRuleSet(rules, product, { asOfDate: date });
@@ -65,6 +71,7 @@ const postJournal = async (events, ctx, transaction) => {
   for (const l of journalLines) {
     postings.push(await db.lnJournalPosting.create({
       transactionId: ctx.transactionId || null, glBatchId: ctx.glBatchId || null, loanAccountId: ctx.account.id,
+      branchId: branchOf(ctx.account), // Phase 6: the account's branch at posting
       eventCode: l.eventCode, amountTag: l.amountTag, roleCode: l.roleCode, statusQualifier: l.qualifier || null,
       chartAccountId: l.chartAccountId, drCr: l.drCr, currencyId: ctx.fx ? (l.currency || ctx.currencyId) : ctx.currencyId, amount: l.amount,
       baseAmount: ctx.fx ? l.baseAmount : l.amount, exchangeRate: ctx.fx ? l.exchangeRate : '1', isBaseOnly: Boolean(l.isBaseOnly)
@@ -130,4 +137,4 @@ const writeGlRowsFx = async (lines, postings, ctx, transaction) => {
   return written;
 };
 
-module.exports = { postJournal, writeGlPairs, writeGlRowsFx, ruleSetFor };
+module.exports = { branchOf, postJournal, writeGlPairs, writeGlRowsFx, ruleSetFor };

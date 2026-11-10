@@ -44,6 +44,7 @@ const ROUTES = [
   ['POST', '/accounts/:id/preview/:kind', 'LN_ACCOUNT', 'VIEW', 'account'],
   ['GET', '/accounts/:id/transactions', 'LN_TRANSACTION', 'VIEW', 'account'],
   ['POST', '/accounts/:id/transactions', 'LN_TRANSACTION', 'CREATE', 'account'],
+  ['GET', '/accounts/:id/bank-accounts', 'LN_TRANSACTION', 'VIEW', 'account'],
   ['POST', '/transactions/:txId/authorize', 'LN_TRANSACTION', 'AUTHORIZE', 'transaction'],
   ['POST', '/transactions/:txId/reject', 'LN_TRANSACTION', 'AUTHORIZE', 'transaction'],
   ['GET', '/eod/status', 'LN_EOD', 'VIEW', 'global'],
@@ -108,8 +109,10 @@ const PREVIEW_WRITE_KIND_EXTRA = { pathSuffix: '/preview/:kind', function: 'LN_T
 
 /**
  * Proposed groups, copied from docs/loan/phase6-uat.md section 1. A change there needs a change here.
- * '*params' means every parameter function (all five actions applicable) that has no row of its own here.
+ * '*params' means every parameter function (all five actions applicable) that has no row of its own here,
+ * except the SUPER_ADMIN-only ones below (UAT doc section 1, "Kept on SUPER_ADMIN only").
  */
+const SUPER_ADMIN_ONLY_PARAMS = ['LN_BRANCH']; // Phase 6: branch profiles and branch bank accounts
 const GROUPS = {
   LOAN_CASHIER: {
     LN_ACCOUNT: ['VIEW'],
@@ -154,4 +157,4 @@ const GROUPS = {
   }
 };
 
-module.exports = { ROUTES, TOKEN_ONLY, READ_ONLY_POSTS, PREVIEW_WRITE_KIND_EXTRA, GROUPS };
+module.exports = { ROUTES, TOKEN_ONLY, READ_ONLY_POSTS, PREVIEW_WRITE_KIND_EXTRA, GROUPS, SUPER_ADMIN_ONLY_PARAMS };

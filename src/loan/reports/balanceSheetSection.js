@@ -89,4 +89,57 @@ const build = async ({ asOfDate, subledger }) => {
   };
 };
 
-module.exports = { build };
+// ------------------------------------------------------------------ Phase 6 Stage 2: branch split
+// The loan lines of one branch (GL rows tagged to it) and the rest of the same mapped accounts under
+// "Not branch-tagged (POS)" (POS rows and any loan row without a branch). Per account, the branch lines of
+// every branch plus the not-tagged lines equal the company loan lines of build().
+const glRowsOf = async (accountIds, asOfDate) => (accountIds.length ? db.sequelize.query(`
+    SELECT g.id, g.drAccountId, g.crAccountId, CAST(COALESCE(g.localDebit, 0) AS CHAR) AS ld, CAST(COALESCE(g.localCredit, 0) AS CHAR) AS lc
+      FROM general_ledger g
+     WHERE g.status = 'POSTED' AND g.bookingDate <= :asOfDate AND (g.drAccountId IN (:ids) OR g.crAccountId IN (:ids))`,
+{ replacements: { ids: accountIds, asOfDate }, type: db.Sequelize.QueryTypes.SELECT }) : []);
+
+const linesOf = (accounts, rows, keep) => {
+  const bal = Object.fromEntries(accounts.map(a => [a.id, { dr: N.ZERO, cr: N.ZERO }]));
+  for (const g of rows.filter(keep)) {
+    if (bal[g.drAccountId]) bal[g.drAccountId].dr = N.add(bal[g.drAccountId].dr, N.of(g.ld));
+    if (bal[g.crAccountId]) bal[g.crAccountId].cr = N.add(bal[g.crAccountId].cr, N.of(g.lc));
+  }
+  const assets = [];
+  const liabilities = [];
+  let revenue = N.ZERO;
+  let expense = N.ZERO;
+  for (const a of accounts) {
+    const b = bal[a.id];
+    if (a.accountType === 'Asset') assets.push({ accountNumber: a.accountNumber, accountName: `${a.accountName} (loan)`, balance: N.sub(b.dr, b.cr) });
+    else if (a.accountType === 'Liability') liabilities.push({ accountNumber: a.accountNumber, accountName: `${a.accountName} (loan)`, balance: N.sub(b.cr, b.dr) });
+    else if (a.accountType === 'Revenue') revenue = N.add(revenue, N.sub(b.cr, b.dr));
+    else if (a.accountType === 'Expense') expense = N.add(expense, N.sub(b.dr, b.cr));
+  }
+  const keepNonZero = list => list.filter(x => !N.isZero(x.balance));
+  const out = list => keepNonZero(list).map(x => ({ ...x, balance: num(x.balance) }));
+  return {
+    assets: out(assets),
+    liabilities: out(liabilities),
+    totalAssets: num(N.sum(keepNonZero(assets).map(x => x.balance))),
+    totalLiabilities: num(N.sum(keepNonZero(liabilities).map(x => x.balance))),
+    loanResult: num(N.sub(revenue, expense))
+  };
+};
+
+const buildBranch = async ({ asOfDate, branchId }) => {
+  const { glBranchTags, NOT_TAGGED_LABEL } = require('./branchTags');
+  const mappings = (await db.lnRoleGlMapping.findAll({ where: { authStatus: 'AUTHORIZED' } }))
+    .filter(m => String(m.effectiveFrom) <= asOfDate && (!m.effectiveTo || String(m.effectiveTo) >= asOfDate));
+  const ids = [...new Set(mappings.map(m => m.chartAccountId))];
+  const accounts = ids.length ? await db.chartAccount.findAll({ where: { id: ids } }) : [];
+  const rows = await glRowsOf(ids, asOfDate);
+  const tags = await glBranchTags();
+  return {
+    branchId,
+    branch: linesOf(accounts, rows, g => tags.get(Number(g.id)) === branchId),
+    notBranchTagged: { label: NOT_TAGGED_LABEL, ...linesOf(accounts, rows, g => !tags.has(Number(g.id))) }
+  };
+};
+
+module.exports = { build, buildBranch };

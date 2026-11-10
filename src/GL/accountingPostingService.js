@@ -62,28 +62,62 @@ class AccountingPostingService {
       }
 
       // 1. Payment/Receivable (Debit) & Revenue (Credit)
-      const debitAccountId = await this.getSaleDebitAccount(saleHeader.paymentId);
       const revenueAccountId = await this.getMappedAccountId('GL_MAP_REV_ACC');
+      
+      // Check for multi-payment splits in salePayment table
+      const salePayments = await db.salePayment.findAll({
+        where: { saleHeaderId: saleHeader.id, isActive: true },
+        transaction
+      });
 
-      const localAmount = parseFloat((totalAmount * rate).toFixed(2));
+      if (salePayments && salePayments.length > 1) {
+        // Multi-payment split: post individual debit entry for each payment method
+        for (const p of salePayments) {
+          const splitAmount = parseFloat(p.amount || 0);
+          if (splitAmount <= 0) continue;
+          const splitDebitAccountId = await this.getSaleDebitAccount(p.paymentId);
+          const splitLocalAmount = parseFloat((splitAmount * rate).toFixed(2));
 
-      await db.gl.create({
-        bookingDate,
-        postingReference: refNo,
-        debit: totalAmount,
-        credit: totalAmount,
-        description: `POS Sale Receipt #${saleHeader.id}`,
-        localDebit: localAmount,
-        localCredit: localAmount,
-        rate,
-        source: 'AR',
-        status: 'POSTED',
-        drAccountId: debitAccountId,
-        crAccountId: revenueAccountId,
-        currencyId
-      }, { transaction });
+          await db.gl.create({
+            bookingDate,
+            postingReference: p.referenceNo || refNo,
+            debit: splitAmount,
+            credit: splitAmount,
+            description: `POS Sale Receipt #${saleHeader.id}`,
+            localDebit: splitLocalAmount,
+            localCredit: splitLocalAmount,
+            rate,
+            source: 'AR',
+            status: 'POSTED',
+            drAccountId: splitDebitAccountId,
+            crAccountId: revenueAccountId,
+            currencyId
+          }, { transaction });
+        }
+        logger.info(`AccountingPostingService: Successfully posted ${salePayments.length} multi-payment entries for Sale #${saleHeader.id}`);
+      } else {
+        const effectivePaymentId = (salePayments && salePayments.length === 1) ? salePayments[0].paymentId : saleHeader.paymentId;
+        const debitAccountId = await this.getSaleDebitAccount(effectivePaymentId);
+        const localAmount = parseFloat((totalAmount * rate).toFixed(2));
 
-      logger.info(`AccountingPostingService: Successfully posted Revenue entry: DR ${debitAccountId}, CR ${revenueAccountId} for ${totalAmount}`);
+        await db.gl.create({
+          bookingDate,
+          postingReference: refNo,
+          debit: totalAmount,
+          credit: totalAmount,
+          description: `POS Sale Receipt #${saleHeader.id}`,
+          localDebit: localAmount,
+          localCredit: localAmount,
+          rate,
+          source: 'AR',
+          status: 'POSTED',
+          drAccountId: debitAccountId,
+          crAccountId: revenueAccountId,
+          currencyId
+        }, { transaction });
+
+        logger.info(`AccountingPostingService: Successfully posted Revenue entry: DR ${debitAccountId}, CR ${revenueAccountId} for ${totalAmount}`);
+      }
 
       // 2. Inventory (Credit) & COGS (Debit) (if physical stock items exist)
       // Fetch all active currencies to support dynamic home currency conversion
@@ -190,25 +224,57 @@ class AccountingPostingService {
       if (totalAmount <= 0) return;
 
       // Reverse Revenue: Debit Sales Revenue, Credit Cash/Bank/AR
-      const originalDebitAccountId = await this.getSaleDebitAccount(saleHeader.paymentId);
       const originalCreditAccountId = await this.getMappedAccountId('GL_MAP_REV_ACC');
-      const localAmount = parseFloat((totalAmount * rate).toFixed(2));
 
-      await db.gl.create({
-        bookingDate,
-        postingReference: refNo,
-        debit: totalAmount,
-        credit: totalAmount,
-        description: `POS Sale Reversal Receipt #${saleHeader.id}`,
-        localDebit: localAmount,
-        localCredit: localAmount,
-        rate,
-        source: 'AR',
-        status: 'POSTED',
-        drAccountId: originalCreditAccountId, // Debit Revenue
-        crAccountId: originalDebitAccountId,  // Credit Cash/Bank/AR
-        currencyId
-      }, { transaction });
+      const salePayments = await db.salePayment.findAll({
+        where: { saleHeaderId: saleHeader.id },
+        transaction
+      });
+
+      if (salePayments && salePayments.length > 1) {
+        for (const p of salePayments) {
+          const splitAmount = parseFloat(p.amount || 0);
+          if (splitAmount <= 0) continue;
+          const splitDebitAccountId = await this.getSaleDebitAccount(p.paymentId);
+          const splitLocalAmount = parseFloat((splitAmount * rate).toFixed(2));
+
+          await db.gl.create({
+            bookingDate,
+            postingReference: refNo,
+            debit: splitAmount,
+            credit: splitAmount,
+            description: `POS Sale Reversal Receipt #${saleHeader.id}`,
+            localDebit: splitLocalAmount,
+            localCredit: splitLocalAmount,
+            rate,
+            source: 'AR',
+            status: 'POSTED',
+            drAccountId: originalCreditAccountId, // Debit Revenue
+            crAccountId: splitDebitAccountId,      // Credit Cash/Bank/AR
+            currencyId
+          }, { transaction });
+        }
+      } else {
+        const effectivePaymentId = (salePayments && salePayments.length === 1) ? salePayments[0].paymentId : saleHeader.paymentId;
+        const originalDebitAccountId = await this.getSaleDebitAccount(effectivePaymentId);
+        const localAmount = parseFloat((totalAmount * rate).toFixed(2));
+
+        await db.gl.create({
+          bookingDate,
+          postingReference: refNo,
+          debit: totalAmount,
+          credit: totalAmount,
+          description: `POS Sale Reversal Receipt #${saleHeader.id}`,
+          localDebit: localAmount,
+          localCredit: localAmount,
+          rate,
+          source: 'AR',
+          status: 'POSTED',
+          drAccountId: originalCreditAccountId, // Debit Revenue
+          crAccountId: originalDebitAccountId,  // Credit Cash/Bank/AR
+          currencyId
+        }, { transaction });
+      }
 
       // Reverse Inventory: Debit Inventory, Credit COGS
       // Fetch all active currencies to support dynamic home currency conversion

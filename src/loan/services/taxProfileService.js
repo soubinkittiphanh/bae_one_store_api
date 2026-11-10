@@ -1,7 +1,7 @@
 const db = require('../../models');
 const { LoanError } = require('../errors');
 const { getVatRate, today } = require('./taxRateService');
-const { whereScope, inScope } = require('./branchScope');
+const { whereScope } = require('./branchScope');
 
 const EDITABLE = ['companyVatRegistered', 'posTaxId', 'notes'];
 const plain = (row) => (row && row.toJSON ? row.toJSON() : row);
@@ -121,11 +121,10 @@ const taxProfileService = {
   },
 
   // VAT report skeleton: transactions are generated from Phase 3 on, so this returns no rows yet.
-  // Phase 6: only transactions of the caller's branches; a branchId filter outside them matches nothing.
+  // Phase 6: only transactions of the caller's branches; ?branchId narrows the scope in the router (scoped('list'))
   async getVatReport(filters = {}, scope) {
     const where = { ...whereScope(scope) };
     if (filters.startDate && filters.endDate) where.valueDate = { [db.Sequelize.Op.between]: [filters.startDate, filters.endDate] };
-    if (filters.branchId) where.branchId = inScope(scope, filters.branchId) ? Number(filters.branchId) : -1;
     const allocations = await db.lnTransactionAllocation.findAll({
       include: [
         { model: db.lnTransaction, as: 'transaction', where, attributes: ['id', 'txNo', 'valueDate', 'eventCode', 'currencyId', 'loanAccountId', 'isReversed'] },

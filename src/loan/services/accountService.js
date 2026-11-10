@@ -9,6 +9,7 @@ const ctx = require('./loanContext');
 const { productTerms } = require('./simulationService');
 const { checkProductRow, previewJournal } = require('./accountingService');
 const { nextNumber } = require('./numberingService');
+const { assertApplicationBranch } = require('./branchRules');
 const { applyCurrencyAmounts, assertNoMissing } = require('./currencyAmounts');
 
 const N = E.num;
@@ -79,6 +80,7 @@ const accountService = {
       const app = await db.lnApplication.findByPk(applicationId, { transaction, lock: transaction.LOCK.UPDATE });
       if (!app) throw new LoanError(404, `Application ${applicationId} not found`);
       if (app.status !== 'APPROVED') throw new LoanError(409, `Only APPROVED applications can be booked (this one is ${app.status})`);
+      await assertApplicationBranch(app, 'booked', transaction); // Phase 6 R1 re-check
       const product = await db.lnProduct.findByPk(app.productId, { transaction });
       if (!product || product.authStatus !== 'AUTHORIZED') throw new LoanError(409, 'The application product is not AUTHORIZED');
       const check = await checkProductRow(product, { transaction });
@@ -101,7 +103,7 @@ const accountService = {
       const live = await classification(valueDate);
       const normal = live.statusMaster.NORMAL;
 
-      const accountNo = await nextNumber('LOAN_ACCOUNT', valueDate, transaction);
+      const accountNo = await nextNumber('LOAN_ACCOUNT', valueDate, transaction, app.branchId);
       const account = await db.lnAccount.create({
         accountNo, branchId: app.branchId, applicationId: app.id, customerId: app.customerId, productId: product.id, productVersion: product.version,
         currencyId: app.currencyId, saleHeaderId: app.vehicleSaleHeaderId, sanctionedAmount: app.requestedAmount, disbursedAmount: 0,

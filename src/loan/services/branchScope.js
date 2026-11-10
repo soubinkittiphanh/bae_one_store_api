@@ -12,7 +12,9 @@
  *      application  /applications/:id/...    the application's branchId
  *      document     /documents/:docId/...    the branch of the document's account
  *      sale         a POS sale (params.saleHeaderId, or body.vehicleSaleHeaderId on create): sale.locationId
- *      list         attaches req.branchScope; the service filters on it
+ *      list         attaches req.branchScope; the service filters on it. Phase 6 Stage 2: ?branchId=<id>
+ *                   narrows it to that branch (403 when outside the user's scope); ?branchId=all is the
+ *                   same as no filter and needs LN_ALL_BRANCHES
  *      all-branches needs LN_ALL_BRANCHES (company-wide actions such as the EOD run)
  *      global       shared master data and company state; no branch check
  *  - Out of scope on a by-id route answers 404 with the same message as a missing record, so it does not
@@ -104,7 +106,16 @@ const scoped = (kind) => {
     try {
       const scope = await scopeOf(req.user.id);
       req.branchScope = scope;
-      if (kind === 'list') return next();
+      if (kind === 'list') {
+        const wanted = req.query && req.query.branchId;
+        if (wanted === undefined || wanted === '') return next();
+        if (String(wanted).toLowerCase() === 'all') return scope.all ? next() : deny(res, 403, `Forbidden: branchId=all needs ${ALL_BRANCHES}`);
+        const id = Number(wanted);
+        if (!Number.isInteger(id) || id <= 0) return deny(res, 400, 'branchId must be a location id or "all"');
+        if (!inScope(scope, id)) return deny(res, 403, `Forbidden: branch ${id} is outside your branches`);
+        req.branchScope = { all: false, branches: [id] };
+        return next();
+      }
       if (kind === 'all-branches') return scope.all ? next() : deny(res, 403, `Forbidden: this action covers every branch and needs ${ALL_BRANCHES}`);
       if (kind === 'sale') {
         const fromParams = req.params.saleHeaderId !== undefined;

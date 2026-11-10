@@ -101,6 +101,11 @@ const MIGRATIONS = [
     // Phase 6 Stage 1: branch support schema (JS, idempotent; DOWN refuses once branch data exists)
     name: '20261107_loan_branch_support',
     module: './20261107_loan_branch_support.js'
+  },
+  {
+    // Phase 6 Stage 2: branchId loses DEFAULT 1 (a missing branch is an error); always reversible
+    name: '20261109_loan_branch_no_default',
+    module: './20261109_loan_branch_no_default.js'
   }
 ];
 

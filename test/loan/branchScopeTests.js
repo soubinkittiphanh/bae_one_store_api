@@ -236,9 +236,11 @@ module.exports = async ({ test, call, q, runNode, users, L, expectStatus, branch
     runNode('loan_migrate.js', ['up']);
     assert.strictEqual(await num('SELECT COUNT(*) n FROM ln_journal_posting jp JOIN ln_transaction t ON t.id = jp.transactionId WHERE NOT (jp.branchId <=> t.branchId)'), 0, 'every leg with a transaction carries its branch');
     assert.ok(await num('SELECT COUNT(*) n FROM ln_journal_posting WHERE loanAccountId = ? AND branchId = ?', [X.id, BRANCH_B]) > 0, 'X\'s legs are at B');
+    assert.match(runNode('loan_migrate.js', ['down', '--yes']), /20261109_loan_branch_no_default/); // Stage 2's migration steps back freely
     const before = await state();
     assert.throws(() => runNode('loan_migrate.js', ['down', '--yes']), err => /ln_journal_posting has \d+ leg\(s\) with a branchId/.test(err.stderr ? err.stderr.toString() : err.message));
     assert.strictEqual(await state(), before, 'refused DOWN changes nothing');
+    runNode('loan_migrate.js', ['up']);
   });
 
   await test('cleanup, then the seed guard: X back at branch A, test pending rows removed, test groups lose their grants; LN_ALL_BRANCHES is held by exactly SUPER_ADMIN, LOAN_HO_CHECKER and LOAN_ACCOUNTANT (ADMIN, CASHIER and every other group: none)', async () => {

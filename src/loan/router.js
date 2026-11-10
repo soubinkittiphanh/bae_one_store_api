@@ -68,6 +68,8 @@ router.post('/accounts/:id/preview/:kind', can('LN_ACCOUNT', 'VIEW'), scoped('ac
 // --- Phase 4: transactions (one DB transaction each, Idempotency-Key required) and EOD ---
 router.get('/accounts/:id/transactions', can('LN_TRANSACTION', 'VIEW'), scoped('account'), transactionController.list);
 router.post('/accounts/:id/transactions', can('LN_TRANSACTION', 'CREATE'), scoped('account'), transactionController.create);
+// Phase 6: the bank/cash accounts this account's branch may post to
+router.get('/accounts/:id/bank-accounts', can('LN_TRANSACTION', 'VIEW'), scoped('account'), reportController.bankAccounts);
 router.post('/transactions/:txId/authorize', can('LN_TRANSACTION', 'AUTHORIZE'), scoped('transaction'), transactionController.authorize);
 router.post('/transactions/:txId/reject', can('LN_TRANSACTION', 'AUTHORIZE'), scoped('transaction'), transactionController.reject);
 router.get('/eod/status', can('LN_EOD', 'VIEW'), scoped('global'), transactionController.eodStatus);

@@ -352,7 +352,7 @@ const reportService = {
       const st = await scheduleState(a.id, date);
       const npl = ['SUBSTANDARD', 'DOUBTFUL', 'LOSS'].includes(qualifier[a.regulatoryClass]);
       if (groupBy === 'npl' && !npl) continue;
-      const g = groupBy === 'aging' ? bucketOf(st.dpd) : groupBy === 'npl' ? a.regulatoryClass : pcode[a.productId] || String(a.productId);
+      const g = groupBy === 'aging' ? bucketOf(st.dpd) : groupBy === 'npl' ? a.regulatoryClass : groupBy === 'branch' ? String(a.branchId) : pcode[a.productId] || String(a.productId);
       const code = ccy[a.currencyId] ? ccy[a.currencyId].code : String(a.currencyId);
       const key = `${g}|${code}`;
       const fx = await indicativeFx(a.currencyId, date, cache);

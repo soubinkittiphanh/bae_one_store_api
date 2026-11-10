@@ -13,7 +13,7 @@ const assert = require('assert');
 const net = require('net');
 const express = require('express');
 const axios = require('axios');
-const { ROUTES, TOKEN_ONLY, READ_ONLY_POSTS, GROUPS } = require('./routeManifest');
+const { ROUTES, TOKEN_ONLY, READ_ONLY_POSTS, GROUPS, SUPER_ADMIN_ONLY_PARAMS } = require('./routeManifest');
 
 const key = (method, path) => `${method} ${path}`;
 
@@ -234,7 +234,7 @@ module.exports = async ({ test, call, q, baseUrl, users, L, expectStatus }) => {
   const sec = await q("SELECT functionCode f, applicableActions a FROM sec_function WHERE moduleCode = 'LN'");
   const ownRowFunctions = new Set(Object.values(GROUPS).flatMap(g => Object.keys(g)).filter(f => f !== '*params'));
   const fullParam = 'VIEW,CREATE,EDIT,DELETE,AUTHORIZE';
-  const paramFunctions = sec.filter(r => r.a === fullParam && !ownRowFunctions.has(r.f)).map(r => r.f);
+  const paramFunctions = sec.filter(r => r.a === fullParam && !ownRowFunctions.has(r.f) && !SUPER_ADMIN_ONLY_PARAMS.includes(r.f)).map(r => r.f);
 
   const grantsOf = (role) => {
     const set = new Set();

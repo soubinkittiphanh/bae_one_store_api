@@ -2,7 +2,7 @@ module.exports = (sequelize, DataTypes) => {
   const lnApplication = sequelize.define('lnApplication', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     appNo: { type: DataTypes.STRING(30), allowNull: false, unique: true },
-    branchId: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 1, comment: 'location.id (no FK)' },
+    branchId: { type: DataTypes.INTEGER, allowNull: false, comment: 'location.id (no FK); no default: a missing branch is an error (Phase 6)' },
     customerId: { type: DataTypes.INTEGER, allowNull: false },
     productId: { type: DataTypes.INTEGER, allowNull: false },
     currencyId: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 1 },

@@ -12,9 +12,11 @@ const { productTerms, limitProblems } = require('./simulationService');
 const { productCurrency } = require('./currencyAmounts');
 const { nextNumber } = require('./numberingService');
 const { whereScope } = require('./branchScope');
+const { resolveApplicationBranch, assertApplicationBranch } = require('./branchRules');
 
 const N = E.num;
-const EDITABLE = ['customerId', 'productId', 'currencyId', 'branchId', 'vehicleSaleHeaderId', 'vehiclePrice', 'downPaymentAmount',
+// branchId is not editable (Phase 6 R1): it comes from the sale, or from the maker's branch (services/branchRules.js)
+const EDITABLE = ['customerId', 'productId', 'currencyId', 'vehicleSaleHeaderId', 'vehiclePrice', 'downPaymentAmount',
   'requestedAmount', 'tenorMonths', 'interestRate', 'balloonAmount', 'valueDate', 'firstDueDate', 'graceType', 'gracePeriods', 'purposeCode'];
 const MONEY = ['vehiclePrice', 'downPaymentAmount', 'requestedAmount', 'balloonAmount'];
 const MONEY_RE = /^\d{1,16}(\.\d{1,4})?$/;
@@ -31,8 +33,9 @@ const selfAuthorizeAllowed = async (transaction) => {
   return Boolean(spf && String(spf.value).trim().toLowerCase() === 'true');
 };
 
+// A request's branchId is never stored as sent: it only picks the branch of a maker with several (R1)
 const pickBody = (body) => {
-  const unknown = Object.keys(body || {}).filter(k => !EDITABLE.includes(k));
+  const unknown = Object.keys(body || {}).filter(k => !EDITABLE.includes(k) && k !== 'branchId');
   if (unknown.length) throw new LoanError(400, `Unknown field(s): ${unknown.join(', ')}`);
   for (const f of MONEY) if (body[f] !== undefined && !MONEY_RE.test(String(body[f]))) throw new LoanError(400, `${f} must be a decimal with up to 4 places`);
   return Object.fromEntries(EDITABLE.filter(k => body[k] !== undefined).map(k => [k, body[k]]));
@@ -60,7 +63,7 @@ const validateTerms = async (values) => {
   }
   if (problems.length) throw new LoanError(400, `Application does not fit ${product.productCode}: ${problems.join('; ')}`, problems);
   const rule = await ctx.currencyRule(values.currencyId, valueDate, true);
-  const { calendar } = await ctx.calendarFor(values.branchId || null);
+  const { calendar } = await ctx.calendarFor(values.branchId);
   E.schedule.generateSchedule(terms, calendar, E.rounding.makeRounder(rule)); // throws 400 on invalid grace / first due date
   return product;
 };
@@ -84,9 +87,10 @@ const applicationService = {
     for (const f of ['customerId', 'productId', 'currencyId', 'requestedAmount', 'tenorMonths', 'interestRate']) {
       if (values[f] === undefined || values[f] === null || values[f] === '') throw new LoanError(400, `${f} is required`);
     }
+    values.branchId = await resolveApplicationBranch({ makerId: ctxUser.userId, saleId: values.vehicleSaleHeaderId, chosen: (body || {}).branchId });
     await validateTerms(values);
     return db.sequelize.transaction(async (transaction) => {
-      const appNo = await nextNumber('LOAN_APPLICATION', await ctx.businessDate(), transaction);
+      const appNo = await nextNumber('LOAN_APPLICATION', await ctx.businessDate(), transaction, values.branchId);
       const app = await db.lnApplication.create({ ...values, appNo, status: 'DRAFT', createdBy: ctxUser.userId, makerId: ctxUser.userId }, { transaction });
       await audit(app, 'CREATE', ctxUser, null, app.get({ plain: true }), transaction);
       return app;
@@ -100,6 +104,9 @@ const applicationService = {
       if (app.status !== 'DRAFT') throw new LoanError(409, `Only DRAFT applications can be edited (this one is ${app.status})`);
       if (Number(app.makerId) !== Number(ctxUser.userId)) throw new LoanError(403, 'Only the maker can edit a draft application');
       const merged = { ...app.get({ plain: true }), ...values };
+      const chosen = (body || {}).branchId !== undefined ? body.branchId : app.branchId;
+      values.branchId = await resolveApplicationBranch({ makerId: app.makerId, saleId: merged.vehicleSaleHeaderId, chosen, transaction });
+      merged.branchId = values.branchId;
       await validateTerms(merged);
       const old = app.get({ plain: true });
       await app.update(values, { transaction });
@@ -113,6 +120,7 @@ const applicationService = {
       const app = await findApp(id, transaction);
       if (app.status !== 'DRAFT') throw new LoanError(409, `Only DRAFT applications can be submitted (this one is ${app.status})`);
       if (Number(app.makerId) !== Number(ctxUser.userId)) throw new LoanError(403, 'Only the maker can submit the application');
+      await assertApplicationBranch(app, 'submitted', transaction);
       await validateTerms(app.get({ plain: true }));
       await app.update({ status: 'SUBMITTED' }, { transaction });
       await audit(app, 'SUBMIT', ctxUser, null, { status: 'SUBMITTED' }, transaction);
@@ -126,6 +134,7 @@ const applicationService = {
       if (app.status !== 'SUBMITTED') throw new LoanError(409, `Only SUBMITTED applications can be approved (this one is ${app.status})`);
       const self = Number(app.makerId) === Number(ctxUser.userId);
       if (self && !(await selfAuthorizeAllowed(transaction))) throw new LoanError(403, 'Maker cannot approve their own application (LOAN_ALLOW_SELF_AUTHORIZE is off)');
+      await assertApplicationBranch(app, 'approved', transaction);
       await validateTerms(app.get({ plain: true }));
       await app.update({ status: 'APPROVED', approvedBy: ctxUser.userId, checkerId: ctxUser.userId, authorizedAt: new Date() }, { transaction });
       await audit(app, self ? 'SELF_AUTH' : 'AUTH', ctxUser, null, { status: 'APPROVED' }, transaction);

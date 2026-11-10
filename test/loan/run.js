@@ -98,8 +98,9 @@ const main = async () => {
     const n = Number((await q("SELECT COUNT(*) n FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name LIKE 'ln\\_%'"))[0].n);
     assert.strictEqual(n, 79, `expected 79 ln_* tables, found ${n}`);
   });
-  await test('branch support, collation align, Phase 5 print templates, documents, currency limits, FX, Phase 4, POS loan types, Phase 3, 2B and corrections DOWN, then UP, restore the schema exactly', async () => {
+  await test('branch no-default, branch support, collation align, Phase 5 print templates, documents, currency limits, FX, Phase 4, POS loan types, Phase 3, 2B and corrections DOWN, then UP, restore the schema exactly', async () => {
     const before = await snapshot();
+    assert.match(runNode('loan_migrate.js', ['down', '--yes']), /20261109_loan_branch_no_default/);
     assert.match(runNode('loan_migrate.js', ['down', '--yes']), /20261107_loan_branch_support/);
     assert.match(runNode('loan_migrate.js', ['down', '--yes']), /20261105_loan_phase5_collation_align/);
     assert.match(runNode('loan_migrate.js', ['down', '--yes']), /20261104_loan_phase5_print_templates/);
@@ -122,6 +123,7 @@ const main = async () => {
     assert.deepStrictEqual(values.slice(-2), ['LOAN_IN', 'LOAN_OUT']);
     runNode('loan_migrate.js', ['up']);
     assert.deepStrictEqual((await q(colSql))[0], after, 'second UP changes nothing');
+    runNode('loan_migrate.js', ['down', '--yes']); // branch no-default
     runNode('loan_migrate.js', ['down', '--yes']); // branch support
     runNode('loan_migrate.js', ['down', '--yes']); // collation align
     runNode('loan_migrate.js', ['down', '--yes']); // Phase 5 print templates
@@ -166,7 +168,8 @@ const main = async () => {
     // DOWN returns the four tables to general_ci without touching data, and isApplied flips to false.
     const docRowsBefore = Number((await q('SELECT COUNT(*) n FROM ln_print_template'))[0].n);
     const printBodyBefore = await q('SELECT templateCode, body FROM ln_print_template ORDER BY templateCode');
-    assert.match(runNode('loan_migrate.js', ['down', '--yes']), /20261107_loan_branch_support/); // the later migration first
+    assert.match(runNode('loan_migrate.js', ['down', '--yes']), /20261109_loan_branch_no_default/); // the later migrations first
+    assert.match(runNode('loan_migrate.js', ['down', '--yes']), /20261107_loan_branch_support/);
     assert.match(runNode('loan_migrate.js', ['down', '--yes']), /20261105_loan_phase5_collation_align/);
     const downState = await tableCollations();
     for (const t of mig.TABLES) assert.strictEqual(downState[t], 'utf8mb4_general_ci', `${t} back to general_ci on DOWN`);
@@ -192,9 +195,12 @@ const main = async () => {
     assert.strictEqual(await colExists(), true);
     assert.deepStrictEqual(await indexNames(), ALL_INDEXES);
     assert.strictEqual(await mig.isApplied(conn), true);
-    const before = await snapshot();
+    const full = await snapshot();
     runNode('loan_migrate.js', ['up']);
-    assert.strictEqual(await snapshot(), before, 'second UP changes nothing');
+    assert.strictEqual(await snapshot(), full, 'second UP changes nothing');
+    // Stage 2's no-default migration comes after this one: step it back first
+    assert.match(runNode('loan_migrate.js', ['down', '--yes']), /20261109_loan_branch_no_default/);
+    const before = await snapshot();
 
     // DOWN refuses while branch data exists: a branch profile row, then a journal leg carrying a branchId
     await q("INSERT INTO ln_branch_profile (locationId, branchCode, authStatus) VALUES (999001, 'T6REF', 'PENDING')");
@@ -217,8 +223,29 @@ const main = async () => {
     // the next DOWN in the chain is the collation align (proves the order); put it straight back
     assert.match(runNode('loan_migrate.js', ['down', '--yes']), /20261105_loan_phase5_collation_align/);
     runNode('loan_migrate.js', ['up']);
-    assert.strictEqual(await snapshot(), before, 'UP after DOWN restores the schema exactly');
+    assert.strictEqual(await snapshot(), full, 'UP after DOWN restores the schema exactly');
     assert.strictEqual(await mig.isApplied(conn), true);
+  });
+
+  await test('branch no-default (Phase 6 Stage 2): branchId on ln_account, ln_application, ln_transaction and ln_gl_batch has no DEFAULT, so an insert without a branch fails; DOWN puts DEFAULT 1 back (the old silent location 1) and UP removes it again; UP idempotent; isApplied tracks it', async () => {
+    const mig = require('../../20261109_loan_branch_no_default');
+    const defaults = async () => (await q("SELECT table_name t, IFNULL(column_default, 'NONE') d FROM information_schema.columns WHERE table_schema = DATABASE() AND column_name = 'branchId' AND table_name IN ('ln_account','ln_application','ln_transaction','ln_gl_batch') ORDER BY 1")).map(r => `${r.t}:${r.d}`);
+    const none = ['ln_account:NONE', 'ln_application:NONE', 'ln_gl_batch:NONE', 'ln_transaction:NONE'];
+    assert.deepStrictEqual(await defaults(), none);
+    assert.strictEqual(await mig.isApplied(conn), true);
+    const insert = () => q("INSERT INTO ln_gl_batch (batchNumber, businessDate, createdAt, updatedAt) VALUES ('T7-NODEFAULT', '2026-11-09', NOW(), NOW())");
+    await assert.rejects(insert(), /branchId/, 'no silent branch');
+    const full = await snapshot();
+    runNode('loan_migrate.js', ['up']);
+    assert.strictEqual(await snapshot(), full, 'second UP changes nothing');
+    assert.match(runNode('loan_migrate.js', ['down', '--yes']), /rolled back 20261109_loan_branch_no_default$/m);
+    assert.deepStrictEqual(await defaults(), ['ln_account:1', 'ln_application:1', 'ln_gl_batch:1', 'ln_transaction:1']);
+    assert.strictEqual(await mig.isApplied(conn), false);
+    await insert();
+    assert.strictEqual(Number((await q("SELECT branchId b FROM ln_gl_batch WHERE batchNumber = 'T7-NODEFAULT'"))[0].b), 1, 'with the old default the row lands at location 1');
+    await q("DELETE FROM ln_gl_batch WHERE batchNumber = 'T7-NODEFAULT'");
+    runNode('loan_migrate.js', ['up']);
+    assert.strictEqual(await snapshot(), full, 'UP after DOWN restores it exactly');
   });
 
   let countsAfterFirstSeed;
@@ -356,13 +383,24 @@ const main = async () => {
     assert.deepStrictEqual(tpl.map(t => `${t.c}:${t.s}`), ['CONTRACT_SUMMARY:PENDING'], 'draft contract wording waits for a checker');
   });
 
-  await test('Phase 6 seed: LN_ALL_BRANCHES (VIEW only) granted to exactly SUPER_ADMIN, LOAN_HO_CHECKER and LOAN_ACCOUNTANT, never ADMIN or CASHIER; runs twice with identical counts; refuses (exit 1, names the group, revokes nothing) when another group holds it', async () => {
+  await test('Phase 6 seed: LN_BRANCH for SUPER_ADMIN only (another holder exits 1); branch bank accounts prefilled PENDING from active terminals; LN_ALL_BRANCHES (VIEW only) granted to exactly SUPER_ADMIN, LOAN_HO_CHECKER and LOAN_ACCOUNTANT, never ADMIN or CASHIER; runs twice with identical counts; refuses (exit 1, names the group, revokes nothing) when another group holds it', async () => {
     // The two loan groups do not exist in a POS database yet: the seed skips a missing group with a warning
     const holders = async () => (await q("SELECT g.code c, s.actionCode a FROM sec_group_grant s JOIN userGroup g ON g.id = s.userGroupId WHERE s.functionCode = 'LN_ALL_BRANCHES' ORDER BY 1, 2")).map(r => `${r.c}:${r.a}`);
     const missing = runNode('seed_loan_phase6.js');
     assert.deepStrictEqual(await holders(), ['SUPER_ADMIN:VIEW'], `only SUPER_ADMIN while the loan groups are missing (${missing.trim().split('\n').pop()})`);
     for (const code of ['LOAN_HO_CHECKER', 'LOAN_ACCOUNTANT']) await q("INSERT INTO userGroup (name, code, isActive, createdAt, updateTimestamp, homePage) VALUES (?, ?, 1, NOW(), NOW(), '/')", [code, code]);
+    // Stage 2 prefill: a terminal with a bank account gives a PENDING branch-bank-account row for its location
+    const bankRow = (await q('SELECT id FROM bankAccount WHERE isActive = 1 ORDER BY id LIMIT 1'))[0];
+    const loc = Number((await q('SELECT id FROM location ORDER BY id LIMIT 1'))[0].id);
+    assert.ok(bankRow, 'an active bank account exists');
+    await q("INSERT INTO terminal (code, name, isActive, createdAt, updateTimestamp, locationId, bankAccountId) VALUES (990701, 'T7 prefill terminal', 1, NOW(), NOW(), ?, ?)", [loc, bankRow.id]);
     runNode('seed_loan_phase6.js');
+    const pre = await q('SELECT authStatus s, makerId m, isActive a, purpose p FROM ln_branch_bank_account WHERE locationId = ? AND bankAccountId = ?', [loc, bankRow.id]);
+    assert.deepStrictEqual(pre.map(r => [r.s, r.m, Number(r.a)]), [['PENDING', null, 1]], 'one PENDING prefill row, no maker, nothing posts to it until authorized');
+    assert.ok(['CASH', 'BANK'].includes(pre[0].p));
+    const fnBranch = (await q("SELECT applicableActions a FROM sec_function WHERE functionCode = 'LN_BRANCH'"))[0];
+    assert.strictEqual(fnBranch.a, 'VIEW,CREATE,EDIT,DELETE,AUTHORIZE');
+    assert.deepStrictEqual((await q("SELECT DISTINCT g.code c FROM sec_group_grant s JOIN userGroup g ON g.id = s.userGroupId WHERE s.functionCode = 'LN_BRANCH' ORDER BY 1")).map(r => r.c), ['SUPER_ADMIN'], 'LN_BRANCH: SUPER_ADMIN only');
     const counts = await tableCounts();
     runNode('seed_loan_phase6.js');
     assert.deepStrictEqual(await tableCounts(), counts, 'second run creates nothing');
@@ -375,6 +413,11 @@ const main = async () => {
     assert.throws(() => runNode('seed_loan_phase6.js'), err => /also held by: ADMIN/.test(err.stderr ? err.stderr.toString() : err.message));
     assert.ok((await holders()).includes('ADMIN:VIEW'), 'the seed revokes nothing');
     await q("DELETE FROM sec_group_grant WHERE userGroupId = ? AND functionCode = 'LN_ALL_BRANCHES'", [adminGroup]);
+    // same guard for LN_BRANCH (SUPER_ADMIN only): a grant to ADMIN is flagged, not revoked
+    await q("INSERT INTO sec_group_grant (userGroupId, functionCode, actionCode) VALUES (?, 'LN_BRANCH', 'CREATE')", [adminGroup]);
+    assert.throws(() => runNode('seed_loan_phase6.js'), err => /LN_BRANCH is also held by: ADMIN/.test(err.stderr ? err.stderr.toString() : err.message));
+    assert.strictEqual(Number((await q("SELECT COUNT(*) n FROM sec_group_grant WHERE userGroupId = ? AND functionCode = 'LN_BRANCH'", [adminGroup]))[0].n), 1, 'the seed revokes nothing');
+    await q("DELETE FROM sec_group_grant WHERE userGroupId = ? AND functionCode = 'LN_BRANCH'", [adminGroup]);
     runNode('seed_loan_phase6.js');
     assert.deepStrictEqual(await holders(), ['LOAN_ACCOUNTANT:VIEW', 'LOAN_HO_CHECKER:VIEW', 'SUPER_ADMIN:VIEW']);
   });
@@ -391,6 +434,7 @@ const main = async () => {
     const mig = require('../../20261107_loan_branch_support');
     const before = await snapshot();
     const qi = db.sequelize.getQueryInterface();
+    assert.match(runNode('loan_migrate.js', ['down', '--yes']), /20261109_loan_branch_no_default/);
     assert.match(runNode('loan_migrate.js', ['down', '--yes']), /20261107_loan_branch_support/);
     // What startup sync does for these objects: CREATE TABLE IF NOT EXISTS from the models (database default
     // collation), and the alter pass adding the missing column and the model indexes by their names.
@@ -672,6 +716,9 @@ const apiTests = async ({ port, q, db, runNode }) => {
   const users = await q("SELECT u.id, g.code FROM user u JOIN userGroup g ON g.id = u.groupId WHERE u.isActive = 1 AND g.code IN ('SUPER_ADMIN','ADMIN','CASHIER') ORDER BY u.id");
   const pick = code => { const u = users.find(x => x.code === code); if (!u) throw new Error(`No active user in group ${code} in ${TEST_DB}`); return u.id; };
   const SUPER = pick('SUPER_ADMIN');
+  // a second SUPER_ADMIN user: the checker for SUPER_ADMIN-only parameters (LN_BRANCH), maker and checker differ
+  const SUPER2 = users.filter(x => x.code === 'SUPER_ADMIN').map(x => x.id).find(id => id !== SUPER);
+  if (!SUPER2) throw new Error(`A second active SUPER_ADMIN user is needed in ${TEST_DB}`);
   const ADMIN = pick('ADMIN');
   const CASHIER = pick('CASHIER');
   // Phase 6 branch scope: ADMIN (no LN_ALL_BRANCHES) works at the branch of its terminal; loan records the
@@ -1130,11 +1177,13 @@ const apiTests = async ({ port, q, db, runNode }) => {
     assert.deepStrictEqual([stillNormal[0].status, Number(stillNormal[0].currentDpd)], ['NORMAL', 0], 'previews persist nothing');
   });
   console.log('\n[phase 4 posting, EOD, balance sheet]');
-  await require('./postingTests')({ test, call, q, db, runNode, users: { SUPER, ADMIN, CASHIER }, L, expectStatus, branch: BRANCH_A });
+  await require('./postingTests')({ test, call, q, db, runNode, users: { SUPER, SUPER2, ADMIN, CASHIER }, L, expectStatus, branch: BRANCH_A });
   console.log('\n[phase 5 part B: screen APIs]');
   await require('./screenApiTests')({ test, call, q, users: { SUPER, ADMIN, CASHIER }, L, expectStatus });
   console.log('\n[phase 6 stage 1: branch scope]');
   await require('./branchScopeTests')({ test, call, q, runNode, users: { SUPER, ADMIN, CASHIER }, L, expectStatus, branch: BRANCH_A });
+  console.log('\n[phase 6 stage 2: branch from sale, tagging, bank, numbering, EOD, report filters, BS/TB split]');
+  await require('./branchStage2Tests')({ test, call, q, db, users: { SUPER, SUPER2, ADMIN, CASHIER }, L, expectStatus, branch: BRANCH_A });
 
   console.log('\n[api, continued]');
   await test('banner status for any user, pending inbox filtered by grants, enums served by lookups', async () => {
@@ -1159,6 +1208,11 @@ const apiTests = async ({ port, q, db, runNode }) => {
     expectStatus(await call(SUPER, 'get', '/api/currency/findAll'), 200, 'currency');
     expectStatus(await call(SUPER, 'get', '/api/product/find'), 200, 'product');
     expectStatus(await call(SUPER, 'get', '/api/gl/reports/trial-balance?startDate=2026-01-01&endDate=2026-12-31'), 200, 'trial balance');
+  });
+  await test('seed guard at the end of the run: LN_ALL_BRANCHES is held by exactly SUPER_ADMIN, LOAN_HO_CHECKER and LOAN_ACCOUNTANT, and LN_BRANCH by SUPER_ADMIN only, after every test group was created', async () => {
+    const holders = async fn => (await q('SELECT DISTINCT g.code c FROM sec_group_grant s JOIN userGroup g ON g.id = s.userGroupId WHERE s.functionCode = ? ORDER BY 1', [fn])).map(r => r.c);
+    assert.deepStrictEqual(await holders('LN_ALL_BRANCHES'), ['LOAN_ACCOUNTANT', 'LOAN_HO_CHECKER', 'SUPER_ADMIN']);
+    assert.deepStrictEqual(await holders('LN_BRANCH'), ['SUPER_ADMIN']);
   });
   await test('no SQL text in any error response', async () => {
     assert.deepStrictEqual(leaks, []);

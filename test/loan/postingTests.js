@@ -14,7 +14,7 @@ const E = require('../../src/loan/engine');
 const API_ROOT = path.resolve(__dirname, '../..');
 
 module.exports = async ({ test: runTest, call, q, db, runNode, users, L, expectStatus, branch }) => {
-  const { SUPER, ADMIN, CASHIER } = users;
+  const { SUPER, SUPER2, ADMIN, CASHIER } = users;
   // LOAN_POSTING_ONLY=<regex>: run only the setup and the matching posting tests (for running one case in isolation)
   const only = process.env.LOAN_POSTING_ONLY ? new RegExp(process.env.LOAN_POSTING_ONLY) : null;
   const test = (name, fn) => (!only || /^setup:/.test(name) || only.test(name) ? runTest(name, fn) : console.log(`  SKIP  ${name}`));
@@ -27,6 +27,14 @@ module.exports = async ({ test: runTest, call, q, db, runNode, users, L, expectS
   const businessDate = async () => (await q("SELECT DATE_FORMAT(currentBusinessDate, '%Y-%m-%d') d FROM ln_system_date LIMIT 1"))[0].d;
   const post = (user, accountId, body, { key, failAt } = {}) => call(user, 'post', `${L}/accounts/${accountId}/transactions`, body,
     { 'Idempotency-Key': key || `t-${uuidv4()}`, ...(failAt ? { 'X-Loan-Test-Fail-At': failAt } : {}) });
+  // Phase 6 Stage 2: a bank account posts only when mapped to the account's branch. LN_BRANCH is SUPER_ADMIN
+  // only, so the maker is SUPER and a second SUPER_ADMIN user authorizes (go-live: a second person).
+  const mapBank = async (bankAccountId, locationId = branch) => {
+    const made = await call(SUPER, 'post', `${L}/params/branch-bank-account`, { locationId, bankAccountId, purpose: 'BANK' });
+    expectStatus(made, 201, `map bank ${bankAccountId} to branch ${locationId}`);
+    expectStatus(await call(SUPER2, 'post', `${L}/params/branch-bank-account/${made.data.data.id}/authorize`), 200, 'authorize the bank mapping');
+    return made.data.data.id;
+  };
   const authorize = (user, txId, failAt) => call(user, 'post', `${L}/transactions/${txId}/authorize`, {}, failAt ? { 'X-Loan-Test-Fail-At': failAt } : {});
   // Maker ADMIN creates, checker SUPER authorizes
   const makerChecker = async (accountId, body, label) => {
@@ -123,6 +131,12 @@ module.exports = async ({ test: runTest, call, q, db, runNode, users, L, expectS
     const chart = await db.chartAccount.create({ accountNumber: '1105', accountName: 'Loan test bank', accountLLName: 'Loan test bank', accountType: 'Asset', isActive: true });
     assert.ok(chart.id);
     bank = await db.bankAccount.create({ accountNumber: '1105', accountName: 'Loan test bank', accountType: 'Current', currency: 'LAK', isActive: true, balance: 5000000000 });
+    await mapBank(bank.id);
+    // and the branch's profile (go-live checklist: every branch has an AUTHORIZED, active profile with a code)
+    expectStatus(await call(ADMIN, 'post', `${L}/params/branch-profile`, { locationId: branch, branchCode: 'SR1' }), 403, 'LN_BRANCH is SUPER_ADMIN only');
+    const prof = await call(SUPER, 'post', `${L}/params/branch-profile`, { locationId: branch, branchCode: 'SR1' });
+    expectStatus(prof, 201, 'branch profile');
+    expectStatus(await call(SUPER2, 'post', `${L}/params/branch-profile/${prof.data.data.id}/authorize`), 200, 'authorize the branch profile');
     await db.businessDate.create({ currentDate: '2030-12-31', status: 'OPEN' });
     // Manual POS close of business: loan EOD for a date runs only once the POS date is later (Phase 5, D7)
     await setSpf('USE_BUSINESS_DATE', 'Y');
@@ -745,6 +759,7 @@ module.exports = async ({ test: runTest, call, q, db, runNode, users, L, expectS
     const chart = await db.chartAccount.create({ accountNumber: '1106', accountName: 'Loan test bank USD', accountLLName: 'Loan test bank USD', accountType: 'Asset', isActive: true });
     assert.ok(chart.id);
     fxState.bank = await db.bankAccount.create({ accountNumber: '1106', accountName: 'Loan test bank USD', accountType: 'Current', currency: 'USD', isActive: true, balance: 1000000 });
+    await mapBank(fxState.bank.id);
     fxState.ready = true;
     return fxState;
   };

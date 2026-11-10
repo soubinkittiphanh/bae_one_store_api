@@ -242,6 +242,19 @@ const ENTITIES = {
     ]
   },
 
+  // Phase 6: a POS location used as a loan branch (its {BRANCH} numbering code), and the bank/cash
+  // accounts each branch may post to. Maker-checker under LN_BRANCH.
+  'branch-profile': {
+    model: 'lnBranchProfile', functionCode: 'LN_BRANCH',
+    fields: { locationId: ref('location') },
+    // fits every number column: LN-<code>-YYYYMM-NNNNN is at most 26 of accountNo's 30 characters
+    rules: [(row) => (row.branchCode !== undefined && !/^[A-Z0-9]{2,10}$/.test(String(row.branchCode)) ? 'branchCode must be 2 to 10 capital letters or digits' : null)]
+  },
+  'branch-bank-account': {
+    model: 'lnBranchBankAccount', functionCode: 'LN_BRANCH',
+    fields: { locationId: ref('location'), bankAccountId: ref('bankAccount'), purpose: enumOf('CASH', 'BANK') }
+  },
+
   sequence: { model: 'lnNumberingSequence', functionCode: 'LN_SEQUENCE' },
   'batch-job': { model: 'lnBatchJob', functionCode: 'LN_BATCH_JOB', readOnly: ['lastRunDate', 'lastStatus'] }
 };

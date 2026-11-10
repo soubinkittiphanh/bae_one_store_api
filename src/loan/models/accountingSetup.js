@@ -75,7 +75,7 @@ module.exports = (sequelize, DataTypes) => {
     totalDebit: { type: DataTypes.DECIMAL(20, 4), allowNull: false, defaultValue: 0.0000 },
     totalCredit: { type: DataTypes.DECIMAL(20, 4), allowNull: false, defaultValue: 0.0000 },
     currencyId: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 1 },
-    branchId: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 1, comment: 'location.id (no FK)' },
+    branchId: { type: DataTypes.INTEGER, allowNull: false, comment: 'location.id (no FK); no default: a missing branch is an error (Phase 6)' },
     status: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'POSTED' }
   }, { freezeTableName: true, tableName: 'ln_gl_batch', timestamps: true });
 

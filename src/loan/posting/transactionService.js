@@ -19,7 +19,8 @@ const AccountingPostingService = require('../../GL/accountingPostingService');
 const G = require('./guards');
 const S = require('./accountState');
 const { makeResolver } = require('./glResolver');
-const { postJournal } = require('./journalWriter');
+const { postJournal, branchOf } = require('./journalWriter');
+const { assertBankForBranch } = require('../services/branchBank');
 const { bankMovement, settleInvoice, voidReceipt } = require('./posAdapters');
 const { handlers } = require('./handlers');
 
@@ -49,7 +50,7 @@ const selfAuthorizeAllowed = async transaction => (await G.spfValue('LOAN_ALLOW_
 const bankBusinessDate = async (dates, transaction) => ((await G.spfValue('USE_BUSINESS_DATE', transaction)) === 'Y' ? undefined : dates.businessDate);
 
 const newTransactionRow = async ({ kind, ctx, input, dates, ctxUser, status, transaction }) => db.lnTransaction.create({
-  txNo: await nextNumber('LOAN_TRANSACTION', dates.businessDate, transaction),
+  txNo: await nextNumber('LOAN_TRANSACTION', dates.businessDate, transaction, ctx.account.branchId),
   branchId: ctx.account.branchId, loanAccountId: ctx.account.id, eventCode: kind, valueDate: dates.valueDate,
   postingDate: dates.businessDate, bookingDate: dates.bookingDate, valueDatedAdjustment: dates.valueDatedAdjustment,
   amount: 0, baseAmount: 0, currencyId: ctx.account.currencyId, exchangeRate: '1',
@@ -76,6 +77,7 @@ const post = async ({ kind, accountId, input, ctxUser, pending, transaction, hoo
   await G.assertPostingEnabled(transaction);
   await G.assertTaxProfile(kind, transaction);
   const ctx = await S.loadAccount(accountId, transaction);
+  await assertBankForBranch(input.bankAccountId, ctx.account, transaction); // Phase 6: only the branch's mapped accounts
   const productRow = await db.lnProduct.findByPk(ctx.snapshot.product.id, { transaction });
   const dates = await G.resolveDates({ kind, valueDate: input.valueDate, product: productRow, transaction });
   // Phase 5: foreign-currency loans get the booking date's rate (fx = null for base-currency loans)
@@ -178,7 +180,7 @@ const reverse = async ({ accountId, input, ctxUser, pending, transaction, hook }
   if (errors.length) throw new LoanError(409, `Reversal journal failed validation: ${errors.join('; ')}`, errors);
   const postings = [];
   for (const m of mirrored) {
-    postings.push(await db.lnJournalPosting.create({ transactionId: txn.id, loanAccountId: ctx.account.id, eventCode: 'REVERSAL', amountTag: m.amountTag, roleCode: m.roleCode, statusQualifier: m.qualifier, chartAccountId: m.chartAccountId, drCr: m.drCr, currencyId: m.currency, amount: m.amount, baseAmount: m.baseAmount, exchangeRate: m.exchangeRate, isBaseOnly: m.isBaseOnly }, { transaction }));
+    postings.push(await db.lnJournalPosting.create({ transactionId: txn.id, loanAccountId: ctx.account.id, branchId: branchOf(ctx.account), eventCode: 'REVERSAL', amountTag: m.amountTag, roleCode: m.roleCode, statusQualifier: m.qualifier, chartAccountId: m.chartAccountId, drCr: m.drCr, currencyId: m.currency, amount: m.amount, baseAmount: m.baseAmount, exchangeRate: m.exchangeRate, isBaseOnly: m.isBaseOnly }, { transaction }));
   }
   hook('AFTER_JOURNAL');
 

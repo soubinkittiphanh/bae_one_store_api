@@ -2,7 +2,7 @@ module.exports = (sequelize, DataTypes) => {
   const lnTransaction = sequelize.define('lnTransaction', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     txNo: { type: DataTypes.STRING(50), allowNull: false, unique: true },
-    branchId: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 1, comment: 'location.id (no FK)' },
+    branchId: { type: DataTypes.INTEGER, allowNull: false, comment: 'location.id (no FK); no default: a missing branch is an error (Phase 6)' },
     loanAccountId: { type: DataTypes.INTEGER, allowNull: false },
     eventCode: { type: DataTypes.STRING(30), allowNull: false },
     valueDate: { type: DataTypes.DATEONLY, allowNull: false },

@@ -64,7 +64,7 @@ const runAccountJob = async ({ job, accountId, date, ctxUser, hook }) => db.sequ
   let events = [];
   let sched = await S.loadSchedule(ctx, transaction);
   const txn = await db.lnTransaction.create({
-    txNo: await nextNumber('LOAN_TRANSACTION', date, transaction), branchId: ctx.account.branchId, loanAccountId: ctx.account.id, eventCode: job,
+    txNo: await nextNumber('LOAN_TRANSACTION', date, transaction, ctx.account.branchId), branchId: ctx.account.branchId, loanAccountId: ctx.account.id, eventCode: job,
     valueDate: date, postingDate: date, bookingDate: date, amount: 0, baseAmount: 0, currencyId: ctx.account.currencyId, exchangeRate: fx ? fx.rate : '1',
     ...(fx ? { exchangeRateDate: fx.rateDate, fxWarning: fx.warnings.join(' | ').slice(0, 255) || null } : {}),
     paymentMethod: 'NONE', postingStatus: 'POSTED', authStatus: 'AUTHORIZED', makerId: ctxUser.userId, source: 'EOD'

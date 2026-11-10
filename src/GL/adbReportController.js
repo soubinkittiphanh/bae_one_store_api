@@ -703,6 +703,34 @@ class ADBReportController {
                 // Loan module, opt-in (SPF BS_INCLUDE_LOAN_BOOK = 'true'): loan accounts from the GL, a separate
                 // "Loan result" line so the Other equity plug cannot absorb it, and a GL-vs-subledger check.
                 // When the switch is off this block does nothing and the response below is unchanged.
+                // Loan Phase 6: ?branchId=<location> splits only the loan lines by branch (plan R5); every POS line
+                // and any loan GL row without a branch goes under "Not branch-tagged (POS)". Without branchId the
+                // code below runs exactly as before.
+                if (req.query.branchId !== undefined) {
+                    if (!loanBookOn) return res.status(409).json({ error: 'A branch balance sheet splits the loan lines only; turn on BS_INCLUDE_LOAN_BOOK' });
+                    const { parseBranchId, NOT_TAGGED_LABEL } = require('../loan/reports/branchTags');
+                    let branchId;
+                    try { branchId = parseBranchId(req.query.branchId); } catch (e) { return res.status(400).json({ error: e.message }); }
+                    const section = require('../loan/reports/balanceSheetSection');
+                    const loan = await section.build({ asOfDate, subledger: { cashAndBank: totalCashAndBank, ar: totalAR } });
+                    const split = await section.buildBranch({ asOfDate, branchId });
+                    return res.json({
+                        success: true,
+                        mode: 'Global POS/Minimart',
+                        asOfDate,
+                        branchId,
+                        currencyCode: localCurrency.code,
+                        currencySymbol: localCurrency.symbol || localCurrency.code,
+                        branch: { label: `Branch ${branchId}: loan lines`, ...split.branch },
+                        notBranchTagged: {
+                            label: NOT_TAGGED_LABEL,
+                            pos: { assets: { items: assetsList, total: totalAssets }, liabilities: { items: liabilitiesList, total: totalLiabilities }, equity: { items: equityList } },
+                            loan: split.notBranchTagged
+                        },
+                        loanReconciliation: loan.reconciliation
+                    });
+                }
+
                 if (loanBookOn) {
                     const loan = await require('../loan/reports/balanceSheetSection').build({ asOfDate, subledger: { cashAndBank: totalCashAndBank, ar: totalAR } });
                     const totalAssetsWithLoan = totalAssets + loan.totalAssets;
@@ -749,6 +777,8 @@ class ADBReportController {
      * GET /api/gl/reports/trial-balance
      */
     static async getTrialBalance(req, res) {
+        // Loan Phase 6: ?branchId=<location> answers the branch trial balance; without it, unchanged below
+        if (req.query.branchId !== undefined) return ADBReportController.getTrialBalanceByBranch(req, res);
         try {
             const { asOfDate = new Date().toISOString().split('T')[0], projectId } = req.query;
             const targetDate = new Date(asOfDate);
@@ -831,6 +861,63 @@ class ADBReportController {
 
         } catch (error) {
             logger.error("Error generating Trial Balance report:", error);
+            return res.status(500).json({ error: error.message || "Internal server error" });
+        }
+    }
+
+    /**
+     * Branch trial balance (loan Phase 6, plan R5): GL rows the loan module wrote for the branch, and every
+     * other row (POS, and loan rows without a branch) under "Not branch-tagged (POS)". Per account, the
+     * branches' lines plus the not-tagged lines equal the company trial balance.
+     * GET /api/gl/reports/trial-balance?branchId=<location id>
+     */
+    static async getTrialBalanceByBranch(req, res) {
+        try {
+            const { asOfDate = new Date().toISOString().split('T')[0], projectId } = req.query;
+            if (isNaN(new Date(asOfDate).getTime())) return res.status(400).json({ error: "Invalid asOfDate format. Please use YYYY-MM-DD" });
+            const { parseBranchId, glBranchTags, NOT_TAGGED_LABEL } = require('../loan/reports/branchTags');
+            let branchId;
+            try { branchId = parseBranchId(req.query.branchId); } catch (e) { return res.status(400).json({ error: e.message }); }
+            const accounts = await db.chartAccount.findAll({ where: { isActive: true } });
+            const whereClause = { bookingDate: { [db.Sequelize.Op.lte]: asOfDate }, status: 'POSTED' };
+            if (projectId) whereClause.projectId = projectId;
+            const glEntries = await db.gl.findAll({ where: whereClause });
+            const tags = await glBranchTags();
+            const balancesOf = (entries) => {
+                const balances = {};
+                accounts.forEach(acc => {
+                    balances[acc.id] = { id: acc.id, accountNumber: acc.accountNumber, accountName: acc.accountName, accountType: acc.accountType, totalDebits: 0, totalCredits: 0, debitBalance: 0, creditBalance: 0 };
+                });
+                entries.forEach(entry => {
+                    const drAmt = parseFloat(entry.localDebit !== null && entry.localDebit !== undefined ? entry.localDebit : (entry.debit || 0));
+                    const crAmt = parseFloat(entry.localCredit !== null && entry.localCredit !== undefined ? entry.localCredit : (entry.credit || 0));
+                    if (entry.drAccountId && balances[entry.drAccountId]) balances[entry.drAccountId].totalDebits += drAmt;
+                    if (entry.crAccountId && balances[entry.crAccountId]) balances[entry.crAccountId].totalCredits += crAmt;
+                });
+                let sumDebits = 0;
+                let sumCredits = 0;
+                Object.values(balances).forEach(acc => {
+                    const net = acc.totalDebits - acc.totalCredits;
+                    acc.debitBalance = net > 0 ? parseFloat(net.toFixed(2)) : 0;
+                    acc.creditBalance = net < 0 ? parseFloat(Math.abs(net).toFixed(2)) : 0;
+                    sumDebits += acc.debitBalance;
+                    sumCredits += acc.creditBalance;
+                });
+                return {
+                    accounts: Object.values(balances).filter(acc => acc.totalDebits > 0 || acc.totalCredits > 0),
+                    totalDebits: parseFloat(sumDebits.toFixed(2)),
+                    totalCredits: parseFloat(sumCredits.toFixed(2))
+                };
+            };
+            return res.json({
+                success: true,
+                asOfDate,
+                branchId,
+                ...balancesOf(glEntries.filter(e => tags.get(Number(e.id)) === branchId)),
+                notBranchTagged: { label: NOT_TAGGED_LABEL, ...balancesOf(glEntries.filter(e => !tags.has(Number(e.id)))) }
+            });
+        } catch (error) {
+            logger.error("Error generating branch Trial Balance report:", error);
             return res.status(500).json({ error: error.message || "Internal server error" });
         }
     }
