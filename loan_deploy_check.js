@@ -297,7 +297,7 @@ const runPost = async (q, r, url) => {
 
   await addSchemaResult(r, q, 'C2');
 
-  const count = async sql => Number((await q(sql))[0].n);
+  const count = async (sql, params) => Number((await q(sql, params))[0].n);
   if (await count('SELECT COUNT(*) n FROM ln_system_date') === 1) r.pass('C3', 'Loan system date', 'one row');
   else r.fail('C3', 'Loan system date', 'expected exactly one ln_system_date row: did the seeds run?');
 
@@ -321,6 +321,20 @@ const runPost = async (q, r, url) => {
   const selfGranted = await count("SELECT COUNT(*) n FROM (SELECT userGroupId, functionCode FROM sec_group_grant s JOIN userGroup g ON g.id = s.userGroupId WHERE s.functionCode LIKE 'LN\\_%' AND g.code <> 'SUPER_ADMIN' AND s.actionCode IN ('CREATE', 'AUTHORIZE') GROUP BY userGroupId, functionCode HAVING COUNT(DISTINCT s.actionCode) = 2) x");
   if (selfGranted === 0) r.pass('C9', 'No group below SUPER_ADMIN holds CREATE and AUTHORIZE on one function', '0');
   else r.warn('C9', 'Groups hold CREATE and AUTHORIZE on one function', `${selfGranted} grant pair(s): maker and checker must be different people (UAT section 1)`);
+
+  // Phase 6 Stage 3: the loan screens read lookups and the user's branch scope (header chip, selector) from
+  // GET /api/loan/lookups, which needs LN_LOOKUP VIEW. The loan groups are created by hand (UAT section 1).
+  const lookupMissing = [];
+  const groupsAbsent = [];
+  for (const code of LOAN_GROUPS) {
+    const g = await q('SELECT id FROM userGroup WHERE code = ?', [code]);
+    if (!g.length) { groupsAbsent.push(code); continue; }
+    const n = await count("SELECT COUNT(*) n FROM sec_group_grant WHERE userGroupId = ? AND functionCode = 'LN_LOOKUP' AND actionCode = 'VIEW'", [g[0].id]);
+    if (n === 0) lookupMissing.push(code);
+  }
+  if (lookupMissing.length) r.fail('C14', 'Loan groups hold LN_LOOKUP VIEW', `${lookupMissing.join(', ')} without LN_LOOKUP VIEW: their loan screens get no lookups and no branch chip/selector (UAT section 1)`);
+  else if (groupsAbsent.length) r.warn('C14', 'Loan groups hold LN_LOOKUP VIEW', `not created yet: ${groupsAbsent.join(', ')} (UAT section 1); every existing one holds it`);
+  else r.pass('C14', 'Loan groups hold LN_LOOKUP VIEW', `all ${LOAN_GROUPS.length}`);
 
   applyVerdict(r, 'C10', 'Document folder', documentDirVerdict(process.env.LOAN_DOCUMENT_DIR));
 
@@ -347,6 +361,9 @@ const writeReference = async (q, cfg, database) => {
 };
 
 // ------------------------------------------------------------------------------------------ main
+
+// The loan groups documented in UAT section 1 (created by hand in the security screen)
+const LOAN_GROUPS = ['LOAN_CASHIER', 'LOAN_MANAGER', 'LOAN_CHECKER', 'LOAN_ACCOUNTANT', 'LOAN_HO_CHECKER'];
 
 const USAGE = 'Use one of --pre | --schema | --post [--url=<base>] | --write-reference; optional --json';
 

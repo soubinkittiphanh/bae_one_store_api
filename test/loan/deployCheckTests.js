@@ -29,6 +29,7 @@ module.exports = async ({ test, sh, MYSQL_ARGS, SOURCE_DB, TEST_DB, API_ROOT, RU
   const statusOf = (data, id) => data.rows.filter(x => x.id === id).map(x => x.status);
   const fails = data => data.rows.filter(x => x.status === 'FAIL').map(x => `${x.id} ${x.detail}`);
   const sql = s => sh(`mariadb ${MYSQL_ARGS} ${T1_DB} -e ${JSON.stringify(s).replace(/`/g, '\\`')}`);
+  const sqlRows = s => sh(`mariadb ${MYSQL_ARGS} -N -B ${T1_DB} -e ${JSON.stringify(s).replace(/`/g, '\\`')}`).split('\n').map(x => x.trim()).filter(Boolean);
   const node = (script, args = []) => spawnSync(process.execPath, [path.join(API_ROOT, script), ...args], { cwd: RUN_DIR, env: env(), encoding: 'utf8' });
 
   await test('T1 setup: a clean POS clone with no loan tables', async () => {
@@ -178,6 +179,36 @@ module.exports = async ({ test, sh, MYSQL_ARGS, SOURCE_DB, TEST_DB, API_ROOT, RU
     await new Promise(resolve => stub.close(resolve));
     assert.strictEqual(open.code, 1, 'a loan route answering without a token is a FAIL');
     assert.deepStrictEqual(statusOf(open.data, 'C11'), ['FAIL']);
+  });
+
+  await test('T1 --post C14: each loan group of UAT section 1 that exists must hold LN_LOOKUP VIEW (the screens read lookups and the branch scope from /lookups); groups not created yet are a WARN', async () => {
+    const GROUPS = ['LOAN_CASHIER', 'LOAN_MANAGER', 'LOAN_CHECKER', 'LOAN_ACCOUNTANT', 'LOAN_HO_CHECKER'];
+    const existing = sqlRows(`SELECT code FROM userGroup WHERE code IN (${GROUPS.map(g => `'${g}'`).join(',')})`);
+    const made = GROUPS.filter(g => !existing.includes(g));
+    const c14 = () => json(['--post']).data.rows.find(x => x.id === 'C14');
+    try {
+      for (const g of made) sql(`INSERT INTO userGroup (name, code, isActive, createdAt, updateTimestamp, homePage) VALUES ('${g}', '${g}', 1, NOW(), NOW(), '/')`);
+      const grant = g => sql(`INSERT INTO sec_group_grant (userGroupId, functionCode, actionCode) SELECT id, 'LN_LOOKUP', 'VIEW' FROM userGroup WHERE code = '${g}' AND NOT EXISTS (SELECT 1 FROM sec_group_grant s WHERE s.userGroupId = userGroup.id AND s.functionCode = 'LN_LOOKUP' AND s.actionCode = 'VIEW')`);
+      const revoke = g => sql(`DELETE s FROM sec_group_grant s JOIN userGroup u ON u.id = s.userGroupId WHERE u.code = '${g}' AND s.functionCode = 'LN_LOOKUP' AND s.actionCode = 'VIEW'`);
+      const had = sqlRows("SELECT u.code FROM sec_group_grant s JOIN userGroup u ON u.id = s.userGroupId WHERE s.functionCode = 'LN_LOOKUP' AND s.actionCode = 'VIEW'").filter(c => GROUPS.includes(c));
+      try {
+        for (const g of GROUPS) grant(g);
+        assert.strictEqual(c14().status, 'PASS', 'all five hold it');
+        revoke('LOAN_HO_CHECKER');
+        const r = json(['--post']);
+        const row = r.data.rows.find(x => x.id === 'C14');
+        assert.strictEqual(row.status, 'FAIL');
+        assert.match(row.detail, /LOAN_HO_CHECKER without LN_LOOKUP VIEW/);
+        assert.strictEqual(r.code, 1, 'a FAIL fails the post-start check');
+      } finally {
+        for (const g of GROUPS) if (!had.includes(g)) revoke(g); else grant(g);
+      }
+    } finally {
+      for (const g of made) sql(`DELETE FROM userGroup WHERE code = '${g}'`);
+    }
+    const after = c14();
+    assert.notStrictEqual(after.status, 'FAIL', `back as before: ${after.detail}`);
+    console.log(`        C14 on the seeded test database: ${after.status} ${after.detail}`);
   });
 
   await test('T1 every mode changes nothing: row counts and checksums of all tables are identical afterwards; no logs.log or other file appears in the working folder', async () => {
