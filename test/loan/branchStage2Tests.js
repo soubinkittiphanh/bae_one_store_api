@@ -275,24 +275,53 @@ module.exports = async ({ test, call, q, db, users, L, expectStatus, branch: BRA
   });
 
   await test('EOD: one run over two branches; every EOD transaction and leg carries its account\'s branch, numbers carry the branch code, and each GL batch is per branch (batch number B<branch> = its branchId)', async () => {
+    // Y and Z were disbursed on the same day, so their first installments fall due on the same date. EOD on that
+    // date recognizes the installment's interest (ACCR), which posts journal legs in a per-branch EOD batch. The
+    // loan business date is moved there for this run and restored afterwards.
+    const saved = await one("SELECT DATE_FORMAT(prevBusinessDate, '%Y-%m-%d') p, DATE_FORMAT(currentBusinessDate, '%Y-%m-%d') c, DATE_FORMAT(nextBusinessDate, '%Y-%m-%d') n FROM ln_system_date LIMIT 1");
+    const dueOf = async id => (await one("SELECT DATE_FORMAT(dueDate, '%Y-%m-%d') d FROM ln_schedule WHERE loanAccountId = ? AND installmentNo = 1", [id])).d;
+    const due1 = await dueOf(Z);
+    assert.strictEqual(await dueOf(Y), due1, 'Y and Z share their first due date');
+    const dayAfter = d => { const x = new Date(`${d}T00:00:00Z`); x.setUTCDate(x.getUTCDate() + 1); return x.toISOString().slice(0, 10); };
+    const dayBefore = d => { const x = new Date(`${d}T00:00:00Z`); x.setUTCDate(x.getUTCDate() - 1); return x.toISOString().slice(0, 10); };
+    await q('UPDATE ln_system_date SET prevBusinessDate = ?, currentBusinessDate = ?, nextBusinessDate = ?', [dayBefore(due1), due1, dayAfter(due1)]);
+    // the earlier tests' foreign-currency accounts also run on that date; their last rate is weeks older than
+    // the 3-day limit, which is not what this test is about: widen the limit for this run only
+    const maxAge = (await one("SELECT value v FROM SPF WHERE code = 'LOAN_FX_MAX_RATE_AGE_DAYS'")).v;
+    await setSpf('LOAN_FX_MAX_RATE_AGE_DAYS', '3650');
     const lastId = await num('SELECT IFNULL(MAX(id), 0) n FROM ln_transaction');
-    // Y and Z were disbursed today: no accrual (not month-end), no penalty, so EOD would drop their empty
-    // transactions. A stale DPD gives the classification job real work on both accounts.
-    await q('UPDATE ln_account SET currentDpd = 99 WHERE id IN (?, ?)', [Y, Z]);
-    const run = await call(SUPER, 'post', `${L}/eod/run`);
-    expectStatus(run, 200, 'eod');
-    assert.deepStrictEqual((await q('SELECT currentDpd d FROM ln_account WHERE id IN (?, ?)', [Y, Z])).map(r => Number(r.d)), [0, 0], 'EOD reclassified both');
-    const txns = await q("SELECT id, loanAccountId a, branchId b, txNo FROM ln_transaction WHERE id > ? AND source = 'EOD'", [lastId]);
-    const ofY = txns.filter(t => Number(t.a) === Y);
-    const ofZ = txns.filter(t => Number(t.a) === Z);
-    assert.ok(ofY.length > 0 && ofZ.length > 0, 'both accounts ran in the same EOD');
-    assert.ok(ofY.every(t => Number(t.b) === BRANCH_B && /^TXN-SR2-/.test(t.txNo)), 'Y at B');
-    assert.ok(ofZ.every(t => Number(t.b) === BRANCH_A && /^TXN-SR1-/.test(t.txNo)), 'Z at A');
-    const mismatched = await num('SELECT COUNT(*) n FROM ln_journal_posting jp JOIN ln_transaction t ON t.id = jp.transactionId WHERE t.id > ? AND NOT (jp.branchId <=> t.branchId)', [lastId]);
-    assert.strictEqual(mismatched, 0, 'every EOD leg carries its transaction\'s branch');
-    const batches = await q("SELECT DISTINCT b.batchNumber n, b.branchId br FROM ln_gl_batch b JOIN ln_journal_posting jp ON jp.glBatchId = b.batchNumber JOIN ln_transaction t ON t.id = jp.transactionId WHERE t.id > ?", [lastId]);
-    assert.ok(batches.every(x => x.n.includes(`-B${x.br}-`)), `batch numbers carry their branch: ${batches.map(x => x.n).join(', ')}`);
-    console.log(`        EOD: ${txns.length} transactions (Y at B: ${ofY.length}, Z at A: ${ofZ.length}); batches: ${batches.map(x => x.n).join(', ') || 'none with legs'}`);
+    try {
+      const run = await call(SUPER, 'post', `${L}/eod/run`);
+      expectStatus(run, 200, 'eod');
+      const txns = await q("SELECT id, loanAccountId a, branchId b, txNo FROM ln_transaction WHERE id > ? AND source = 'EOD'", [lastId]);
+      const ofY = txns.filter(t => Number(t.a) === Y);
+      const ofZ = txns.filter(t => Number(t.a) === Z);
+      assert.ok(ofY.length > 0 && ofZ.length > 0, 'both accounts ran in the same EOD');
+      assert.ok(ofY.every(t => Number(t.b) === BRANCH_B && /^TXN-SR2-/.test(t.txNo)), 'Y at B');
+      assert.ok(ofZ.every(t => Number(t.b) === BRANCH_A && /^TXN-SR1-/.test(t.txNo)), 'Z at A');
+      const mismatched = await num('SELECT COUNT(*) n FROM ln_journal_posting jp JOIN ln_transaction t ON t.id = jp.transactionId WHERE t.id > ? AND NOT (jp.branchId <=> t.branchId)', [lastId]);
+      assert.strictEqual(mismatched, 0, 'every EOD leg carries its transaction\'s branch');
+      // Each account's ACCR legs: in an EOD batch whose number carries the account's branch code, whose row is
+      // at that branch, and whose legs are all tagged with that branch. Fails if the number loses B<branch>.
+      const ymd = due1.replace(/-/g, '');
+      for (const [acct, br] of [[Y, BRANCH_B], [Z, BRANCH_A]]) {
+        const legs = await q("SELECT jp.glBatchId g, jp.branchId b FROM ln_journal_posting jp JOIN ln_transaction t ON t.id = jp.transactionId WHERE t.id > ? AND t.loanAccountId = ? AND t.eventCode = 'EOD_ACCRUAL'", [lastId, acct]);
+        assert.ok(legs.length > 0, `account ${acct}: EOD_ACCRUAL posted journal legs`);
+        assert.ok(legs.every(l => Number(l.b) === br), `account ${acct}: every leg at branch ${br}`);
+        const numbers = [...new Set(legs.map(l => l.g))];
+        assert.deepStrictEqual(numbers, [`EOD-${ymd}-EOD_ACCRUAL-B${br}-C${lakId}`], `account ${acct}: one batch, numbered with branch ${br}`);
+        const batch = await one('SELECT branchId b, status s FROM ln_gl_batch WHERE batchNumber = ?', [numbers[0]]);
+        assert.ok(batch && Number(batch.b) === br, `batch ${numbers[0]} row is at branch ${br}`);
+        assert.ok(await num('SELECT COUNT(*) n FROM general_ledger WHERE postingReference = ?', [numbers[0]]) > 0, `batch ${numbers[0]} reached the GL`);
+      }
+      const batches = await q("SELECT DISTINCT b.batchNumber n, b.branchId br FROM ln_gl_batch b JOIN ln_journal_posting jp ON jp.glBatchId = b.batchNumber JOIN ln_transaction t ON t.id = jp.transactionId WHERE t.id > ?", [lastId]);
+      assert.ok(batches.length >= 2, 'at least two EOD batches with legs');
+      assert.ok(batches.every(x => x.n.includes(`-B${x.br}-`)), `batch numbers carry their branch: ${batches.map(x => x.n).join(', ')}`);
+      console.log(`        EOD ${due1}: ${txns.length} transactions (Y at B: ${ofY.length}, Z at A: ${ofZ.length}); batches with legs: ${batches.map(x => x.n).join(', ')}`);
+    } finally {
+      await q('UPDATE ln_system_date SET prevBusinessDate = ?, currentBusinessDate = ?, nextBusinessDate = ?', [saved.p, saved.c, saved.n]);
+      await setSpf('LOAN_FX_MAX_RATE_AGE_DAYS', maxAge);
+    }
   });
 
   await test('report filter: ?branchId narrows every loan list to one branch inside the caller\'s scope (403 outside it, 403 for branchId=all without LN_ALL_BRANCHES, 400 when malformed); MH sees only branch B with ?branchId=B; portfolio groupBy=branch counts each branch\'s accounts', async () => {
