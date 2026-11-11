@@ -1,4 +1,5 @@
 const masterService = require('../services/masterService');
+const { describeScope } = require('../services/branchScope');
 const paramService = require('../services/paramService');
 const { handle } = require('../errors');
 const { ctxOf } = require('./paramController');
@@ -8,7 +9,9 @@ const COMPONENT_TAX_FIELDS = ['isTaxable', 'taxCode', 'taxInclusive', 'taxPointE
 const pick = (obj, keys) => Object.fromEntries(keys.filter(k => obj && obj[k] !== undefined).map(k => [k, obj[k]]));
 
 const masterController = {
-  getLookups: handle(req => masterService.getLookups(req.query)),
+  // Phase 6 Stage 3: plus the caller's branch scope (header chip, branch selector). Here, behind LN_LOOKUP VIEW,
+  // because the token-only /status must carry no data.
+  getLookups: handle(async req => ({ ...(await masterService.getLookups(req.query)), branchScope: await describeScope(req.user.id) })),
   getUdes: handle(req => masterService.getUdes(req.query)),
   getComponents: handle(req => masterService.getComponents(req.query)),
   // Component taxability is edited through maker-checker like any other parameter

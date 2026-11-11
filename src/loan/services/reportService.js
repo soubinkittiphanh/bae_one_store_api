@@ -151,7 +151,7 @@ const reportService = {
     const cl = Object.fromEntries(clients.map(c => [c.id, c]));
     const pr = Object.fromEntries(products.map(p => [p.id, p]));
     return rows.map(a => ({
-      id: a.id, accountNo: a.accountNo, status: a.status, accountStage: a.accountStage, currentDpd: a.currentDpd, regulatoryClass: a.regulatoryClass,
+      id: a.id, accountNo: a.accountNo, branchId: a.branchId, status: a.status, accountStage: a.accountStage, currentDpd: a.currentDpd, regulatoryClass: a.regulatoryClass,
       currencyId: a.currencyId, currency: ccy[a.currencyId] ? ccy[a.currencyId].code : null, sanctionedAmount: String(a.sanctionedAmount), disbursedAmount: String(a.disbursedAmount),
       valueDate: String(a.valueDate), maturityDate: String(a.maturityDate),
       customer: cl[a.customerId] ? { id: a.customerId, name: cl[a.customerId].name, telephone: cl[a.customerId].telephone } : { id: a.customerId },

@@ -138,4 +138,17 @@ const scoped = (kind) => {
   return middleware;
 };
 
-module.exports = { ALL_BRANCHES, KINDS, AUDIT_ENTITIES, scopeOf, inScope, assertScope, whereScope, auditWhereScope, scoped };
+// Phase 6 Stage 3: what the screens show (header chip, branch selector). Branches the user can see, with the
+// location name and the AUTHORIZED, active loan branch code (null when the branch has none yet). For an
+// LN_ALL_BRANCHES user that is every active location. Display only: the API still checks scope on every call.
+const describeScope = async (userId) => {
+  const scope = await scopeOf(userId);
+  const where = scope.all ? 'l.isActive = 1' : `l.id IN (${(scope.branches.length ? scope.branches : [NONE]).map(Number).join(',')})`;
+  const rows = await db.sequelize.query(
+    `SELECT l.id, l.name, (SELECT p.branchCode FROM ln_branch_profile p WHERE p.locationId = l.id AND p.authStatus = 'AUTHORIZED' AND p.isActive = 1 ORDER BY p.id DESC LIMIT 1) AS code FROM location l WHERE ${where} ORDER BY l.id`,
+    { type: db.Sequelize.QueryTypes.SELECT }
+  );
+  return { all: scope.all, branches: rows.map(r => ({ id: Number(r.id), name: r.name, code: r.code || null })) };
+};
+
+module.exports = { ALL_BRANCHES, KINDS, AUDIT_ENTITIES, scopeOf, inScope, assertScope, whereScope, auditWhereScope, scoped, describeScope };

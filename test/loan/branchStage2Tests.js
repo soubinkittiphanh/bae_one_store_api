@@ -80,7 +80,7 @@ module.exports = async ({ test, call, q, db, users, L, expectStatus, branch: BRA
       term[k] = Number((await one('SELECT id FROM terminal WHERE code = ?', [code])).id);
     }
     const grants = [['LN_APPLICATION', 'VIEW'], ['LN_APPLICATION', 'CREATE'], ['LN_APPLICATION', 'EDIT'], ['LN_APPLICATION', 'AUTHORIZE'], ['LN_ACCOUNT', 'VIEW'], ['LN_ACCOUNT', 'CREATE'],
-      ['LN_TRANSACTION', 'VIEW'], ['LN_TRANSACTION', 'CREATE'], ['LN_TRANSACTION', 'AUTHORIZE'], ['LN_REPORT', 'VIEW'], ['LN_COLLECTION', 'VIEW'], ['LN_PRODUCT', 'VIEW'], ['LN_VAT_REPORT', 'VIEW']];
+      ['LN_TRANSACTION', 'VIEW'], ['LN_TRANSACTION', 'CREATE'], ['LN_TRANSACTION', 'AUTHORIZE'], ['LN_REPORT', 'VIEW'], ['LN_COLLECTION', 'VIEW'], ['LN_PRODUCT', 'VIEW'], ['LN_VAT_REPORT', 'VIEW'], ['LN_LOOKUP', 'VIEW']];
     const addGroup = async (code, list) => {
       await q("INSERT INTO userGroup (name, code, isActive, createdAt, updateTimestamp, homePage) VALUES (?, ?, 1, NOW(), NOW(), '/')", [code, code]);
       const id = Number((await one('SELECT id FROM userGroup WHERE code = ?', [code])).id);
@@ -409,6 +409,21 @@ module.exports = async ({ test, call, q, db, users, L, expectStatus, branch: BRA
     assert.ok(Array.isArray(viaCtl.body.notBranchTagged.pos.assets.items), 'POS lines sit under not-tagged');
     await setSpf('BS_INCLUDE_LOAN_BOOK', 'false');
     assert.strictEqual((await run(New, 'getBalanceSheet', { asOfDate, branchId: String(BRANCH_B) })).code, 409, 'a branch BS needs the loan section on');
+  });
+
+  await test('Stage 3 header data: GET /lookups carries the caller\'s branch scope (/status stays data-free) (MA: branch A with its code SR1; MAB: A and B; MN: none; MH: all, every active location listed)', async () => {
+    const scopeFor = async who => { const r = await call(T[who], 'get', `${L}/lookups`); expectStatus(r, 200, `${who} lookups`); return r.data.data.branchScope; };
+    const status = await call(T.MA, 'get', `${L}/status`);
+    assert.ok(!('branchScope' in status.data.data), 'the token-only /status carries no branch data');
+    const ma = await scopeFor('MA');
+    assert.deepStrictEqual([ma.all, ma.branches.map(b => b.id), ma.branches[0].code], [false, [BRANCH_A], 'SR1']);
+    assert.ok(ma.branches[0].name, 'the location name');
+    const mab = await scopeFor('MAB');
+    assert.deepStrictEqual([mab.all, mab.branches.map(b => b.id)], [false, [BRANCH_A, BRANCH_B].sort((a, b) => a - b)]);
+    assert.deepStrictEqual(await scopeFor('MN'), { all: false, branches: [] }, 'no terminal: no branch');
+    const mh = await scopeFor('MH');
+    assert.strictEqual(mh.all, true);
+    assert.deepStrictEqual(mh.branches.map(b => b.id), (await q('SELECT id FROM location WHERE isActive = 1 ORDER BY id')).map(r => Number(r.id)));
   });
 
   await test('cleanup (stage 2): numbering patterns and switches back, test users inactive and their groups without grants', async () => {
