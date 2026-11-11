@@ -464,7 +464,7 @@
    "column": "branchId",
    "type": "int(11)",
    "nullable": "NO",
-   "default": "1",
+   "default": "<null>",
    "collation": "<null>",
    "key": "MUL",
    "extra": ""
@@ -1934,7 +1934,7 @@
    "column": "branchId",
    "type": "int(11)",
    "nullable": "NO",
-   "default": "1",
+   "default": "<null>",
    "collation": "<null>",
    "key": "MUL",
    "extra": ""
@@ -4244,7 +4244,7 @@
    "column": "branchId",
    "type": "int(11)",
    "nullable": "NO",
-   "default": "1",
+   "default": "<null>",
    "collation": "<null>",
    "key": "",
    "extra": ""
@@ -9724,7 +9724,7 @@
    "column": "branchId",
    "type": "int(11)",
    "nullable": "NO",
-   "default": "1",
+   "default": "<null>",
    "collation": "<null>",
    "key": "MUL",
    "extra": ""
