@@ -13,11 +13,19 @@ const defaultOf = async (conn, table) => {
   return d === null || d === undefined || String(d).toUpperCase() === 'NULL' ? null : String(d);
 };
 
+const hasBranchId = async (conn, table) => {
+  const rows = await conn.query("SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = 'branchId'", [table]);
+  return rows.length > 0;
+};
+
 module.exports = {
   name: '20261109_loan_branch_no_default',
   description: 'branchId without DEFAULT 1 on ln_account, ln_application, ln_transaction, ln_gl_batch',
 
   async isApplied(conn) {
+    // loan_migrate reads every migration's state before running any, so on a clean database the
+    // tables do not exist yet: that is "not applied", not an error.
+    for (const t of TABLES) if (!(await hasBranchId(conn, t))) return false;
     for (const t of TABLES) if ((await defaultOf(conn, t)) !== null) return false;
     return true;
   },
