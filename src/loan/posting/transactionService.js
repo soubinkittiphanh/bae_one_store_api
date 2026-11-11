@@ -23,18 +23,29 @@ const { postJournal, branchOf } = require('./journalWriter');
 const { assertBankForBranch } = require('../services/branchBank');
 const { bankMovement, settleInvoice, voidReceipt } = require('./posAdapters');
 const { handlers } = require('./handlers');
+const { scopeOf, inScope } = require('../services/branchScope');
 
 // D4 (+ INS_REMIT, ADV_REFUND): cash outflows and material changes need a second person
 const KINDS = {
   FEE_COLLECT: { checker: false }, REPAYMENT: { checker: false }, PREPAY: { checker: false }, RECOVERY: { checker: false },
   DISB: { checker: true }, FEE_REFUND: { checker: true }, INS_REMIT: { checker: true }, ADV_REFUND: { checker: true },
   WAIVE: { checker: true }, WRITE_OFF: { checker: true }, REPOSSESS: { checker: true }, VEH_DISPOSE: { checker: true },
-  REVERSAL: { checker: true }
+  REVERSAL: { checker: true }, BRANCH_TRANSFER: { checker: true }
 };
 const ENDPOINT = 'POST /loan/accounts/:id/transactions';
 // Material or irreversible kinds must say why (the screen asks too; this stops a direct API call skipping it).
 // INT_WAIVE on the screen posts as WAIVE. Checked on submit only: a preview writes nothing.
-const REMARKS_REQUIRED = new Set(['WAIVE', 'WRITE_OFF', 'REPOSSESS', 'VEH_DISPOSE', 'REVERSAL']);
+const REMARKS_REQUIRED = new Set(['WAIVE', 'WRITE_OFF', 'REPOSSESS', 'VEH_DISPOSE', 'REVERSAL', 'BRANCH_TRANSFER']);
+
+// Phase 6 Stage 4: BRANCH_TRANSFER moves the account's own open balances (balance-sheet and off-balance roles
+// of the loan) from the source branch to the destination branch in the loan journal only. Cash stays in the
+// bank it was paid into (CASH_BANK), the POS sale receivable, the company currency position and VAT payable
+// are not the account's to move, and income/expense stay where they were earned (history is not rewritten).
+const TRANSFER_ROLES = ['LOAN_PORTFOLIO', 'INTEREST_RECEIVABLE', 'FEE_RECEIVABLE', 'PENALTY_RECEIVABLE', 'INSURANCE_RECEIVABLE',
+  'REPOSSESSED_VEHICLE_ASSET', 'PROVISION_RESERVE', 'UNAMORTIZED_FEE_CONTRA', 'CUSTOMER_ADVANCE_LIAB', 'DEFERRED_FEE',
+  'INSURANCE_PAYABLE', 'SUSPENDED_INTEREST', 'WRITTEN_OFF_MEMO_DR', 'WRITTEN_OFF_MEMO_CR'];
+const TRANSFER_TAG = 'BRANCH_TRANSFER'; // amountTag of the memo legs: no GL row, exempt in the GL tie-out
+
 
 class DryRun extends Error {}
 
@@ -64,7 +75,7 @@ const summary = (txn, out, journal, extra = {}) => ({
   transactionId: txn.id, txNo: txn.txNo, eventCode: txn.eventCode, postingStatus: txn.postingStatus,
   valueDate: String(txn.valueDate), bookingDate: txn.bookingDate ? String(txn.bookingDate) : null, valueDatedAdjustment: Boolean(txn.valueDatedAdjustment),
   amount: String(txn.amount), events: out ? out.events : [],
-  journal: journal ? journal.lines.map(l => ({ event: l.eventCode, tag: l.amountTag, drCr: l.drCr, role: l.roleCode, qualifier: l.qualifier, chartAccountId: l.chartAccountId, amount: l.amount, ...(l.baseAmount !== undefined ? { currencyId: l.currency, baseAmount: l.baseAmount, isBaseOnly: Boolean(l.isBaseOnly) } : {}) })) : [],
+  journal: journal ? journal.lines.map(l => ({ event: l.eventCode, tag: l.amountTag, drCr: l.drCr, role: l.roleCode, qualifier: l.qualifier, chartAccountId: l.chartAccountId, amount: l.amount, ...(l.baseAmount !== undefined ? { currencyId: l.currency, baseAmount: l.baseAmount, isBaseOnly: Boolean(l.isBaseOnly) } : {}), ...(l.branchId !== undefined && l.branchId !== null ? { branchId: Number(l.branchId) } : {}) })) : [],
   glRows: journal ? journal.glRows.map(r => r.id) : [],
   details: out ? out.details || null : null,
   ...extra
@@ -170,17 +181,21 @@ const reverse = async ({ accountId, input, ctxUser, pending, transaction, hook }
   const roles = await db.lnAccountingRole.findAll({ transaction });
   const roleTypes = Object.fromEntries(roles.map(r => [r.roleCode, r.expectedType]));
   // Exact mirror: same chart account, currency, amount, rate and base amount (Phase 5: base-only legs too)
-  const mirrored = legs.map(l => ({ eventCode: 'REVERSAL', amountTag: l.amountTag, drCr: l.drCr === 'DR' ? 'CR' : 'DR', roleCode: l.roleCode, qualifier: l.statusQualifier, chartAccountId: l.chartAccountId, currency: l.currencyId, amount: l.amount, baseAmount: l.baseAmount, exchangeRate: l.exchangeRate, isBaseOnly: Boolean(l.isBaseOnly) }));
+  const isTransfer = target.eventCode === 'BRANCH_TRANSFER';
+  // Phase 6 Stage 4: a transfer's reversal is authorized only by a checker covering both branches
+  if (isTransfer && pending) await assertCoversBoth(ctxUser, ...transferBranches(target));
+  const mirrored = legs.map(l => ({ eventCode: 'REVERSAL', amountTag: l.amountTag, drCr: l.drCr === 'DR' ? 'CR' : 'DR', roleCode: l.roleCode, qualifier: l.statusQualifier, chartAccountId: l.chartAccountId, currency: l.currencyId, amount: l.amount, baseAmount: l.baseAmount, exchangeRate: l.exchangeRate, isBaseOnly: Boolean(l.isBaseOnly), branchId: isTransfer ? l.branchId : undefined }));
   const errors = validateJournal(mirrored, roleTypes);
   const base = await require('../services/fxRateService').baseCurrency(transaction);
-  if (Number(ctx.account.currencyId) !== Number(base.id)) {
+  if (Number(ctx.account.currencyId) !== Number(base.id) && !isTransfer) { // a transfer mirror is checked pairwise below
     const baseDecimals = Number((await require('../services/loanContext').currencyRule(base.id, String(target.bookingDate || target.valueDate), false)).decimalPlaces);
     errors.push(...validateBase(mirrored, roleTypes, { loanCurrencyId: ctx.account.currencyId, baseCurrencyId: base.id, baseDecimals, maxRoundDiff: Number.MAX_SAFE_INTEGER }));
   }
+  if (isTransfer) errors.push(...pairErrors(mirrored));
   if (errors.length) throw new LoanError(409, `Reversal journal failed validation: ${errors.join('; ')}`, errors);
   const postings = [];
   for (const m of mirrored) {
-    postings.push(await db.lnJournalPosting.create({ transactionId: txn.id, loanAccountId: ctx.account.id, branchId: branchOf(ctx.account), eventCode: 'REVERSAL', amountTag: m.amountTag, roleCode: m.roleCode, statusQualifier: m.qualifier, chartAccountId: m.chartAccountId, drCr: m.drCr, currencyId: m.currency, amount: m.amount, baseAmount: m.baseAmount, exchangeRate: m.exchangeRate, isBaseOnly: m.isBaseOnly }, { transaction }));
+    postings.push(await db.lnJournalPosting.create({ transactionId: txn.id, loanAccountId: ctx.account.id, branchId: isTransfer ? m.branchId : branchOf(ctx.account), eventCode: 'REVERSAL', amountTag: m.amountTag, roleCode: m.roleCode, statusQualifier: m.qualifier, chartAccountId: m.chartAccountId, drCr: m.drCr, currencyId: m.currency, amount: m.amount, baseAmount: m.baseAmount, exchangeRate: m.exchangeRate, isBaseOnly: m.isBaseOnly }, { transaction }));
   }
   hook('AFTER_JOURNAL');
 
@@ -205,6 +220,11 @@ const reverse = async ({ accountId, input, ctxUser, pending, transaction, hook }
   }
   hook('AFTER_AR');
 
+  if (isTransfer) {
+    // undoEffects put the account back at the source branch; the history keeps both moves
+    const [from, to] = transferBranches(target);
+    await db.lnAccountBranchHistory.create({ loanAccountId: ctx.account.id, fromBranchId: to, toBranchId: from, effectiveDate: dates.bookingDate, transactionId: txn.id, makerId: txn.makerId, checkerId: pending ? ctxUser.userId : null }, { transaction });
+  }
   await target.update({ isReversed: true }, { transaction });
   await txn.update({
     eventCode: 'REVERSAL', reversalOfTxId: target.id, amount: target.amount, baseAmount: target.baseAmount, exchangeRate: target.exchangeRate, exchangeRateDate: target.exchangeRateDate, postingStatus: 'POSTED', authStatus: 'AUTHORIZED',
@@ -216,11 +236,120 @@ const reverse = async ({ accountId, input, ctxUser, pending, transaction, hook }
   return summary(txn, null, { lines: mirrored, glRows: newGl }, { reverses: target.txNo });
 };
 
-const execute = (kind, args) => (kind === 'REVERSAL' ? reverse(args) : post({ kind, ...args }));
+// [fromBranchId, toBranchId] of a BRANCH_TRANSFER row
+const transferBranches = (txn) => {
+  const ev = (JSON.parse(txn.eventsJson || '[]').find(e => e.event === 'BRANCH_TRANSFER')) || {};
+  return [Number(ev.fromBranchId !== undefined ? ev.fromBranchId : txn.branchId), Number(ev.toBranchId !== undefined ? ev.toBranchId : JSON.parse(txn.requestJson || '{}').toBranchId)];
+};
+
+const assertCoversBoth = async (ctxUser, from, to) => {
+  const scope = await scopeOf(ctxUser.userId);
+  if (!inScope(scope, from) || !inScope(scope, to)) {
+    throw new LoanError(403, `Forbidden: a branch transfer needs a checker covering both branches ${from} and ${to} (or LN_ALL_BRANCHES)`);
+  }
+};
+
+// Memo pairs: per currency, debits = credits in amount and in base
+const pairErrors = (lines) => {
+  const sums = {};
+  for (const l of lines) {
+    const k = String(l.currency);
+    sums[k] = sums[k] || { a: 0n, b: 0n };
+    const s = l.drCr === 'DR' ? 1n : -1n;
+    sums[k].a += s * toUnits(String(l.amount));
+    sums[k].b += s * toUnits(String(l.baseAmount));
+  }
+  return Object.entries(sums).filter(([, v]) => v.a !== 0n || v.b !== 0n).map(([k, v]) => `transfer legs in currency ${k} do not net to zero (amount ${fromUnits(v.a)}, base ${fromUnits(v.b)})`);
+};
+
+const abs = x => (x < 0n ? -x : x);
+
+/**
+ * BRANCH_TRANSFER (Phase 6 Stage 4): moves the account to input.toBranchId. Moves no cash and writes no GL,
+ * bank or AR row. In the loan journal, each open balance of TRANSFER_ROLES at the source branch (per role,
+ * status qualifier, chart account and currency, at its amount and carrying base) is taken out at the source
+ * branch and put in at the destination: legs that net to zero company-wide, so the company books, the BS loan
+ * section and the GL tie-out do not change, and branch balance sheets move exactly. Writes an
+ * ln_account_branch_history row. Reversible by REVERSAL (LIFO), which restores both branches.
+ */
+const transfer = async ({ accountId, input, ctxUser, pending, transaction, hook }) => {
+  await G.assertPostingEnabled(transaction);
+  const ctx = await S.loadAccount(accountId, transaction);
+  const account = ctx.account;
+  const from = Number(account.branchId);
+  const to = Number(input.toBranchId);
+  if (!Number.isInteger(to) || to <= 0) throw new LoanError(400, 'toBranchId must be a location id');
+  if (to === from) throw new LoanError(409, `${account.accountNo} is already at branch ${to}`);
+  if (!['BOOKED', 'DISBURSED'].includes(account.accountStage)) throw new LoanError(409, `${account.accountNo} is ${account.accountStage}: only a BOOKED or DISBURSED account can be transferred`);
+  const location = await db.location.findByPk(to, { attributes: ['id', 'isActive'], transaction });
+  if (!location || !location.isActive) throw new LoanError(409, `Branch ${to} is not an active location`);
+  const profile = await db.lnBranchProfile.findOne({ where: { locationId: to, authStatus: 'AUTHORIZED', isActive: true }, transaction });
+  if (!profile) throw new LoanError(409, `Branch ${to} has no AUTHORIZED, active branch profile`);
+  const other = await db.lnTransaction.findOne({ where: { loanAccountId: account.id, postingStatus: 'PENDING_AUTH', ...(pending ? { id: { [db.Sequelize.Op.ne]: pending.id } } : {}) }, transaction });
+  if (other) throw new LoanError(409, `${account.accountNo} has a pending transaction ${other.txNo} (${other.eventCode}): authorize or reject it before a branch transfer`);
+  if (pending) await assertCoversBoth(ctxUser, from, to);
+
+  const dates = await G.resolveDates({ kind: 'BRANCH_TRANSFER', valueDate: input.valueDate, product: null, transaction });
+  const txn = pending || await newTransactionRow({ kind: 'BRANCH_TRANSFER', ctx, input, dates, ctxUser, status: 'POSTED', transaction });
+  if (pending) await txn.update({ valueDate: dates.valueDate, postingDate: dates.businessDate, bookingDate: dates.bookingDate, valueDatedAdjustment: dates.valueDatedAdjustment }, { transaction });
+  hook('AFTER_TRANSACTION');
+
+  // The account's open balances at the source branch, at their amount and carrying base
+  const legs = await findAllExact(db.lnJournalPosting, { where: { loanAccountId: account.id, branchId: from, roleCode: TRANSFER_ROLES }, order: [['id', 'ASC']], transaction });
+  const open = new Map();
+  for (const l of legs) {
+    const key = `${l.roleCode}|${l.statusQualifier || ''}|${l.chartAccountId}|${l.currencyId}`;
+    if (!open.has(key)) open.set(key, { roleCode: l.roleCode, qualifier: l.statusQualifier || null, chartAccountId: l.chartAccountId, currency: l.currencyId, a: 0n, b: 0n });
+    const s = l.drCr === 'DR' ? 1n : -1n;
+    open.get(key).a += s * toUnits(String(l.amount));
+    open.get(key).b += s * toUnits(String(l.baseAmount));
+  }
+  const lines = [];
+  for (const o of open.values()) {
+    if (o.a === 0n && o.b === 0n) continue;
+    if (o.a !== 0n && o.b !== 0n && (o.a > 0n) !== (o.b > 0n)) {
+      throw new LoanError(409, `${account.accountNo}: ${o.roleCode} has an amount and a carrying base of opposite signs (${fromUnits(o.a)} / ${fromUnits(o.b)}); it cannot be transferred automatically`);
+    }
+    const debit = o.a !== 0n ? o.a > 0n : o.b > 0n;
+    const amount = abs(o.a);
+    const baseAmount = abs(o.b);
+    const rateUnits = amount === 0n ? 10n ** 8n : (baseAmount * 10n ** 8n) / amount; // the carrying rate, 8 decimals
+    const exchangeRate = `${rateUnits / 10n ** 8n}.${String(rateUnits % 10n ** 8n).padStart(8, '0')}`;
+    const leg = { eventCode: 'BRANCH_TRANSFER', amountTag: TRANSFER_TAG, roleCode: o.roleCode, qualifier: o.qualifier, chartAccountId: o.chartAccountId, currency: o.currency, amount: fromUnits(amount), baseAmount: fromUnits(baseAmount), exchangeRate, isBaseOnly: amount === 0n };
+    lines.push({ ...leg, branchId: to, drCr: debit ? 'DR' : 'CR' }, { ...leg, branchId: from, drCr: debit ? 'CR' : 'DR' });
+  }
+  const errors = pairErrors(lines);
+  if (errors.length) throw new LoanError(409, `Branch transfer journal failed validation: ${errors.join('; ')}`, errors);
+  for (const l of lines) {
+    await db.lnJournalPosting.create({ transactionId: txn.id, loanAccountId: account.id, branchId: l.branchId, eventCode: l.eventCode, amountTag: l.amountTag, roleCode: l.roleCode, statusQualifier: l.qualifier, chartAccountId: l.chartAccountId, drCr: l.drCr, currencyId: l.currency, amount: l.amount, baseAmount: l.baseAmount, exchangeRate: l.exchangeRate, isBaseOnly: l.isBaseOnly }, { transaction });
+  }
+  hook('AFTER_JOURNAL');
+
+  const effects = new S.Effects(transaction);
+  await effects.set('lnAccount', account, 'branchId', to);
+  await db.lnAccountBranchHistory.create({ loanAccountId: account.id, fromBranchId: from, toBranchId: to, effectiveDate: dates.bookingDate, transactionId: txn.id, makerId: txn.makerId, checkerId: pending ? ctxUser.userId : null }, { transaction });
+  const events = [{ event: 'BRANCH_TRANSFER', fromBranchId: from, toBranchId: to, toBranchCode: profile.branchCode, legs: lines.length }];
+  await txn.update({
+    eventCode: 'BRANCH_TRANSFER', amount: '0', baseAmount: '0', postingStatus: 'POSTED', authStatus: 'AUTHORIZED',
+    eventsJson: JSON.stringify(events), effectsJson: JSON.stringify(effects.list),
+    ...(pending ? { checkerId: ctxUser.userId, authorizedAt: new Date() } : {})
+  }, { transaction });
+  await audit(txn, pending ? (ctxUser.self ? 'SELF_AUTH' : 'AUTH') : 'POST', ctxUser, { kind: 'BRANCH_TRANSFER', fromBranchId: from, toBranchId: to }, transaction);
+  hook('BEFORE_COMMIT');
+  return summary(txn, { events, details: { fromBranchId: from, toBranchId: to, legs: lines.map(l => ({ branchId: l.branchId, drCr: l.drCr, role: l.roleCode, qualifier: l.qualifier, chartAccountId: l.chartAccountId, currencyId: l.currency, amount: l.amount, baseAmount: l.baseAmount })) } }, { lines, glRows: [] });
+};
+
+const execute = (kind, args) => {
+  if (kind === 'REVERSAL') return reverse(args);
+  if (kind === 'BRANCH_TRANSFER') return transfer(args);
+  return post({ kind, ...args });
+};
 
 const transactionService = {
   KINDS,
   REMARKS_REQUIRED,
+  TRANSFER_ROLES,
+  TRANSFER_TAG,
 
   // body: { kind, valueDate?, amount?, bankAccountId?, ... }; returns { status, body }
   async create(accountId, body, ctxUser, idempotencyKey, failAt) {
@@ -229,6 +358,7 @@ const transactionService = {
     const input = { ...body };
     delete input.kind;
     if (kind === 'REVERSAL' && !input.targetTransactionId) throw new LoanError(400, 'targetTransactionId is required for REVERSAL');
+    if (kind === 'BRANCH_TRANSFER' && (input.toBranchId === undefined || input.toBranchId === null || input.toBranchId === '')) throw new LoanError(400, 'toBranchId is required for BRANCH_TRANSFER');
     if (REMARKS_REQUIRED.has(kind) && !(typeof input.remarks === 'string' && input.remarks.trim())) throw new LoanError(400, `remarks are required for ${kind}`);
     const hash = G.requestHash({ accountId: Number(accountId), body });
     const hook = G.makeTestHook(failAt);

@@ -151,4 +151,11 @@ const describeScope = async (userId) => {
   return { all: scope.all, branches: rows.map(r => ({ id: Number(r.id), name: r.name, code: r.code || null })) };
 };
 
-module.exports = { ALL_BRANCHES, KINDS, AUDIT_ENTITIES, scopeOf, inScope, assertScope, whereScope, auditWhereScope, scoped, describeScope };
+// Phase 6 Stage 4: branches an account can be transferred to (active location with an AUTHORIZED, active
+// branch profile). Company master data for the BRANCH_TRANSFER dialog; the server checks it again.
+const transferBranches = async () => (await db.sequelize.query(
+  `SELECT l.id, l.name, p.branchCode AS code FROM location l JOIN ln_branch_profile p ON p.locationId = l.id AND p.authStatus = 'AUTHORIZED' AND p.isActive = 1
+    WHERE l.isActive = 1 ORDER BY l.id`, { type: db.Sequelize.QueryTypes.SELECT }
+)).map(r => ({ id: Number(r.id), name: r.name, code: r.code }));
+
+module.exports = { ALL_BRANCHES, KINDS, AUDIT_ENTITIES, scopeOf, inScope, assertScope, whereScope, auditWhereScope, scoped, describeScope, transferBranches };

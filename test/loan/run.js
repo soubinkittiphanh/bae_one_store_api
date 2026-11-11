@@ -1193,6 +1193,8 @@ const apiTests = async ({ port, q, db, runNode }) => {
   await require('./branchScopeTests')({ test, call, q, runNode, users: { SUPER, ADMIN, CASHIER }, L, expectStatus, branch: BRANCH_A });
   console.log('\n[phase 6 stage 2: branch from sale, tagging, bank, numbering, EOD, report filters, BS/TB split]');
   await require('./branchStage2Tests')({ test, call, q, db, users: { SUPER, SUPER2, ADMIN, CASHIER }, L, expectStatus, branch: BRANCH_A });
+  console.log('\n[phase 6 stage 4: BRANCH_TRANSFER]');
+  await require('./branchTransferTests')({ test, call, q, db, users: { SUPER, SUPER2, ADMIN, CASHIER }, L, expectStatus, branch: BRANCH_A });
 
   console.log('\n[api, continued]');
   await test('banner status for any user, pending inbox filtered by grants, enums served by lookups', async () => {

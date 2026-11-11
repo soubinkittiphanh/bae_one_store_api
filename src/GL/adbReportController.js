@@ -875,7 +875,7 @@ class ADBReportController {
         try {
             const { asOfDate = new Date().toISOString().split('T')[0], projectId } = req.query;
             if (isNaN(new Date(asOfDate).getTime())) return res.status(400).json({ error: "Invalid asOfDate format. Please use YYYY-MM-DD" });
-            const { parseBranchId, glBranchTags, NOT_TAGGED_LABEL } = require('../loan/reports/branchTags');
+            const { parseBranchId, glBranchTags, transferMemoRows, NOT_TAGGED_LABEL } = require('../loan/reports/branchTags');
             let branchId;
             try { branchId = parseBranchId(req.query.branchId); } catch (e) { return res.status(400).json({ error: e.message }); }
             const accounts = await db.chartAccount.findAll({ where: { isActive: true } });
@@ -913,7 +913,9 @@ class ADBReportController {
                 success: true,
                 asOfDate,
                 branchId,
-                ...balancesOf(glEntries.filter(e => tags.get(Number(e.id)) === branchId)),
+                // Stage 4: plus the branch's BRANCH_TRANSFER memo legs (no GL row; they net to zero company-wide,
+                // so per account the branches' net balances still add up to the company's)
+                ...balancesOf([...glEntries.filter(e => tags.get(Number(e.id)) === branchId), ...(await transferMemoRows(asOfDate)).filter(m => m.memoBranch === branchId)]),
                 notBranchTagged: { label: NOT_TAGGED_LABEL, ...balancesOf(glEntries.filter(e => !tags.has(Number(e.id)))) }
             });
         } catch (error) {

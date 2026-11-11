@@ -444,7 +444,7 @@ module.exports = async ({ test, call, q, baseUrl, users, L, expectStatus }) => {
     expectStatus(await call(user, 'get', `${L}/accounts/${account.id}/summary`), 200, 'flag restored');
   });
 
-  await test('T4 preview/:kind for every one of the 12 write kinds writes nothing, whether it computes a journal or is refused by a business rule (every ln_ table, audit, idempotency and the number sequences)', async () => {
+  await test('T4 preview/:kind for every one of the 13 write kinds (Phase 6: + BRANCH_TRANSFER) writes nothing, whether it computes a journal or is refused by a business rule (every ln_ table, audit, idempotency and the number sequences)', async () => {
     const { KINDS } = require('../../src/loan/posting/transactionService');
     const setSpf = (code, value) => q('UPDATE SPF SET value = ? WHERE code = ?', [value, code]);
     const tables = (await q("SELECT table_name t FROM information_schema.tables WHERE table_schema = DATABASE() AND (table_name LIKE 'ln\\_%' OR table_name IN ('general_ledger', 'transactionEntry'))")).map(r => r.t);
@@ -457,11 +457,15 @@ module.exports = async ({ test, call, q, baseUrl, users, L, expectStatus }) => {
     const account = (await q("SELECT id FROM ln_account WHERE accountStage = 'DISBURSED' ORDER BY id LIMIT 1"))[0] || (await q("SELECT id FROM ln_account ORDER BY id LIMIT 1"))[0];
     assert.ok(account, 'earlier tests leave an account');
     const target = (await q("SELECT id FROM ln_transaction WHERE postingStatus = 'POSTED' AND isReversed = 0 ORDER BY id DESC LIMIT 1"))[0];
+    // a destination for the BRANCH_TRANSFER preview: another active location (with or without a profile, the
+    // preview must write nothing either way)
+    const otherBranch = (await q('SELECT l.id FROM location l JOIN ln_account a ON a.id = ? WHERE l.id <> a.branchId AND l.isActive = 1 ORDER BY l.id LIMIT 1', [account.id]))[0];
     const bodyFor = (kind) => {
       const b = { INS_REMIT: { amount: '1' }, ADV_REFUND: { amount: '1' }, RECOVERY: { amount: '1' },
         WAIVE: { component: 'INTEREST', amount: '1', remarks: 'x' }, REPOSSESS: { appraisedValue: '1', remarks: 'x' },
         VEH_DISPOSE: { salePrice: '1', remarks: 'x' }, WRITE_OFF: { remarks: 'x' },
-        REVERSAL: { targetTransactionId: target ? target.id : 999999999, remarks: 'x' } }[kind];
+        REVERSAL: { targetTransactionId: target ? target.id : 999999999, remarks: 'x' },
+        BRANCH_TRANSFER: { toBranchId: otherBranch ? Number(otherBranch.id) : 999999999, remarks: 'x' } }[kind];
       return b || {};
     };
     const prior = (await q("SELECT value v FROM SPF WHERE code = 'LOAN_POSTING_ENABLED'"))[0].v;

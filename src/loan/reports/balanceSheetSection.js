@@ -128,17 +128,19 @@ const linesOf = (accounts, rows, keep) => {
 };
 
 const buildBranch = async ({ asOfDate, branchId }) => {
-  const { glBranchTags, NOT_TAGGED_LABEL } = require('./branchTags');
+  const { glBranchTags, transferMemoRows, NOT_TAGGED_LABEL } = require('./branchTags');
   const mappings = (await db.lnRoleGlMapping.findAll({ where: { authStatus: 'AUTHORIZED' } }))
     .filter(m => String(m.effectiveFrom) <= asOfDate && (!m.effectiveTo || String(m.effectiveTo) >= asOfDate));
   const ids = [...new Set(mappings.map(m => m.chartAccountId))];
   const accounts = ids.length ? await db.chartAccount.findAll({ where: { id: ids } }) : [];
-  const rows = await glRowsOf(ids, asOfDate);
+  // GL rows plus the BRANCH_TRANSFER memo legs (Stage 4), which belong to the branch on the leg
+  const rows = [...await glRowsOf(ids, asOfDate), ...await transferMemoRows(asOfDate)];
   const tags = await glBranchTags();
+  const branchOfRow = g => (g.memoBranch !== undefined ? g.memoBranch : tags.get(Number(g.id)));
   return {
     branchId,
-    branch: linesOf(accounts, rows, g => tags.get(Number(g.id)) === branchId),
-    notBranchTagged: { label: NOT_TAGGED_LABEL, ...linesOf(accounts, rows, g => !tags.has(Number(g.id))) }
+    branch: linesOf(accounts, rows, g => branchOfRow(g) === branchId),
+    notBranchTagged: { label: NOT_TAGGED_LABEL, ...linesOf(accounts, rows, g => branchOfRow(g) === undefined) }
   };
 };
 

@@ -1,5 +1,5 @@
 const masterService = require('../services/masterService');
-const { describeScope } = require('../services/branchScope');
+const { describeScope, transferBranches } = require('../services/branchScope');
 const paramService = require('../services/paramService');
 const { handle } = require('../errors');
 const { ctxOf } = require('./paramController');
@@ -11,7 +11,7 @@ const pick = (obj, keys) => Object.fromEntries(keys.filter(k => obj && obj[k] !=
 const masterController = {
   // Phase 6 Stage 3: plus the caller's branch scope (header chip, branch selector). Here, behind LN_LOOKUP VIEW,
   // because the token-only /status must carry no data.
-  getLookups: handle(async req => ({ ...(await masterService.getLookups(req.query)), branchScope: await describeScope(req.user.id) })),
+  getLookups: handle(async req => ({ ...(await masterService.getLookups(req.query)), branchScope: await describeScope(req.user.id), transferBranches: await transferBranches() })),
   getUdes: handle(req => masterService.getUdes(req.query)),
   getComponents: handle(req => masterService.getComponents(req.query)),
   // Component taxability is edited through maker-checker like any other parameter

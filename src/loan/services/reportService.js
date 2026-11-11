@@ -413,7 +413,7 @@ const reportService = {
     const within = whereScope(scope);
     const accountIds = scope.all ? null : (await db.lnAccount.findAll({ where: within, attributes: ['id'] })).map(a => a.id);
     const legWhere = accountIds ? { loanAccountId: accountIds.length ? accountIds : [-1] } : {};
-    const legs = await findAllExact(db.lnJournalPosting, { where: legWhere, attributes: ['transactionId', 'roleCode', 'chartAccountId', 'drCr', 'currencyId', 'amount', 'baseAmount', 'glRecordId'] });
+    const legs = await findAllExact(db.lnJournalPosting, { where: legWhere, attributes: ['transactionId', 'roleCode', 'amountTag', 'chartAccountId', 'drCr', 'currencyId', 'amount', 'baseAmount', 'glRecordId'] });
     const linkWhere = { posTable: 'general_ledger', ...(accountIds ? { transactionId: [...new Set(legs.map(l => l.transactionId).filter(Boolean))].concat([-1]) } : {}) };
     const links = await db.lnPosLink.findAll({ where: linkWhere, attributes: ['transactionId', 'posId'] });
     const txWithGl = new Set(links.map(l => l.transactionId));
@@ -436,7 +436,9 @@ const reportService = {
       r.roles.add(l.roleCode);
       r.jAmt += s * su(l.amount);
       r.jBase += s * su(l.baseAmount);
-      if (!l.glRecordId && !txWithGl.has(l.transactionId)) r.unlinked += 1;
+      // Phase 6 Stage 4: BRANCH_TRANSFER memo legs (and their REVERSAL mirrors, same tag) have no GL row by
+      // design and net to zero per chart account company-wide: they are not "unlinked"
+      if (!l.glRecordId && !txWithGl.has(l.transactionId) && l.amountTag !== 'BRANCH_TRANSFER') r.unlinked += 1;
     }
     // Each GL row counts once per side; base-only rows (debit 0) add base only
     for (const g of glRows) {

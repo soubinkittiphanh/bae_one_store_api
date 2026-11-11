@@ -19,6 +19,24 @@ const glBranchTags = async () => {
   return tags;
 };
 
+// Phase 6 Stage 4: BRANCH_TRANSFER memo legs (and their REVERSAL mirrors, same amountTag) have no GL row. For
+// the branch split they act as GL rows at their leg's branch, at the carrying base (localDebit/localCredit).
+// They net to zero per chart account company-wide, so the company reports never see them.
+const transferMemoRows = async (asOfDate) => {
+  const rows = await db.sequelize.query(`
+    SELECT jp.id, jp.branchId b, jp.chartAccountId c, jp.drCr d, CAST(jp.baseAmount AS CHAR) base
+      FROM ln_journal_posting jp JOIN ln_transaction t ON t.id = jp.transactionId
+     WHERE jp.amountTag = 'BRANCH_TRANSFER' AND jp.glRecordId IS NULL AND jp.branchId IS NOT NULL
+       AND t.postingStatus = 'POSTED' AND COALESCE(t.bookingDate, t.valueDate) <= :asOfDate
+     ORDER BY jp.id`, { replacements: { asOfDate }, type: db.Sequelize.QueryTypes.SELECT });
+  return rows.map(r => ({
+    id: `memo-${r.id}`, memoBranch: Number(r.b),
+    drAccountId: r.d === 'DR' ? r.c : null, crAccountId: r.d === 'CR' ? r.c : null,
+    ld: r.d === 'DR' ? r.base : '0', lc: r.d === 'CR' ? r.base : '0',
+    localDebit: r.d === 'DR' ? r.base : '0', localCredit: r.d === 'CR' ? r.base : '0'
+  }));
+};
+
 // branchId query value -> a location id; anything else is a 400
 const parseBranchId = (value) => {
   const id = Number(value);
@@ -26,4 +44,4 @@ const parseBranchId = (value) => {
   return id;
 };
 
-module.exports = { NOT_TAGGED_LABEL, glBranchTags, parseBranchId };
+module.exports = { NOT_TAGGED_LABEL, glBranchTags, parseBranchId, transferMemoRows };
