@@ -434,6 +434,10 @@ const main = async () => {
     const mig = require('../../20261107_loan_branch_support');
     const before = await snapshot();
     const qi = db.sequelize.getQueryInterface();
+    // Stage 2: the Phase 6 seed prefills PENDING branch bank rows, and the branch support DOWN (rightly) refuses
+    // while any branch row exists. Set them aside to reach the pre-migration state, and put them back at the end.
+    const prefilled = await q('SELECT * FROM ln_branch_bank_account ORDER BY id');
+    await q('DELETE FROM ln_branch_bank_account');
     assert.match(runNode('loan_migrate.js', ['down', '--yes']), /20261109_loan_branch_no_default/);
     assert.match(runNode('loan_migrate.js', ['down', '--yes']), /20261107_loan_branch_support/);
     // What startup sync does for these objects: CREATE TABLE IF NOT EXISTS from the models (database default
@@ -464,6 +468,11 @@ const main = async () => {
     runNode('loan_migrate.js', ['up']);
     assert.strictEqual(await snapshot(), before, 'second UP changes nothing');
     assert.deepStrictEqual(await parity(db), [], 'models still match');
+    for (const r of prefilled) {
+      const cols = Object.keys(r);
+      await q(`INSERT INTO ln_branch_bank_account (${cols.map(c => `\`${c}\``).join(', ')}) VALUES (${cols.map(() => '?').join(', ')})`, cols.map(c => r[c]));
+    }
+    assert.strictEqual(Number((await q('SELECT COUNT(*) n FROM ln_branch_bank_account'))[0].n), prefilled.length, 'the prefilled rows are back');
   });
 
   await test('exact decimal reads (loan only): a DECIMAL(20,4) above 2^53/10^4 comes back as the exact string; normal reads lose digits', async () => {

@@ -40,6 +40,31 @@ module.exports = async ({ test, call, q, db, users, L, expectStatus, branch: BRA
   const link = (user, t) => q('INSERT IGNORE INTO UserTerminals (createdAt, updateTimestamp, userId, terminalId) VALUES (NOW(), NOW(), ?, ?)', [user, t]);
   const unlink = (user, t) => q('DELETE FROM UserTerminals WHERE userId = ? AND terminalId = ?', [user, t]);
   const repay = (user, accountId, bankAccountId, amount = '1000') => call(user, 'post', `${L}/accounts/${accountId}/transactions`, { kind: 'REPAYMENT', amount, bankAccountId }, { 'Idempotency-Key': `t7-${uuidv4()}` });
+  // A disbursed account at branch A, made the way the posting tests make one: sale with AR invoice and down
+  // payment, application by ADMIN (terminal at A), approved and booked by SUPER, fee collected, DISB maker-checker.
+  const openLoan = async () => {
+    const tag = uuidv4().slice(0, 8);
+    const sale = await db.saleHeader.create({ bookingDate: businessDate, referenceNo: `T7-OPEN-${tag}`, locationId: BRANCH_A, total: 300000000, exchangeRate: 1, isActive: true, clientId: client, currencyId: lakId, isPostedToAR: true });
+    const invoice = await db.arInvoiceHeader.create({ invoiceNumber: `INV-T7-${tag}`, invoiceDate: businessDate, totalAmount: '300000000.00', netAmount: '300000000.00', taxAmount: 0, status: 'sent', clientId: client, currencyId: lakId, saleHeaderId: sale.id, sourceType: 'POS_ORDER', glPostingStatus: 'posted', exchangeRate: 1 });
+    const line = await db.arInvoiceLine.create({ lineNumber: 1, description: 'Vehicle', quantity: 1, unitPrice: '300000000.00', lineTotal: '300000000.00', invoiceHeaderId: invoice.id });
+    await sale.update({ arInvoiceId: invoice.id });
+    const dp = await db.arReceiveHeaderV2.create({ receiptNumber: `DP-T7-${tag}`, bookingDate: businessDate, receivedDate: businessDate, invoiceHeaderId: invoice.id, totalReceivedAmount: '60000000.00', paymentMethod: 'cash', status: 'active', currencyId: lakId, glPostingStatus: 'unposted', exchangeRate: 1 });
+    await db.arReceiveLine.create({ receiveHeaderId: dp.id, lineNumber: 1, invoiceLineId: line.id, allocatedAmount: '60000000.00', allocationDate: businessDate });
+    const app = await createApp(ADMIN, { vehicleSaleHeaderId: sale.id });
+    expectStatus(app, 201, 'open loan: application');
+    expectStatus(await call(ADMIN, 'post', `${L}/applications/${app.data.data.id}/submit`), 200, 'open loan: submit');
+    expectStatus(await call(SUPER, 'post', `${L}/applications/${app.data.data.id}/approve`), 200, 'open loan: approve');
+    const booked = await call(SUPER, 'post', `${L}/applications/${app.data.data.id}/book`);
+    expectStatus(booked, 201, 'open loan: book');
+    const id = Number(booked.data.data.account.id);
+    const tx = (user, body) => call(user, 'post', `${L}/accounts/${id}/transactions`, body, { 'Idempotency-Key': `t7-${uuidv4()}` });
+    expectStatus(await tx(ADMIN, { kind: 'FEE_COLLECT', bankAccountId: bank, insurancePremium: '7000000' }), 201, 'open loan: fee collect');
+    const disb = await tx(ADMIN, { kind: 'DISB' });
+    expectStatus(disb, 202, 'open loan: DISB pending');
+    expectStatus(await call(SUPER, 'post', `${L}/transactions/${disb.data.data.transactionId}/authorize`), 200, 'open loan: DISB authorized');
+    assert.strictEqual((await one('SELECT accountStage s FROM ln_account WHERE id = ?', [id])).s, 'DISBURSED');
+    return id;
+  };
   const lnState = async () => {
     const tables = (await q("SELECT table_name t FROM information_schema.tables WHERE table_schema = DATABASE() AND (table_name LIKE 'ln\\_%' OR table_name IN ('general_ledger', 'transactionEntry'))")).map(r => r.t);
     const counts = {};
@@ -198,10 +223,9 @@ module.exports = async ({ test, call, q, db, users, L, expectStatus, branch: BRA
   let Y; // a disbursed account moved to branch B
   let Z; // a disbursed account left at branch A
   await test('bank mapping and journal tagging: the account\'s bank list holds only AUTHORIZED, active accounts mapped to its branch; a posting with an unmapped or only PENDING-mapped bank is refused (400) and writes nothing; after moving the account to B, A\'s mapping no longer counts; once mapped to B it posts, every leg carries branch B and the number SR2; a posting at A is tagged A with SR1', async () => {
-    const open = await q("SELECT a.id FROM ln_account a WHERE a.accountStage = 'DISBURSED' AND a.status = 'NORMAL' AND a.branchId = ? AND a.currencyId = ? ORDER BY a.id", [BRANCH_A, lakId]);
-    assert.ok(open.length >= 2, 'two open LAK accounts at A');
-    Y = Number(open[0].id);
-    Z = Number(open[1].id);
+    // Two fresh disbursed LAK accounts at A (the earlier tests leave too few open ones to borrow)
+    Y = await openLoan();
+    Z = await openLoan();
     const other = await db.bankAccount.create({ accountNumber: `T7-UNMAPPED-${Date.now()}`, accountName: 'T7 unmapped', accountType: 'Current', currency: 'LAK', isActive: true, balance: 0 });
     const listed = async id => (await call(SUPER, 'get', `${L}/accounts/${id}/bank-accounts`)).data.data.map(b => Number(b.id));
     assert.ok((await listed(Y)).includes(bank) && !(await listed(Y)).includes(other.id), 'A\'s list: mapped bank only');
@@ -252,8 +276,12 @@ module.exports = async ({ test, call, q, db, users, L, expectStatus, branch: BRA
 
   await test('EOD: one run over two branches; every EOD transaction and leg carries its account\'s branch, numbers carry the branch code, and each GL batch is per branch (batch number B<branch> = its branchId)', async () => {
     const lastId = await num('SELECT IFNULL(MAX(id), 0) n FROM ln_transaction');
+    // Y and Z were disbursed today: no accrual (not month-end), no penalty, so EOD would drop their empty
+    // transactions. A stale DPD gives the classification job real work on both accounts.
+    await q('UPDATE ln_account SET currentDpd = 99 WHERE id IN (?, ?)', [Y, Z]);
     const run = await call(SUPER, 'post', `${L}/eod/run`);
     expectStatus(run, 200, 'eod');
+    assert.deepStrictEqual((await q('SELECT currentDpd d FROM ln_account WHERE id IN (?, ?)', [Y, Z])).map(r => Number(r.d)), [0, 0], 'EOD reclassified both');
     const txns = await q("SELECT id, loanAccountId a, branchId b, txNo FROM ln_transaction WHERE id > ? AND source = 'EOD'", [lastId]);
     const ofY = txns.filter(t => Number(t.a) === Y);
     const ofZ = txns.filter(t => Number(t.a) === Z);

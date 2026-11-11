@@ -517,6 +517,15 @@ module.exports = async ({ test: runTest, call, q, db, runNode, users, L, expectS
     await setSpf('LOAN_MAX_BACKDATE_DAYS', '0');
     await q("UPDATE ln_system_date SET periodLockDate = '2026-10-01'");
     const before = await counts(bank.id);
+    // Stage 2: the seed prefilled bank 124 at this branch as PENDING, so the branch check refuses it first
+    const pending = await post(ADMIN, C.account.id, { kind: 'REPAYMENT', amount: '1000', bankAccountId: 124 });
+    expectStatus(pending, 400, 'bank 124 while its prefilled branch mapping is PENDING');
+    assert.match(pending.data.message, /not mapped to branch/);
+    assert.deepStrictEqual(await counts(bank.id), before);
+    const pre = await q("SELECT id FROM ln_branch_bank_account WHERE locationId = ? AND bankAccountId = 124 AND authStatus = 'PENDING'", [branch]);
+    assert.strictEqual(pre.length, 1, 'the seed prefilled bank 124 at the branch as PENDING');
+    expectStatus(await call(SUPER2, 'post', `${L}/params/branch-bank-account/${pre[0].id}/authorize`), 200, 'a second person authorizes the prefilled row');
+    // mapped now, but 124 has no chart account: the GL mapping check still refuses
     const unmapped = await post(ADMIN, C.account.id, { kind: 'REPAYMENT', amount: '1000', bankAccountId: 124 });
     expectStatus(unmapped, 409, 'unmapped bank account');
     assert.match(unmapped.data.message, /has no active chart_of_account with the same number/);

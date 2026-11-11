@@ -231,8 +231,11 @@ module.exports = async ({ test, call, q, runNode, users, L, expectStatus, branch
   });
 
   await test('migration on real data: UP backfills every untagged journal leg from its transaction\'s branch (X\'s legs to B, the rest to A); DOWN then refuses because legs carry a branchId and changes nothing', async () => {
+    // Stage 2 tags legs at posting, so none is untagged here. The backfill is for databases where a Stage 1 build
+    // posted legs without a branchId: put the legs back in that state.
+    await q('UPDATE ln_journal_posting jp JOIN ln_transaction t ON t.id = jp.transactionId SET jp.branchId = NULL');
     const untagged = await num('SELECT COUNT(*) n FROM ln_journal_posting jp JOIN ln_transaction t ON t.id = jp.transactionId WHERE jp.branchId IS NULL');
-    assert.ok(untagged > 0, 'Stage 1 posts legs without a branchId (journal tagging is Stage 2)');
+    assert.ok(untagged > 0, 'legs as a Stage 1 build left them (no branchId)');
     runNode('loan_migrate.js', ['up']);
     assert.strictEqual(await num('SELECT COUNT(*) n FROM ln_journal_posting jp JOIN ln_transaction t ON t.id = jp.transactionId WHERE NOT (jp.branchId <=> t.branchId)'), 0, 'every leg with a transaction carries its branch');
     assert.ok(await num('SELECT COUNT(*) n FROM ln_journal_posting WHERE loanAccountId = ? AND branchId = ?', [X.id, BRANCH_B]) > 0, 'X\'s legs are at B');
