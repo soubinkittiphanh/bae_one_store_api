@@ -1658,7 +1658,7 @@ exports.getSaleHeaders = async (req, res) => {
 
 
 exports.getSaleHeadersByDate = async (req, res) => {
-  const date = JSON.parse(req.query.date);
+  const date = typeof req.query.date === 'string' ? JSON.parse(req.query.date) : req.query.date;
   logger.warn("Date " + date.startDate + " " + date.endDate)
   logger.warn(`Request date ${date.startDate} userId ${req.user.id}`)
   try {
@@ -1782,7 +1782,7 @@ exports.getSaleHeadersDetailByDate = async (req, res) => {
     if (!req.query.date || req.query.date === 'undefined') {
       return res.status(400).json({ success: false, message: 'Invalid or missing date parameter' });
     }
-    const date = JSON.parse(req.query.date);
+    const date = typeof req.query.date === 'string' ? JSON.parse(req.query.date) : req.query.date;
     logger.warn("Date " + date.startDate + " " + date.endDate);
     if (req.user && req.user.id) {
       logger.warn(`Request date ${date.startDate} userId ${req.user.id}`);
@@ -1987,7 +1987,7 @@ exports.getSaleHeadersDetailByDate = async (req, res) => {
 
 exports.getSaleHeadersByDateAndUser = async (req, res) => {
   logger.warn("=============Loading saleHeader data=============")
-  const date = JSON.parse(req.query.date);
+  const date = typeof req.query.date === 'string' ? JSON.parse(req.query.date) : req.query.date;
   logger.warn(`Request date ${date.startDate} userId ${date.userId}`)
   try {
     const saleHeaders = await SaleHeader.findAll({
@@ -2120,7 +2120,7 @@ exports.getSaleHeadersByDateAndUser = async (req, res) => {
 };
 exports.getSaleHeadersByDateAndCustomer = async (req, res) => {
   try {
-    const date = JSON.parse(req.query.date);
+    const date = typeof req.query.date === 'string' ? JSON.parse(req.query.date) : req.query.date;
     logger.warn(`Filter By Customer: Request date ${date.startDate} to ${date.endDate} customerId ${date.clientId}`)
 
     const whereClause = {
@@ -2175,7 +2175,7 @@ exports.getSaleHeadersByDateAndCustomer = async (req, res) => {
     if (error.original?.errno === 1054 || error.message?.includes('Unknown column')) {
       try {
         await ensureSaleLineAndProductColumns();
-        const date = JSON.parse(req.query.date);
+        const date = typeof req.query.date === 'string' ? JSON.parse(req.query.date) : req.query.date;
         const whereClause = {
           bookingDate: {
             [Op.between]: [date.startDate, date.endDate]
@@ -2237,7 +2237,7 @@ exports.getSaleHeadersByDateAndCustomer = async (req, res) => {
   }
 };
 exports.getSaleHeadersByDateAndProduct = async (req, res) => {
-  const date = JSON.parse(req.query.date);
+  const date = typeof req.query.date === 'string' ? JSON.parse(req.query.date) : req.query.date;
   const productId = date.productId;
   logger.warn(`Request date ${date.startDate} customerId ${date.productId}`)
   try {
@@ -2463,7 +2463,7 @@ exports.deleteSaleHeader = async (req, res) => {
 //   }
 // });
 exports.sumSaleToday = async (req, res) => {
-  const date = JSON.parse(req.query.date);
+  const date = typeof req.query.date === 'string' ? JSON.parse(req.query.date) : req.query.date;
   logger.warn("Date " + date.startDate + " " + date.endDate)
   const { startDate, endDate } = date // new Date('2022-01-01');
   try {
@@ -2501,7 +2501,7 @@ exports.sumSaleToday = async (req, res) => {
 };
 
 exports.sumSaleCurrentMonth = async (req, res) => {
-  const date = JSON.parse(req.query.date);
+  const date = typeof req.query.date === 'string' ? JSON.parse(req.query.date) : req.query.date;
   logger.warn("Date " + date.startDate + " " + date.endDate)
   //   const startDate = new Date('2023-07-01');
   // const endDate = new Date('2023-12-31');
@@ -2523,7 +2523,7 @@ exports.sumSaleCurrentMonth = async (req, res) => {
   }
 };
 exports.sumSaleCurrentYear = async (req, res) => {
-  const date = JSON.parse(req.query.date);
+  const date = typeof req.query.date === 'string' ? JSON.parse(req.query.date) : req.query.date;
   const locationId = req.query.locationId;  // Get locationId directly
   const includeCards = req.query.includeCards === 'true'; // Optional parameter
 
@@ -2598,7 +2598,7 @@ exports.sumSaleCurrentYear = async (req, res) => {
 };
 
 exports.getSaleHeadersByDateWithGifts = async (req, res) => {
-  const date = JSON.parse(req.query.date);
+  const date = typeof req.query.date === 'string' ? JSON.parse(req.query.date) : req.query.date;
   logger.warn("Gift Report - Date " + date.startDate + " " + date.endDate);
   logger.warn(`Gift Report - Request date ${date.startDate} userId ${req.user.id}`);
 
@@ -2699,7 +2699,7 @@ exports.getSaleHeadersByDateWithGifts = async (req, res) => {
  */
 exports.getSaleHeadersByDateAndUserWithGifts = async (req, res) => {
   logger.warn("=============Loading gift saleHeader data=============");
-  const date = JSON.parse(req.query.date);
+  const date = typeof req.query.date === 'string' ? JSON.parse(req.query.date) : req.query.date;
   logger.warn(`Gift Report - Request date ${date.startDate} userId ${date.userId}`);
 
   try {
@@ -2809,7 +2809,7 @@ exports.getSaleHeadersByDateAndUserWithGifts = async (req, res) => {
  * Provides aggregate data about gift transactions
  */
 exports.getGiftStatsByDate = async (req, res) => {
-  const date = JSON.parse(req.query.date);
+  const date = typeof req.query.date === 'string' ? JSON.parse(req.query.date) : req.query.date;
   logger.warn("Gift Stats - Date " + date.startDate + " " + date.endDate);
 
   try {
@@ -2900,7 +2900,7 @@ exports.getGiftStatsByDate = async (req, res) => {
  * Shows which customers received the most gifts
  */
 exports.getGiftsByCustomer = async (req, res) => {
-  const date = JSON.parse(req.query.date);
+  const date = typeof req.query.date === 'string' ? JSON.parse(req.query.date) : req.query.date;
   logger.warn("Gift by Customer - Date " + date.startDate + " " + date.endDate);
 
   try {
@@ -2952,7 +2952,7 @@ exports.getGiftsByCustomer = async (req, res) => {
  * Shows gift distribution patterns over months
  */
 exports.getGiftTrends = async (req, res) => {
-  const date = JSON.parse(req.query.date);
+  const date = typeof req.query.date === 'string' ? JSON.parse(req.query.date) : req.query.date;
   logger.warn("Gift Trends - Date " + date.startDate + " " + date.endDate);
 
   try {
