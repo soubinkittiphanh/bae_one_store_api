@@ -1521,14 +1521,20 @@ const assignHeaderId = async (lines, idOrHeader, lockingSessionId, isUpdate, loc
     iterator.headerId = actualHeaderId;
     iterator.saleHeaderId = actualHeaderId;
 
-    // Use iterator.product.validateStockOnSale if it's nested, or directly
     const isRedeem = iterator.productId === 999;
     const isReturn = iterator.isReturn === true || iterator.isReturn === 1 || iterator.packagingAction === 'RETURNED';
-    const shouldValidate = !isRedeem && !isReturn && (
-      iterator.validateStockOnSale === true ||
-      iterator.validateStockOnSale === 1 ||
-      (iterator.validateStockOnSale !== false && iterator.validateStockOnSale !== 0 && iterator.product && iterator.product.validateStockOnSale)
-    );
+
+    let validateStock = iterator.validateStockOnSale;
+    if (validateStock === undefined || validateStock === null) {
+      if (iterator.product && iterator.product.validateStockOnSale !== undefined) {
+        validateStock = iterator.product.validateStockOnSale;
+      } else {
+        const prod = await Product.findByPk(iterator.productId, { attributes: ['id', 'validateStockOnSale'] });
+        validateStock = prod ? prod.validateStockOnSale : 0;
+      }
+    }
+
+    const shouldValidate = !isRedeem && !isReturn && (validateStock === true || validateStock === 1);
 
     if (shouldValidate) {
       try {
@@ -1615,7 +1621,11 @@ const reserveCard = async (line, lockingSessionId, qty, locationId) => {
     productId: line.productId,
     saleLineId: null,
     card_isused: 0,
-    locationId
+    locationId,
+    [Op.or]: [
+      { locking_session_id: null },
+      { locking_session_id: '' }
+    ]
   };
 
   if (checkVariant) {
@@ -3154,14 +3164,23 @@ const validateStockForLinesV2 = async (lines, locationId) => {
   const spfStockVarParam = await spfService.getSPFByCode('STOCK.VAR');
   const checkVariant = spfStockVarParam && spfStockVarParam.value === 'Y';
 
+  const consumedQtyMap = new Map();
+
   for (const line of lines) {
     const isRedeem = line.productId === 999;
     const isReturn = line.isReturn === true || line.isReturn === 1 || line.packagingAction === 'RETURNED';
-    const shouldValidate = !isRedeem && !isReturn && (
-      line.validateStockOnSale === true ||
-      line.validateStockOnSale === 1 ||
-      (line.validateStockOnSale !== false && line.validateStockOnSale !== 0 && line.product && line.product.validateStockOnSale)
-    );
+
+    let validateStock = line.validateStockOnSale;
+    if (validateStock === undefined || validateStock === null) {
+      if (line.product && line.product.validateStockOnSale !== undefined) {
+        validateStock = line.product.validateStockOnSale;
+      } else {
+        const prod = await Product.findByPk(line.productId, { attributes: ['id', 'validateStockOnSale'] });
+        validateStock = prod ? prod.validateStockOnSale : 0;
+      }
+    }
+
+    const shouldValidate = !isRedeem && !isReturn && (validateStock === true || validateStock === 1);
 
     if (shouldValidate) {
       const requiredQty = (line.unitRate || 1) * line.quantity;
@@ -3171,7 +3190,11 @@ const validateStockForLinesV2 = async (lines, locationId) => {
         saleLineId: null,
         card_isused: 0,
         locationId: locationId,
-        isActive: true
+        isActive: true,
+        [Op.or]: [
+          { locking_session_id: null },
+          { locking_session_id: '' }
+        ]
       };
 
       if (checkVariant) {
@@ -3188,16 +3211,22 @@ const validateStockForLinesV2 = async (lines, locationId) => {
         where: whereCondition
       });
 
-      if (availableCount < requiredQty) {
+      const key = `${line.productId}_${checkVariant ? (line.colorId || '') : ''}_${checkVariant ? (line.sizeId || '') : ''}`;
+      const alreadyConsumed = consumedQtyMap.get(key) || 0;
+      const totalRequired = alreadyConsumed + requiredQty;
+
+      if (availableCount < totalRequired) {
         stockValidationErrors.push({
           productId: line.productId,
           colorId: checkVariant ? line.colorId : null,
           sizeId: checkVariant ? line.sizeId : null,
-          required: requiredQty,
+          required: totalRequired,
           available: availableCount,
-          shortage: requiredQty - availableCount
+          shortage: totalRequired - availableCount
         });
       }
+
+      consumedQtyMap.set(key, totalRequired);
     }
   }
 
@@ -3217,7 +3246,11 @@ const reserveCardV2 = async (line, lockingSessionId, qty, locationId) => {
     productId: line.productId,
     saleLineId: null,
     card_isused: 0,
-    locationId
+    locationId,
+    [Op.or]: [
+      { locking_session_id: null },
+      { locking_session_id: '' }
+    ]
   };
 
   if (checkVariant) {
@@ -3229,15 +3262,20 @@ const reserveCardV2 = async (line, lockingSessionId, qty, locationId) => {
     }
   }
 
-  // V2: Check stock via count
+  // V2: Check stock via count (only available unlocked cards)
   const count = await Card.count({ where: whereCondition });
   if (count < qty) {
     const variantStr = checkVariant ? ` (Color: ${line.colorId}, Size: ${line.sizeId})` : '';
     throw new Error(`Insufficient stock for Product ${line.productId}${variantStr}`);
   }
 
-  // Construct raw query for blazing fast updates
-  let sql = `UPDATE card SET locking_session_id = :lockId WHERE productId = :productId AND saleLineId IS NULL AND card_isused = 0 AND locationId = :locationId`;
+  // Construct raw query for blazing fast updates - only lock cards that are not yet locked!
+  let sql = `UPDATE card SET locking_session_id = :lockId 
+             WHERE productId = :productId 
+               AND saleLineId IS NULL 
+               AND card_isused = 0 
+               AND locationId = :locationId 
+               AND (locking_session_id IS NULL OR locking_session_id = '')`;
   let replacements = {
     lockId: lockingSessionId,
     productId: line.productId,
@@ -3271,11 +3309,18 @@ const assignHeaderIdV2 = async (lines, idOrHeader, lockingSessionId, isUpdate, l
 
     const isRedeem = iterator.productId === 999;
     const isReturn = iterator.isReturn === true || iterator.isReturn === 1 || iterator.packagingAction === 'RETURNED';
-    const shouldValidate = !isRedeem && !isReturn && (
-      iterator.validateStockOnSale === true ||
-      iterator.validateStockOnSale === 1 ||
-      (iterator.validateStockOnSale !== false && iterator.validateStockOnSale !== 0 && iterator.product && iterator.product.validateStockOnSale)
-    );
+
+    let validateStock = iterator.validateStockOnSale;
+    if (validateStock === undefined || validateStock === null) {
+      if (iterator.product && iterator.product.validateStockOnSale !== undefined) {
+        validateStock = iterator.product.validateStockOnSale;
+      } else {
+        const prod = await Product.findByPk(iterator.productId, { attributes: ['id', 'validateStockOnSale'] });
+        validateStock = prod ? prod.validateStockOnSale : 0;
+      }
+    }
+
+    const shouldValidate = !isRedeem && !isReturn && (validateStock === true || validateStock === 1);
 
     if (shouldValidate) {
       try {
