@@ -30,6 +30,11 @@ module.exports = async ({ test, sh, MYSQL_ARGS, SOURCE_DB, TEST_DB, API_ROOT, RU
   const fails = data => data.rows.filter(x => x.status === 'FAIL').map(x => `${x.id} ${x.detail}`);
   const sql = s => sh(`mariadb ${MYSQL_ARGS} ${T1_DB} -e ${JSON.stringify(s).replace(/`/g, '\\`')}`);
   const sqlRows = s => sh(`mariadb ${MYSQL_ARGS} -N -B ${T1_DB} -e ${JSON.stringify(s).replace(/`/g, '\\`')}`).split('\n').map(x => x.trim()).filter(Boolean);
+  // One AUTHORIZED WRITE_OFF and REPOSSESS threshold per active currency (approver group SUPER_ADMIN), as the
+  // owner would enter them in the Parameter Studio before go-live (C15)
+  const addThresholds = () => sql("INSERT INTO ln_approval_matrix (entityType, currencyId, minAmount, maxAmount, requiredLevel, approverRoleId, authStatus, createdAt, updatedAt) " +
+    "SELECT k.kind, c.id, 100000000, 9999999999999999, 2, (SELECT id FROM userGroup WHERE code = 'SUPER_ADMIN'), 'AUTHORIZED', NOW(), NOW() " +
+    "FROM currency c JOIN (SELECT 'WRITE_OFF' kind UNION ALL SELECT 'REPOSSESS') k WHERE c.isActive = 1");
   const node = (script, args = []) => spawnSync(process.execPath, [path.join(API_ROOT, script), ...args], { cwd: RUN_DIR, env: env(), encoding: 'utf8' });
 
   await test('T1 setup: a clean POS clone with no loan tables', async () => {
@@ -156,9 +161,16 @@ module.exports = async ({ test, sh, MYSQL_ARGS, SOURCE_DB, TEST_DB, API_ROOT, RU
       const s = node(seed);
       assert.strictEqual(s.status, 0, `${seed}: ${s.stderr}`);
     }
+    // Approval by amount: the seeds set no threshold (the owner's values), so C15 fails until they are entered
+    const unset = json(['--post', `--url=${baseUrl}`]);
+    assert.deepStrictEqual(fails(unset.data).map(f => f.split(' ')[0]), ['C15'], `only C15 fails before the thresholds: ${fails(unset.data)}`);
+    assert.match(unset.data.rows.find(x => x.id === 'C15').detail, /no AUTHORIZED threshold: WRITE_OFF LAK/);
+    assert.strictEqual(unset.code, 1);
+    addThresholds();
     const r = json(['--post', `--url=${baseUrl}`]);
     assert.deepStrictEqual(fails(r.data), []);
     assert.strictEqual(r.code, 0);
+    assert.deepStrictEqual(statusOf(r.data, 'C15'), ['PASS']);
     assert.deepStrictEqual(statusOf(r.data, 'C1'), ['PASS']);
     assert.deepStrictEqual(statusOf(r.data, 'C11'), ['PASS']);
     assert.deepStrictEqual(statusOf(r.data, 'C12'), ['MANUAL']);
@@ -179,6 +191,36 @@ module.exports = async ({ test, sh, MYSQL_ARGS, SOURCE_DB, TEST_DB, API_ROOT, RU
     await new Promise(resolve => stub.close(resolve));
     assert.strictEqual(open.code, 1, 'a loan route answering without a token is a FAIL');
     assert.deepStrictEqual(statusOf(open.data, 'C11'), ['FAIL']);
+  });
+
+  await test('T1 --post C15: WRITE_OFF and REPOSSESS need exactly one AUTHORIZED threshold per active currency, with an existing approver group; a missing, duplicated or orphaned threshold fails', async () => {
+    const c15 = () => json(['--post']).data.rows.find(x => x.id === 'C15');
+    assert.strictEqual(c15().status, 'PASS', 'as left by the test before');
+    const usd = sqlRows("SELECT id FROM currency WHERE code = 'USD'")[0];
+    const target = `entityType = 'REPOSSESS' AND currencyId = ${usd} AND authStatus = 'AUTHORIZED'`;
+    const id = sqlRows(`SELECT id FROM ln_approval_matrix WHERE ${target}`)[0];
+    try {
+      sql(`UPDATE ln_approval_matrix SET authStatus = 'PENDING' WHERE id = ${id}`);
+      let row = c15();
+      assert.strictEqual(row.status, 'FAIL');
+      assert.match(row.detail, /no AUTHORIZED threshold: REPOSSESS USD/);
+      sql(`UPDATE ln_approval_matrix SET authStatus = 'AUTHORIZED' WHERE id = ${id}`);
+      sql(`INSERT INTO ln_approval_matrix (entityType, currencyId, minAmount, maxAmount, requiredLevel, approverRoleId, authStatus, createdAt, updatedAt) SELECT entityType, currencyId, minAmount, maxAmount, requiredLevel, approverRoleId, 'AUTHORIZED', NOW(), NOW() FROM ln_approval_matrix WHERE id = ${id}`);
+      row = c15();
+      assert.strictEqual(row.status, 'FAIL');
+      assert.match(row.detail, /more than one: REPOSSESS USD/);
+      sql(`DELETE FROM ln_approval_matrix WHERE ${target} AND id <> ${id}`);
+      sql(`UPDATE ln_approval_matrix SET approverRoleId = 99999999 WHERE id = ${id}`);
+      row = c15();
+      assert.strictEqual(row.status, 'FAIL');
+      assert.match(row.detail, /approver group 99999999 does not exist/);
+    } finally {
+      sql(`DELETE FROM ln_approval_matrix WHERE ${target} AND id <> ${id}`);
+      sql(`UPDATE ln_approval_matrix SET authStatus = 'AUTHORIZED', approverRoleId = (SELECT id FROM userGroup WHERE code = 'SUPER_ADMIN') WHERE id = ${id}`);
+    }
+    const after = c15();
+    assert.strictEqual(after.status, 'PASS', `back as before: ${after.detail}`);
+    console.log(`        C15 with thresholds: ${after.status} ${after.detail}`);
   });
 
   await test('T1 --post C14: each loan group of UAT section 1 that exists must hold LN_LOOKUP VIEW (the screens read lookups and the branch scope from /lookups); groups not created yet are a WARN', async () => {

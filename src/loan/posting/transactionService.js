@@ -24,6 +24,7 @@ const { assertBankForBranch } = require('../services/branchBank');
 const { bankMovement, settleInvoice, voidReceipt } = require('./posAdapters');
 const { handlers } = require('./handlers');
 const { scopeOf, inScope } = require('../services/branchScope');
+const TH = require('../services/approvalThreshold');
 
 // D4 (+ INS_REMIT, ADV_REFUND): cash outflows and material changes need a second person
 const KINDS = {
@@ -339,6 +340,13 @@ const transfer = async ({ accountId, input, ctxUser, pending, transaction, hook 
   return summary(txn, { events, details: { fromBranchId: from, toBranchId: to, legs: lines.map(l => ({ branchId: l.branchId, drCr: l.drCr, role: l.roleCode, qualifier: l.qualifier, chartAccountId: l.chartAccountId, currencyId: l.currency, amount: l.amount, baseAmount: l.baseAmount })) } }, { lines, glRows: [] });
 };
 
+// Approval by amount (services/approvalThreshold.js): { approval } for a preview or a new pending row, or {}
+const approvalInfo = async (kind, accountId, result, transaction) => {
+  const account = await db.lnAccount.findByPk(accountId, { attributes: ['id', 'currencyId'], transaction });
+  const rule = account ? await TH.ruleFor(kind, account.currencyId, transaction) : null;
+  return rule ? { approval: await TH.describe({ rule, basis: TH.basisOf(kind, result), transaction }) } : {};
+};
+
 const execute = (kind, args) => {
   if (kind === 'REVERSAL') return reverse(args);
   if (kind === 'BRANCH_TRANSFER') return transfer(args);
@@ -390,7 +398,7 @@ const transactionService = {
           const txn = await newTransactionRow({ kind, ctx, input, dates, ctxUser, status: 'PENDING_AUTH', transaction });
           await txn.update({ amount: preview.amount, baseAmount: preview.amount, eventsJson: JSON.stringify(preview.events || []) }, { transaction });
           await audit(txn, 'CREATE', ctxUser, { kind, amount: preview.amount }, transaction);
-          response = { transactionId: txn.id, txNo: txn.txNo, eventCode: kind, postingStatus: 'PENDING_AUTH', amount: preview.amount, preview: { events: preview.events, journal: preview.journal, ...(preview.fx ? { fx: preview.fx, implied: preview.implied } : {}) } };
+          response = { transactionId: txn.id, txNo: txn.txNo, eventCode: kind, postingStatus: 'PENDING_AUTH', amount: preview.amount, preview: { events: preview.events, journal: preview.journal, ...(preview.fx ? { fx: preview.fx, implied: preview.implied } : {}) }, ...(await approvalInfo(kind, accountId, preview, transaction)) };
           status = 202;
         } else {
           response = await execute(kind, { accountId, input, ctxUser, pending: null, transaction, hook, tamper: failAt === 'TAMPER_JOURNAL' });
@@ -443,7 +451,8 @@ const transactionService = {
         amount: preview.amount, events: preview.events, journal: preview.journal,
         ...(preview.fx ? { fx: preview.fx } : {}),
         ...(preview.implied ? { implied: preview.implied } : {}),
-        ...(preview.reverses ? { reverses: preview.reverses } : {})
+        ...(preview.reverses ? { reverses: preview.reverses } : {}),
+        ...(await approvalInfo(kind, accountId, preview))
       }
     };
   },
@@ -458,8 +467,35 @@ const transactionService = {
       const self = Number(txn.makerId) === Number(ctxUser.userId);
       if (self && !(await selfAuthorizeAllowed(transaction))) throw new LoanError(403, 'Maker cannot authorize their own transaction (LOAN_ALLOW_SELF_AUTHORIZE is off)');
       const input = JSON.parse(txn.requestJson || '{}');
-      const body = await execute(txn.eventCode, { accountId: txn.loanAccountId, input, ctxUser: { ...ctxUser, self, acceptRateDeviation: options.acceptRateDeviation === true }, pending: txn, transaction, hook });
-      return { status: 200, body };
+      const args = { accountId: txn.loanAccountId, input, ctxUser: { ...ctxUser, self, acceptRateDeviation: options.acceptRateDeviation === true }, pending: txn, hook };
+      // Approval by amount: without a threshold for this kind and currency, one checker posts (as before)
+      const rule = await TH.ruleFor(txn.eventCode, txn.currencyId, transaction);
+      if (!rule) return { status: 200, body: await execute(txn.eventCode, { ...args, transaction }) };
+
+      // With one, post in a savepoint, take the basis from what would post, and keep it only if this
+      // checker completes the approval; a first approval rolls the posting back and is only logged
+      let body = null;
+      let verdict = null;
+      try {
+        await db.sequelize.transaction({ transaction }, async (sp) => {
+          body = await execute(txn.eventCode, { ...args, transaction: sp });
+          verdict = await TH.decide({ rule, basis: TH.basisOf(txn.eventCode, body), txn, ctxUser, transaction: sp });
+          if (verdict.outcome === 'FIRST') throw new DryRun();
+        });
+      } catch (err) {
+        if (!(err instanceof DryRun)) throw err;
+      }
+      const basis = TH.basisOf(txn.eventCode, body);
+      if (verdict.outcome === 'FIRST') {
+        await txn.reload({ transaction }); // the rolled-back posting updated this instance in memory
+        await TH.record(txn, ctxUser, 1, 'APPROVE', `first approval: ${basis} at or above the threshold of ${rule.threshold}`, transaction);
+        await audit(txn, 'APPROVE_1', ctxUser, { kind: txn.eventCode, basis, threshold: rule.threshold, thresholdId: rule.id }, transaction);
+        const approval = await TH.describe({ rule, basis, approvals: await TH.approvalsOf(txn.id, transaction), transaction });
+        return { status: 202, body: { transactionId: txn.id, txNo: txn.txNo, eventCode: txn.eventCode, postingStatus: 'PENDING_AUTH', amount: String(txn.amount), approval } };
+      }
+      if (verdict.level === 2) await TH.record(txn, ctxUser, 2, 'APPROVE', `final approval (${verdict.by === 'APPROVER_GROUP' ? 'approver group' : 'second checker'}): ${basis}, threshold ${rule.threshold}`, transaction);
+      const approvals = await TH.approvalsOf(txn.id, transaction);
+      return { status: 200, body: { ...body, approval: { ...(await TH.describe({ rule, basis, approvals, transaction })), approvals: verdict.level === 2 ? 2 : 1, approvedBy: verdict.by, label: null } } };
     });
   },
 
@@ -471,6 +507,8 @@ const transactionService = {
       if (Number(txn.makerId) === Number(ctxUser.userId) && !(await selfAuthorizeAllowed(transaction))) throw new LoanError(403, 'Maker cannot reject their own transaction');
       await txn.update({ postingStatus: 'REJECTED', authStatus: 'REJECTED', checkerId: ctxUser.userId, remarks: remarks || txn.remarks }, { transaction });
       await audit(txn, 'REJECT', ctxUser, { remarks }, transaction);
+      // Approval by amount: a rejection after a first approval ends it; the trail shows who rejected
+      if ((await TH.approvalsOf(txn.id, transaction)).length) await TH.record(txn, ctxUser, 2, 'REJECT', remarks || null, transaction);
       return { status: 200, body: { transactionId: txn.id, txNo: txn.txNo, postingStatus: 'REJECTED' } };
     });
   },

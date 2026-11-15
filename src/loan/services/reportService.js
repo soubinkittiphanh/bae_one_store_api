@@ -21,6 +21,7 @@ const fxRates = require('./fxRateService');
 const ctx = require('./loanContext');
 const { PRINT_PLACEHOLDERS } = require('./paramRegistry');
 const { whereScope } = require('./branchScope');
+const TH = require('./approvalThreshold');
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const AGING = [[0, 0, 'CURRENT'], [1, 30, '1-30'], [31, 60, '31-60'], [61, 90, '61-90'], [91, 180, '91-180'], [181, Infinity, '181+']];
@@ -29,6 +30,18 @@ const AGING = [[0, 0, 'CURRENT'], [1, 30, '1-30'], [31, 60, '31-60'], [61, 90, '
 const su = (v) => { const s = String(v === null || v === undefined ? 0 : v); return s.startsWith('-') ? -toUnits(s.slice(1)) : toUnits(Number.isFinite(Number(s)) && /e/i.test(s) ? Number(s).toFixed(4) : s); };
 const str = u => fromUnits(u);
 const dateArg = (v, label) => { if (v && !DATE_RE.test(String(v))) throw new LoanError(400, `${label} must be YYYY-MM-DD`); return v ? String(v) : null; };
+
+// Approval-by-amount state of a pending transaction (null without a threshold for its kind and currency)
+const approvalOf = async (t, rule) => {
+  if (!rule) return null;
+  const approvals = await TH.approvalsOf(t.id);
+  const a = await TH.describe({ rule, basis: TH.basisOf(t.eventCode, { events: JSON.parse(t.eventsJson || '[]'), amount: t.amount }), approvals });
+  if (a.firstApproverId) {
+    const u = db.user ? await db.user.findByPk(a.firstApproverId, { attributes: ['id', 'cus_name'] }).catch(() => null) : null;
+    a.firstApproverName = u ? u.cus_name : null;
+  }
+  return a;
+};
 
 // ------------------------------------------------------------------ currency / fx helpers
 const currencyMap = async () => Object.fromEntries((await db.currency.findAll({ attributes: ['id', 'code', 'isLocalCCY'] })).map(c => [c.id, c]));
@@ -266,6 +279,14 @@ const reportService = {
     const clients = Object.fromEntries((await db.client.findAll({ where: { id: [...new Set(accounts.map(a => a.customerId))] }, attributes: ['id', 'name'] })).map(c => [c.id, c.name]));
     const names = Object.fromEntries(users.map(u => [u.id, u.cus_name]));
     const cache = new Map();
+    // Approval by amount: the queue shows "requires second approval" or "1 of 2 approvals" (basis from the
+    // stored preview; the authorization recomputes it)
+    const rules = new Map();
+    const ruleOf = async (kind, currencyId) => {
+      const k = `${kind}|${currencyId}`;
+      if (!rules.has(k)) rules.set(k, await TH.ruleFor(kind, currencyId));
+      return rules.get(k);
+    };
     const out = [];
     for (const t of rows) {
       const a = acc[t.loanAccountId] || {};
@@ -277,7 +298,8 @@ const reportService = {
         currency: ccy[t.currencyId] ? ccy[t.currencyId].code : null, valueDate: String(t.valueDate), bookingDate: date,
         ...money(su(t.amount), fx, conv), fx: fxBlock(fx, conv),
         makerId: t.makerId, makerName: names[t.makerId] || null, createdAt: t.createdAt, remarks: t.remarks,
-        request: JSON.parse(t.requestJson || '{}')
+        request: JSON.parse(t.requestJson || '{}'),
+        approval: await approvalOf(t, await ruleOf(t.eventCode, t.currencyId))
       });
     }
     return out;

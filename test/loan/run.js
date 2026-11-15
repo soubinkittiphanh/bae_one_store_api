@@ -1195,6 +1195,8 @@ const apiTests = async ({ port, q, db, runNode }) => {
   await require('./branchStage2Tests')({ test, call, q, db, users: { SUPER, SUPER2, ADMIN, CASHIER }, L, expectStatus, branch: BRANCH_A });
   console.log('\n[phase 6 stage 4: BRANCH_TRANSFER]');
   await require('./branchTransferTests')({ test, call, q, db, users: { SUPER, SUPER2, ADMIN, CASHIER }, L, expectStatus, branch: BRANCH_A });
+  console.log('\n[phase 6: approval by amount (WRITE_OFF, REPOSSESS thresholds)]');
+  await require('./approvalThresholdTests')({ test, call, q, db, users: { SUPER, SUPER2, ADMIN, CASHIER }, L, expectStatus, branch: BRANCH_A });
 
   console.log('\n[api, continued]');
   await test('banner status for any user, pending inbox filtered by grants, enums served by lookups', async () => {

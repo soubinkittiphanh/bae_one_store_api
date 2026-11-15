@@ -336,6 +336,26 @@ const runPost = async (q, r, url) => {
   else if (groupsAbsent.length) r.warn('C14', 'Loan groups hold LN_LOOKUP VIEW', `not created yet: ${groupsAbsent.join(', ')} (UAT section 1); every existing one holds it`);
   else r.pass('C14', 'Loan groups hold LN_LOOKUP VIEW', `all ${LOAN_GROUPS.length}`);
 
+  // Approval by amount (owner decision 2026-11-13; src/loan/services/approvalThreshold.js): WRITE_OFF and
+  // REPOSSESS need one AUTHORIZED threshold (ln_approval_matrix, requiredLevel 2) for every active currency,
+  // and its approver group must exist. Without one, any single checker would approve any amount.
+  const missing = [];
+  const duplicate = [];
+  const noGroup = [];
+  const currencies = await q('SELECT id, code FROM currency WHERE isActive = 1 ORDER BY id');
+  for (const kind of THRESHOLD_REQUIRED_KINDS) {
+    for (const c of currencies) {
+      const rows = await q("SELECT m.id, m.approverRoleId, g.id AS groupId FROM ln_approval_matrix m LEFT JOIN userGroup g ON g.id = m.approverRoleId WHERE m.entityType = ? AND m.currencyId = ? AND m.authStatus = 'AUTHORIZED' AND m.requiredLevel >= 2", [kind, c.id]);
+      if (!rows.length) missing.push(`${kind} ${c.code}`);
+      else if (rows.length > 1) duplicate.push(`${kind} ${c.code} (rows ${rows.map(x => x.id).join(', ')})`);
+      else if (rows[0].groupId === null) noGroup.push(`${kind} ${c.code} (approver group ${rows[0].approverRoleId} does not exist)`);
+    }
+  }
+  const c15 = 'WRITE_OFF and REPOSSESS have an approval threshold per active currency';
+  if (missing.length || duplicate.length || noGroup.length) {
+    r.fail('C15', c15, [missing.length && `no AUTHORIZED threshold: ${missing.join(', ')}`, duplicate.length && `more than one: ${duplicate.join('; ')}`, noGroup.length && noGroup.join('; ')].filter(Boolean).join(' | ') + ' (Parameter Studio, approval matrix; runbook step 8)');
+  } else r.pass('C15', c15, `${THRESHOLD_REQUIRED_KINDS.length * currencies.length} (${currencies.map(c => c.code).join(', ')})`);
+
   applyVerdict(r, 'C10', 'Document folder', documentDirVerdict(process.env.LOAN_DOCUMENT_DIR));
 
   if (url) {
@@ -364,6 +384,9 @@ const writeReference = async (q, cfg, database) => {
 
 // The loan groups documented in UAT section 1 (created by hand in the security screen)
 const LOAN_GROUPS = ['LOAN_CASHIER', 'LOAN_MANAGER', 'LOAN_CHECKER', 'LOAN_ACCOUNTANT', 'LOAN_HO_CHECKER'];
+// Kinds that must have an approval threshold before go-live (same as approvalThreshold.REQUIRED_KINDS; this
+// tool reads the database with SQL only and loads no loan module)
+const THRESHOLD_REQUIRED_KINDS = ['WRITE_OFF', 'REPOSSESS'];
 
 const USAGE = 'Use one of --pre | --schema | --post [--url=<base>] | --write-reference; optional --json';
 

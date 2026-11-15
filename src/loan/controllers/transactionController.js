@@ -5,7 +5,10 @@ const { ctxOf } = require('./paramController');
 const { testFailAt, testToday } = require('../posting/guards');
 
 // Loan transactions and EOD (Phase 4). Posting is refused while SPF LOAN_POSTING_ENABLED is not 'true'.
-const withStatus = r => respond(r.body, r.body && r.body.postingStatus === 'PENDING_AUTH' ? 'Pending authorization by a second user' : 'Posted', r.status);
+const pendingMessage = body => (body.approval && body.approval.approvals === 1 && body.approval.requiresSecondApproval
+  ? 'First approval recorded (1 of 2 approvals): a second, different checker or a member of the approver group must authorize'
+  : 'Pending authorization by a second user');
+const withStatus = r => respond(r.body, r.body && r.body.postingStatus === 'PENDING_AUTH' ? pendingMessage(r.body) : 'Posted', r.status);
 
 const transactionController = {
   list: handle(req => transactionService.list(req.params.id)),

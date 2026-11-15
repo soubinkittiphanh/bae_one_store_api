@@ -6,6 +6,10 @@
  */
 const { compareDecimal } = require('../decimal');
 
+// Transaction kinds an approval-matrix row may name as a threshold (services/approvalThreshold.js).
+// REVERSAL and BRANCH_TRANSFER keep their own checker rules; kinds without a checker post at once.
+const THRESHOLD_KINDS = ['DISB', 'FEE_REFUND', 'INS_REMIT', 'ADV_REFUND', 'WAIVE', 'WRITE_OFF', 'REPOSSESS', 'VEH_DISPOSE'];
+
 const LOOKUPS = {
   'lookup-loan-type': 'lnLookupLoanType',
   'lookup-frequency': 'lnLookupFrequency',
@@ -181,10 +185,17 @@ const ENTITIES = {
       provisionBase: enumOf('NET_EXPOSURE', 'TOTAL_OUTSTANDING')
     }
   },
+  // Approval by amount (services/approvalThreshold.js): a transaction kind as entityType is a threshold:
+  // minAmount in currencyId, requiredLevel 2, approverRoleId the approver group (userGroup.id)
   'approval-matrix': {
     model: 'lnApprovalMatrix', functionCode: 'LN_APPROVAL_MATRIX',
-    fields: { entityType: enumOf('APPLICATION', 'WRITE_OFF', 'AMENDMENT'), currencyId: ref('currency') },
-    rules: [minMax('minAmount', 'maxAmount', 'Amount')]
+    fields: { entityType: enumOf('APPLICATION', 'AMENDMENT', ...THRESHOLD_KINDS), currencyId: ref('currency'), approverRoleId: ref('group') },
+    rules: [minMax('minAmount', 'maxAmount', 'Amount'), (row) => {
+      if (!THRESHOLD_KINDS.includes(row.entityType)) return null;
+      if (row.currencyId === null || row.currencyId === undefined) return `A ${row.entityType} threshold needs its currencyId (one threshold per kind and currency)`;
+      if (Number(row.requiredLevel) !== 2) return `A ${row.entityType} threshold needs requiredLevel 2 (the approver group, or two different checkers)`;
+      return null;
+    }]
   },
   'document-checklist': { model: 'lnDocumentChecklist', functionCode: 'LN_DOC_CHECKLIST', fields: { productId: ref('lnProduct') } },
 
@@ -269,4 +280,4 @@ const getEntity = (name) => {
 
 const entityForModel = (modelName) => Object.keys(ENTITIES).find(n => ENTITIES[n].model === modelName);
 
-module.exports = { ENTITIES, SYSTEM_FIELDS, PRINT_PLACEHOLDERS, getEntity, entityForModel };
+module.exports = { ENTITIES, SYSTEM_FIELDS, PRINT_PLACEHOLDERS, THRESHOLD_KINDS, getEntity, entityForModel };
