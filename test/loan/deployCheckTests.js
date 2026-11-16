@@ -223,6 +223,31 @@ module.exports = async ({ test, sh, MYSQL_ARGS, SOURCE_DB, TEST_DB, API_ROOT, RU
     console.log(`        C15 with thresholds: ${after.status} ${after.detail}`);
   });
 
+  await test('T1 --post C16: an AUTHORIZED, active branch mapping to a bank/cash account with an empty currency fails (posting would refuse it); a PENDING or inactive mapping does not count', async () => {
+    const c16 = () => json(['--post']).data.rows.find(x => x.id === 'C16');
+    assert.strictEqual(c16().status, 'PASS', 'the seeded and fixture mappings all have a currency');
+    sql("SET STATEMENT sql_mode = '' FOR INSERT INTO bankAccount (accountNumber, accountName, accountType, currency, isActive, createdAt, updateTimestamp, balance) VALUES ('T1-NOCCY', 'T1 NOCCY', 'Current', 'XXX', 1, NOW(), NOW(), 0)");
+    const bankId = sqlRows("SELECT id FROM bankAccount WHERE accountNumber = 'T1-NOCCY'")[0];
+    const loc = sqlRows('SELECT id FROM location ORDER BY id LIMIT 1')[0];
+    try {
+      assert.strictEqual(sqlRows(`SELECT CONCAT('[', currency, ']') FROM bankAccount WHERE id = ${bankId}`)[0], '[]', 'stored with an empty currency');
+      sql(`INSERT INTO ln_branch_bank_account (locationId, bankAccountId, purpose, isActive, authStatus) VALUES (${loc}, ${bankId}, 'CASH', 1, 'PENDING')`);
+      assert.strictEqual(c16().status, 'PASS', 'a PENDING mapping does not count');
+      sql(`UPDATE ln_branch_bank_account SET authStatus = 'AUTHORIZED', isActive = 0 WHERE bankAccountId = ${bankId}`);
+      assert.strictEqual(c16().status, 'PASS', 'an inactive mapping does not count');
+      sql(`UPDATE ln_branch_bank_account SET isActive = 1 WHERE bankAccountId = ${bankId}`);
+      const row = c16();
+      assert.strictEqual(row.status, 'FAIL');
+      assert.match(row.detail, new RegExp(`branch ${loc} -> bank account ${bankId} T1 NOCCY`));
+      const all = json(['--post']);
+      assert.strictEqual(all.code, 1, 'the tool exits 1');
+    } finally {
+      sql(`DELETE FROM ln_branch_bank_account WHERE bankAccountId = ${bankId}`);
+      sql(`DELETE FROM bankAccount WHERE id = ${bankId}`);
+    }
+    assert.strictEqual(c16().status, 'PASS', 'back as before');
+  });
+
   await test('T1 --post C14: each loan group of UAT section 1 that exists must hold LN_LOOKUP VIEW (the screens read lookups and the branch scope from /lookups); groups not created yet are a WARN', async () => {
     const GROUPS = ['LOAN_CASHIER', 'LOAN_MANAGER', 'LOAN_CHECKER', 'LOAN_ACCOUNTANT', 'LOAN_HO_CHECKER'];
     const existing = sqlRows(`SELECT code FROM userGroup WHERE code IN (${GROUPS.map(g => `'${g}'`).join(',')})`);

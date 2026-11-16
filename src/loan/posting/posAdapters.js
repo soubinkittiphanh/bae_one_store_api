@@ -34,7 +34,10 @@ const bankMovement = async ({ transactionId, txNo, bankAccountId, units, currenc
   if (units === 0n) return null;
   const bank = await db.bankAccount.findByPk(bankAccountId, { transaction, lock: transaction.LOCK.UPDATE });
   if (!bank || bank.isActive === false) throw new LoanError(400, `Bank account ${bankAccountId} not found or inactive`);
-  if (currencyCode && bank.currency && bank.currency !== currencyCode) throw new LoanError(400, `Bank account ${bank.accountName} is ${bank.currency}; the loan is ${currencyCode}`);
+  // Second line of the repayment currency rule (branchBank.assertBankCurrency runs first): an empty currency no
+  // longer passes. currencyCode is null only for REVERSAL, which reverses the original movement on its account.
+  if (currencyCode && (!bank.currency || String(bank.currency).trim() === '')) throw new LoanError(400, `Bank account ${bank.accountName} has no currency; the loan is ${currencyCode}`);
+  if (currencyCode && bank.currency !== currencyCode) throw new LoanError(400, `Bank account ${bank.accountName} is ${bank.currency}; the loan is ${currencyCode}`);
   const amount = pos2(units < 0n ? -units : units);
   if (units < 0n && balanceUnits(bank.balance) < -units) {
     throw new LoanError(409, `Bank account ${bank.accountName} has ${bank.balance}, less than the ${amount} to pay out`);

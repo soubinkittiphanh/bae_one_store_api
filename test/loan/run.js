@@ -1198,6 +1198,9 @@ const apiTests = async ({ port, q, db, runNode }) => {
   console.log('\n[phase 6: approval by amount (WRITE_OFF, REPOSSESS thresholds)]');
   await require('./approvalThresholdTests')({ test, call, q, db, users: { SUPER, SUPER2, ADMIN, CASHIER }, L, expectStatus, branch: BRANCH_A });
 
+  console.log('\n[phase 6: repayment currency rule (bank/cash account in the loan currency)]');
+  await require('./bankCurrencyTests')({ test, call, q, users: { SUPER, SUPER2, ADMIN }, L, expectStatus, branch: BRANCH_A });
+
   console.log('\n[api, continued]');
   await test('banner status for any user, pending inbox filtered by grants, enums served by lookups', async () => {
     const st = await call(CASHIER, 'get', `${L}/status`);

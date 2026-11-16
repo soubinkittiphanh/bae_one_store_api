@@ -356,6 +356,13 @@ const runPost = async (q, r, url) => {
     r.fail('C15', c15, [missing.length && `no AUTHORIZED threshold: ${missing.join(', ')}`, duplicate.length && `more than one: ${duplicate.join('; ')}`, noGroup.length && noGroup.join('; ')].filter(Boolean).join(' | ') + ' (Parameter Studio, approval matrix; runbook step 8)');
   } else r.pass('C15', c15, `${THRESHOLD_REQUIRED_KINDS.length * currencies.length} (${currencies.map(c => c.code).join(', ')})`);
 
+  // Repayment currency rule (customer policy 2026-11-15; docs/loan/adding-a-currency.md §4): posting refuses a
+  // bank/cash account with an empty currency, so a branch mapped only to such an account could not move money.
+  const noCurrency = await q("SELECT m.id, m.locationId, b.id AS bankId, b.accountName FROM ln_branch_bank_account m JOIN bankAccount b ON b.id = m.bankAccountId WHERE m.authStatus = 'AUTHORIZED' AND m.isActive = 1 AND (b.currency IS NULL OR TRIM(b.currency) = '') ORDER BY m.id");
+  const c16 = 'Mapped branch bank/cash accounts have a currency';
+  if (noCurrency.length) r.fail('C16', c16, `${noCurrency.length} AUTHORIZED, active mapping(s) to an account with an empty currency: ${noCurrency.map(x => `branch ${x.locationId} -> bank account ${x.bankId} ${x.accountName} (mapping ${x.id})`).join('; ')} (set the currency in the POS bank account screen)`);
+  else r.pass('C16', c16, 'every AUTHORIZED, active mapping');
+
   applyVerdict(r, 'C10', 'Document folder', documentDirVerdict(process.env.LOAN_DOCUMENT_DIR));
 
   if (url) {
