@@ -1,246 +1,138 @@
-// Local overrides: DCOMMERCE_DB_<HOST|USER|PASSWORD|NAME|PORT>; the old DB_<...> names are still read as a fallback
-const dbEnv = (name) => process.env[`DCOMMERCE_DB_${name}`] !== undefined ? process.env[`DCOMMERCE_DB_${name}`] : process.env[`DB_${name}`];
-
-const clientDB = {
-    "chithanh": {
-        "host": "150.95.31.23",
-        "user": "root",
-        "password": "sdat@3480",
-        "database": "dcommerce_pro_chithanh",
-        "port": 3306,
-    },
-    "bbs": {
-        "host": "150.95.31.23",
-        "user": "root",
-        "password": "sdat@3480",
-        "database": "dcommerce_pro_bbs",
-        "port": 3306,
-    },
-    "peeair4_2024": {
-        "host": "150.95.31.23",
-        "user": "root",
-        "password": "sdat@3480",
-        "database": "dcommerce_pro_peeair4_2024",
-        "port": 3306,
-    },
-    "temp": {
-        "host": "localhost",
-        "user": "root",
-        "password": "SDAT@3480",
-        "database": "temp",
-        "port": 3306,
-    },
-
-    // "dev": {
-    //     "host": "mariadb-202130-0.cloudclusters.net",
-    //     "user": "soubin",
-    //     "password": "zaq1@wsx",
-    //     "database": "dcommerce_dev",
-    //     "port": 10087,
-    // },
-    "dev": {
-        "host": dbEnv('HOST') || "localhost",
-        "user": dbEnv('USER') || "root",
-        "password": dbEnv('PASSWORD') !== undefined ? dbEnv('PASSWORD') : "SDAT@3480",
-        // "database": "dcommerce_pro_carcare_sokpaluang",
-        // "database": "dcommerce_mpwt",
-        "database": dbEnv('NAME') || "dcommerce_dev",
-        "port": Number(dbEnv('PORT')) || 3306,
-    },
-    "payment_1": {
-        "host": "150.95.31.23",
-        "user": "root",
-        "password": "SDAT@3480",
-        "database": "dcommerce_pro_payment",
-        "port": 3306,
-    },
-    "offline": {
-        "host": "127.0.0.1",
-        "user": "root",
-        "password": "sdat@3480",
-        // "database": "dcommerce_pro_carcare_sokpaluang",
-        "database": "dcommerce_dev",
-        // "database": "dc_carcare_dev",
-        "port": 3306,
-    },
-    "dev_online": {
-        "host": "150.95.31.23",
-        "user": "root",
-        "password": "sdat@3480",
-        "database": "dcommerce_demo",
-        "port": 3306,
-    },
-    "ksouk": {
-        "host": "150.95.31.23",
-        "user": "root",
-        "password": "sdat@3480",
-        "database": "dcommerce_pro_ksouk",
-        "port": 3306,
-    },
-    "demo1": {
-        "host": "150.95.31.23",
-        "user": "root",
-        "password": "sdat@3480",
-        "database": "dcommerce_dem_1",
-        "port": 3306,
-    },
-    "demo": {
-        "host": "150.95.31.23",
-        "user": "root",
-        "password": "sdat@3480",
-        "database": "dcommerce_demo",
-        "port": 3306,
-    },
-    "standard": {
-        "host": "150.95.31.23",
-        "user": "root",
-        "password": "sdat@3480",
-        "database": "dcommerce_standard_model",
-        "port": 3306,
-    },
-    "auto": {
-        "host": "150.95.31.23",
-        "user": "root",
-        "password": "sdat@3480",
-        "database": "dcommerce_pro_auto_55244451",
-        "port": 3306,
-    },
-    "the_corners": {
-        "host": "150.95.31.23",
-        "user": "root",
-        "password": "sdat@3480",
-        "database": "dcommerce_pro_the_corners",
-        "port": 3306,
-    },
-    "phaivanh": {
-        "host": "150.95.31.23",
-        "user": "root",
-        "password": "sdat@3480",
-        "database": "dcommerce_pro_phayvanh",
-        "port": 3306,
-    },
-    "bmart": {
-        "host": "150.95.31.23",
-        "user": "root",
-        "password": "sdat@3480",
-        "database": "dcommerce_pro_bmart",
-        "port": 3306,
-    },
-    "onphet": {
-        "host": "150.95.31.23",
-        "user": "root",
-        "password": "sdat@3480",
-        "database": "dcommerce_pro_onphet",
-        "port": 3306,
-    },
-    "carcare_sokpaluang": {
-        "host": "150.95.31.23",
-        "user": "root",
-        "password": "sdat@3480",
-        "database": "dcommerce_pro_carcare_sokpaluang",
-        "port": 3306,
-    },
-    "mpwt": {
-        "host": "150.95.31.23",
-        "user": "root",
-        "password": "sdat@3480",
-        "database": "dcommerce_mpwt",
-        "port": 3306,
-    },
-    "taiphuan": {
-        "host": "150.95.31.23",
-        "user": "root",
-        "password": "sdat@3480",
-        "database": "dcommerce_pro_auto_02023838999",
-        "port": 3306,
-    },
-    "pm": {
-        "host": "150.95.31.23",
-        "user": "root",
-        "password": "sdat@3480",
-        "database": "dcommerce_pro_pheuanmit",
-        "port": 3306,
-    },
-    "best_coff": {
-        "host": "150.95.31.23",
-        "user": "root",
-        "password": "sdat@3480",
-        "database": "dcommerce_pro_best_coffee",
-        "port": 3306,
-    },
-    "dcommerce": {
-        "host": "150.95.31.23",
-        "user": "root",
-        "password": "sdat@3480",
-        "database": "dcommerce_pro_dc",
-        "port": 3306,
-    },
-    "autofood": {
-        "host": "150.95.31.23",
-        "user": "root",
-        "password": "sdat@3480",
-        "database": "dcommerce_pro_autofood",
-        "port": 3306,
-    },
-    "env_auto": {
-        "host": dbEnv('HOST') || "150.95.31.23",
-        "user": dbEnv('USER') || "root",
-        "password": dbEnv('PASSWORD') !== undefined ? dbEnv('PASSWORD') : "sdat@3480",
-        "database": dbEnv('NAME') || 'dcommerce_demo',
-        "port": Number(dbEnv('PORT')) || 3306,
-    },
-    "pro_sho": {
-        "host": "150.95.31.23",
-        "user": "root",
-        "password": "sdat@3480",
-        "database": 'dcommerce_pro_sho',
-        "port": 3306,
-    },
-    "poukaofai": {
-        "host": "150.95.31.23",
-        "user": "root",
-        "password": "sdat@3480",
-        "database": 'dcommerce_pro_phoukaofai',
-        "port": 3306,
-    },
-    "thipphachan": {
-        "host": "150.95.31.23",
-        "user": "root",
-        "password": "sdat@3480",
-        "database": 'dcommerce_pro_thipphachan',
-        "port": 3306,
-    },
-    "pt67": {
-        "host": "150.95.31.23",
-        "user": "root",
-        "password": "sdat@3480",
-        "database": 'dcommerce_pro_pt67',
-        "port": 3306,
-    },
-    "24h1": {
-        "host": "150.95.31.23",
-        "user": "root",
-        "password": "sdat@3480",
-        "database": 'dcommerce_pro_24h_min',
-        "port": 3306,
-    },
-    "swat_beerlao": {
-        "host": "150.95.31.23",
-        "user": "root",
-        "password": "sdat@3480",
-        "database": 'dcommerce_pro_swai_beerlao',
-        "port": 3306,
-    },
-    "parking1": {
-        "host": "150.95.31.23",
-        "user": "root",
-        "password": "sdat@3480",
-        "database": 'dcommerce_pro_park1',
-        "port": 3306,
-    },
-
+try {
+    require('dotenv').config();
+} catch (e) {
+    // Ignore if dotenv is not available
 }
+
+// Local overrides: DCOMMERCE_DB_<HOST|USER|PASSWORD|NAME|PORT>; the old DB_<...> names are still read as a fallback
+const dbEnv = (name) => {
+    return process.env[`DCOMMERCE_DB_${name}`] !== undefined
+        ? process.env[`DCOMMERCE_DB_${name}`]
+        : process.env[`DB_${name}`];
+};
+
+const makeConfig = (defaultDbName = 'dcommerce_dev') => ({
+    get host() {
+        return this._host !== undefined
+            ? this._host
+            : (dbEnv('HOST') || process.env.DB_HOST || 'localhost');
+    },
+    set host(val) {
+        this._host = val;
+    },
+    get user() {
+        return this._user !== undefined
+            ? this._user
+            : (dbEnv('USER') || process.env.DB_USER || 'root');
+    },
+    set user(val) {
+        this._user = val;
+    },
+    get password() {
+        return this._password !== undefined
+            ? this._password
+            : (dbEnv('PASSWORD') !== undefined
+                ? dbEnv('PASSWORD')
+                : (process.env.DB_PASSWORD !== undefined ? process.env.DB_PASSWORD : ''));
+    },
+    set password(val) {
+        this._password = val;
+    },
+    get database() {
+        return this._database !== undefined
+            ? this._database
+            : (dbEnv('NAME') || process.env.DB_NAME || defaultDbName);
+    },
+    set database(val) {
+        this._database = val;
+    },
+    get port() {
+        return this._port !== undefined
+            ? this._port
+            : Number(dbEnv('PORT') || process.env.DB_PORT || 3306);
+    },
+    set port(val) {
+        this._port = val;
+    },
+});
+
+const defaultConnection = makeConfig('dcommerce_dev');
+
+// Direct connection properties on clientDB so it functions cleanly whether
+// accessed as an object of tenant databases (clientDB.dev) or directly as a db config (clientDB.host, clientDB.password)
+const rawClientDB = {
+    get host() { return defaultConnection.host; },
+    set host(val) { defaultConnection.host = val; },
+    get user() { return defaultConnection.user; },
+    set user(val) { defaultConnection.user = val; },
+    get password() { return defaultConnection.password; },
+    set password(val) { defaultConnection.password = val; },
+    get database() { return defaultConnection.database; },
+    set database(val) { defaultConnection.database = val; },
+    get port() { return defaultConnection.port; },
+    set port(val) { defaultConnection.port = val; },
+};
+
+const clientDatabases = {
+    chithanh: 'dcommerce_pro_chithanh',
+    bbs: 'dcommerce_pro_bbs',
+    peeair4_2024: 'dcommerce_pro_peeair4_2024',
+    temp: 'temp',
+    dev: 'dcommerce_dev',
+    payment_1: 'dcommerce_pro_payment',
+    offline: 'dcommerce_dev',
+    dev_online: 'dcommerce_demo',
+    ksouk: 'dcommerce_pro_ksouk',
+    demo1: 'dcommerce_dem_1',
+    demo: 'dcommerce_demo',
+    standard: 'dcommerce_standard_model',
+    auto: 'dcommerce_pro_auto_55244451',
+    the_corners: 'dcommerce_pro_the_corners',
+    phaivanh: 'dcommerce_pro_phayvanh',
+    bmart: 'dcommerce_pro_bmart',
+    onphet: 'dcommerce_pro_onphet',
+    carcare_sokpaluang: 'dcommerce_pro_carcare_sokpaluang',
+    mpwt: 'dcommerce_mpwt',
+    taiphuan: 'dcommerce_pro_auto_02023838999',
+    pm: 'dcommerce_pro_pheuanmit',
+    best_coff: 'dcommerce_pro_best_coffee',
+    dcommerce: 'dcommerce_pro_dc',
+    autofood: 'dcommerce_pro_autofood',
+    env_auto: 'dcommerce_demo',
+    pro_sho: 'dcommerce_pro_sho',
+    poukaofai: 'dcommerce_pro_phoukaofai',
+    thipphachan: 'dcommerce_pro_thipphachan',
+    pt67: 'dcommerce_pro_pt67',
+    '24h1': 'dcommerce_pro_24h_min',
+    swat_beerlao: 'dcommerce_pro_swai_beerlao',
+    parking1: 'dcommerce_pro_park1',
+};
+
+for (const [key, defaultDbName] of Object.entries(clientDatabases)) {
+    rawClientDB[key] = makeConfig(defaultDbName);
+}
+
+const RESERVED_PROPS = new Set([
+    'host', 'user', 'password', 'database', 'port',
+    '_host', '_user', '_password', '_database', '_port',
+    'then', 'toJSON', 'toString', 'valueOf', 'constructor', 'prototype', 'inspect'
+]);
+
+const clientDB = new Proxy(rawClientDB, {
+    get(target, prop) {
+        if (typeof prop === 'string') {
+            if (prop in target) {
+                return target[prop];
+            }
+            if (RESERVED_PROPS.has(prop) || prop.startsWith('_') || prop.startsWith('$')) {
+                return undefined;
+            }
+            return makeConfig(prop);
+        }
+        return target[prop];
+    },
+});
 
 module.exports = {
     clientDB,
-}
+};

@@ -1623,8 +1623,8 @@ const reserveCard = async (line, lockingSessionId, qty, locationId) => {
     card_isused: 0,
     locationId,
     [Op.or]: [
-      { locking_session_id: null },
-      { locking_session_id: '' }
+      { locking_session_id: { [Op.ne]: lockingSessionId } },
+      { locking_session_id: null }
     ]
   };
 
@@ -3190,11 +3190,7 @@ const validateStockForLinesV2 = async (lines, locationId) => {
         saleLineId: null,
         card_isused: 0,
         locationId: locationId,
-        isActive: true,
-        [Op.or]: [
-          { locking_session_id: null },
-          { locking_session_id: '' }
-        ]
+        isActive: true
       };
 
       if (checkVariant) {
@@ -3248,8 +3244,8 @@ const reserveCardV2 = async (line, lockingSessionId, qty, locationId) => {
     card_isused: 0,
     locationId,
     [Op.or]: [
-      { locking_session_id: null },
-      { locking_session_id: '' }
+      { locking_session_id: { [Op.ne]: lockingSessionId } },
+      { locking_session_id: null }
     ]
   };
 
@@ -3269,13 +3265,13 @@ const reserveCardV2 = async (line, lockingSessionId, qty, locationId) => {
     throw new Error(`Insufficient stock for Product ${line.productId}${variantStr}`);
   }
 
-  // Construct raw query for blazing fast updates - only lock cards that are not yet locked!
+  // Construct raw query for blazing fast updates - only lock cards that are not yet locked by this transaction!
   let sql = `UPDATE card SET locking_session_id = :lockId 
              WHERE productId = :productId 
                AND saleLineId IS NULL 
                AND card_isused = 0 
                AND locationId = :locationId 
-               AND (locking_session_id IS NULL OR locking_session_id = '')`;
+               AND (locking_session_id != :lockId OR locking_session_id IS NULL)`;
   let replacements = {
     lockId: lockingSessionId,
     productId: line.productId,
