@@ -1269,7 +1269,7 @@ const ticketController = {
                 locationId: locationId || null,
                 status,
                 paymentStatus,
-                taxType,
+                taxType: (taxType && ['INC', 'EXC'].includes(String(taxType).toUpperCase())) ? String(taxType).toUpperCase() : 'INC',
                 subtotal: subtotal.toFixed(2),
                 promotionDiscount: parseFloat(promotionDiscount || 0).toFixed(2), // ADD THIS
                 tax: tax.toFixed(2),
@@ -1605,6 +1605,14 @@ const ticketController = {
                     success: false,
                     message: 'Ticket not found'
                 });
+            }
+
+            if ('taxType' in updateData) {
+                if (!updateData.taxType || !['INC', 'EXC'].includes(String(updateData.taxType).toUpperCase())) {
+                    delete updateData.taxType;
+                } else {
+                    updateData.taxType = String(updateData.taxType).toUpperCase();
+                }
             }
 
             // If updating ticket lines, recalculate totals with promotion support
