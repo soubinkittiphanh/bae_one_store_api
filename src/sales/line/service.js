@@ -201,7 +201,7 @@ const createBulkSaleLine = async (res, lines, lockingSessionId) => {
   } catch (error) {
     logger.error('Error in createBulkSaleLine: ' + error);
     const headerId = (lines && lines.length > 0) ? lines[0].headerId : null;
-    if (headerId) await saleHeaderService.saleHeaderReversal(headerId);
+    if (headerId) await saleHeaderService.saleHeaderReversal(headerId, error);
     throw error;
   }
 };
@@ -281,7 +281,7 @@ const createBulkSaleLineWithoutRes = async (lines, lockingSessionId) => {
     // ********************************************
     //  Reverse SaleHeader just created before
     // ********************************************
-    await saleHeaderService.saleHeaderReversal(lines[0]['headerId']);
+    await saleHeaderService.saleHeaderReversal(lines[0]['headerId'], error);
     logger.error('Error inserting rows:', error);
   }
 };
@@ -430,7 +430,7 @@ const createBulkSaleLineV2 = async (res, lines, lockingSessionId) => {
   } catch (error) {
     logger.error('Error in createBulkSaleLineV2: ' + error);
     const headerId = (lines && lines.length > 0) ? lines[0].headerId : null;
-    if (headerId) await saleHeaderService.saleHeaderReversal(headerId);
+    if (headerId) await saleHeaderService.saleHeaderReversal(headerId, error);
     throw error;
   }
 };
@@ -492,7 +492,7 @@ const createBulkSaleLineWithoutResV2 = async (lines, lockingSessionId) => {
       logger.error('Failed to post sale GL entry (without res): ' + glError.message);
     }
   } catch (error) {
-    await saleHeaderService.saleHeaderReversal(lines[0]['headerId']);
+    await saleHeaderService.saleHeaderReversal(lines[0]['headerId'], error);
     logger.error('[V2] Error inserting rows:', error);
   }
 };

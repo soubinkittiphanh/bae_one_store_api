@@ -6,7 +6,7 @@ const SaleLine = require('../models').saleLine
 const Card = require('../models').card
 const cardService = require('../card/service')
 
-const saleHeaderReversal = async (headerId) => {
+const saleHeaderReversal = async (headerId, reasonOrError = null) => {
     logger.info("Reversal sale header " + headerId)
     try {
         const header = await SaleHeader.findByPk(headerId)
@@ -15,12 +15,57 @@ const saleHeaderReversal = async (headerId) => {
             logger.warn(`Saleheader id ${headerId} could not be founded`)
             return
         }
+
+        let reasonText = '';
+        if (reasonOrError) {
+            if (typeof reasonOrError === 'string') {
+                reasonText = reasonOrError;
+            } else if (reasonOrError.parent && (reasonOrError.parent.code === 'ER_LOCK_WAIT_TIMEOUT' || reasonOrError.parent.errno === 1205)) {
+                reasonText = 'Lock wait timeout exceeded (ER_LOCK_WAIT_TIMEOUT)';
+            } else if (reasonOrError.name === 'SequelizeTimeoutError' || (reasonOrError.message && reasonOrError.message.includes('Lock wait timeout'))) {
+                reasonText = 'Lock wait timeout exceeded (ER_LOCK_WAIT_TIMEOUT)';
+            } else if (reasonOrError.parent && (reasonOrError.parent.code === 'ER_LOCK_DEADLOCK' || reasonOrError.parent.errno === 1213)) {
+                reasonText = 'Deadlock found when trying to get lock (ER_LOCK_DEADLOCK)';
+            } else if (reasonOrError.message) {
+                reasonText = reasonOrError.message;
+            } else {
+                reasonText = String(reasonOrError);
+            }
+        }
+
+        const updateData = { isActive: false };
+
+        // If no lines were ever saved, reset total to 0 to prevent ghost revenue,
+        // while preserving the attempted cart total in the remark for auditing.
+        const lineCount = await SaleLine.count({
+            where: {
+                [Op.or]: [
+                    { headerId: header.id },
+                    { saleHeaderId: header.id }
+                ]
+            }
+        });
+
+        if (lineCount === 0) {
+            const attemptedTotal = header.total || 0;
+            updateData.total = 0;
+            if (attemptedTotal > 0) {
+                const totalNote = `Attempted Total: ${attemptedTotal}`;
+                reasonText = reasonText ? `${reasonText} (${totalNote})` : totalNote;
+            }
+        }
+
+        if (reasonText) {
+            const formatted = `[AUTO-CANCEL: ${reasonText}]`.substring(0, 255);
+            updateData.remark = header.remark 
+                ? `${header.remark} ${formatted}`.substring(0, 255) 
+                : formatted;
+        }
+
         logger.info(`before set isActive ${header.id}`)
-        const reversedSaleHeader = await header.update({
-            isActive: false
-        })
+        const reversedSaleHeader = await header.update(updateData)
         logger.info("after set isActive")
-        logger.info("SaleHeader id " + headerId + " has been reserved " + reversedSaleHeader.isActive)
+        logger.info("SaleHeader id " + headerId + " has been reserved " + reversedSaleHeader.isActive + (reversedSaleHeader.remark ? ` with remark: ${reversedSaleHeader.remark}` : ''))
 
     } catch (error) {
         logger.error("SaleHeader id " + headerId + " cannot be reserved " + error)

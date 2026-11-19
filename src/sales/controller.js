@@ -751,11 +751,11 @@ exports.createSaleHeader = async (req, res) => {
       }
 
       const reversalRequire = errorList.length > 0 ? true : false;
-      return { customer, saleHeader, reversalRequire };
+      return { customer, saleHeader, reversalRequire, error: errorList[0] };
     });
 
     if (result.reversalRequire) {
-      await headerService.saleHeaderReversal(result.saleHeader.id);
+      await headerService.saleHeaderReversal(result.saleHeader.id, result.error);
       return logger.warn(`Transaction reversed`);
     }
 
@@ -969,11 +969,11 @@ exports.createSaleHeaderV3 = async (req, res) => {
       }
 
       const reversalRequire = errorList.length > 0 ? true : false;
-      return { customer, saleHeader, reversalRequire };
+      return { customer, saleHeader, reversalRequire, error: errorList[0] };
     });
 
     if (result.reversalRequire) {
-      await headerService.saleHeaderReversal(result.saleHeader.id);
+      await headerService.saleHeaderReversal(result.saleHeader.id, result.error);
       return logger.warn(`Transaction reversed`);
     }
 
