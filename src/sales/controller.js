@@ -14,6 +14,7 @@ const Client = require('../models').client;
 const Currency = require('../models').currency;
 const Location = require('../models').location;
 const Group = require('../models').group;
+const PriceList = require('../models').priceList;
 const { body, validationResult } = require('express-validator');
 const logger = require('../api/logger');
 const lineService = require("./line/service");
@@ -1868,6 +1869,12 @@ exports.getSaleHeadersDetailByDate = async (req, res) => {
                 'isActive', 'lotNumber', 'serialNo', 'expiryDate', 'costPerUnit',
                 'totalCost', 'costType', 'stockCardQty', 'currencyId', 'saleLineId'
               ]
+            },
+            {
+              model: PriceList,
+              as: 'priceList',
+              attributes: ['id', 'name', 'grade', 'amount', 'type'],
+              required: false
             }
           ]
         },
@@ -1966,6 +1973,12 @@ exports.getSaleHeadersDetailByDate = async (req, res) => {
                     'isActive', 'lotNumber', 'serialNo', 'expiryDate', 'costPerUnit',
                     'totalCost', 'costType', 'stockCardQty', 'currencyId', 'saleLineId'
                   ]
+                },
+                {
+                  model: PriceList,
+                  as: 'priceList',
+                  attributes: ['id', 'name', 'grade', 'amount', 'type'],
+                  required: false
                 }
               ]
             },
