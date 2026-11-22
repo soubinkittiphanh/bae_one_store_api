@@ -177,6 +177,7 @@ const initializeModels = () => {
     table: require("../pos/table/model")(sequelize, DataTypes),
     ticket: require("../pos/ticket/model")(sequelize, DataTypes),
     promotion: require("../pos/promotion/model")(sequelize, DataTypes),
+    tableReservation: require("../pos/tableReservation/model")(sequelize, DataTypes),
     ticketLine: require("../pos/ticketLine/model")(sequelize, DataTypes),
     MemberOffer: require("../member_offer/model")(sequelize, DataTypes),
     loyaltyTransaction: require("../loyalty/model")(sequelize, DataTypes),

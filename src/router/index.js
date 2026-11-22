@@ -87,6 +87,7 @@ const batchJob = require("../job-fair/job-batch/router")
 const userRole = require("../userRole/router")
 const recipe = require("../recipe/router")
 const promotions = require("../pos/promotion/router")
+const tableReservations = require("../pos/tableReservation/router")
 const memberOffer = require("../member_offer/router")
 const stockTransaction = require("../stockTransaction/router")
 const qrRouter = require("../QRRequest/router")
@@ -214,6 +215,7 @@ module.exports = {
     memberOffer,
     recipe,
     promotions,
+    tableReservations,
     stockTransaction,
     salePayment,
     productTemp,

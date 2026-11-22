@@ -76,6 +76,14 @@ const ticketLineController = {
         promotion_note: promotion_note || null
       });
 
+      // A new dish on an order the kitchen marked ready/served: send the order back to the kitchen
+      // (a 'served' order is not on the kitchen display at all, so the dish would never be cooked)
+      const previousStatus = existingTicket.status;
+      if (['ready', 'served'].includes(previousStatus)) {
+        await existingTicket.update({ status: 'preparing' });
+        logger.info(`Ticket ${ticketId} got a new dish: status ${previousStatus} -> preparing`);
+      }
+
       // Fetch the created ticket line with associations
       const createdTicketLine = await ticketLine.findByPk(newTicketLine.id, {
         include: [

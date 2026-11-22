@@ -7,7 +7,8 @@ const {validateToken} = require("../../api/jwtApi")
 // Public routes (for POS system)
 router.get('/active', promotionController.getActivePromotions);
 router.post('/calculate', promotionController.calculatePromotions);
-router.post('/apply', promotionController.applyPromotion);
+// POST /apply was removed: nothing called it, it ran without login and only bumped a usage counter.
+// Usage is now counted from the bills that carry the promotion (see controller usageFor).
 
 // Admin routes (require authentication)
 router.use(validateToken); // Apply authentication to all routes below

@@ -89,7 +89,7 @@ module.exports = (sequelize, DataTypes) => {
   Promotion.associate = function(models) {
     // A promotion can be used in multiple ticket lines
     Promotion.hasMany(models.ticketLine, {
-      foreignKey: 'promotion_id',
+      foreignKey: 'promotionId', // same key as ticketLine.belongsTo(promotion); 'promotion_id' added a second, unused column
       as: 'ticketLines'
     });
   };

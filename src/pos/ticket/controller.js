@@ -27,6 +27,51 @@ const productService = require('../../product/service');
 const spfService = require('../../spf/service');
 const Recipe = require('../../models').recipe;
 
+// ---- Kitchen progress across ticket updates ----
+// updateTicket deletes and re-creates every line. Lines the kitchen already finished must stay
+// finished (some callers, e.g. split bill, resend them as 'ordered'), and real new work on an order
+// the kitchen already marked ready/served must bring the order back to the kitchen display.
+const KITCHEN_DONE_STATUSES = ['ready', 'served'];
+
+const kitchenLineKey = (productId, selectedOptions) => {
+    let opts = selectedOptions;
+    if (typeof opts === 'string') {
+        try { opts = JSON.parse(opts); } catch (e) { opts = []; }
+    }
+    const ids = (Array.isArray(opts) ? opts : [])
+        .map((o) => (o && typeof o === 'object' ? (o.id ?? o.optionId ?? o.name ?? o.optionName) : o))
+        .map(String)
+        .sort();
+    return `${productId}|${ids.join(',')}`;
+};
+
+// Quantity the kitchen has finished per dish (product + options) on the lines being replaced
+const buildKitchenDoneQty = (oldLines) => {
+    const done = new Map();
+    (oldLines || []).forEach((l) => {
+        if (!KITCHEN_DONE_STATUSES.includes(l.status)) return;
+        const key = kitchenLineKey(l.productId, l.selectedOptions);
+        const prev = done.get(key) || { qty: 0, status: l.status };
+        prev.qty += Number(l.quantity) || 0;
+        done.set(key, prev);
+    });
+    return done;
+};
+
+// Status for a re-created line: keep the kitchen's "done" for quantity it already finished;
+// anything beyond that still needs cooking. Consumes from doneQty so the same finished
+// quantity is not counted twice.
+const resolveKitchenLineStatus = (line, doneQty) => {
+    if (KITCHEN_DONE_STATUSES.includes(line.status)) return line.status;
+    const qty = Number(line.quantity) || 0;
+    const done = doneQty.get(kitchenLineKey(line.productId, line.selectedOptions));
+    if (done && qty > 0 && done.qty >= qty) {
+        done.qty -= qty;
+        return done.status;
+    }
+    return line.status || 'ordered';
+};
+
 // Helper function for safe transaction rollback without unhandled rejections
 const safeRollback = async (t) => {
     if (t && !t.finished) {
@@ -1617,6 +1662,16 @@ const ticketController = {
 
             // If updating ticket lines, recalculate totals with promotion support
             if (updateData.ticketLines) {
+                // What the kitchen has already finished, read before the lines are replaced
+                const oldLines = await TicketLine.findAll({
+                    where: { ticketId: id },
+                    attributes: ['productId', 'quantity', 'status', 'selectedOptions'],
+                    transaction
+                });
+                const kitchenDoneQty = buildKitchenDoneQty(oldLines);
+                let hasOpenKitchenLine = false;
+                let hasDoneKitchenLine = false;
+
                 // First release cards associated with old ticket lines
                 await releaseCardsForTicket(id, transaction);
 
@@ -1727,6 +1782,10 @@ const ticketController = {
                 for (const line of ticketLines) {
                     const product = productMap.get(line.productId);
 
+                    const lineStatus = resolveKitchenLineStatus(line, kitchenDoneQty);
+                    if (KITCHEN_DONE_STATUSES.includes(lineStatus)) hasDoneKitchenLine = true;
+                    else hasOpenKitchenLine = true;
+
                     const ticketLine = await TicketLine.create({
                         ticketId: id,
                         productId: line.productId,
@@ -1734,7 +1793,7 @@ const ticketController = {
                         unitPrice: line.unitPrice,
                         totalPrice: (parseFloat(line.quantity) * parseFloat(line.unitPrice || 0)).toFixed(2),
                         specialInstructions: line.specialInstructions || null,
-                        status: line.status || 'ordered',
+                        status: lineStatus,
                         promotionId: line.promotionId || null,
                         is_promotion_item: line.is_promotion_item || false,
                         original_price: line.original_price || null,
@@ -1866,6 +1925,14 @@ const ticketController = {
                 if (productIds.length > 0) {
                     await productService.updateProductCountGroup(productIds, transaction);
                     console.log(`✓ Updated stock count for ${productIds.length} products`);
+                }
+
+                // Dishes still to cook on an order marked ready/served: send it back to the kitchen.
+                // (Without this it stayed 'ready', or vanished from the kitchen display when 'served'.)
+                const finalStatus = updateData.status || ticket.status;
+                if (KITCHEN_DONE_STATUSES.includes(finalStatus) && hasOpenKitchenLine) {
+                    updateData.status = hasDoneKitchenLine ? 'preparing' : 'pending';
+                    logger.info(`Ticket ${id} has new dishes to cook: status ${finalStatus} -> ${updateData.status}`);
                 }
 
                 delete updateData.ticketLines;

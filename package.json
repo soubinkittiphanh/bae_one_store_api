@@ -10,7 +10,9 @@
     "prestart": "npm install && npm install bcrypt",
     "start": "cross-env TZ=Asia/Vientiane node src/index.js",
     "seed:restaurant": "node seed_restaurant_pos_menus.js",
-    "test:loan": "node test/loan/run.js"
+    "test:loan": "node test/loan/run.js",
+    "test:promotion": "node test/promotion/engineTests.js",
+    "test:restaurant": "node test/restaurant/run.js"
   },
   "author": "what the dev",
   "license": "ISC",
