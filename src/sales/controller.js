@@ -194,7 +194,7 @@ const autoCreateStock = async (lines, locationId) => {
   }
 };
 
-const syncSalePayment = async (saleHeaderId, headerData, transaction = null) => {
+const syncSalePayment = async (saleHeaderId, headerData, transaction = null, throwOnError = false) => {
   try {
     const { payments, paymentId, total, referenceNo, qrRequestId, isActive } = headerData;
     const tOptions = transaction ? { transaction } : {};
@@ -279,6 +279,7 @@ const syncSalePayment = async (saleHeaderId, headerData, transaction = null) => 
     }
   } catch (err) {
     logger.error(`Error syncing salePayment for saleHeader ${saleHeaderId}: ${err}`);
+    if (throwOnError) throw err; // atomic sale: no bill without its payment
   }
 };
 
@@ -658,120 +659,8 @@ exports.completeSaleWithLines = async (req, res) => {
 };
 
 
-exports.createSaleHeader = async (req, res) => {
-  try {
-    let { bookingDate, qrRequestId, remark, discount, total, exchangeRate, isActive, lines, clientId, paymentId, currencyId, userId, referenceNo, locationId, customerForm, redeemedPoints = 0 } = req.body;
-    logger.info("===== Create Sale Header =====" + JSON.stringify(req.body));
-
-    //------------ Check if stock check is require before sale process
-    logger.warn(`====>  lines     ${JSON.stringify(lines)}`);
-
-    // Validate stock using the new approach
-    const stockValidationErrors = await validateStockForLines(lines, locationId);
-
-    if (stockValidationErrors.length > 0) {
-      logger.error(`Stock validation failed: ${JSON.stringify(stockValidationErrors)}`);
-      return res.status(400).json({
-        success: false,
-        message: 'Insufficient stock for some items',
-        stockErrors: stockValidationErrors,
-        details: stockValidationErrors.map(err =>
-          `Product ${err.productId}: Need ${err.required}, Available ${err.available}, Short ${err.shortage}`
-        )
-      });
-    }
-
-    const checking = await autoCreateStock(lines, locationId);
-
-    const result = await sequelize.transaction(async (t) => {
-      logger.warn(`SALE HEADER: ${JSON.stringify(req.body)}`);
-
-      let loyaltyDiscount = 0;
-      if (clientId && redeemedPoints > 0) {
-        loyaltyDiscount = await loyaltyService.redeemPoints(clientId, null, redeemedPoints, t);
-        remark = `${remark || ''} (Redeemed ${redeemedPoints} points)`.trim();
-      }
-
-      const saleHeader = await SaleHeader.create({
-        bookingDate, qrRequestId, remark, discount, total, exchangeRate, isActive,
-        clientId, paymentId, currencyId, userId, referenceNo, locationId,
-        redeemedPoints, loyaltyDiscount
-      }, { transaction: t });
-
-      // Automatically sync/create salePayment
-      if (paymentId || (req.body.payments && req.body.payments.length > 0)) {
-        await syncSalePayment(saleHeader.id, {
-          paymentId,
-          total,
-          referenceNo,
-          qrRequestId,
-          isActive: isActive !== undefined ? isActive : true,
-          payments: req.body.payments
-        }, t);
-      }
-
-      // Update the loyalty transaction with the real saleHeaderId
-      if (clientId && redeemedPoints > 0) {
-        const { loyaltyTransaction } = require('../models');
-        await loyaltyTransaction.update(
-          { 
-            saleHeaderId: saleHeader.id,
-            remark: `Redeemed points on Sale ID: ${saleHeader.id}`
-          },
-          { where: { saleHeaderId: null, clientId, type: 'REDEEMED' }, transaction: t }
-        );
-      }
-
-      let customer = null;
-
-      if (customerForm) {
-        logger.info(`********** Customer form ${customerForm}***********`);
-        logger.info(`********** Customer form ${customerForm.name}***********`);
-        delete customerForm.discount;
-        customerForm.saleHeaderId = saleHeader.id;
-        customer = await Customer.create(customerForm, { transaction: t });
-      }
-
-      logger.info(`*************Sale header ${saleHeader.id} *************`);
-      // **********************
-      //  Line with headerId
-      // **********************
-      const lockingSessionId = common.generateLockingSessionId();
-      const errorList = [];
-
-      try {
-        const linesWithHeaderId = await assignHeaderId(lines, saleHeader.id, lockingSessionId, false, locationId);
-        lineService.createBulkSaleLine(res, linesWithHeaderId, lockingSessionId);
-      } catch (error) {
-        // ********************************************
-        //  Reverse SaleHeader just created
-        // ********************************************
-        logger.error("Something wrong need to reverse header " + error);
-        res.status(500).send("Unfortunately " + error);
-        errorList.push(error);
-      }
-
-      const reversalRequire = errorList.length > 0 ? true : false;
-      return { customer, saleHeader, reversalRequire, error: errorList[0] };
-    });
-
-    if (result.reversalRequire) {
-      await headerService.saleHeaderReversal(result.saleHeader.id, result.error);
-      return logger.warn(`Transaction reversed`);
-    }
-
-    logger.info(`Transaction complete ${result}`);
-
-    if (clientId && result.saleHeader) {
-      // Award points on the net total (total - discount - loyaltyDiscount)
-      // Actually 'total' from POS is usually the final amount to pay.
-      await loyaltyService.awardPoints(clientId, result.saleHeader.id, total, null);
-    }
-  } catch (error) {
-    logger.error(`Error occurs ${error}`);
-    res.status(500).send(error);
-  }
-};
+// POST /create — older POS builds. Same atomic save as /create-v3 (see createSaleAtomic).
+exports.createSaleHeader = (req, res) => createSaleAtomic(req, res, 'create');
 
 exports.updateSaleHeaderV2 = async (req, res) => {
   try {
@@ -891,101 +780,8 @@ exports.updateSaleHeaderV2 = async (req, res) => {
   }
 };
 
-exports.createSaleHeaderV3 = async (req, res) => {
-  try {
-    let { bookingDate, qrRequestId, remark, discount, total, exchangeRate, isActive, lines, clientId, paymentId, currencyId, userId, referenceNo, locationId, customerForm, redeemedPoints = 0 } = req.body;
-    logger.info("===== Create Sale Header V3 =====" + JSON.stringify(req.body));
-
-    logger.warn(`====>  lines     ${JSON.stringify(lines)}`);
-
-    const stockValidationErrors = await validateStockForLinesV2(lines, locationId);
-
-    if (stockValidationErrors.length > 0) {
-      logger.error(`Stock validation failed: ${JSON.stringify(stockValidationErrors)}`);
-      return res.status(400).json({
-        success: false,
-        message: 'Insufficient stock for some items',
-        stockErrors: stockValidationErrors,
-        details: stockValidationErrors.map(err =>
-          `Product ${err.productId}: Need ${err.required}, Available ${err.available}, Short ${err.shortage}`
-        )
-      });
-    }
-
-    const checking = await autoCreateStock(lines, locationId);
-
-    const result = await sequelize.transaction(async (t) => {
-      let loyaltyDiscount = 0;
-      if (clientId && redeemedPoints > 0) {
-        loyaltyDiscount = await loyaltyService.redeemPoints(clientId, null, redeemedPoints, t);
-        remark = `${remark || ''} (Redeemed ${redeemedPoints} points)`.trim();
-      }
-
-      const saleHeader = await SaleHeader.create({
-        bookingDate, qrRequestId, remark, discount, total, exchangeRate, isActive,
-        clientId, paymentId, currencyId, userId, referenceNo, locationId,
-        redeemedPoints, loyaltyDiscount
-      }, { transaction: t });
-
-      if (paymentId || (req.body.payments && req.body.payments.length > 0)) {
-        await syncSalePayment(saleHeader.id, {
-          paymentId,
-          total,
-          referenceNo,
-          qrRequestId,
-          isActive: isActive !== undefined ? isActive : true,
-          payments: req.body.payments
-        }, t);
-      }
-
-      if (clientId && redeemedPoints > 0) {
-        const { loyaltyTransaction } = require('../models');
-        await loyaltyTransaction.update(
-          { 
-            saleHeaderId: saleHeader.id,
-            remark: `Redeemed points on Sale ID: ${saleHeader.id}`
-          },
-          { where: { saleHeaderId: null, clientId, type: 'REDEEMED' }, transaction: t }
-        );
-      }
-
-      let customer = null;
-
-      if (customerForm) {
-        delete customerForm.discount;
-        customerForm.saleHeaderId = saleHeader.id;
-        customer = await Customer.create(customerForm, { transaction: t });
-      }
-
-      const lockingSessionId = common.generateLockingSessionId();
-      const errorList = [];
-
-      try {
-        const linesWithHeaderId = await assignHeaderIdV2(lines, saleHeader.id, lockingSessionId, false, locationId);
-        lineService.createBulkSaleLineV2(res, linesWithHeaderId, lockingSessionId);
-      } catch (error) {
-        logger.error("Something wrong need to reverse header " + error);
-        res.status(500).send("Unfortunately " + error);
-        errorList.push(error);
-      }
-
-      const reversalRequire = errorList.length > 0 ? true : false;
-      return { customer, saleHeader, reversalRequire, error: errorList[0] };
-    });
-
-    if (result.reversalRequire) {
-      await headerService.saleHeaderReversal(result.saleHeader.id, result.error);
-      return logger.warn(`Transaction reversed`);
-    }
-
-    if (clientId && result.saleHeader) {
-      await loyaltyService.awardPoints(clientId, result.saleHeader.id, total, null);
-    }
-  } catch (error) {
-    logger.error(`Error occurs ${error}`);
-    res.status(500).send(error);
-  }
-};
+// POST /create-v3 — current POS. Header, payments, lines and stock in one transaction (see createSaleAtomic).
+exports.createSaleHeaderV3 = (req, res) => createSaleAtomic(req, res, 'create-v3');
 
 exports.updateSaleHeaderV3 = async (req, res) => {
   try {
@@ -1248,7 +1044,8 @@ exports.reverseSaleHeader = async (req, res) => {
     const result = await sequelize.transaction(async (t) => {
       const updatedRecord = await saleHeader.update({ isActive, remark }, { transaction: t });
       await SalePayment.update({ isActive }, { where: { saleHeaderId: id }, transaction: t });
-      const updatedSaleLineRecord = await SaleLine.update({ isActive }, { where: { 'id': { [Op.in]: lineIds } } }, { transaction: t });
+      // (the transaction used to be passed as a third argument, which Sequelize ignores: these ran outside it)
+      const updatedSaleLineRecord = await SaleLine.update({ isActive }, { where: { 'id': { [Op.in]: lineIds } }, transaction: t });
 
       // 1. Restore cards consumed by normal sales back into inventory
       let numUpdated = 0;
@@ -1263,8 +1060,8 @@ exports.reverseSaleHeader = async (req, res) => {
             where: {
               id: { [Op.in]: soldCardIds },
             },
-          },
-          { transaction: t }
+            transaction: t,
+          }
         );
         numUpdated += soldCount;
       }
@@ -1282,8 +1079,8 @@ exports.reverseSaleHeader = async (req, res) => {
               returnSaleLineId: { [Op.in]: returnLineIds },
               saleLineId: null // only deactivate if not subsequently sold
             },
-          },
-          { transaction: t }
+            transaction: t,
+          }
         );
         logger.info(`Deactivated ${returnCount} returned packaging cards for return lines: ${returnLineIds.join(',')}`);
       }
@@ -3381,6 +3178,247 @@ const assignHeaderIdV2 = async (lines, idOrHeader, lockingSessionId, isUpdate, l
   }
   return lines;
 };
+
+// =====================================================================================================
+// ATOMIC SALE CREATION (used by POST /create and POST /create-v3)
+//
+// Before: the header and payments were committed in one transaction, the lines were saved by a
+// lineService call that was NOT awaited, on other connections. When that later step failed the header
+// was switched off afterwards ("auto-cancel") but its payments stayed active, linked stock stayed used,
+// and the POS never got a reply (the error was thrown from an un-awaited promise), so cashiers retried.
+// Now: header, payments, lines and stock links are written in ONE awaited transaction. Any failure rolls
+// everything back (no bill is left behind) and the POS always gets exactly one answer.
+// Stock is reserved with SELECT ... FOR UPDATE inside that transaction, so two tills can no longer take
+// the same stock cards (the old reservation re-locked cards another sale had just locked).
+// =====================================================================================================
+
+class SaleStockError extends Error {
+  constructor(stockErrors) {
+    super('Insufficient stock for some items');
+    this.name = 'SaleStockError';
+    this.stockErrors = stockErrors;
+  }
+}
+
+const isLockError = (err) => {
+  const code = err && (err.parent?.code || err.original?.code || err.code);
+  const errno = err && (err.parent?.errno || err.original?.errno || err.errno);
+  return code === 'ER_LOCK_DEADLOCK' || code === 'ER_LOCK_WAIT_TIMEOUT' || errno === 1213 || errno === 1205 ||
+    err?.name === 'SequelizeTimeoutError' || /Deadlock found|Lock wait timeout/i.test(err?.message || '');
+};
+
+// Same rule as assignHeaderIdV2 / validateStockForLinesV2: which lines take stock cards
+const lineTakesStock = async (line) => {
+  const isRedeem = line.productId === 999;
+  const isReturn = line.isReturn === true || line.isReturn === 1 || line.packagingAction === 'RETURNED';
+  if (isRedeem || isReturn) return false;
+  let validateStock = line.validateStockOnSale;
+  if (validateStock === undefined || validateStock === null) {
+    if (line.product && line.product.validateStockOnSale !== undefined) {
+      validateStock = line.product.validateStockOnSale;
+    } else {
+      const prod = await Product.findByPk(line.productId, { attributes: ['id', 'validateStockOnSale'] });
+      validateStock = prod ? prod.validateStockOnSale : 0;
+    }
+  }
+  return validateStock === true || validateStock === 1;
+};
+
+const cardsNeededFor = (line) => Math.max(1, Math.round((Number(line.unitRate) || 1) * (Number(line.quantity) || 0)));
+
+// Lock `qty` free cards for this line inside `t`. Free = the same definition as product.stock_count
+// (not used, not on a sale line or restaurant ticket line, active) at this location. A stale
+// locking_session_id left by an earlier failed attempt does not block a card; the row lock does the job.
+const reserveCardsInTx = async (line, qty, locationId, t, settings) => {
+  let sql = `SELECT id FROM card
+             WHERE productId = :productId AND locationId = :locationId
+               AND card_isused = 0 AND saleLineId IS NULL AND ticketLineId IS NULL AND isActive = 1`;
+  const replacements = { productId: line.productId, locationId, qty };
+  if (settings.checkVariant && line.colorId !== undefined && line.colorId !== null) {
+    sql += ' AND colorId = :colorId';
+    replacements.colorId = line.colorId;
+  }
+  if (settings.checkVariant && line.sizeId !== undefined && line.sizeId !== null) {
+    sql += ' AND sizeId = :sizeId';
+    replacements.sizeId = line.sizeId;
+  }
+  sql += ` ORDER BY createdAt ${settings.consumeOrder}, id ${settings.consumeOrder} LIMIT :qty FOR UPDATE`;
+  const rows = await sequelize.query(sql, { replacements, type: require('sequelize').QueryTypes.SELECT, transaction: t });
+  return rows.map((r) => r.id);
+};
+
+const createSaleAtomic = async (req, res, label) => {
+  let { bookingDate, qrRequestId, remark, discount, total, exchangeRate, isActive, lines, clientId, paymentId,
+    currencyId, userId, referenceNo, locationId, customerForm, redeemedPoints = 0 } = req.body;
+  lines = Array.isArray(lines) ? lines : [];
+  logger.info(`===== Create Sale (${label}, atomic) ===== user ${userId} location ${locationId} lines ${lines.length} total ${total}`);
+
+  if (!lines.length) {
+    return res.status(400).json({ success: false, message: 'ບໍ່ມີລາຍການສິນຄ້າໃນບິນ (no sale lines)' });
+  }
+
+  try {
+    // Quick check before taking any lock: gives the cashier the usual "not enough stock" message
+    const stockValidationErrors = await validateStockForLinesV2(lines, locationId);
+    if (stockValidationErrors.length > 0) {
+      logger.error(`Stock validation failed: ${JSON.stringify(stockValidationErrors)}`);
+      return res.status(400).json({
+        success: false,
+        message: 'Insufficient stock for some items',
+        stockErrors: stockValidationErrors,
+        details: stockValidationErrors.map((err) => `Product ${err.productId}: Need ${err.required}, Available ${err.available}, Short ${err.shortage}`),
+      });
+    }
+
+    await autoCreateStock(lines, locationId);
+
+    const spfVar = await spfService.getSPFByCode('STOCK.VAR');
+    const spfFifo = await spfService.getSPFByCode('STOCK.FIFO');
+    const settings = {
+      checkVariant: Boolean(spfVar && spfVar.value === 'Y'),
+      consumeOrder: spfFifo && spfFifo.value === 'N' ? 'DESC' : 'ASC',
+    };
+
+    const takesStock = [];
+    for (const line of lines) takesStock.push(await lineTakesStock(line));
+
+    const runOnce = () => sequelize.transaction(async (t) => {
+      let loyaltyDiscount = 0;
+      let headerRemark = remark;
+      if (clientId && redeemedPoints > 0) {
+        loyaltyDiscount = await loyaltyService.redeemPoints(clientId, null, redeemedPoints, t);
+        headerRemark = `${remark || ''} (Redeemed ${redeemedPoints} points)`.trim();
+      }
+
+      const saleHeader = await SaleHeader.create({
+        bookingDate, qrRequestId, remark: headerRemark, discount, total, exchangeRate, isActive,
+        clientId, paymentId, currencyId, userId, referenceNo, locationId, redeemedPoints, loyaltyDiscount,
+      }, { transaction: t });
+
+      // Commission snapshot per line (reads product settings; needs the header's currency and discounts)
+      await attachLineCommissions(lines, saleHeader);
+
+      if (paymentId || (req.body.payments && req.body.payments.length > 0)) {
+        await syncSalePayment(saleHeader.id, {
+          paymentId, total, referenceNo, qrRequestId,
+          isActive: isActive !== undefined ? isActive : true,
+          payments: req.body.payments,
+        }, t, true);
+      }
+
+      if (clientId && redeemedPoints > 0) {
+        const { loyaltyTransaction } = require('../models');
+        await loyaltyTransaction.update(
+          { saleHeaderId: saleHeader.id, remark: `Redeemed points on Sale ID: ${saleHeader.id}` },
+          { where: { saleHeaderId: null, clientId, type: 'REDEEMED' }, transaction: t }
+        );
+      }
+
+      if (customerForm) {
+        const form = { ...customerForm, saleHeaderId: saleHeader.id };
+        delete form.discount;
+        await Customer.create(form, { transaction: t });
+      }
+
+      // Reserve stock for every line (row locks held until commit), in product order to keep the
+      // lock order the same on every till and so avoid deadlocks
+      const reserved = new Map(); // line index -> card ids
+      const shortages = [];
+      const order = lines.map((l, i) => i).sort((a, b) => Number(lines[a].productId) - Number(lines[b].productId));
+      const taken = new Set();
+      for (const i of order) {
+        const line = lines[i];
+        line.headerId = saleHeader.id;
+        line.saleHeaderId = saleHeader.id;
+        delete line.id; // a new sale never updates existing lines
+        if (!takesStock[i]) continue;
+        const need = cardsNeededFor(line);
+        // the same product on two lines: the second must not get the first one's cards
+        const ids = (await reserveCardsInTx(line, need + taken.size, locationId, t, settings)).filter((id) => !taken.has(id)).slice(0, need);
+        if (ids.length < need) {
+          shortages.push({ productId: line.productId, colorId: line.colorId ?? null, sizeId: line.sizeId ?? null, required: need, available: ids.length, shortage: need - ids.length });
+          continue;
+        }
+        ids.forEach((id) => taken.add(id));
+        reserved.set(i, ids);
+      }
+      if (shortages.length) throw new SaleStockError(shortages);
+
+      const created = await SaleLine.bulkCreate(lines, { transaction: t });
+
+      for (let i = 0; i < created.length; i++) {
+        const ids = reserved.get(i);
+        if (!ids) continue;
+        const [linked] = await Card.update(
+          { saleLineId: created[i].id, card_isused: 1, locking_session_id: '' },
+          { where: { id: { [Op.in]: ids }, saleLineId: null, card_isused: 0 }, transaction: t }
+        );
+        if (linked !== ids.length) {
+          // cannot happen while the rows are locked; refuse rather than sell stock we did not take
+          throw new Error(`Stock link mismatch for product ${created[i].productId}: linked ${linked} of ${ids.length}`);
+        }
+      }
+
+      return { saleHeader, created };
+    });
+
+    let result;
+    for (let attempt = 1; ; attempt++) {
+      try {
+        result = await runOnce();
+        break;
+      } catch (err) {
+        if (isLockError(err) && attempt < 3) {
+          logger.warn(`Create sale (${label}): ${err.message}; retry ${attempt}`);
+          await new Promise((r) => setTimeout(r, 150 * attempt));
+          continue;
+        }
+        throw err;
+      }
+    }
+
+    const { saleHeader, created } = result;
+    logger.info(`Create sale (${label}): header ${saleHeader.id} with ${created.length} lines committed`);
+
+    // ---- After commit, best effort (same as before; none of these decide whether the sale exists) ----
+    try {
+      await productService.updateProductCountGroup([...new Set(created.map((l) => l.productId))]);
+    } catch (e) { logger.error(`Sale ${saleHeader.id}: stock count refresh failed: ${e.message}`); }
+    for (const line of created) {
+      try { await lineService.handleLinePackagingMovement(line); } catch (e) { logger.error(`Sale ${saleHeader.id}: packaging movement failed for line ${line.id}: ${e.message}`); }
+    }
+    try {
+      const AccountingPostingService = require('../GL/accountingPostingService');
+      await AccountingPostingService.postSaleEntry(saleHeader, null);
+    } catch (e) { logger.error(`Sale ${saleHeader.id}: GL posting failed: ${e.message}`); }
+    if (clientId) {
+      try { await loyaltyService.awardPoints(clientId, saleHeader.id, total, null); } catch (e) { logger.error(`Sale ${saleHeader.id}: loyalty award failed: ${e.message}`); }
+    }
+
+    // Same reply format as before: the POS reads the id after the '-'
+    return res.status(200).send(`Transaction completed-${saleHeader.id}`);
+  } catch (error) {
+    // Nothing was saved: the transaction rolled back
+    if (res.headersSent) return logger.error(`Create sale (${label}) failed after reply: ${error.message}`);
+    if (error instanceof SaleStockError) {
+      logger.warn(`Create sale (${label}): stock taken meanwhile ${JSON.stringify(error.stockErrors)}`);
+      return res.status(409).json({
+        success: false,
+        message: 'ສິນຄ້າບາງລາຍການມີບໍ່ພຽງພໍ (ຫາກໍ່ຖືກຂາຍໄປ), ກະລຸນາກວດແລ້ວລອງໃໝ່ · Insufficient stock',
+        stockErrors: error.stockErrors,
+        details: error.stockErrors.map((err) => `Product ${err.productId}: Need ${err.required}, Available ${err.available}, Short ${err.shortage}`),
+      });
+    }
+    if (isLockError(error)) {
+      logger.error(`Create sale (${label}): database busy after retries: ${error.message}`);
+      return res.status(503).json({ success: false, message: 'ລະບົບກຳລັງຫຍຸ້ງ, ບິນຍັງບໍ່ຖືກບັນທຶກ. ກະລຸນາລອງໃໝ່ · Database busy, sale not saved, please retry' });
+    }
+    logger.error(`Create sale (${label}) failed, nothing saved: ${error.stack || error}`);
+    return res.status(500).json({ success: false, message: `ບັນທຶກບິນບໍ່ສຳເລັດ, ບິນຍັງບໍ່ຖືກບັນທຶກ · Sale not saved: ${error.message}` });
+  }
+};
+
+exports.createSaleAtomic = createSaleAtomic;
 
 exports.validateStockForLines = validateStockForLines;
 exports.validateStockForLinesV2 = validateStockForLinesV2;

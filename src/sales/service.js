@@ -37,7 +37,8 @@ const saleHeaderReversal = async (headerId, reasonOrError = null) => {
 
         // If no lines were ever saved, reset total to 0 to prevent ghost revenue,
         // while preserving the attempted cart total in the remark for auditing.
-        const lineCount = await SaleLine.count({
+        const headerLines = await SaleLine.findAll({
+            attributes: ['id', 'productId'],
             where: {
                 [Op.or]: [
                     { headerId: header.id },
@@ -45,6 +46,7 @@ const saleHeaderReversal = async (headerId, reasonOrError = null) => {
                 ]
             }
         });
+        const lineCount = headerLines.length;
 
         if (lineCount === 0) {
             const attemptedTotal = header.total || 0;
@@ -62,9 +64,36 @@ const saleHeaderReversal = async (headerId, reasonOrError = null) => {
                 : formatted;
         }
 
-        logger.info(`before set isActive ${header.id}`)
-        const reversedSaleHeader = await header.update(updateData)
-        logger.info("after set isActive")
+        // Switch off the whole failed sale, not only the header. Before, its payments stayed active (counted
+        // by anything that adds up salePayment), its lines stayed active and stock already linked to them
+        // stayed "used" for a sale that does not exist.
+        const db = require('../models');
+        const lineIds = headerLines.map((l) => l.id);
+        const reversedSaleHeader = await db.sequelize.transaction(async (t) => {
+            await db.salePayment.update({ isActive: false }, { where: { saleHeaderId: header.id }, transaction: t });
+            if (lineIds.length) {
+                await SaleLine.update({ isActive: false }, { where: { id: { [Op.in]: lineIds } }, transaction: t });
+                // give back stock the lines had taken
+                await Card.update(
+                    { card_isused: 0, saleLineId: null, locking_session_id: '' },
+                    { where: { saleLineId: { [Op.in]: lineIds } }, transaction: t }
+                );
+                // stock brought in by returned-packaging lines of this sale is removed again
+                await Card.update(
+                    { card_isused: 2, isActive: false },
+                    { where: { returnSaleLineId: { [Op.in]: lineIds }, saleLineId: null }, transaction: t }
+                );
+            }
+            return header.update(updateData, { transaction: t });
+        });
+        if (lineIds.length) {
+            try {
+                const productService = require('../product/service');
+                await productService.updateProductCountGroup([...new Set(headerLines.map((l) => l.productId))]);
+            } catch (e) {
+                logger.error(`SaleHeader ${header.id}: stock count refresh after auto-cancel failed: ${e.message}`);
+            }
+        }
         logger.info("SaleHeader id " + headerId + " has been reserved " + reversedSaleHeader.isActive + (reversedSaleHeader.remark ? ` with remark: ${reversedSaleHeader.remark}` : ''))
 
     } catch (error) {

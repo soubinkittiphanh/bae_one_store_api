@@ -537,6 +537,7 @@ const updateBulkSaleLineV2 = async (lines, lockingSessionId, locationId) => {
 };
 
 module.exports = {
+  handleLinePackagingMovement,
   createBulkSaleLine,
   updateBulkSaleLine,
   createBulkSaleLineWithoutRes,

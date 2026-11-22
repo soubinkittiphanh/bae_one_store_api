@@ -12,7 +12,8 @@
     "seed:restaurant": "node seed_restaurant_pos_menus.js",
     "test:loan": "node test/loan/run.js",
     "test:promotion": "node test/promotion/engineTests.js",
-    "test:restaurant": "node test/restaurant/run.js"
+    "test:restaurant": "node test/restaurant/run.js",
+    "test:sales": "node test/sales/run.js"
   },
   "author": "what the dev",
   "license": "ISC",
