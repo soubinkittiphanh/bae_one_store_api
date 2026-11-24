@@ -54,6 +54,8 @@ const startApi = (port) => new Promise((resolve, reject) => {
 
 const main = async () => {
   const port = await freePort();
+  // The JWT secret includes PORT (src/config/env.js): sign tokens with the port the API runs on
+  process.env.PORT = String(port);
   process.env.DCOMMERCE_DB_NAME = TEST_DB;
   const target = require('../../src/loan/dbGuard').assertLocalDb('test:restaurant');
   if (target.database !== TEST_DB) throw new Error(`Config resolves to ${target.database}, expected ${TEST_DB}`);
