@@ -65,15 +65,14 @@ const main = async () => {
       assert.strictEqual(tx, 'return/sale/3');
     });
 
-    await test('ticket made before conversion (paid), cancelled after: ingredient cards credited', async () => {
+    await test('ticket still open at conversion, cancelled after: ingredient cards credited', async () => {
       const r = await call('post', '/api/ticket', {
         locationId: LOC, createUserId: MANAGER, status: 'pending', paymentStatus: 'pending', subtotal: 25000, tax: 0, total: 25000,
         ticketLines: [{ productId: croissant, quantity: 1, unitPrice: 25000 }]
       }, MANAGER);
       expectStatus(r, 201, 'ticket');
       const tid = num('SELECT MAX(id) FROM ticket');
-      assert.strictEqual(free(butter), 8);   // 2 butter cards reserved by the recipe (card logic)
-      sql(`UPDATE ticket SET status = 'paid', paymentStatus = 'paid' WHERE id = ${tid}`);
+      assert.strictEqual(free(butter), 8);   // 2 butter cards reserved by the recipe (card logic); ticket stays open
 
       expectStatus(await call('post', `/api/raw-materials/${butter}/convert`, null, MANAGER), 200, 'convert butter');
       close(bal(butter), 8);

@@ -131,11 +131,8 @@ const main = async () => {
   await test('convert refuses returnable packaging', () => rejects(svc.convertToQuantity(crate.id), 'PACKAGING_PRODUCT'));
   await test('convert needs a stock unit', () => rejects(svc.convertToQuantity(noUnit.id), 'STOCK_UNIT_REQUIRED'));
 
-  await test('convert refuses while an open ticket holds a card', async () => {
-    await sequelize.query(`UPDATE card SET card_isused = 1, ticketLineId = ? WHERE card_number = 'TESTCARD1'`, { replacements: [openLine.id] });
-    await rejects(svc.convertToQuantity(beans.id), 'OPEN_TICKETS');
-    await sequelize.query(`UPDATE card SET ticketLineId = ? WHERE card_number = 'TESTCARD1'`, { replacements: [paidLine.id] });
-  });
+  // a card held by an open ticket does not block the conversion (cardBridge credits it if the ticket is cancelled)
+  await sequelize.query(`UPDATE card SET card_isused = 1, ticketLineId = ? WHERE card_number = 'TESTCARD1'`, { replacements: [openLine.id] });
 
   await test('convert moves available cards into balances per location', async () => {
     const r = await svc.convertToQuantity(beans.id, { userId: 7 });

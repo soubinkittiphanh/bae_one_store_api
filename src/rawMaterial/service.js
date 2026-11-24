@@ -191,18 +191,8 @@ const createRawMaterialService = (db, options = {}) => {
       const stockUnitId = stockUnitIdOf(product);
       if (!stockUnitId) throw new ApiError(400, 'STOCK_UNIT_REQUIRED', `Set the stock unit of ${product.pro_name} first (e.g. g or ml)`);
 
-      // A card reserved by an unfinished ticket would come back as a card when that ticket is cancelled
-      const [{ openTickets }] = await sequelize.query(
-        `SELECT COUNT(DISTINCT tl.ticketId) AS openTickets
-           FROM card c
-           JOIN ticketLine tl ON tl.id = c.ticketLineId
-           JOIN ticket tk ON tk.id = tl.ticketId
-          WHERE c.productId = ? AND tk.status NOT IN ('paid', 'cancel', 'void')`,
-        { replacements: [productId], type: QueryTypes.SELECT, transaction: t }
-      );
-      if (Number(openTickets) > 0) {
-        throw new ApiError(409, 'OPEN_TICKETS', `${openTickets} open ticket(s) hold stock of ${product.pro_name}; close them first`);
-      }
+      // Cards already sold or held by open tickets stay where they are: if such a sale / ticket is cancelled or
+      // edited later, cardBridge.js credits them to the balance instead of making them card stock again.
 
       const groups = await sequelize.query(
         `SELECT locationId, COUNT(*) AS qty, AVG(COALESCE(costLCY, cost, 0)) AS avgCost
