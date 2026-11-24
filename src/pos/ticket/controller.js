@@ -2192,7 +2192,8 @@ const ticketController = {
 
                 await ticket.update({
                     status,
-                    paymentStatus: status,
+                    // paymentStatus has no 'void' (pending / paid / refunded / cancel): a void is a cancelled payment
+                    paymentStatus: status === 'void' ? 'cancel' : status,
                     notes: cancelReason || `${status.charAt(0).toUpperCase() + status.slice(1)}ed`,
                     cancelUserId,
                 }, { transaction });

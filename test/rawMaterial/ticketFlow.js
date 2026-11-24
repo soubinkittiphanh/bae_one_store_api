@@ -140,6 +140,16 @@ const main = async () => {
       assert.strictEqual(impacts(`source_line_id = ${lineIds(tid)[0]}`), 'returned\t2');
     });
 
+    await test('void works (paymentStatus becomes cancel) and follows the kitchen rule', async () => {
+      const before = [bal(beans), bal(milk)];
+      expectStatus(await ticket([{ productId: latte, quantity: 1 }]), 201, 'create');
+      const tid = num('SELECT MAX(id) FROM ticket');
+      const v = await call('patch', `/api/ticket/${tid}/status`, { status: 'void' }, CASHIER);
+      expectStatus(v, 200, 'void');
+      assert.strictEqual(one(`SELECT CONCAT(status, '/', paymentStatus) FROM ticket WHERE id = ${tid}`), 'void/cancel');
+      close(bal(beans), before[0]); close(bal(milk), before[1]); // the line was still 'ordered'
+    });
+
     await test('delete: an ordered ticket gives its ingredients back', async () => {
       const before = [bal(beans), bal(milk)];
       expectStatus(await ticket([{ productId: latte, quantity: 2 }]), 201, 'create');
