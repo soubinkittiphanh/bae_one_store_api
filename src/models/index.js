@@ -1066,6 +1066,19 @@ const ensureCriticalColumns = async (sequelizeInstance) => {
   }
 };
 
+// Duplicate UNIQUE index pile-up from sync({ alter }) (src/posMigrations/indexHygiene.js). Non-blocking.
+const repairUniqueIndexes = async (sequelizeInstance) => {
+  try {
+    const { guardAlterUnique, declaredUniqueIndexes, dedupeUniqueIndexes } = require('../posMigrations/indexHygiene');
+    const { sequelizeRunner } = require('../posMigrations');
+    guardAlterUnique(sequelizeInstance);
+    const dropped = await dedupeUniqueIndexes(sequelizeRunner(sequelizeInstance), declaredUniqueIndexes(sequelizeInstance), logger);
+    if (dropped) logger.info(`Index cleanup: dropped ${dropped} duplicate unique index(es)`);
+  } catch (err) {
+    logger.warn(`Non-blocking note during index cleanup: ${err.message}`);
+  }
+};
+
 // Database synchronization
 const synchronizeDatabase = async (db) => {
   try {
@@ -1073,6 +1086,10 @@ const synchronizeDatabase = async (db) => {
 
     // Step 0: Pre-sync data cleanup to remove orphan records preventing FK constraints
     await preSyncDataCleanup(db.sequelize);
+
+    // Step 0b: stop sync({ alter }) from adding a new UNIQUE index per unique column on every start,
+    // and drop the copies already made (tables at the 64-index limit can no longer be altered at all)
+    await repairUniqueIndexes(db.sequelize);
 
     // Phase 1: Create new tables that do not exist yet
     try {
@@ -1141,6 +1158,7 @@ const synchronizeDatabase = async (db) => {
   if (db.centralSequelize) {
     try {
       await db.centralSequelize.query('SET FOREIGN_KEY_CHECKS = 0');
+      await repairUniqueIndexes(db.centralSequelize);
       // Phase 1: Create new tables that do not exist yet
       await db.centralSequelize.sync({ force: false });
       try {

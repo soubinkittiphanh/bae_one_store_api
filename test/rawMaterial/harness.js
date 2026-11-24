@@ -27,7 +27,8 @@ const startApi = (port, testDb, extraEnv) => new Promise((resolve, reject) => {
   const child = spawn(process.execPath, [path.join(API_ROOT, 'src/index.js')], { cwd: API_ROOT, env });
   let ready = false;
   let log = '';
-  const timer = setTimeout(() => { if (!ready) { child.kill(); reject(new Error(`API did not start within 240s\n${log.slice(-2000)}`)); } }, 240000);
+  const limitMs = Number(process.env.RAW_TEST_START_TIMEOUT_MS || 240000);
+  const timer = setTimeout(() => { if (!ready) { child.kill(); reject(new Error(`API did not start within ${limitMs / 1000}s\n${log.slice(-2000)}`)); } }, limitMs);
   const onData = (buf) => {
     log += buf.toString();
     if (process.env.RAW_TEST_API_LOG) require('fs').appendFileSync(process.env.RAW_TEST_API_LOG, buf);
@@ -38,17 +39,19 @@ const startApi = (port, testDb, extraEnv) => new Promise((resolve, reject) => {
   child.on('exit', (code) => { if (!ready) { clearTimeout(timer); reject(new Error(`API exited early (${code})\n${log.slice(-2000)}`)); } });
 });
 
-const setup = async (testDb, extraEnv = {}) => {
+const setup = async (testDb, extraEnv = {}, { rebuild = true, port: fixedPort } = {}) => {
   if (!testDb.endsWith('_test')) throw new Error(`test database must end in _test (got ${testDb})`);
-  const port = await freePort();
+  const port = fixedPort || await freePort();
   process.env.PORT = String(port); // the JWT secret includes PORT (src/config/env.js)
   process.env.DCOMMERCE_DB_NAME = testDb;
   const target = require('../../src/loan/dbGuard').assertLocalDb('test:raw-material');
   if (target.database !== testDb) throw new Error(`Config resolves to ${target.database}, expected ${testDb}`);
 
+  if (rebuild) {
   console.log(`\n[setup] rebuilding ${testDb} from local ${SOURCE_DB}`);
   execSync(`${CLI} -e "DROP DATABASE IF EXISTS \\\`${testDb}\\\`; CREATE DATABASE \\\`${testDb}\\\` CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci"`, { shell: '/bin/bash' });
   execSync(`set -o pipefail; mariadb-dump ${process.env.RAW_TEST_MYSQL_ARGS || ''} --single-transaction ${SOURCE_DB} | ${CLI} ${testDb}`, { shell: '/bin/bash' });
+  }
 
   // SQL goes through stdin, so backticks and quotes never reach a shell
   const sql = query => execSync(`${CLI} -N -B ${testDb}`, { input: query, encoding: 'utf8' }).trim();
@@ -78,4 +81,4 @@ const close = (a, b, eps = 1e-4) => assert.ok(Math.abs(Number(a) - Number(b)) < 
 const expectStatus = (res, status, label) =>
   assert.strictEqual(res.status, status, `${label}: expected ${status}, got ${res.status} ${JSON.stringify(res.data).slice(0, 400)}`);
 
-module.exports = { setup, test, results, close, expectStatus };
+module.exports = { setup, startApi, test, results, close, expectStatus };
