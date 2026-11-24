@@ -32,6 +32,7 @@ const { ApiError, sendError } = require('../../rawMaterial/errors');
 
 // Raw-material ingredients (product.stockMode = 'quantity') are deducted / returned by the recipe engine
 const recipeEngine = createRecipeEngine(require('../../models'));
+const cardBridge = require('../../rawMaterial/cardBridge').createCardBridge(require('../../models'), logger);
 
 // Transactions that move raw-material stock run at READ COMMITTED: the engine locks stock_balances rows
 // after other reads, which at REPEATABLE READ with innodb_snapshot_isolation (MariaDB 11.6+) fails with
@@ -774,6 +775,12 @@ const releaseCardsForTicket = async (ticketId, transaction) => {
                 freshCardIds.push(card.id);
             }
         }
+
+        // 0. Cards of products converted to raw materials since: credit stock_balances, not card stock
+        const cardsToRestore = await cardBridge.returnCardsToStock(
+            reservedCardIds, { referenceType: 'ticket', referenceId: ticketId, note: `Ticket ${ticketId}: cards returned` }, transaction);
+        reservedCardIds.length = 0;
+        reservedCardIds.push(...cardsToRestore);
 
         // 1. Reserved stock cards: return to inventory
         if (reservedCardIds.length > 0) {

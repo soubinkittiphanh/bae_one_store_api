@@ -52,9 +52,9 @@ const createRawMaterialService = (db, options = {}) => {
     }
   };
 
-  // Converting a product changes how sales deduct it, so it stays off until the Step 3 sale engine
-  // understands 'quantity' products (otherwise ticket sales of its recipes fail or create stray cards).
-  const allowConvert = options.allowConvert ?? process.env.RAW_MATERIAL_CONVERT === '1';
+  // On by default: ticket sales deduct 'quantity' ingredients (recipeEngine.js) and cards sold before the
+  // conversion are credited back to the balance when returned (cardBridge.js). RAW_MATERIAL_CONVERT=0 turns it off.
+  const allowConvert = options.allowConvert ?? process.env.RAW_MATERIAL_CONVERT !== '0';
 
   const getProduct = async (productId, transaction, lock = false) => {
     const product = await Product.findByPk(productId, {
@@ -178,7 +178,7 @@ const createRawMaterialService = (db, options = {}) => {
   const convertToQuantity = async (productIdRaw, { userId } = {}) => {
     if (!allowConvert) {
       throw new ApiError(409, 'CONVERT_DISABLED',
-        'Converting to raw-material stock is disabled until the recipe sale engine (step 3) is deployed');
+        'Converting to raw-material stock is switched off on this server (RAW_MATERIAL_CONVERT=0)');
     }
     const productId = toId(productIdRaw, 'productId');
 

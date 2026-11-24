@@ -21,6 +21,20 @@ const lineService = require("./line/service");
 const headerService = require("./service");
 const common = require('../common')
 const { Op, where, literal } = require('sequelize');
+const { Transaction } = require('sequelize');
+
+// Cards of products converted to raw materials (stockMode 'quantity') since they were sold are credited to
+// stock_balances instead of becoming card stock again (src/rawMaterial/cardBridge.js)
+let cardBridge = null;
+const getCardBridge = () => {
+  if (!cardBridge) cardBridge = require('../rawMaterial/cardBridge').createCardBridge(require('../models'), logger);
+  return cardBridge;
+};
+
+// Sale edit releases cards outside a transaction; the raw-material part runs in its own
+const returnRawMaterialCards = (cardIds, saleLineId) =>
+  sequelize.transaction({ isolationLevel: Transaction.ISOLATION_LEVELS.READ_COMMITTED }, t =>
+    getCardBridge().returnCardsToStock(cardIds, { referenceType: 'sale', referenceId: saleLineId, note: `Sale line ${saleLineId} edited` }, t));
 const productService = require('../product/service');
 const { sequelize, location, company } = require('../models');
 const spfService = require('../spf/service')
@@ -1041,13 +1055,19 @@ exports.reverseSaleHeader = async (req, res) => {
     const returnLineIds = returnLines.map(line => line.id);
     const lineIds = saleHeader['lines'].map(line => line.id);
 
-    const result = await sequelize.transaction(async (t) => {
+    // READ COMMITTED: returning raw-material cards locks stock_balances rows (see src/rawMaterial/service.js runTx)
+    const result = await sequelize.transaction({ isolationLevel: Transaction.ISOLATION_LEVELS.READ_COMMITTED }, async (t) => {
       const updatedRecord = await saleHeader.update({ isActive, remark }, { transaction: t });
       await SalePayment.update({ isActive }, { where: { saleHeaderId: id }, transaction: t });
       // (the transaction used to be passed as a third argument, which Sequelize ignores: these ran outside it)
       const updatedSaleLineRecord = await SaleLine.update({ isActive }, { where: { 'id': { [Op.in]: lineIds } }, transaction: t });
 
       // 1. Restore cards consumed by normal sales back into inventory
+      //    (cards of products converted to raw materials since: credited to stock_balances instead)
+      const cardsToRestore = await getCardBridge().returnCardsToStock(
+        soldCardIds, { referenceType: 'sale', referenceId: Number(id), userId, note: `Sale ${id} cancelled` }, t);
+      soldCardIds.length = 0;
+      soldCardIds.push(...cardsToRestore);
       let numUpdated = 0;
       if (soldCardIds.length > 0) {
         const [soldCount] = await Card.update(
@@ -1364,22 +1384,23 @@ const assignHeaderId = async (lines, idOrHeader, lockingSessionId, isUpdate, loc
               await reserveCard(iterator, lockingSessionId, diff, locationId);
             } else if (currentRequiredQty < actualLinkedCount) {
               const releaseCount = actualLinkedCount - currentRequiredQty;
-              const cardsToRelease = previousCards.slice(0, releaseCount);
+              const cardsToRelease = await returnRawMaterialCards(previousCards.slice(0, releaseCount).map(el => el.id), iterator.id);
 
               await Card.update({
                 card_isused: 0,
                 saleLineId: null,
                 locking_session_id: '' // Satisfy NOT NULL constraint
               }, {
-                where: { id: { [Op.in]: cardsToRelease.map(el => el.id) } }
+                where: { id: { [Op.in]: cardsToRelease } }
               });
             }
           }
           // B. Product/Variant Swap: Release all old cards, lock all new cards
           else {
             if (actualLinkedCount > 0) {
+              const cardsToRelease = await returnRawMaterialCards(previousCards.map(el => el.id), iterator.id);
               await Card.update({ card_isused: 0, saleLineId: null, locking_session_id: '' }, {
-                where: { id: { [Op.in]: previousCards.map(el => el.id) } }
+                where: { id: { [Op.in]: cardsToRelease } }
               });
               await productService.updateProductCountById(previousCards[0].productId);
             }

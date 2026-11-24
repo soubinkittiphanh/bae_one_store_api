@@ -1181,6 +1181,10 @@ setupAssociations(db);
 
 if (process.env.NO_SYNC !== 'true') {
   synchronizeDatabase(db);
+} else {
+  // No sequelize.sync, but the models still need the columns the POS migrations add (e.g. product.stockMode)
+  require('../posMigrations').runPosMigrations(db.sequelize, logger)
+    .catch(err => logger.warn(`Non-blocking note during POS migrations: ${err.message}`));
 };
 
 // Trigger reload to verify synchronization success

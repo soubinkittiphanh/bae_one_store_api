@@ -92,7 +92,7 @@ const main = async () => {
   const db = loadModels(sequelize);
   const { createRawMaterialService } = require(SRC + 'rawMaterial/service');
   const svc = createRawMaterialService(db, { allowConvert: true });
-  const svcDefault = createRawMaterialService(db);
+  const svcOff = createRawMaterialService(db, { allowConvert: false });
   const q = (sql, replacements = []) => sequelize.query(sql, { replacements, type: Sequelize.QueryTypes.SELECT });
 
   // ---------------------------------------------------------------- fixtures
@@ -127,7 +127,7 @@ const main = async () => {
   assert.ok(openLine.id && paidLine.id, 'source DB needs an open and a paid ticket');
 
   // ---------------------------------------------------------------- convert
-  await test('convert is off by default until step 3', () => rejects(svcDefault.convertToQuantity(beans.id), 'CONVERT_DISABLED'));
+  await test('convert can be switched off (RAW_MATERIAL_CONVERT=0)', () => rejects(svcOff.convertToQuantity(beans.id), 'CONVERT_DISABLED'));
   await test('convert refuses returnable packaging', () => rejects(svc.convertToQuantity(crate.id), 'PACKAGING_PRODUCT'));
   await test('convert needs a stock unit', () => rejects(svc.convertToQuantity(noUnit.id), 'STOCK_UNIT_REQUIRED'));
 

@@ -51,6 +51,7 @@ const runPosMigrations = async (sequelize, logger = console) => {
       return false;
     }
   }
+  logger.info('POS migrations: up to date');
   return true;
 };
 

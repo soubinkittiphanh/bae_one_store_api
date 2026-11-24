@@ -25,7 +25,8 @@ process.chdir(RUN_DIR);
 if (!/^\w+_test$/.test(TEST_DB) || !/^\w+$/.test(SOURCE_DB)) throw new Error('SALES_TEST_DB must be a plain name ending in _test');
 
 const sh = (cmd) => execFileSync('bash', ['-c', cmd], { stdio: ['ignore', 'pipe', 'pipe'] }).toString();
-const q = (sql) => sh(`mariadb ${MYSQL_ARGS} -N -B ${TEST_DB} -e ${JSON.stringify(sql)}`).trim();
+// One line: JSON.stringify turns newlines into a literal \n, which the mariadb client reads as its 'nopager' command
+const q = (sql) => sh(`mariadb ${MYSQL_ARGS} -N -B ${TEST_DB} -e ${JSON.stringify(sql.replace(/\s+/g, ' '))}`).trim();
 const n = (sql) => Number(q(sql));
 const freePort = () => new Promise((resolve, reject) => {
   const srv = net.createServer();
@@ -47,7 +48,7 @@ const startApi = (port) => new Promise((resolve, reject) => {
   const timer = setTimeout(() => { if (!ready) { child.kill(); reject(new Error(`API did not start within 240s\n${log.slice(-2000)}`)); } }, 240000);
   const onData = (buf) => {
     log += buf.toString();
-    if (!ready && /(Dcommerce is up|Database client is synchronized)/.test(log)) { ready = true; clearTimeout(timer); setTimeout(() => resolve(child), 1500); }
+    if (!ready && /(Dcommerce is up|Database client is synchronized)/.test(log) && /POS migrations: up to date/.test(log)) { ready = true; clearTimeout(timer); setTimeout(() => resolve(child), 1500); }
   };
   child.stdout.on('data', onData);
   child.stderr.on('data', onData);
@@ -56,6 +57,8 @@ const startApi = (port) => new Promise((resolve, reject) => {
 
 const main = async () => {
   const port = await freePort();
+  // The JWT secret includes PORT (src/config/env.js): sign tokens with the port the API runs on
+  process.env.PORT = String(port);
   process.env.DCOMMERCE_DB_NAME = TEST_DB;
   process.env.NO_SYNC = 'true'; // the in-process model load (auto-cancel test) must not sync the schema
   const target = require('../../src/loan/dbGuard').assertLocalDb('test:sales');
