@@ -93,8 +93,9 @@ const main = async () => {
        inputter, update_time, update_time_new, createdAt, updateTimestamp, isActive, locationId) VALUES ${cards.join(',')}`);
 
   try {
-    await test('server startup applied the step 1 migration', async () => {
-      assert.strictEqual(sql(`SELECT name FROM pos_schema_migrations`), '20261124_recipe_bom_step1');
+    await test('server startup applied the POS migrations', async () => {
+      assert.strictEqual(sql(`SELECT GROUP_CONCAT(name ORDER BY name) FROM pos_schema_migrations`),
+        '20261124_recipe_bom_step1,20261125_recipe_engine_step3');
       assert.strictEqual(sql(`SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA = DATABASE()
         AND CONSTRAINT_NAME IN ('fk_stock_balance_product', 'fk_rsi_stock_tx', 'fk_stock_tx_location')`), '3');
     });

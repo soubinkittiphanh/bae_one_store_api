@@ -96,6 +96,29 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.INTEGER,
             allowNull: true,
             field: 'reversal_transaction_id'
+        },
+        // Set when the sold line is cancelled / voided / deleted (src/posMigrations/20261125_recipe_engine_step3.js)
+        disposition: {
+            type: DataTypes.ENUM('consumed', 'returned', 'wasted'),
+            allowNull: false,
+            defaultValue: 'consumed',
+            comment: 'consumed = sold; returned = put back on stock; wasted = made but not sold'
+        },
+        dispositionAt: {
+            type: DataTypes.DATE,
+            allowNull: true,
+            field: 'disposition_at'
+        },
+        dispositionBy: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            comment: 'user id',
+            field: 'disposition_by'
+        },
+        dispositionNote: {
+            type: DataTypes.STRING(255),
+            allowNull: true,
+            field: 'disposition_note'
         }
     }, {
         sequelize,
@@ -108,7 +131,8 @@ module.exports = (sequelize, DataTypes) => {
             { name: 'idx_rsi_source', fields: ['source_type', 'source_line_id'] },
             { name: 'idx_rsi_ingredient', fields: ['ingredient_id', 'createdAt'] },
             { name: 'idx_rsi_product_sold', fields: ['product_sold_id', 'createdAt'] },
-            { name: 'idx_rsi_stock_tx', fields: ['stock_transaction_id'] }
+            { name: 'idx_rsi_stock_tx', fields: ['stock_transaction_id'] },
+            { name: 'idx_rsi_disposition', fields: ['disposition', 'ingredient_id', 'disposition_at'] }
         ]
     });
 

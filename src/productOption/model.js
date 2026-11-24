@@ -35,6 +35,16 @@ module.exports = (sequelize, DataTypes) => {
                 model: 'product',
                 key: 'id'
             }
+        },
+        // Raw-material amount per item ("Extra shot" = 9 g); schema: src/posMigrations/20261125_recipe_engine_step3.js
+        ingredientQuantity: {
+            type: DataTypes.DECIMAL(18, 6),
+            allowNull: true,
+            comment: 'amount of ingredientProductId per item, in ingredientUnitId (raw materials)'
+        },
+        ingredientUnitId: {
+            type: DataTypes.INTEGER,
+            allowNull: true
         }
     }, {
         sequelize,

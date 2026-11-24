@@ -26,6 +26,19 @@ const common = require('../../common');
 const productService = require('../../product/service');
 const spfService = require('../../spf/service');
 const Recipe = require('../../models').recipe;
+const { Transaction } = require('sequelize');
+const { createRecipeEngine } = require('../../rawMaterial/recipeEngine');
+const { ApiError, sendError } = require('../../rawMaterial/errors');
+
+// Raw-material ingredients (product.stockMode = 'quantity') are deducted / returned by the recipe engine
+const recipeEngine = createRecipeEngine(require('../../models'));
+
+// Transactions that move raw-material stock run at READ COMMITTED: the engine locks stock_balances rows
+// after other reads, which at REPEATABLE READ with innodb_snapshot_isolation (MariaDB 11.6+) fails with
+// "Record has changed since last read" as soon as two sales use the same ingredient.
+const stockTransaction = () => sequelize.transaction({ isolationLevel: Transaction.ISOLATION_LEVELS.READ_COMMITTED });
+
+const userIdOf = req => (req.user && req.user.id) || null;
 
 // ---- Kitchen progress across ticket updates ----
 // updateTicket deletes and re-creates every line. Lines the kitchen already finished must stay
@@ -101,6 +114,7 @@ const reserveIngredientCardsForRecipe = async (ticketLine, product, lineQuantity
     for (const recipe of recipes) {
         const ingredient = recipe.ingredient;
         if (!ingredient) continue;
+        if (ingredient.stockMode === 'quantity') continue; // raw material: recipeEngine
 
         const qtyNeeded = Math.ceil(recipe.quantity * lineQuantity);
         if (qtyNeeded <= 0) continue;
@@ -208,7 +222,7 @@ const reserveIngredientCardsForOptions = async (ticketLine, selectedOptions, loc
     for (const opt of parsedOptions) {
         if (opt.ingredientProductId) {
             const ingredient = await Product.findByPk(opt.ingredientProductId, { transaction });
-            if (ingredient) {
+            if (ingredient && ingredient.stockMode !== 'quantity') { // raw material: recipeEngine
                 const qtyNeeded = ticketLine.quantity || 1;
                 if (ingredient.validateStockOnSale) {
                     console.log(`[Options Inventory] Reserving ${qtyNeeded} stock cards for ingredient ${ingredient.id} (${ingredient.pro_name})`);
@@ -1122,7 +1136,7 @@ const ticketController = {
 
     // Create new ticket with promotion support
     createTicket: async (req, res) => {
-        const transaction = await sequelize.transaction();
+        const transaction = await stockTransaction();
 
         try {
             console.log('=== CREATE TICKET REQUEST ===');
@@ -1479,6 +1493,13 @@ const ticketController = {
                         createUserId,
                         transaction
                     );
+
+                    // Raw-material ingredients: exact, unit-converted amounts (rawMaterial/recipeEngine.js)
+                    await recipeEngine.consume({
+                        sourceType: 'ticket', lineId: ticketLine.id, productId: line.productId,
+                        quantity: parseFloat(line.quantity || 1), selectedOptions: line.selectedOptions,
+                        locationId, userId: createUserId
+                    }, transaction);
                 }
                 
                 // Update stock counts
@@ -1567,6 +1588,10 @@ const ticketController = {
                 data: createdTicket
             });
         } catch (error) {
+            if (error instanceof ApiError) {
+                await safeRollback(transaction);
+                return sendError(res, error, logger);
+            }
             console.error('=== TICKET CREATION FAILED ===');
             console.error('Error name:', error.name);
             console.error('Error message:', error.message);
@@ -1633,7 +1658,7 @@ const ticketController = {
 
     // Update ticket with promotion support
     updateTicket: async (req, res) => {
-        const transaction = await sequelize.transaction();
+        const transaction = await stockTransaction();
 
         try {
             const { id } = req.params;
@@ -1665,7 +1690,7 @@ const ticketController = {
                 // What the kitchen has already finished, read before the lines are replaced
                 const oldLines = await TicketLine.findAll({
                     where: { ticketId: id },
-                    attributes: ['productId', 'quantity', 'status', 'selectedOptions'],
+                    attributes: ['id', 'productId', 'quantity', 'status', 'selectedOptions'],
                     transaction
                 });
                 const kitchenDoneQty = buildKitchenDoneQty(oldLines);
@@ -1698,6 +1723,12 @@ const ticketController = {
                 const stockValidationErrors = [];
                 const lockingSessionId = common.generateLockingSessionId();
                 const locationId = ticket.locationId || updateData.locationId;
+
+                // Removed dishes the kitchen already made are waste unless a manager returns them
+                const returnIngredients = updateData.returnIngredients === true;
+                delete updateData.returnIngredients;
+                await recipeEngine.assertCanForceReturn(returnIngredients, userIdOf(req), transaction);
+                const recreatedLines = [];
 
                 for (const line of ticketLines) {
                     const product = productMap.get(line.productId);
@@ -1805,6 +1836,10 @@ const ticketController = {
                     }, { transaction });
 
                     console.log(`✅ Ticket line created with ID ${ticketLine.id} for product ${line.productId}`);
+                    recreatedLines.push({
+                        id: ticketLine.id, productId: line.productId, quantity: parseFloat(line.quantity || 1),
+                        status: lineStatus, selectedOptions: line.selectedOptions
+                    });
 
                     const qty = parseInt(line.quantity || 1);
 
@@ -1920,6 +1955,18 @@ const ticketController = {
                         transaction
                     );
                 }
+
+                // Raw-material deductions move from the deleted lines to the new ones; only real changes
+                // touch stock (added quantity deducted, removed quantity returned or wasted)
+                await recipeEngine.carryOverTicketEdit({
+                    oldLines: oldLines.map(l => ({
+                        id: l.id, productId: l.productId, quantity: l.quantity, status: l.status, selectedOptions: l.selectedOptions
+                    })),
+                    newLines: recreatedLines,
+                    locationId,
+                    forceReturn: returnIngredients,
+                    userId: userIdOf(req)
+                }, transaction);
 
                 // Update stock counts
                 if (productIds.length > 0) {
@@ -2061,6 +2108,10 @@ const ticketController = {
                 data: updatedTicket
             });
         } catch (error) {
+            if (error instanceof ApiError) {
+                await safeRollback(transaction);
+                return sendError(res, error, logger);
+            }
             console.error('=== TICKET UPDATE FAILED ===');
             console.error('Error name:', error.name);
             console.error('Error message:', error.message);
@@ -2086,7 +2137,7 @@ const ticketController = {
 
     // Update ticket status with sale integration
     updateTicketStatus: async (req, res) => {
-        const transaction = await sequelize.transaction();
+        const transaction = await stockTransaction();
 
         try {
             const { id } = req.params;
@@ -2148,6 +2199,15 @@ const ticketController = {
 
                 logger.info(`✓ Ticket ${id} status updated to ${status}`);
 
+                // Raw materials: 'ordered' lines go back to stock, made ones are waste unless a manager returns them
+                const returnIngredients = req.body.returnIngredients === true;
+                await recipeEngine.assertCanForceReturn(returnIngredients, userIdOf(req), transaction);
+                const linesToSettle = await TicketLine.findAll({ where: { ticketId: id }, attributes: ['id', 'status'], transaction });
+                await recipeEngine.disposeLines({
+                    sourceType: 'ticket', lines: linesToSettle, forceReturn: returnIngredients,
+                    userId: userIdOf(req), note: cancelReason || `Ticket ${status}`
+                }, transaction);
+
                 try {
                     await releaseCardsForTicket(id, transaction);
                     logger.info(`✓ Cards released successfully for ticket ${id}`);
@@ -2199,6 +2259,10 @@ const ticketController = {
                 }
             });
         } catch (error) {
+            if (error instanceof ApiError) {
+                await safeRollback(transaction);
+                return sendError(res, error, logger);
+            }
             console.error('=== TICKET STATUS UPDATE FAILED ===');
             console.error('Error name:', error.name);
             console.error('Error message:', error.message);
@@ -2447,7 +2511,7 @@ const ticketController = {
 
     // Delete ticket
     deleteTicket: async (req, res) => {
-        const transaction = await sequelize.transaction();
+        const transaction = await stockTransaction();
 
         try {
             const { id } = req.params;
@@ -2473,6 +2537,15 @@ const ticketController = {
                 });
             }
 
+            // Raw materials: same rule as cancel ('ordered' returns, made is waste unless a manager returns it)
+            const returnIngredients = (req.body && req.body.returnIngredients === true) || req.query.returnIngredients === '1';
+            await recipeEngine.assertCanForceReturn(returnIngredients, userIdOf(req), transaction);
+            const linesToSettle = await TicketLine.findAll({ where: { ticketId: id }, attributes: ['id', 'status'], transaction });
+            await recipeEngine.disposeLines({
+                sourceType: 'ticket', lines: linesToSettle, forceReturn: returnIngredients,
+                userId: userIdOf(req), note: 'Ticket deleted'
+            }, transaction);
+
             await releaseCardsForTicket(id, transaction);
 
             await TicketLine.destroy({
@@ -2497,6 +2570,10 @@ const ticketController = {
                 message: 'Ticket deleted successfully'
             });
         } catch (error) {
+            if (error instanceof ApiError) {
+                await safeRollback(transaction);
+                return sendError(res, error, logger);
+            }
             console.error('=== DELETE TICKET FAILED ===', error);
             await safeRollback(transaction);
 

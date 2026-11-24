@@ -11,7 +11,8 @@
 const { QueryTypes } = require('sequelize');
 
 const MIGRATIONS = [
-  require('./20261124_recipe_bom_step1')
+  require('./20261124_recipe_bom_step1'),
+  require('./20261125_recipe_engine_step3')
 ];
 
 const isReadQuery = sql => /^\s*(SELECT|SHOW)\b/i.test(sql);
