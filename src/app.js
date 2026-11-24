@@ -198,6 +198,7 @@ const buildApp = async () => {
     app.use("/api/member-offers", myRouter.memberOffer)
     app.use("/api/transaction-codes", myRouter.transaction)
     app.use("/api/stock-transactions", myRouter.stockTransaction)
+    app.use("/api/raw-materials", myRouter.rawMaterial)
     app.use("/api/qr", myRouter.qrRouter)
     app.use("/api/size", myRouter.size)
     app.use("/api/color", myRouter.color)

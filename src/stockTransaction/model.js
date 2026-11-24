@@ -105,6 +105,20 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.TEXT,
             allowNull: true
         },
+        // Declared explicitly (they were only added by the associations below), so the columns are written
+        // even where associations are not set up (tests, scripts)
+        productId: {
+            type: DataTypes.INTEGER,
+            allowNull: true
+        },
+        transactionUnitId: {
+            type: DataTypes.INTEGER,
+            allowNull: true
+        },
+        baseUnitId: {
+            type: DataTypes.INTEGER,
+            allowNull: true
+        },
         locationId: {
             type: DataTypes.INTEGER,
             allowNull: true,

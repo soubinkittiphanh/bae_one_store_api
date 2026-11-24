@@ -90,6 +90,7 @@ const promotions = require("../pos/promotion/router")
 const tableReservations = require("../pos/tableReservation/router")
 const memberOffer = require("../member_offer/router")
 const stockTransaction = require("../stockTransaction/router")
+const rawMaterial = require("../rawMaterial/router")
 const qrRouter = require("../QRRequest/router")
 const size = require("../size/router")
 const color = require("../color/router")
@@ -217,6 +218,7 @@ module.exports = {
     promotions,
     tableReservations,
     stockTransaction,
+    rawMaterial,
     salePayment,
     productTemp,
     accountStatement,
