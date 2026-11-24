@@ -29,6 +29,14 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.BOOLEAN,
             defaultValue: false
         },
+        // 'card' = one card row per unit (retail, returnable packaging); 'quantity' = decimal balance in
+        // stock_balances (raw materials in g / ml). Schema: src/posMigrations/20261124_recipe_bom_step1.js
+        stockMode: {
+            type: DataTypes.ENUM('card', 'quantity'),
+            allowNull: false,
+            defaultValue: 'card',
+            comment: 'card = one card row per unit; quantity = decimal balance in stock_balances (raw materials)',
+        },
         pro_image_path: {
             type: DataTypes.STRING,
         },

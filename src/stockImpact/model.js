@@ -1,222 +1,128 @@
-
-// Recipe Stock Impacts Model (Enhanced)
+// One ingredient consumed by one sold line (restaurant ticketLine or merchant saleLine), so a void or refund
+// can reverse exactly what was deducted. Schema and FKs: src/posMigrations/20261124_recipe_bom_step1.js.
+// (Replaces an earlier draft that was never registered and pointed at tables that do not exist.)
 module.exports = (sequelize, DataTypes) => {
-    const RecipeStockImpact = sequelize.define('recipeStockImpactModel', {
+    const RecipeStockImpact = sequelize.define('recipeStockImpact', {
         id: {
             type: DataTypes.INTEGER,
             primaryKey: true,
             autoIncrement: true
         },
-        ticketLineId: {
+        stockTransactionId: {
             type: DataTypes.INTEGER,
             allowNull: false,
-            references: {
-                model: 'ticket_line',
-                key: 'id'
-            },
-            field: 'ticket_line_id'
+            comment: 'the recipe_deduction ledger row',
+            field: 'stock_transaction_id'
+        },
+        sourceType: {
+            type: DataTypes.ENUM('ticket', 'sale'),
+            allowNull: false,
+            comment: 'ticket = restaurant ticketLine, sale = merchant saleLine',
+            field: 'source_type'
+        },
+        sourceLineId: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            comment: 'ticketLine.id or saleLine.id',
+            field: 'source_line_id'
         },
         productSoldId: {
             type: DataTypes.INTEGER,
             allowNull: false,
-            references: {
-                model: 'products',
-                key: 'id'
-            },
             field: 'product_sold_id'
         },
         ingredientId: {
             type: DataTypes.INTEGER,
             allowNull: false,
-            references: {
-                model: 'products',
-                key: 'id'
-            },
             field: 'ingredient_id'
         },
         recipeId: {
             type: DataTypes.INTEGER,
-            allowNull: false,
-            references: {
-                model: 'recipes',
-                key: 'id'
-            },
+            allowNull: true,
+            comment: 'recipe row used; NULL once that row is deleted',
             field: 'recipe_id'
         },
-        
-        // Quantities
+        locationId: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            field: 'location_id'
+        },
         quantitySold: {
-            type: DataTypes.DECIMAL(10, 3),
+            type: DataTypes.DECIMAL(18, 4),
             allowNull: false,
-            validate: {
-                isDecimal: true,
-                min: 0
-            },
-            comment: 'Quantity of finished product sold',
             field: 'quantity_sold'
         },
-        
-        // Recipe ingredient deduction details
         recipeQuantityPerUnit: {
-            type: DataTypes.DECIMAL(10, 4),
+            type: DataTypes.DECIMAL(18, 6),
             allowNull: false,
-            validate: {
-                isDecimal: true,
-                min: 0
-            },
-            comment: 'Recipe ingredient quantity per unit of finished product',
+            comment: 'as written in the recipe, in recipe_unit_id',
             field: 'recipe_quantity_per_unit'
         },
         recipeUnitId: {
             type: DataTypes.INTEGER,
-            allowNull: false,
-            references: {
-                model: 'units',
-                key: 'id'
-            },
-            comment: 'Unit specified in the recipe',
+            allowNull: true,
             field: 'recipe_unit_id'
         },
-        
-        // Total deduction
-        ingredientQuantityDeducted: {
-            type: DataTypes.DECIMAL(10, 4),
+        ingredientQuantity: {
+            type: DataTypes.DECIMAL(18, 4),
             allowNull: false,
-            validate: {
-                isDecimal: true,
-                min: 0
-            },
-            comment: 'Total ingredient quantity deducted (recipe_quantity_per_unit * quantity_sold)',
-            field: 'ingredient_quantity_deducted'
+            comment: 'deducted, in the ingredient stock unit',
+            field: 'ingredient_quantity'
         },
         ingredientUnitId: {
             type: DataTypes.INTEGER,
-            allowNull: false,
-            references: {
-                model: 'units',
-                key: 'id'
-            },
-            comment: 'Base unit of the ingredient',
+            allowNull: true,
             field: 'ingredient_unit_id'
         },
-        
-        // Cost tracking
         unitCost: {
-            type: DataTypes.DECIMAL(10, 4),
+            type: DataTypes.DECIMAL(18, 6),
             allowNull: false,
-            validate: {
-                isDecimal: true,
-                min: 0
-            },
-            comment: 'Cost per base unit of ingredient',
+            defaultValue: 0,
+            comment: 'LCY per ingredient stock unit',
             field: 'unit_cost'
         },
         totalCost: {
-            type: DataTypes.DECIMAL(10, 2),
+            type: DataTypes.DECIMAL(18, 2),
             allowNull: false,
-            validate: {
-                isDecimal: true,
-                min: 0
-            },
-            comment: 'Total cost of ingredient deducted (unit_cost * ingredient_quantity_deducted)',
+            defaultValue: 0,
             field: 'total_cost'
         },
-        
-        // Stock levels at time of deduction
-        stockBefore: {
-            type: DataTypes.DECIMAL(10, 4),
-            allowNull: false,
-            validate: {
-                isDecimal: true,
-                min: 0
-            },
-            comment: 'Ingredient stock level before deduction',
-            field: 'stock_before'
+        reversedAt: {
+            type: DataTypes.DATE,
+            allowNull: true,
+            field: 'reversed_at'
         },
-        stockAfter: {
-            type: DataTypes.DECIMAL(10, 4),
-            allowNull: false,
-            validate: {
-                isDecimal: true,
-                min: 0
-            },
-            comment: 'Ingredient stock level after deduction',
-            field: 'stock_after'
-        },
-        
-        // Reference to stock transaction
-        stockTransactionId: {
+        reversalTransactionId: {
             type: DataTypes.INTEGER,
             allowNull: true,
-            references: {
-                model: 'stock_transactions',
-                key: 'id'
-            },
-            comment: 'Link to corresponding stock transaction record',
-            field: 'stock_transaction_id'
+            field: 'reversal_transaction_id'
         }
     }, {
         sequelize,
         timestamps: true,
         createdAt: 'createdAt',
-        updatedAt: false, // These are historical records, no updates needed
+        updatedAt: false, // history: rows are only marked reversed, never edited otherwise
         freezeTableName: true,
         tableName: 'recipe_stock_impacts',
         indexes: [
-            {
-                fields: ['ticket_line_id']
-            },
-            {
-                fields: ['ingredient_id', 'createdAt']
-            },
-            {
-                fields: ['product_sold_id', 'createdAt']
-            },
-            {
-                fields: ['recipe_id']
-            },
-            {
-                fields: ['stock_transaction_id']
-            }
+            { name: 'idx_rsi_source', fields: ['source_type', 'source_line_id'] },
+            { name: 'idx_rsi_ingredient', fields: ['ingredient_id', 'createdAt'] },
+            { name: 'idx_rsi_product_sold', fields: ['product_sold_id', 'createdAt'] },
+            { name: 'idx_rsi_stock_tx', fields: ['stock_transaction_id'] }
         ]
     });
 
-    // Define associations
-    RecipeStockImpact.associate = function(models) {
-        RecipeStockImpact.belongsTo(models.ticketLineModel, {
-            as: 'ticketLine',
-            foreignKey: 'ticketLineId'
-        });
-
-        RecipeStockImpact.belongsTo(models.productModel, {
-            as: 'productSold',
-            foreignKey: 'productSoldId'
-        });
-
-        RecipeStockImpact.belongsTo(models.productModel, {
-            as: 'ingredient',
-            foreignKey: 'ingredientId'
-        });
-
-        RecipeStockImpact.belongsTo(models.recipeModel, {
-            as: 'recipe',
-            foreignKey: 'recipeId'
-        });
-
-        RecipeStockImpact.belongsTo(models.unitModel, {
-            as: 'recipeUnit',
-            foreignKey: 'recipeUnitId'
-        });
-
-        RecipeStockImpact.belongsTo(models.unitModel, {
-            as: 'ingredientUnit',
-            foreignKey: 'ingredientUnitId'
-        });
-
-        RecipeStockImpact.belongsTo(models.stockTransactionModel, {
-            as: 'stockTransaction',
-            foreignKey: 'stockTransactionId'
-        });
+    RecipeStockImpact.associate = (models) => {
+        // FKs are created by the migration with fixed names; constraints: false keeps sync from adding more
+        const opts = { constraints: false };
+        RecipeStockImpact.belongsTo(models.stockTransactionModel, { as: 'stockTransaction', foreignKey: 'stockTransactionId', ...opts });
+        RecipeStockImpact.belongsTo(models.stockTransactionModel, { as: 'reversalTransaction', foreignKey: 'reversalTransactionId', ...opts });
+        RecipeStockImpact.belongsTo(models.product, { as: 'productSold', foreignKey: 'productSoldId', ...opts });
+        RecipeStockImpact.belongsTo(models.product, { as: 'ingredient', foreignKey: 'ingredientId', ...opts });
+        RecipeStockImpact.belongsTo(models.recipe, { as: 'recipe', foreignKey: 'recipeId', ...opts });
+        RecipeStockImpact.belongsTo(models.unit, { as: 'recipeUnit', foreignKey: 'recipeUnitId', ...opts });
+        RecipeStockImpact.belongsTo(models.unit, { as: 'ingredientUnit', foreignKey: 'ingredientUnitId', ...opts });
+        RecipeStockImpact.belongsTo(models.location, { as: 'location', foreignKey: 'locationId', ...opts });
     };
 
     return RecipeStockImpact;

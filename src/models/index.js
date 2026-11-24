@@ -132,6 +132,9 @@ const initializeModels = () => {
     unit: require("../unit/model")(sequelize, DataTypes),
     printerModel: require("../printer/model")(sequelize, DataTypes),
     stockTransactionModel: require("../stockTransaction/model")(sequelize, DataTypes),
+    // Recipe/BOM raw-material stock (schema: src/posMigrations/20261124_recipe_bom_step1.js)
+    stockBalance: require("../stockBalance/model")(sequelize, DataTypes),
+    recipeStockImpact: require("../stockImpact/model")(sequelize, DataTypes),
     stockDailyBalance: require("../stockDailyBalance/model")(sequelize, DataTypes),
     // unit: require("../unit/model")(sequelize, DataTypes),
     mainCategory: require("../mainCategory/model")(sequelize, DataTypes),
@@ -1087,6 +1090,14 @@ const synchronizeDatabase = async (db) => {
 
     // Phase 3: Ensure critical columns for category & product exist on client DB
     await ensureCriticalColumns(db.sequelize);
+
+    // Phase 4: versioned POS schema migrations (idempotent; named FKs, enums, marker rows)
+    try {
+      const { runPosMigrations } = require('../posMigrations');
+      await runPosMigrations(db.sequelize, logger);
+    } catch (migrationErr) {
+      logger.warn(`Non-blocking note during POS migrations: ${migrationErr.message}`);
+    }
 
     logger.info("Database client is synchronized");
 
