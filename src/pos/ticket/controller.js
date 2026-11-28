@@ -445,7 +445,7 @@ const postTicketToSale = async (ticketId, transaction) => {
             bookingDate: new Date(),
             referenceNo: `TICKET-${ticket.id}`,
             remark: ticket.notes || 'Posted from Ticket',
-            discount: totalDiscount,
+            discount: totalDiscount + parseFloat(ticket.discount || 0), // promotions + bill discount at payment
             total: parseFloat(ticket.total),
             exchangeRate: 1,
             isActive: true,
@@ -2299,7 +2299,7 @@ const ticketController = {
 
         try {
             const { id } = req.params;
-            const { payments, paymentStatus, paymentId } = req.body;
+            const { payments, paymentStatus, paymentId, discount } = req.body;
 
             if (!paymentStatus) {
                 await safeRollback(t);
@@ -2329,8 +2329,34 @@ const ticketController = {
 
             const updateData = { paymentStatus };
 
+            // Bill discount: `total` is kept net of it. Work from the bill before any earlier discount,
+            // so paying again (after a revert) or changing the discount does not discount twice.
+            const previousDiscount = parseFloat(ticket.discount || 0);
+            const grossTotal = parseFloat(ticket.total || 0) + previousDiscount;
+            const grossTax = previousDiscount > 0 && parseFloat(ticket.total || 0) > 0
+                ? parseFloat(ticket.tax || 0) * grossTotal / parseFloat(ticket.total)
+                : parseFloat(ticket.tax || 0);
+            const applyBillDiscount = (amount) => {
+                const netTotal = Math.max(0, grossTotal - amount);
+                updateData.discount = amount.toFixed(2);
+                updateData.total = netTotal.toFixed(2);
+                // Tax shrinks with the bill (INC: the tax inside the price; EXC: tax on a smaller base)
+                updateData.tax = (grossTotal > 0 ? grossTax * netTotal / grossTotal : 0).toFixed(2);
+                ticket.total = updateData.total; // used for the legacy single payment amount below
+            };
+
             if (paymentStatus === 'paid') {
                 updateData.status = 'paid';
+
+                const billDiscount = parseFloat(discount || 0);
+                if (isNaN(billDiscount) || billDiscount < 0 || billDiscount > grossTotal) {
+                    await safeRollback(t);
+                    return res.status(400).json({
+                        success: false,
+                        message: 'Invalid discount: it must be between 0 and the ticket total'
+                    });
+                }
+                if (billDiscount > 0 || previousDiscount > 0) applyBillDiscount(billDiscount);
 
                 // Clear any existing payments for this ticket first
                 await SalePayment.destroy({
@@ -2365,6 +2391,8 @@ const ticketController = {
                     updateData.paymentId = finalPaymentId;
                 }
             } else {
+                // Back to unpaid: give the bill its full amount again
+                if (previousDiscount > 0) applyBillDiscount(0);
                 // If status is reverted from paid, clean up the payment transactions
                 await SalePayment.destroy({
                     where: { ticketId: id },
@@ -2718,14 +2746,14 @@ const ticketController = {
                     paymentStatus: 'paid'
                 },
                 attributes: [
-                    'id', 'total', 'subtotal', 'tax', 'promotionDiscount', 'createdAt'
+                    'id', 'total', 'subtotal', 'tax', 'promotionDiscount', 'discount', 'createdAt'
                 ]
             });
 
             const totalRevenue = tickets.reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
             const totalTax = tickets.reduce((sum, t) => sum + parseFloat(t.tax || 0), 0);
             const totalSubtotal = tickets.reduce((sum, t) => sum + parseFloat(t.subtotal || 0), 0);
-            const totalDiscount = tickets.reduce((sum, t) => sum + parseFloat(t.promotionDiscount || 0), 0);
+            const totalDiscount = tickets.reduce((sum, t) => sum + parseFloat(t.promotionDiscount || 0) + parseFloat(t.discount || 0), 0);
 
             res.status(200).json({
                 success: true,

@@ -791,6 +791,22 @@ const ensureCriticalColumns = async (sequelizeInstance) => {
       return result.length > 0;
     };
 
+    // 0. Ensure ticket.discount (bill discount given at payment)
+    try {
+      if (await tableExists('ticket')) {
+        if (!(await hasColumn('ticket', 'discount'))) {
+          logger.info("Adding discount column to ticket table...");
+          await sequelizeInstance.query(
+            "ALTER TABLE `ticket` ADD COLUMN `discount` DECIMAL(10,2) NOT NULL DEFAULT 0 COMMENT 'Bill discount given at payment; total is net of it'",
+            { type: QueryTypes.BULKUPDATE }
+          );
+          logger.info("Successfully added discount to ticket table.");
+        }
+      }
+    } catch (err) {
+      logger.warn(`Could not ensure ticket.discount: ${err.message}`);
+    }
+
     // 1. Ensure category.isPackaging
     try {
       if (await tableExists('category')) {

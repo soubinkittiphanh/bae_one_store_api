@@ -22,6 +22,12 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING,
             defaultValue: 'ALL',
         },
+        // Mobile screens this line opens in dc_pos, comma separated (e.g. 'inventory.products,inventory.raw_materials').
+        // Schema and the starting values: src/posMigrations/20261128_mobile_menu_grants.js
+        mobileKey: {
+            type: DataTypes.STRING(255),
+            allowNull: true,
+        },
         isActive: {
             type: DataTypes.BOOLEAN,
             allowNull: false,

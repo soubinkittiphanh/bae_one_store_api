@@ -3,6 +3,7 @@ const controller = require("./controller")
 const express = require("express")
 const router = express.Router()
 const {validateToken} = require('../api').jwtApi
+const { requirePosGrant } = require('../security/middleware')
 const { body } = require('express-validator');
 router.use(validateToken);
 
@@ -15,9 +16,9 @@ router.use(validateToken);
 //     // body('isActive').isBoolean().withMessage('isActive must be a boolean value'),
 //   ];
 
-router.post("/create", controller.create)
-    .put("/update/:id", controller.update)
-    .delete("/find/:id", controller.delete)
+router.post("/create", requirePosGrant("USER_GROUP", "EDIT"), controller.create)
+    .put("/update/:id", requirePosGrant("USER_GROUP", "EDIT"), controller.update)
+    .delete("/find/:id", requirePosGrant("USER_GROUP", "EDIT"), controller.delete)
     .get("/find", controller.findAllActive)
     .get("/findAll", controller.findAll)
     .get("/find/:id", controller.findById)

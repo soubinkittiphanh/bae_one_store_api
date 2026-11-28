@@ -22,6 +22,14 @@ const controller = {
       } catch (error) {
         logger.error(`update authority error ${error}`)
       }
+      try {
+        const db = require('../models');
+        const { grantPosDefaults, syncTicketCancelGrant } = require('../security/grantService');
+        await grantPosDefaults(db, group, (menuHeaders || []).map(h => (h && typeof h === 'object' ? h.id : h)), req.user?.id || null);
+        await syncTicketCancelGrant(db, group, ticketCancel, req.user?.id || null);
+      } catch (error) {
+        logger.error(`default POS grants for group ${code} failed: ${error.message}`)
+      }
 
       return res.status(201).json(Group);
     } catch (error) {
@@ -170,6 +178,12 @@ const controller = {
 
       logger.info(`Authories list ${menuHeaders.length}`)
       await group.save();
+      try {
+        const { syncTicketCancelGrant } = require('../security/grantService');
+        await syncTicketCancelGrant(require('../models'), group, ticketCancel, req.user?.id || null);
+      } catch (error) {
+        logger.error(`ticket cancel grant sync for group ${group.code} failed: ${error.message}`);
+      }
       await setMenus(group.id, menuHeaders, res)
     } catch (error) {
       logger.error(`something wrong ${error}`);

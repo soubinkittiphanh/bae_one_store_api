@@ -1,6 +1,7 @@
 
 
 const { validateToken } = require("../../api/jwtApi")
+const { requirePosGrant } = require('../../security/middleware')
 const ticketController = require("./controller")
 const service = require("./service")
 const express = require("express")
@@ -28,13 +29,17 @@ router.get('/reports/hourly-sales', ticketController.getHourlySalesReport);
 router.get('/reports/staff-performance', ticketController.getStaffPerformanceReport);
 
 // Status management routes (BEFORE /:id routes!)
-router.patch('/:id/status', ticketController.updateTicketStatus);
+// Cancelling / voiding a ticket needs POS_TICKET VOID (before, any logged-in user could)
+router.patch('/:id/status', requirePosGrant('POS_TICKET', 'VOID', {
+    noGroup: 'deny',
+    when: req => ['cancel', 'void'].includes(String((req.body && req.body.status) || '').toLowerCase())
+}), ticketController.updateTicketStatus);
 router.patch('/:id/payment-status', ticketController.updatePaymentStatus);
 router.patch('/:id/notes', ticketController.updateTicketNotes);
 // Basic CRUD - Specific ID routes (AFTER all specific routes)
 router.get('/:id', ticketController.getTicketById);
 router.post('/', ticketController.createTicket);
 router.put('/:id', ticketController.updateTicket);
-router.delete('/:id', ticketController.deleteTicket);
+router.delete('/:id', requirePosGrant('POS_TICKET', 'VOID', { noGroup: 'deny' }), ticketController.deleteTicket);
 
 module.exports = router

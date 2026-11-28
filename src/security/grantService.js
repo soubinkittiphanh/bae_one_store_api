@@ -71,4 +71,37 @@ const ensureSecurityFunctions = async (db) => {
   return grantToGroupCodes(db, ['SUPER_ADMIN'], ['SEC_GRANT']);
 };
 
-module.exports = { registerFunctions, applyGrant, grantToGroupCodes, ensureSecurityFunctions };
+// A new user group starts with the same POS grants the POS security migrations gave existing groups:
+// bill discount for everyone, product and stock changes with the INVENTORY menu header, user and group
+// management with the ADMIN menu header. Only registered functions are granted; later changes belong to the
+// grant matrix. Bill cancel follows the group's ticketCancel switch (syncTicketCancelGrant).
+const grantPosDefaults = async (db, group, menuHeaderIds = [], userId = null) => {
+  const fns = await db.secFunction.findAll({
+    where: { functionCode: ['POS_DISCOUNT', 'PRODUCT', 'STOCK', 'USER', 'USER_GROUP'], isActive: true }
+  });
+  if (!fns.length) return 0;
+  const ids = (menuHeaderIds || []).map(Number).filter(Boolean);
+  const codes = ids.length
+    ? (await db.menuHeader.findAll({ where: { id: ids }, attributes: ['code'] })).map(h => h.code)
+    : [];
+  const needs = { PRODUCT: 'INVENTORY', STOCK: 'INVENTORY', USER: 'ADMIN', USER_GROUP: 'ADMIN' };
+  let n = 0;
+  for (const fn of fns) {
+    const header = needs[fn.functionCode];
+    if (header && !codes.includes(header)) continue;
+    for (const actionCode of fn.applicableActions.split(',')) {
+      if (await applyGrant(db, { group, functionCode: fn.functionCode, actionCode, granted: true, userId, source: 'API' })) n++;
+    }
+  }
+  return n;
+};
+
+// userGroup.ticketCancel (group forms) and the POS_TICKET VOID grant (grant matrix, what the API checks)
+// describe the same right; whichever one changes, the other follows.
+const syncTicketCancelGrant = async (db, group, ticketCancel, userId = null) => {
+  const fn = await db.secFunction.findOne({ where: { functionCode: 'POS_TICKET', isActive: true } });
+  if (!fn || !fn.applicableActions.split(',').includes('VOID')) return false;
+  return applyGrant(db, { group, functionCode: 'POS_TICKET', actionCode: 'VOID', granted: Boolean(ticketCancel) && ticketCancel !== '0', userId, source: 'API' });
+};
+
+module.exports = { registerFunctions, applyGrant, grantToGroupCodes, ensureSecurityFunctions, grantPosDefaults, syncTicketCancelGrant };

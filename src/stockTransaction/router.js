@@ -1,5 +1,6 @@
 // Clean Stock Transaction Routes - Only Routing Logic
 const { validateToken } = require("../api/jwtApi");
+const { requirePosGrant } = require("../security/middleware");
 const controller = require("./controller");
 const express = require("express");
 const router = express.Router();
@@ -13,13 +14,14 @@ router.use(validateToken);
 
 router
     .post("/create", 
+        requirePosGrant("STOCK", "EDIT"),
         controller.validateStockTransaction,
         controller.createStockTransaction
     )
     .get("/findAll", controller.getStockTransactions)
     .get("/find", controller.getStockTransactions)
     .get("/find/:id", controller.getStockTransactionById)
-    .delete("/find/:id", controller.deleteStockTransaction)
+    .delete("/find/:id", requirePosGrant("STOCK", "EDIT"), controller.deleteStockTransaction)
 
 // Product-specific routes
 router
@@ -29,13 +31,13 @@ router
 
 // Bulk operations
 router
-    .post("/bulk", controller.bulkCreateStockTransactions)
+    .post("/bulk", requirePosGrant("STOCK", "EDIT"), controller.bulkCreateStockTransactions)
 
 // Stock management operations
 router
-    .post("/stock-increase", controller.createStockIncrease)
-    .post("/stock-adjust", controller.createStockAdjustment)
-    .post("/bulk-stock-increase", controller.bulkStockIncrease)
+    .post("/stock-increase", requirePosGrant("STOCK", "EDIT"), controller.createStockIncrease)
+    .post("/stock-adjust", requirePosGrant("STOCK", "EDIT"), controller.createStockAdjustment)
+    .post("/bulk-stock-increase", requirePosGrant("STOCK", "EDIT"), controller.bulkStockIncrease)
 
 // Analytics and reporting
 router

@@ -98,7 +98,7 @@ const ReceivingController = {
         const currencyId = newPoHeader.currencyId
         const newReceiveLineCreated = await RECLine.bulkCreate(polineWithHeader, { transaction: t });
         // -------- create card for receiving line
-        const cardCreated = await cardService.cardUtility(newReceiveLineCreated, locationId, currencyId, t)
+        const cardCreated = await cardService.cardUtility(newReceiveLineCreated, locationId, currencyId, t, {}, { allowZeroCost: true })
         logger.info(`Create card completed ${cardCreated.length}`)
 
         // Automatically update Purchase Order status if linked

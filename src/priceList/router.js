@@ -3,6 +3,7 @@ const controller = require("./controller")
 const express = require("express")
 const router = express.Router()
 const { validateToken } = require('../api').jwtApi
+const { requirePosGrant } = require('../security/middleware')
 const { body } = require('express-validator');
 router.use(validateToken);
 
@@ -16,10 +17,10 @@ router.use(validateToken);
 //   ];
 // TODO: PRINCE ADD MORE FIELD IN CONTROLLER [ amount ]
 router
-    .post("/create", controller.createPriceList)
-    .post("/upload", controller.createPriceList)
-    .put("/update/:id", controller.updatePriceListById)
-    .delete("/find/:id", controller.deletePriceListById)
+    .post("/create", requirePosGrant("PRODUCT", "EDIT"), controller.createPriceList)
+    .post("/upload", requirePosGrant("PRODUCT", "EDIT"), controller.createPriceList)
+    .put("/update/:id", requirePosGrant("PRODUCT", "EDIT"), controller.updatePriceListById)
+    .delete("/find/:id", requirePosGrant("PRODUCT", "EDIT"), controller.deletePriceListById)
     .get("/find", controller.getActivePriceLists)
     .get("/findAll", controller.getPriceLists)
     .get("/find/:id", controller.getPriceListById)

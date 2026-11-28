@@ -581,7 +581,11 @@ SET pro.stock_count = IFNULL(proc.card_count, 0);`
     }
 }
 
-const createCardFromReceiving = async (receivingLines, locationId, currencyId, t, additionalData = {}) => {
+// options.allowZeroCost: receiving passes this so a FOC line (price 0 and total 0) creates cards
+// at cost 0, not at the product's cost_price / pro_price fallback. Other callers keep the fallback.
+const isExplicitZero = (v) => v !== undefined && v !== null && v !== '' && Number(v) === 0;
+
+const createCardFromReceiving = async (receivingLines, locationId, currencyId, t, additionalData = {}, options = {}) => {
     // ----------- assign receivingLineId to card ------------
     logger.info(`Receiving line ${JSON.stringify(receivingLines)}`)
 
@@ -639,7 +643,10 @@ const createCardFromReceiving = async (receivingLines, locationId, currencyId, t
         // 4. additionalData.cost
         // 5. Product cost_price / pro_price
         let cost = 0;
-        if (cardToInsertCount > 0) {
+        const isFocZeroCost = !!options.allowZeroCost
+            && isExplicitZero(iterator['price'])
+            && isExplicitZero(iterator['total']);
+        if (cardToInsertCount > 0 && !isFocZeroCost) {
             if (iterator['cost'] !== undefined && iterator['cost'] !== null && Number(iterator['cost']) > 0) {
                 cost = Math.abs(Number(iterator['cost']));
             } else if (iterator['total'] !== undefined && iterator['total'] !== null && Number(iterator['total']) !== 0) {
@@ -658,7 +665,7 @@ const createCardFromReceiving = async (receivingLines, locationId, currencyId, t
         }
 
         // If cost is still 0, look up product from database as fallback
-        if (cost === 0 && productId) {
+        if (cost === 0 && productId && !isFocZeroCost) {
             try {
                 const pRecord = await Product.findByPk(productId, {
                     attributes: ['id', 'cost_price', 'pro_price'],
@@ -765,7 +772,7 @@ const deleteNotUseByIdList = async (cards, t) => {
     }
 }
 
-const cardUtility = async (receiveLines, locationId, currencyId, t, additionalData = {}) => {
+const cardUtility = async (receiveLines, locationId, currencyId, t, additionalData = {}, options = {}) => {
     const productIdList = receiveLines.map(el => el.productId);
     const productIdAndCodeList = await productService.findProductCodeFromProductId(productIdList);
 
@@ -779,7 +786,7 @@ const cardUtility = async (receiveLines, locationId, currencyId, t, additionalDa
         }
     }
 
-    const cardCreated = await createCardFromReceiving(receiveLines, locationId, currencyId, t, additionalData)
+    const cardCreated = await createCardFromReceiving(receiveLines, locationId, currencyId, t, additionalData, options)
     if (!cardCreated) {
         throw new Error(`Cannot created cards`)
     }
@@ -795,10 +802,15 @@ const cardUtilityReceivingLineChangesReflect = async (lines, locationId, currenc
     for (const iterator of lines) {
         // ---------- Need to compare if receivingLine qty has change or not, if change it will 
         // ---------- impact card line, so we need to update card line qty based on receiving line
-        const newCardCount = iterator['rate'] * iterator['qty']
+        // Card count must match createCardFromReceiving: rate x (paid qty + FOC qty).
+        // The line total is spread over every physical card, FOC included.
+        const lineRate = Number(iterator['rate'] || 1)
+        const physicalQty = Number(iterator['qty'] || 0) + Number(iterator['focQty'] || 0)
+        const newCardCount = Math.round(lineRate * physicalQty)
         const oldCardCountList = oldCardList.filter(el => el.receivingLineId == iterator['id'])
         const oldCardCount = oldCardCountList.length
-        const costPerCard = iterator['total'] / (iterator['qty'] * iterator['rate'])
+        const lineTotal = Number(iterator['total'] || 0)
+        const costPerCard = newCardCount > 0 ? lineTotal / newCardCount : 0
 
         // Prepare additional fields for updates
         const updateFields = {
@@ -819,6 +831,7 @@ const cardUtilityReceivingLineChangesReflect = async (lines, locationId, currenc
             // ------- Create additional cards -------//
             let newReceivingLine = { ...iterator }
             newReceivingLine.qty = additionalUpCount
+            newReceivingLine.focQty = 0 // already counted in additionalUpCount; avoid creating FOC cards twice
             newReceivingLine.cost = 0 //costPerCard  * additionalUpCount
             newReceivingLine.total = costPerCard * additionalUpCount
             newReceivingLine.rate = 1 // to ensure that new line card has exact number of new card need
@@ -857,7 +870,7 @@ const cardUtilityReceivingLineChangesReflect = async (lines, locationId, currenc
     }
 
     if (newRecevingLineList.length > 0) {
-        const createdCards = await cardUtility(newRecevingLineList, locationId, currencyId, t, additionalData)
+        const createdCards = await cardUtility(newRecevingLineList, locationId, currencyId, t, additionalData, { allowZeroCost: true })
         logger.info(`Create cards successfully count: ${createdCards.length}`)
     }
 }

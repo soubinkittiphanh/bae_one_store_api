@@ -40,6 +40,13 @@ module.exports = (sequelize, DataTypes) => {
             defaultValue: 0,
             allowNull: false
         },
+        // Bill discount given by the cashier at payment (₭), on top of promotionDiscount.
+        // `total` is already net of it; set by PATCH /ticket/:id/payment-status.
+        discount: {
+            type: DataTypes.DECIMAL(10, 2),
+            defaultValue: 0,
+            allowNull: false
+        },
         appliedPromotions: {
             type: DataTypes.TEXT, // Store JSON string
             allowNull: true,

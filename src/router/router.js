@@ -28,6 +28,7 @@ const RegisterCustomer = require('../controllers/client/register')
 const Report = require("../controllers/admin/report")
 const multer = require('multer')
 const tokenHook = require('../api/jwtApi').validateToken;
+const { requirePosGrant } = require('../security/middleware');
 const jwtUtil = require('../api/jwtApi');
 const Outlet = require("../controllers/admin/outlet")
 const Payment = require("../controllers/admin/payment");
@@ -50,8 +51,8 @@ const upload = async (app) => {
     app.post('/uploadsingle', uploadModule.single('file'), Upload.single)
     app.post('/uploadsingle_master', uploadModule.single('file'), Upload.singleMaster)
     app.post('/uploadsingle_master_update', uploadModule.single('file'), Upload.singleMasterUpdate)
-    app.post('/uploadmulti', tokenHook, uploadModule.array('files'), Upload.multi)
-    app.post('/uploadmulti_update', tokenHook, uploadModule.array('files'), Upload.multiUpdate)
+    app.post('/uploadmulti', tokenHook, requirePosGrant('PRODUCT', 'CREATE'), uploadModule.array('files'), Upload.multi)
+    app.post('/uploadmulti_update', tokenHook, requirePosGrant('PRODUCT', 'EDIT'), uploadModule.array('files'), Upload.multiUpdate)
     app.post('/unlink_file', Upload.remove_file)
 }
 const category = async (app) => {

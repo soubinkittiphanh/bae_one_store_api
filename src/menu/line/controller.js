@@ -29,8 +29,18 @@ const getMenuLineById = async (req, res) => {
   }
 };
 
+// 'a, b ,,c' -> 'a,b,c'; empty -> null. Accepts an array too.
+const normalizeMobileKey = value => {
+  if (value === undefined) return undefined;
+  if (value === null) return null;
+  const keys = (Array.isArray(value) ? value : String(value).split(','))
+    .map(k => String(k).trim())
+    .filter(Boolean);
+  return keys.length ? [...new Set(keys)].join(',') : null;
+};
+
 const createMenuLine = async (req, res) => {
-  const { name, llname, path, remark, icon, isActive } = req.body;
+  const { name, llname, path, remark, icon, isActive, mobileKey } = req.body;
 
   try {
     const newMenuLine = await MenuLine.create({
@@ -40,6 +50,7 @@ const createMenuLine = async (req, res) => {
       path,
       remark,
       isActive,
+      mobileKey: normalizeMobileKey(mobileKey) ?? null,
     });
 
     res.status(201).json(newMenuLine);
@@ -62,7 +73,7 @@ const generateMenuLine = async (req, res) => {
 
 const updateMenuLine = async (req, res) => {
   const { id } = req.params;
-  const { name, llname, path, remark, icon, isActive } = req.body;
+  const { name, llname, path, remark, icon, isActive, mobileKey } = req.body;
 
   try {
     const menuLine = await MenuLine.findByPk(id);
@@ -79,6 +90,8 @@ const updateMenuLine = async (req, res) => {
       icon,
       remark,
       isActive,
+      // Only when sent: older web builds don't know the field and must not clear it
+      ...(mobileKey !== undefined ? { mobileKey: normalizeMobileKey(mobileKey) } : {}),
     });
 
     res.status(200).json(menuLine);

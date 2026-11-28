@@ -38,4 +38,45 @@ const requirePermission = (functionCode, actionCode) => async (req, res, next) =
   }
 };
 
-module.exports = { requirePermission, hasPermission };
+/**
+ * requirePosGrant(functionCode, actionCode, options): the POS variant of requirePermission, for routes that
+ * existed before the grant matrix and must keep working for shops that have not been migrated yet.
+ *
+ *  - The function is not registered (POS migration 20261128_mobile_menu_grants not applied): allowed, as before.
+ *  - The user has no group (accounts made before groups existed): allowed and logged, as before, unless
+ *    options.noGroup === 'deny' (bill cancel already refused them).
+ *  - options.when(req) false: the check does not apply to this request (e.g. a status change that is not a cancel).
+ *  - options.self(req, user) true: users may always do it to their own record (e.g. their own profile).
+ *  - Otherwise the group needs the sec_group_grant row, as requirePermission.
+ * Answers 403 with a Lao + English message; the dc_pos and web UIs hide these actions before that.
+ */
+const requirePosGrant = (functionCode, actionCode, options = {}) => async (req, res, next) => {
+  try {
+    if (options.when && !(await options.when(req))) return next();
+    if (!req.user || !req.user.id) return deny(res, 401, 'Authentication required');
+
+    const fn = await db.secFunction.findOne({ where: { functionCode, isActive: true }, attributes: ['functionCode', 'applicableActions'] });
+    if (!fn || !fn.applicableActions.split(',').map(a => a.trim()).includes(actionCode)) return next();
+
+    const user = await db.user.findByPk(req.user.id, { attributes: ['id', 'groupId', 'isActive'] });
+    if (!user || user.isActive === false) return deny(res, 403, 'User account is inactive or deactivated');
+    if (options.self && (await options.self(req, user))) return next();
+    if (!user.groupId) {
+      if (options.noGroup === 'deny') return deny(res, 403, 'User does not belong to any user group');
+      logger.warn(`[security] ${functionCode}:${actionCode} allowed for user ${user.id} without a group (legacy full access)`);
+      return next();
+    }
+    const grant = await db.secGroupGrant.findOne({
+      where: { userGroupId: user.groupId, functionCode, actionCode },
+      attributes: ['id']
+    });
+    if (grant) return next();
+    logger.warn(`[security] ${functionCode}:${actionCode} refused for user ${user.id} (group ${user.groupId}) on ${req.method} ${req.originalUrl}`);
+    return deny(res, 403, `ກຸ່ມຜູ້ໃຊ້ຂອງທ່ານ ບໍ່ມີສິດນີ້ / Forbidden: ${actionCode} on ${functionCode} is not granted to your user group`);
+  } catch (err) {
+    logger.error(`requirePosGrant failed: ${err.message}`);
+    return deny(res, 500, 'Permission check failed');
+  }
+};
+
+module.exports = { requirePermission, hasPermission, requirePosGrant };

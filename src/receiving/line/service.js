@@ -82,7 +82,7 @@ const simpleUpdateBulk = async (lines, locationId, currencyId, t) => {
         const newReceiveLineCreated = await RECLine.bulkCreate(listOfNotFoundEntry, { transaction: t })
         logger.info(`New line created ${newReceiveLineCreated.length}`)
         // -------- create card for receiving line
-        const cardCreated = await cardService.cardUtility(newReceiveLineCreated, locationId, currencyId, t)
+        const cardCreated = await cardService.cardUtility(newReceiveLineCreated, locationId, currencyId, t, {}, { allowZeroCost: true })
         logger.info(`New card created   ${cardCreated.length} \n ${JSON.stringify(cardCreated)}`)
     }
 }

@@ -1,3 +1,8 @@
+/**
+ * RETIRED (POS migration 20261130_retire_user_roles): nothing checks roles. Rights are set per user group in the
+ * grant matrix (/api/security, sec_group_grant) and the group's menu headers. These routes and the role table are
+ * kept only so old data stays readable; don't build on them.
+ */
 const express = require('express');
 const router = express.Router();
 const { validateToken } = require('../api/jwtApi');

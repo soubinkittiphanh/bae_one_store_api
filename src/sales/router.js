@@ -1,4 +1,5 @@
 const {validateToken} = require("../api/jwtApi")
+const { requirePosGrant } = require("../security/middleware")
 const controller = require("./controller")
 const service = require("./service")
 const express = require("express")
@@ -18,7 +19,7 @@ router
   .put("/update-v2/:id", validator.updateSaleHeaderValidator, controller.updateSaleHeaderV2)
   .put("/update-v3/:id", validator.updateSaleHeaderValidator, controller.updateSaleHeaderV3)
   .put("/settle/:id", controller.settlement)
-  .put("/reverse/:id", controller.reverseSaleHeader)
+  .put("/reverse/:id", requirePosGrant("POS_TICKET", "VOID", { noGroup: "deny" }), controller.reverseSaleHeader)
   .put("/postToInvoice/:id", validator.updateSaleHeaderValidator, controller.updateSaleHeaderPostToInvoice)
   .delete("/find/:id", controller.deleteSaleHeader)
   
