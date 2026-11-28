@@ -4,14 +4,19 @@ const logger = require('../api/logger');
 const MenuHeader = require('../models').menuHeader; // Adjust the path based on your project structure
 const MenuLine = require('../models').menuLine; // Adjust the path based on your project structure
 
+// Lines come with their position in the header (MenuHeaderLines.order) and sorted by it
+const LINES_WITH_ORDER = [{ model: MenuLine, through: { attributes: ['order'] } }];
+const sortLines = header => {
+  if (header && header.menuLines) {
+    header.menuLines.sort((a, b) => (a.MenuHeaderLines?.order || 0) - (b.MenuHeaderLines?.order || 0));
+  }
+  return header;
+};
+
 const getMenuHeaders = async (req, res) => {
   try {
-    const menuHeaders = await MenuHeader.findAll({
-      include: [{
-        model: MenuLine,
-        through: { attributes: [] }
-      }]
-    });
+    const menuHeaders = await MenuHeader.findAll({ include: LINES_WITH_ORDER, order: [['id', 'ASC']] });
+    menuHeaders.forEach(sortLines);
     res.status(200).json(menuHeaders);
   } catch (error) {
     logger.error('Error fetching menu headers:', error);
@@ -23,19 +28,14 @@ const getMenuHeaderById = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const menuHeader = await MenuHeader.findByPk(id, {
-      include: [{
-        model: MenuLine,
-        through: { attributes: [] }
-      }]
-    });
+    const menuHeader = await MenuHeader.findByPk(id, { include: LINES_WITH_ORDER });
 
     if (!menuHeader) {
       res.status(404).json({ error: 'Menu header not found' });
       return;
     }
 
-    res.status(200).json(menuHeader);
+    res.status(200).json(sortLines(menuHeader));
   } catch (error) {
     logger.error('Error fetching menu header by ID:', error);
     res.status(500).send('Internal Server Error');
@@ -192,6 +192,7 @@ const deleteMenuHeader = async (req, res) => {
 
 
 const setmenuLine = async (headerId, line, res) => {
+  line = Array.isArray(line) ? line : [];
   logger.info(`Header ${headerId} | line ${line.length}`);
   
   try {

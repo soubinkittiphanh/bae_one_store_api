@@ -1,6 +1,7 @@
 
 
 const {validateToken} = require("../api/jwtApi")
+const { requirePosGrant } = require("../security/middleware")
 const controller = require("./controller")
 const service = require("./service")
 const express = require("express")
@@ -13,10 +14,10 @@ router.use(validateToken)
 //     next()
 // })
 router
-.post("/create", controller.createMenuHeader)
-.post("/generate", controller.generateMenuHeader)
-    .put("/update/:id", controller.updateMenuHeader)
-    .delete("/find/:id", controller.deleteMenuHeader)
+.post("/create", requirePosGrant("MENU", "EDIT"), controller.createMenuHeader)
+.post("/generate", requirePosGrant("MENU", "EDIT"), controller.generateMenuHeader)
+    .put("/update/:id", requirePosGrant("MENU", "EDIT"), controller.updateMenuHeader)
+    .delete("/find/:id", requirePosGrant("MENU", "EDIT"), controller.deleteMenuHeader)
     .get("/find", controller.getMenuHeaders)
     .get("/find/:id", controller.getMenuHeaderById)
     // .post("/bulkCreate",service.createHulkStockCard)

@@ -15,7 +15,8 @@ const MIGRATIONS = [
   require('./20261125_recipe_engine_step3'),
   require('./20261128_mobile_menu_grants'),
   require('./20261129_pos_grants_enforced'),
-  require('./20261130_retire_user_roles')
+  require('./20261130_retire_user_roles'),
+  require('./20261201_menu_setup')
 ];
 
 const isReadQuery = sql => /^\s*(SELECT|SHOW)\b/i.test(sql);

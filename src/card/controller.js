@@ -223,7 +223,8 @@ const cardController = {
       }
 
       if (productId) {
-        whereClause.product_id = productId;
+        // Real product id (card.productId); product_id is a legacy column with old ids
+        whereClause.productId = productId;
       }
 
       if (inputter) {
@@ -494,9 +495,26 @@ const cardController = {
   async getAllCountAndSumGroupByProduct(req, res) {
     try {
       const days = parseInt(req.query.days) || 30;
+      const locationId = parseInt(req.query.locationId, 10);
+
+      // Same "in stock" rule as product.stock_count (product/service.js updateProductCountGroup)
+      const where = {
+        card_isused: 0,
+        isActive: true,
+        saleLineId: null,
+        ticketLineId: null,
+      };
+      // Optional branch filter; without it the totals cover all branches
+      if (Number.isInteger(locationId) && locationId > 0) {
+        where.locationId = locationId;
+      }
+
       const cardStats = await Card.findAll({
         attributes: [
-          'product_id',
+          // Group by the real product (card.productId), not the legacy product_id column.
+          // Returned as both names: existing screens read product_id.
+          'productId',
+          [sequelize.col('card.productId'), 'product_id'],
           [sequelize.fn('COUNT', sequelize.literal('DISTINCT card_number')), 'cardCount'],
           [sequelize.fn('SUM', sequelize.col('cost')), 'totalCardValue'],
           [sequelize.fn('COUNT',
@@ -512,11 +530,8 @@ const cardController = {
           [sequelize.fn('COUNT',
             sequelize.literal('DISTINCT sizeId')), 'uniqueSizesCount']
         ],
-        where: {
-          card_isused: 0,
-          isActive: true,
-        },
-        group: ['product_id'],
+        where,
+        group: ['card.productId', 'product.id'],
         include: [
           {
             model: Product,
@@ -525,7 +540,47 @@ const cardController = {
           }
         ],
       });
-      return res.status(200).json(cardStats);
+
+      // includeZero=1: also return out-of-stock products, i.e. active products that have had
+      // stock at this branch (any card, sold or not) but have no free card now.
+      // Opt-in so other screens using this endpoint keep getting in-stock rows only.
+      const includeZero = req.query.includeZero === '1' || req.query.includeZero === 'true';
+      if (!includeZero) {
+        return res.status(200).json(cardStats);
+      }
+
+      const inStockIds = cardStats.map((row) => row.get('productId'));
+      const zeroWhere = { isActive: true, productId: { [Op.ne]: null } };
+      if (where.locationId) zeroWhere.locationId = where.locationId;
+      if (inStockIds.length > 0) zeroWhere.productId = { [Op.notIn]: inStockIds };
+
+      const zeroIds = (await Card.findAll({
+        attributes: [[sequelize.fn('DISTINCT', sequelize.col('productId')), 'productId']],
+        where: zeroWhere,
+        raw: true,
+      })).map((r) => r.productId);
+
+      const zeroProducts = zeroIds.length === 0 ? [] : await Product.findAll({
+        attributes: ['id', 'pro_name', 'pro_id', 'pro_price'],
+        where: { id: { [Op.in]: zeroIds }, isActive: true },
+        raw: true,
+      });
+
+      const zeroRows = zeroProducts.map((p) => ({
+        productId: p.id,
+        product_id: p.id,
+        cardCount: 0,
+        totalCardValue: 0,
+        expiredCount: 0,
+        expiringSoonCount: 0,
+        withColorCount: 0,
+        withSizeCount: 0,
+        uniqueColorsCount: 0,
+        uniqueSizesCount: 0,
+        product: { id: p.id, pro_name: p.pro_name, pro_id: p.pro_id, pro_price: p.pro_price },
+      }));
+
+      return res.status(200).json([...cardStats.map((row) => row.toJSON()), ...zeroRows]);
     } catch (error) {
       return res.status(400).json({ message: error.message });
     }

@@ -77,14 +77,14 @@ const ensureSecurityFunctions = async (db) => {
 // grant matrix. Bill cancel follows the group's ticketCancel switch (syncTicketCancelGrant).
 const grantPosDefaults = async (db, group, menuHeaderIds = [], userId = null) => {
   const fns = await db.secFunction.findAll({
-    where: { functionCode: ['POS_DISCOUNT', 'PRODUCT', 'STOCK', 'USER', 'USER_GROUP'], isActive: true }
+    where: { functionCode: ['POS_DISCOUNT', 'PRODUCT', 'STOCK', 'USER', 'USER_GROUP', 'MENU'], isActive: true }
   });
   if (!fns.length) return 0;
   const ids = (menuHeaderIds || []).map(Number).filter(Boolean);
   const codes = ids.length
     ? (await db.menuHeader.findAll({ where: { id: ids }, attributes: ['code'] })).map(h => h.code)
     : [];
-  const needs = { PRODUCT: 'INVENTORY', STOCK: 'INVENTORY', USER: 'ADMIN', USER_GROUP: 'ADMIN' };
+  const needs = { PRODUCT: 'INVENTORY', STOCK: 'INVENTORY', USER: 'ADMIN', USER_GROUP: 'ADMIN', MENU: 'ADMIN' };
   let n = 0;
   for (const fn of fns) {
     const header = needs[fn.functionCode];
